@@ -1,0 +1,87 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: var(--vscode-font-family); padding: 10px; display: flex; flex-direction: column; gap: 10px; }
+        label { font-size: 12px; font-weight: bold; color: var(--vscode-foreground); margin-bottom: -5px; }
+        select, textarea { width: 100%; box-sizing: border-box; background: var(--vscode-dropdown-background); color: var(--vscode-dropdown-foreground); border: 1px solid var(--vscode-dropdown-border); padding: 6px; }
+        textarea { background: var(--vscode-input-background); color: var(--vscode-input-foreground); border: 1px solid var(--vscode-input-border); resize: vertical; min-height: 80px; margin-top: 5px; }
+        button { background: var(--vscode-button-background); color: var(--vscode-button-foreground); border: none; padding: 8px; cursor: pointer; width: 100%; }
+        button:hover { background: var(--vscode-button-hoverBackground); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+    <label for="providerSelect">AI Provider</label>
+    <select id="providerSelect">
+        <option value="" disabled selected>Select a provider...</option>
+        <option value="openai">OpenAI</option>
+        <option value="gemini">Google Gemini</option>
+    </select>
+
+    <label for="modelSelect">Model</label>
+    <select id="modelSelect" disabled>
+        <option value="">Waiting for provider...</option>
+    </select>
+
+    <textarea id="prompt" placeholder="Ask me to explain, search, or edit code..."></textarea>
+    <button id="sendBtn" disabled>Send</button>
+
+    <script>
+        const vscode = acquireVsCodeApi();
+        const providerSelect = document.getElementById('providerSelect');
+        const modelSelect = document.getElementById('modelSelect');
+        const sendBtn = document.getElementById('sendBtn');
+        const promptInput = document.getElementById('prompt');
+
+        // 1. When the user changes the provider, ask TypeScript for the models
+        providerSelect.addEventListener('change', (e) => {
+            const provider = e.target.value;
+            modelSelect.innerHTML = '<option value="">Loading models...</option>';
+            modelSelect.disabled = true;
+            sendBtn.disabled = true;
+            
+            vscode.postMessage({ type: 'fetchModels', provider: provider });
+        });
+
+        // 2. Listen for TypeScript sending the models back
+        window.addEventListener('message', event => {
+            const message = event.data;
+            
+            if (message.type === 'setModels') {
+                modelSelect.innerHTML = ''; // Clear loading text
+                message.models.forEach(model => {
+                    const option = document.createElement('option');
+                    option.value = model;
+                    option.textContent = model;
+                    modelSelect.appendChild(option);
+                });
+                modelSelect.disabled = false;
+                sendBtn.disabled = false;
+            } 
+            else if (message.type === 'error') {
+                modelSelect.innerHTML = '<option value="">Error loading models</option>';
+            }
+        });
+
+        // 3. Send the final payload when the user clicks Send
+        sendBtn.addEventListener('click', () => {
+            const text = promptInput.value;
+            const provider = providerSelect.value;
+            const model = modelSelect.value;
+            
+            if (text && provider && model) {
+                vscode.postMessage({ 
+                    type: 'askAgent', 
+                    provider: provider,
+                    model: model,
+                    value: text 
+                });
+                promptInput.value = '';
+            }
+        });
+    </script>
+</body>
+</html>
