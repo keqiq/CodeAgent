@@ -22242,178 +22242,9 @@ __export(extension_exports, {
 module.exports = __toCommonJS(extension_exports);
 var vscode5 = __toESM(require("vscode"));
 
-// src/tools/search.ts
-var vscode2 = __toESM(require("vscode"));
-
-// src/utils/workspace.ts
-var vscode = __toESM(require("vscode"));
-function getWorkspaceUri(filePath) {
-  const folders = vscode.workspace.workspaceFolders;
-  if (!folders || folders.length === 0) throw new Error("No workspace open");
-  return vscode.Uri.joinPath(folders[0].uri, filePath);
-}
-var textDecoder = new TextDecoder("utf-8");
-async function getFileContent(uri) {
-  const uint8Array = await vscode.workspace.fs.readFile(uri);
-  return textDecoder.decode(uint8Array);
-}
-
-// src/tools/search.ts
-var searchSchemas = [
-  {
-    name: "glob",
-    description: "Find files in the current workspace matching a glob pattern.",
-    parameters: {
-      type: "object",
-      properties: {
-        pattern: { type: "string", description: "Glob pattern (e.g., 'src/**/*.ts')." }
-      },
-      required: ["pattern"]
-    }
-  },
-  {
-    name: "grep",
-    description: "Search for a regular expression pattern inside files.",
-    parameters: {
-      type: "object",
-      properties: {
-        query: { type: "string", description: "The regex pattern to search for." },
-        filePattern: { type: "string", description: "Optional glob pattern (default: '**/*')." }
-      },
-      required: ["query"]
-    }
-  }
-];
-async function executeGlob(pattern) {
-  const exludePattern = "{**/node_modules/**,**/.git/**,**/dist/**}";
-  const uris = await vscode2.workspace.findFiles(pattern, exludePattern, 1e3);
-  if (uris.length === 0) {
-    return "No files found.";
-  }
-  return uris.map((uri) => vscode2.workspace.asRelativePath(uri)).join("\n");
-}
-var textDecoder2 = new TextDecoder("utf-8");
-async function executeGrep(query, filePattern = "**/*") {
-  let regex;
-  try {
-    regex = new RegExp(query);
-  } catch (e2) {
-    return `Error: Invalid regex : ${e2}`;
-  }
-  const excludePattern = "{**/node_modules/**,**/.git/**,**/dist/**,**/*.{png,jpg,jpeg,ico,bin}}";
-  const uris = await vscode2.workspace.findFiles(filePattern, excludePattern, 1e3);
-  const results = [];
-  for (const uri of uris) {
-    try {
-      const content = await getFileContent(uri);
-      const lines = content.split("\n");
-      for (let i2 = 0; i2 < lines.length; i2++) {
-        if (regex.test(lines[i2])) {
-          results.push(`${vscode2.workspace.asRelativePath(uri)}:${i2 + 1}:${lines[i2].trim()}`);
-        }
-      }
-      ;
-    } catch (e2) {
-      continue;
-    }
-  }
-  return results.length > 0 ? results.slice(0, 500).join("\n") : "No matches found.";
-}
-
-// src/tools/files.ts
-var vscode3 = __toESM(require("vscode"));
-var fileSchemas = [
-  {
-    name: "read",
-    description: "Read the exact contents of a file.",
-    parameters: {
-      type: "object",
-      properties: {
-        filePath: { type: "string", description: "The relative path to the file in the worksapce." }
-      },
-      required: ["filePath"]
-    }
-  },
-  {
-    name: "write",
-    description: "Create a new file or completely overwrite an existing file.",
-    parameters: {
-      type: "object",
-      properties: {
-        filePath: { type: "string", description: "Path to the file." },
-        content: { type: "string", description: "The complete text content to write to the file." }
-      },
-      required: ["filePath", "content"]
-    }
-  },
-  {
-    name: "edit",
-    description: "Replace a specific block of text in an existing file.",
-    parameters: {
-      type: "object",
-      properties: {
-        filePath: { type: "string", description: "Path to the file." },
-        oldText: { type: "string", description: "The EXACT existing text to be replaced. Must match indentation perfectly." },
-        newText: { type: "string", description: "The new text that will replace the old text." }
-      },
-      required: ["filePath", "oldText", "newText"]
-    }
-  }
-];
-var textDecoder3 = new TextDecoder("utf-8");
-var textEncoder = new TextEncoder();
-async function executeRead(filePath) {
-  try {
-    const fileUri = getWorkspaceUri(filePath);
-    const uint8Array = await vscode3.workspace.fs.readFile(fileUri);
-    return textDecoder3.decode(uint8Array);
-  } catch (e2) {
-    return `Error reading file: ${e2}`;
-  }
-}
-async function executeWrite(filePath, content) {
-  try {
-    const fileUri = getWorkspaceUri(filePath);
-    const uint8Array = textEncoder.encode(content);
-    await vscode3.workspace.fs.writeFile(fileUri, uint8Array);
-    return `Successfully wrote to ${filePath}`;
-  } catch (e2) {
-    return `Error writing file: ${e2}`;
-  }
-}
-var normalize = (str2) => str2.replace(/\r\n/g, "\n").replace(/[ \t]+/g, " ").trim();
-async function executeEdit(filePath, oldText, newText) {
-  try {
-    const fileUri = getWorkspaceUri(filePath);
-    const fileContent = await getFileContent(fileUri);
-    if (fileContent.includes(oldText)) {
-      const updatedContent = fileContent.replace(oldText, newText);
-      await vscode3.workspace.fs.writeFile(fileUri, textEncoder.encode(updatedContent));
-      return `Successfully edited ${filePath} with strict matching.`;
-    }
-    const normalizedFile = normalize(fileContent);
-    const normalizedOldText = normalize(oldText);
-    if (normalizedFile.includes(normalizedOldText)) {
-      return "Error: oldText was found, but the indentation or line breaks did not match the file perfectly. Please use readFile to check the exact whitespace and try again.";
-    }
-    return "Error: oldText was not found in the file at all. Ensure you are targeting the right code.";
-  } catch (e2) {
-    return `Error editing file: ${e2}`;
-  }
-}
-
-// src/tools/index.ts
-var allToolSchemas = [
-  searchSchemas,
-  fileSchemas
-];
-var toolRegistry = {
-  "glob": async (args) => await executeGlob(args.pattern),
-  "grep": async (args) => await executeGrep(args.query, args.filePattern),
-  "read": async (args) => await executeRead(args.filePath),
-  "write": async (args) => await executeWrite(args.filePath, args.content),
-  "edit": async (args) => await executeEdit(args.filePath, args.oldText, args.newText)
-};
+// src/Sidebar.ts
+var vscode4 = __toESM(require("vscode"));
+var fs3 = __toESM(require("fs"));
 
 // node_modules/@google/genai/dist/node/index.mjs
 var import_p_retry = __toESM(require_p_retry(), 1);
@@ -40986,12 +40817,113 @@ function getApiKeyFromEnv() {
 var LLMProvider = class {
 };
 
+// src/tools/search.ts
+var vscode2 = __toESM(require("vscode"));
+
+// src/utils/workspace.ts
+var vscode = __toESM(require("vscode"));
+var textDecoder = new TextDecoder("utf-8");
+
+// src/tools/search.ts
+var searchSchemas = [
+  {
+    type: "function",
+    function: {
+      name: "glob",
+      description: "Find files in the current workspace matching a glob pattern.",
+      parameters: {
+        type: "object",
+        properties: {
+          pattern: { type: "string", description: "Glob pattern (e.g., 'src/**/*.ts')." }
+        },
+        required: ["pattern"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "grep",
+      description: "Search for a regular expression pattern inside files.",
+      parameters: {
+        type: "object",
+        properties: {
+          query: { type: "string", description: "The regex pattern to search for." },
+          filePattern: { type: "string", description: "Optional glob pattern (default: '**/*')." }
+        },
+        required: ["query"]
+      }
+    }
+  }
+];
+var textDecoder2 = new TextDecoder("utf-8");
+
+// src/tools/files.ts
+var vscode3 = __toESM(require("vscode"));
+var fileSchemas = [
+  {
+    type: "function",
+    function: {
+      name: "read",
+      description: "Read the exact contents of a file.",
+      parameters: {
+        type: "object",
+        properties: {
+          filePath: { type: "string", description: "The relative path to the file in the worksapce." }
+        },
+        required: ["filePath"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "write",
+      description: "Create a new file or completely overwrite an existing file.",
+      parameters: {
+        type: "object",
+        properties: {
+          filePath: { type: "string", description: "Path to the file." },
+          content: { type: "string", description: "The complete text content to write to the file." }
+        },
+        required: ["filePath", "content"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "edit",
+      description: "Replace a specific block of text in an existing file.",
+      parameters: {
+        type: "object",
+        properties: {
+          filePath: { type: "string", description: "Path to the file." },
+          oldText: { type: "string", description: "The EXACT existing text to be replaced. Must match indentation perfectly." },
+          newText: { type: "string", description: "The new text that will replace the old text." }
+        },
+        required: ["filePath", "oldText", "newText"]
+      }
+    }
+  }
+];
+var textDecoder3 = new TextDecoder("utf-8");
+var textEncoder = new TextEncoder();
+
+// src/tools/index.ts
+var allToolSchemas = [
+  ...searchSchemas,
+  ...fileSchemas
+];
+
 // src/apis/gemini.ts
 var GeminiProvider = class extends LLMProvider {
   client;
+  geminiTools;
   constructor(apiKey) {
     super();
     this.client = new GoogleGenAI({ apiKey });
+    this.geminiTools = this.parseTools();
   }
   async getModels() {
     const response = await this.client.models.list();
@@ -41004,12 +40936,26 @@ var GeminiProvider = class extends LLMProvider {
     }
     return modelNames.sort();
   }
+  parseTools() {
+    const declarations = allToolSchemas.map((t2) => ({
+      name: t2.function.name,
+      description: t2.function.description,
+      parameters: t2.function.parameters
+    }));
+    return [{ functionDeclarations: declarations }];
+  }
   async fetch(model, messages, toolSchemas) {
+    const geminiMessages = messages.map((msg) => {
+      return {
+        role: msg.role === "assistant" ? "model" : "user",
+        parts: [{ text: msg.content }]
+      };
+    });
     const response = await this.client.models.generateContent({
       model,
-      contents: messages,
+      contents: geminiMessages,
       config: {
-        tools: [{ functionDeclarations: toolSchemas }],
+        tools: this.geminiTools,
         systemInstruction: "You are an expert AI coding assistant inside VS Code."
       }
     });
@@ -50791,51 +50737,118 @@ var LLMFactory = class {
 };
 
 // src/Sidebar.ts
-var vscode4 = __toESM(require("vscode"));
-var fs3 = __toESM(require("fs"));
 var Sidebar = class {
-  constructor(_extensionUri) {
-    this._extensionUri = _extensionUri;
+  constructor(_context) {
+    this._context = _context;
   }
-  _extensionUri;
+  _context;
   _view;
+  async getModelsFromProvider(provider, apiKey) {
+    const providerInstance = LLMFactory.create(provider, apiKey);
+    const models = await providerInstance.getModels();
+    return models;
+  }
+  async getAPIKey(provider) {
+    const secretKey = `${provider.toUpperCase()}_API_KEY`;
+    return await this._context.secrets.get(secretKey);
+  }
   resolveWebviewView(webviewView, context, token) {
     this._view = webviewView;
     webviewView.webview.options = {
       enableScripts: true,
-      localResourceRoots: [this._extensionUri]
+      localResourceRoots: [this._context.extensionUri]
     };
     webviewView.webview.html = this._getHtml();
     webviewView.webview.onDidReceiveMessage(async (data) => {
       switch (data.type) {
+        case "webviewReady": {
+          const savedProvider = this._context.globalState.get("selectedProvider");
+          const savedModel = this._context.globalState.get("selectedModel");
+          if (savedProvider) {
+            const apiKey = await this.getAPIKey(savedProvider);
+            if (apiKey) {
+              try {
+                const providerInstance = LLMFactory.create(savedProvider, apiKey);
+                const models = await providerInstance.getModels();
+                webviewView.webview.postMessage({
+                  type: "restoreState",
+                  provider: savedProvider,
+                  model: savedModel,
+                  models
+                });
+              } catch (e2) {
+              }
+            }
+          }
+          break;
+        }
+        case "fetchModels": {
+          try {
+            await this._context.globalState.update("selectedProvider", data.provider);
+            const apiKey = await this.getAPIKey(data.provider);
+            if (!apiKey) {
+              webviewView.webview.postMessage({ type: "requestApiKey", provider: data.provider });
+              return;
+            }
+            webviewView.webview.postMessage({
+              type: "setModels",
+              models: await this.getModelsFromProvider(data.provider, apiKey)
+            });
+          } catch (e2) {
+            vscode4.window.showErrorMessage(`Failed to fetch models: ${e2}`);
+            webviewView.webview.postMessage({ type: "error" });
+          }
+          break;
+        }
+        case "saveApiKey": {
+          try {
+            const secretKey = `${data.provider.toUpperCase()}_API_KEY`;
+            await this._context.secrets.store(secretKey, data.key);
+            webviewView.webview.postMessage({
+              type: "setModels",
+              models: await this.getModelsFromProvider(data.provider, data.key)
+            });
+          } catch (e2) {
+            vscode4.window.showErrorMessage(`Invalid key or Failed to fetch models: ${e2}`);
+            webviewView.webview.postMessage({ type: "requestApiKey", provider: data.provider });
+          }
+          break;
+        }
+        case "saveModelPreference": {
+          await this._context.globalState.update("selectedModel", data.model);
+          break;
+        }
         case "askAgent": {
           if (!data.value) {
             return;
           }
-          vscode4.window.showInformationMessage(`Agent received: ${data.value}`);
-          break;
-        }
-        case "fetchModels":
-          {
-            try {
-              const envKey = `${data.provider.toUpperCase()}_API_KEY`;
-              const apiKey = process.env[envKey] || "";
-              if (!apiKey) {
-              }
-              const providerInstance = LLMFactory.create(data.provider, apiKey);
-              const models = await providerInstance.getModels();
-              webviewView.webview.postMessage({ type: "setModels", models });
-            } catch (e2) {
-              vscode4.window.showErrorMessage(`Failed to fetch models: ${e2}`);
-              webviewView.webview.postMessage({ type: "error" });
+          const apiKey = await this.getAPIKey(data.provider);
+          if (!apiKey) {
+            vscode4.window.showErrorMessage(`No API key for ${data.provider}`);
+            return;
+          }
+          try {
+            const providerInstance = LLMFactory.create(data.provider, apiKey);
+            const conversationHistory = [
+              { role: "user", content: data.value }
+            ];
+            const llmResponse = await providerInstance.fetch(data.model, conversationHistory, []);
+            if (llmResponse.text) {
+              webviewView.webview.postMessage({ type: "receiveMessage", text: llmResponse.text });
             }
+          } catch (e2) {
+            webviewView.webview.postMessage({
+              type: "receiveMessage",
+              text: `Error: could not fetch response ${e2}`
+            });
           }
           break;
+        }
       }
     });
   }
   _getHtml() {
-    const htmlPath = vscode4.Uri.joinPath(this._extensionUri, "media", "sidebar.html");
+    const htmlPath = vscode4.Uri.joinPath(this._context.extensionUri, "media", "sidebar.html");
     try {
       const html = fs3.readFileSync(htmlPath.fsPath, "utf-8");
       return html;
@@ -50847,79 +50860,15 @@ var Sidebar = class {
 };
 
 // src/extension.ts
-async function runAILoop(userPrompt) {
-  vscode5.window.withProgress({
-    location: vscode5.ProgressLocation.Notification,
-    title: "Processing request...",
-    cancellable: true
-  }, async (progress, token) => {
-    const messages = [
-      { role: "user", content: userPrompt }
-    ];
-    let isDone = false;
-    let turnCount = 0;
-    const MAX_TURNS = 15;
-    const apiProvider = LLMFactory.create("gemini", "AIzaSyBsB0yN19cED691cPccoe6MgS5lVFt6dPU", "gemini-3.1-flash-lite-preview");
-    while (!isDone && turnCount < MAX_TURNS) {
-      if (token.isCancellationRequested) {
-        vscode5.window.showWarningMessage("Interrupted by user");
-        break;
-      }
-      turnCount++;
-      progress.report({ message: `Thinking (Turn ${turnCount})...` });
-      try {
-        const llmResponse = await apiProvider.fetch(messages, allToolSchemas);
-        messages.push({
-          role: "assistant",
-          tool_calls: llmResponse.tool_calls?.map((t2) => ({
-            id: t2.id,
-            type: "function",
-            function: {
-              name: t2.name,
-              arguments: JSON.stringify(t2.arguments)
-            }
-          }))
-        });
-        if (llmResponse.tool_calls) {
-          for (const call of llmResponse.tool_calls) {
-            progress.report({ message: `Running ${call.name}` });
-            const toolFunction = toolRegistry[call.name];
-            let toolResult = toolFunction ? await toolFunction(call.arguments) : `Error: Unknown tool ${call.name}`;
-            messages.push({
-              role: "tool",
-              name: call.name,
-              content: toolResult
-            });
-          }
-        } else if (llmResponse.text) {
-          vscode5.window.showInformationMessage(llmResponse.text);
-          isDone = true;
-        }
-      } catch (e2) {
-        vscode5.window.showErrorMessage(`Agent Error: ${e2}`);
-        isDone = true;
-      }
-    }
-  });
-}
 function activate(context) {
   console.log('Plugin "CodeAgent" is active!');
-  const sidebar = new Sidebar(context.extensionUri);
+  const sidebar = new Sidebar(context);
   context.subscriptions.push(
     vscode5.window.registerWebviewViewProvider(
       "codeagent-sidebar",
       sidebar
     )
   );
-  const startAgentCommand = vscode5.commands.registerCommand("CodeAgent.ask", async () => {
-    const prompt = await vscode5.window.showInputBox({
-      prompt: "Enter prompt"
-    });
-    if (prompt) {
-      await runAILoop(prompt);
-    }
-  });
-  context.subscriptions.push(startAgentCommand);
 }
 function deactivate() {
 }

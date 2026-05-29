@@ -1,5 +1,5 @@
 import OpenAI from 'openai';
-import { LLMProvider, LLMResponse } from './provider';
+import { ChatMessage, LLMProvider, LLMResponse } from './provider';
 
 
 export class OpenAIProvider extends LLMProvider {
@@ -16,7 +16,7 @@ export class OpenAIProvider extends LLMProvider {
         return response.data.map(m => m.id).filter(id => id.startsWith('gpt')).sort();
     }
 
-    async fetch(model: string, messages: any[], toolSchemas: any[]): Promise<LLMResponse> {
+    async fetch(model: string, messages: ChatMessage[], toolSchemas: any[]): Promise<LLMResponse> {
         const formattedTools: OpenAI.Chat.Completions.ChatCompletionTool[] = toolSchemas.map(schema => ({
             type: "function" as const,
             function: {

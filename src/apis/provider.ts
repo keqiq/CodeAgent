@@ -1,3 +1,7 @@
+export interface ChatMessage {
+    role: 'user' | 'assistant' | 'system';
+    content: string;
+}
 
 export interface LLMResponse {
     text: string | null;
@@ -10,6 +14,6 @@ export interface LLMResponse {
 
 export abstract class LLMProvider {
     abstract getModels(): Promise<string[]>;
-    abstract fetch(model: string, messages: any[], toolSchemas: any[]): Promise<LLMResponse>;
+    abstract fetch(model: string, messages: ChatMessage[], toolSchemas: any[]): Promise<LLMResponse>;
 }
 

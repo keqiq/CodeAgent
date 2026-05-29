@@ -1,9 +1,30 @@
 import { searchSchemas, executeGlob, executeGrep } from "./search";
 import { fileSchemas, executeRead, executeWrite, executeEdit } from "./files";
 
-export const allToolSchemas = [
-    searchSchemas,
-    fileSchemas,
+export interface ToolProperty {
+    type: string;
+    description?: string;
+    enum?: string[];
+}
+
+export interface ToolParameters {
+    type: "object"; 
+    properties: Record<string, ToolProperty>;
+    required?: string[];
+}
+
+export interface ToolFunction {
+    name: string;
+    description: string;
+    parameters: ToolParameters;
+}
+export interface ToolSchema {
+    type: string, function: ToolFunction
+}
+
+export const allToolSchemas: ToolSchema[] = [
+    ...searchSchemas,
+    ...fileSchemas,
 ];
 
 export const toolRegistry: Record<string, (args: any) => Promise<string>> = {

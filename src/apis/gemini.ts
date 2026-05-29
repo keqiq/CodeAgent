@@ -1,12 +1,15 @@
 import { GoogleGenAI } from '@google/genai';
-import { LLMProvider, LLMResponse } from './provider';
+import { ChatMessage, LLMProvider, LLMResponse } from './provider';
+import { allToolSchemas } from '../tools';
 
 export class GeminiProvider extends LLMProvider {
     private client: GoogleGenAI;
+    private geminiTools: any;
 
     constructor(apiKey: string) {
         super();
         this.client = new GoogleGenAI({ apiKey });
+        this.geminiTools = this.parseTools();
     }
 
     async getModels(): Promise<string[]> {
@@ -24,13 +27,30 @@ export class GeminiProvider extends LLMProvider {
         return modelNames.sort();
     }
 
-    async fetch(model: string, messages: any[], toolSchemas: any[]): Promise<LLMResponse> {
+    private parseTools() {
+        const declarations = allToolSchemas.map(t => ({
+            name: t.function.name,
+            description: t.function.description,
+            parameters: t.function.parameters
+        }));
+
+        return [{ functionDeclarations: declarations }];
+    }
+
+    async fetch(model: string, messages: ChatMessage[], toolSchemas: any[]): Promise<LLMResponse> {
+
+        const geminiMessages = messages.map(msg => {
+            return {
+                role: msg.role === 'assistant' ? 'model' : 'user',
+                parts: [{ text: msg.content}]
+            };
+        });
 
         const response = await this.client.models.generateContent({
             model: model,
-            contents: messages,
+            contents: geminiMessages,
             config: {
-                tools: [{ functionDeclarations: toolSchemas}],
+                tools: this.geminiTools,
                 systemInstruction: "You are an expert AI coding assistant inside VS Code."
             }
         });

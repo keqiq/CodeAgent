@@ -1,28 +1,35 @@
 import * as vscode from 'vscode';
 import { getFileContent } from '../utils/workspace';
+import { ToolSchema } from '.';
 
-export const searchSchemas = [
+export const searchSchemas: ToolSchema[] = [
     {
-        name: "glob",
-        description: "Find files in the current workspace matching a glob pattern.",
-        parameters: {
-            type: "object",
-            properties: {
-                pattern: { type: "string", description: "Glob pattern (e.g., 'src/**/*.ts')."}
-            },
-            required: ["pattern"]
+        type: "function",
+        function: {
+            name: "glob",
+            description: "Find files in the current workspace matching a glob pattern.",
+            parameters: {
+                type: "object",
+                properties: {
+                    pattern: { type: "string", description: "Glob pattern (e.g., 'src/**/*.ts')."}
+                },
+                required: ["pattern"]
+            }
         }
     },
     {
-        name: "grep",
-        description: "Search for a regular expression pattern inside files.",
-        parameters: {
-            type: "object",
-            properties: {
-                query: { type: "string", description: "The regex pattern to search for."},
-                filePattern: { type: "string", description: "Optional glob pattern (default: '**/*')."}
-            },
-            required: ["query"]
+        type: "function",
+        function: {
+            name: "grep",
+            description: "Search for a regular expression pattern inside files.",
+            parameters: {
+                type: "object",
+                properties: {
+                    query: { type: "string", description: "The regex pattern to search for."},
+                    filePattern: { type: "string", description: "Optional glob pattern (default: '**/*')."}
+                },
+                required: ["query"]
+            }
         }
     }
 
