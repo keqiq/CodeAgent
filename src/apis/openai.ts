@@ -1,13 +1,14 @@
 import OpenAI from 'openai';
 import { ChatMessage, LLMProvider, LLMResponse } from './provider';
-
+import { allToolSchemas } from '../tools';
 
 export class OpenAIProvider extends LLMProvider {
     private client: OpenAI;
-
+    private GPTTools: any;
     constructor(apiKey: string) {
         super();
         this.client = new OpenAI({ apiKey });
+        this.GPTTools = allToolSchemas;
     }
 
     async getModels(): Promise<string[]> {
@@ -16,20 +17,24 @@ export class OpenAIProvider extends LLMProvider {
         return response.data.map(m => m.id).filter(id => id.startsWith('gpt')).sort();
     }
 
-    async fetch(model: string, messages: ChatMessage[], toolSchemas: any[]): Promise<LLMResponse> {
-        const formattedTools: OpenAI.Chat.Completions.ChatCompletionTool[] = toolSchemas.map(schema => ({
-            type: "function" as const,
-            function: {
-                name: schema.name,
-                description: schema.description,
-                parameters: schema.parameters
-            }
-        }));
+    private parseTools() {
+
+    }
+
+    async fetch(model: string, messages: ChatMessage[]): Promise<LLMResponse> {
+        // const formattedTools: OpenAI.Chat.Completions.ChatCompletionTool[] = toolSchemas.map(schema => ({
+        //     type: "function" as const,
+        //     function: {
+        //         name: schema.name,
+        //         description: schema.description,
+        //         parameters: schema.parameters
+        //     }
+        // }));
 
         const response = await this.client.chat.completions.create({
             model: model,
             messages: messages as any,
-            tools: formattedTools
+            tools: this.GPTTools
         })
 
         const action = response.choices[0];

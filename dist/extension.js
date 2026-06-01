@@ -22242,7 +22242,7 @@ __export(extension_exports, {
 module.exports = __toCommonJS(extension_exports);
 var vscode5 = __toESM(require("vscode"));
 
-// src/Sidebar.ts
+// src/main.ts
 var vscode4 = __toESM(require("vscode"));
 var fs3 = __toESM(require("fs"));
 
@@ -40822,7 +40822,16 @@ var vscode2 = __toESM(require("vscode"));
 
 // src/utils/workspace.ts
 var vscode = __toESM(require("vscode"));
+function getWorkspaceUri(filePath) {
+  const folders = vscode.workspace.workspaceFolders;
+  if (!folders || folders.length === 0) throw new Error("No workspace open");
+  return vscode.Uri.joinPath(folders[0].uri, filePath);
+}
 var textDecoder = new TextDecoder("utf-8");
+async function getFileContent(uri) {
+  const uint8Array = await vscode.workspace.fs.readFile(uri);
+  return textDecoder.decode(uint8Array);
+}
 
 // src/tools/search.ts
 var searchSchemas = [
@@ -40856,7 +40865,41 @@ var searchSchemas = [
     }
   }
 ];
+async function executeGlob(pattern) {
+  const exludePattern = "{**/node_modules/**,**/.git/**,**/dist/**}";
+  const uris = await vscode2.workspace.findFiles(pattern, exludePattern, 1e3);
+  if (uris.length === 0) {
+    return "No files found.";
+  }
+  return uris.map((uri) => vscode2.workspace.asRelativePath(uri)).join("\n");
+}
 var textDecoder2 = new TextDecoder("utf-8");
+async function executeGrep(query, filePattern = "**/*") {
+  let regex;
+  try {
+    regex = new RegExp(query);
+  } catch (e2) {
+    return `Error: Invalid regex : ${e2}`;
+  }
+  const excludePattern = "{**/node_modules/**,**/.git/**,**/dist/**,**/*.{png,jpg,jpeg,ico,bin}}";
+  const uris = await vscode2.workspace.findFiles(filePattern, excludePattern, 1e3);
+  const results = [];
+  for (const uri of uris) {
+    try {
+      const content = await getFileContent(uri);
+      const lines = content.split("\n");
+      for (let i2 = 0; i2 < lines.length; i2++) {
+        if (regex.test(lines[i2])) {
+          results.push(`${vscode2.workspace.asRelativePath(uri)}:${i2 + 1}:${lines[i2].trim()}`);
+        }
+      }
+      ;
+    } catch (e2) {
+      continue;
+    }
+  }
+  return results.length > 0 ? results.slice(0, 500).join("\n") : "No matches found.";
+}
 
 // src/tools/files.ts
 var vscode3 = __toESM(require("vscode"));
@@ -40909,12 +40952,61 @@ var fileSchemas = [
 ];
 var textDecoder3 = new TextDecoder("utf-8");
 var textEncoder = new TextEncoder();
+async function executeRead(filePath) {
+  try {
+    const fileUri = getWorkspaceUri(filePath);
+    const uint8Array = await vscode3.workspace.fs.readFile(fileUri);
+    return textDecoder3.decode(uint8Array);
+  } catch (e2) {
+    return `Error reading file: ${e2}`;
+  }
+}
+async function executeWrite(filePath, content) {
+  try {
+    const fileUri = getWorkspaceUri(filePath);
+    const uint8Array = textEncoder.encode(content);
+    await vscode3.workspace.fs.writeFile(fileUri, uint8Array);
+    return `Successfully wrote to ${filePath}`;
+  } catch (e2) {
+    return `Error writing file: ${e2}`;
+  }
+}
+var normalize = (str2) => str2.replace(/\r\n/g, "\n").replace(/[ \t]+/g, " ").trim();
+async function executeEdit(filePath, oldText, newText) {
+  try {
+    const fileUri = getWorkspaceUri(filePath);
+    const rawFileContent = await getFileContent(fileUri);
+    const fileContent = rawFileContent.replace(/\r\n/g, "\n");
+    const searchOldText = oldText.replace(/\r\n/g, "\n");
+    const applyNewText = newText.replace(/\r\n/g, "\n");
+    if (fileContent.includes(searchOldText)) {
+      const updatedContent = fileContent.replace(searchOldText, applyNewText);
+      await vscode3.workspace.fs.writeFile(fileUri, textEncoder.encode(updatedContent));
+      return `Successfully edited ${filePath} with strict matching.`;
+    }
+    const normalizedFile = normalize(fileContent);
+    const normalizedOldText = normalize(oldText);
+    if (normalizedFile.includes(normalizedOldText)) {
+      return "Error: oldText was found, but the indentation or line breaks did not match the file perfectly. Please use readFile to check the exact whitespace and try again.";
+    }
+    return "Error: oldText was not found in the file at all. Ensure you are targeting the right code.";
+  } catch (e2) {
+    return `Error editing file: ${e2}`;
+  }
+}
 
 // src/tools/index.ts
 var allToolSchemas = [
   ...searchSchemas,
   ...fileSchemas
 ];
+var toolRegistry = {
+  "glob": async (args) => await executeGlob(args.pattern),
+  "grep": async (args) => await executeGrep(args.query, args.filePattern),
+  "read": async (args) => await executeRead(args.filePath),
+  "write": async (args) => await executeWrite(args.filePath, args.content),
+  "edit": async (args) => await executeEdit(args.filePath, args.oldText, args.newText)
+};
 
 // src/apis/gemini.ts
 var GeminiProvider = class extends LLMProvider {
@@ -40944,7 +41036,7 @@ var GeminiProvider = class extends LLMProvider {
     }));
     return [{ functionDeclarations: declarations }];
   }
-  async fetch(model, messages, toolSchemas) {
+  async fetch(model, messages) {
     const geminiMessages = messages.map((msg) => {
       return {
         role: msg.role === "assistant" ? "model" : "user",
@@ -50675,27 +50767,23 @@ OpenAI.Videos = Videos;
 // src/apis/openai.ts
 var OpenAIProvider = class extends LLMProvider {
   client;
+  GPTTools;
   constructor(apiKey) {
     super();
     this.client = new OpenAI({ apiKey });
+    this.GPTTools = allToolSchemas;
   }
   async getModels() {
     const response = await this.client.models.list();
     return response.data.map((m2) => m2.id).filter((id) => id.startsWith("gpt")).sort();
   }
-  async fetch(model, messages, toolSchemas) {
-    const formattedTools = toolSchemas.map((schema) => ({
-      type: "function",
-      function: {
-        name: schema.name,
-        description: schema.description,
-        parameters: schema.parameters
-      }
-    }));
+  parseTools() {
+  }
+  async fetch(model, messages) {
     const response = await this.client.chat.completions.create({
       model,
       messages,
-      tools: formattedTools
+      tools: this.GPTTools
     });
     const action = response.choices[0];
     const reason = action.finish_reason;
@@ -50736,13 +50824,24 @@ var LLMFactory = class {
   }
 };
 
-// src/Sidebar.ts
+// src/main.ts
 var Sidebar = class {
   constructor(_context) {
     this._context = _context;
   }
   _context;
   _view;
+  MAX_TURN_COUNT = 15;
+  chatHistory = [
+    {
+      role: "system",
+      content: `You are an autonomous, expert software engineering agent integrated into VS Code. 
+                      You have access to tools that can search, read, write, and edit files in the user's workspace.
+                      When a user asks you to find a bug or fix a problem, DO NOT ask them for the file name if you can search for it yourself. 
+                      Proactively use your 'glob' and 'grep' tools to explore the workspace, find the relevant code, read it, and edit it to fix the issue. 
+                      Always explain your thought process before executing a tool.`
+    }
+  ];
   async getModelsFromProvider(provider, apiKey) {
     const providerInstance = LLMFactory.create(provider, apiKey);
     const models = await providerInstance.getModels();
@@ -50751,6 +50850,72 @@ var Sidebar = class {
   async getAPIKey(provider) {
     const secretKey = `${provider.toUpperCase()}_API_KEY`;
     return await this._context.secrets.get(secretKey);
+  }
+  post(message) {
+    this._view?.webview.postMessage(message);
+  }
+  async runAgentTurn(provider, model, userMessage) {
+    const apiKey = await this.getAPIKey(provider);
+    if (!apiKey) {
+      vscode4.window.showErrorMessage(`No API key for ${provider}`);
+      return;
+    }
+    try {
+      const providerInstance = LLMFactory.create(provider, apiKey);
+      this.chatHistory.push({ role: "user", content: userMessage });
+      let keepGoing = true;
+      let turnCount = 0;
+      let hasStartedToolGroup = false;
+      let toolsRunThisTurn = 0;
+      while (keepGoing && turnCount < this.MAX_TURN_COUNT) {
+        turnCount++;
+        const llmResponse = await providerInstance.fetch(model, this.chatHistory);
+        if (llmResponse.text) {
+          this.chatHistory.push({ role: "assistant", content: llmResponse.text });
+          this.post({ type: "receiveMessage", text: llmResponse.text });
+        }
+        if (llmResponse.tool_calls && llmResponse.tool_calls.length > 0) {
+          if (!hasStartedToolGroup) {
+            hasStartedToolGroup = true;
+            this.post({ type: "startToolGroup" });
+          }
+          this.chatHistory.push({
+            role: "assistant",
+            content: JSON.stringify(llmResponse.tool_calls)
+          });
+          for (const toolCall of llmResponse.tool_calls) {
+            toolsRunThisTurn++;
+            const toolName = toolCall.name;
+            const toolArgs = toolCall.arguments;
+            this.post({
+              type: "updateTool",
+              status: "running",
+              toolName,
+              args: toolArgs
+            });
+            let result = "";
+            if (toolRegistry[toolName]) {
+              try {
+                result = await toolRegistry[toolName](toolArgs);
+                this.post({ type: "updateTool", status: "success" });
+              } catch (e2) {
+                result = `Error executing ${toolName}: ${e2}`;
+                this.post({ type: "updateTool", status: "error", error: String(e2) });
+              }
+            } else {
+              result = `Error: Tool '${toolName}' is not registered`;
+              this.post({ type: "updateTool", status: "error", error: "Invalid tool call" });
+            }
+            this.chatHistory.push({ role: "system", content: `${toolName} result: ${result}` });
+          }
+        } else {
+          keepGoing = false;
+        }
+      }
+      this.post({ type: "endToolGroup", totalCount: toolsRunThisTurn });
+    } catch (e2) {
+      this.post({ type: "receiveMessage", text: `\u274C Error: ${e2}` });
+    }
   }
   resolveWebviewView(webviewView, context, token) {
     this._view = webviewView;
@@ -50770,7 +50935,7 @@ var Sidebar = class {
               try {
                 const providerInstance = LLMFactory.create(savedProvider, apiKey);
                 const models = await providerInstance.getModels();
-                webviewView.webview.postMessage({
+                this.post({
                   type: "restoreState",
                   provider: savedProvider,
                   model: savedModel,
@@ -50787,16 +50952,16 @@ var Sidebar = class {
             await this._context.globalState.update("selectedProvider", data.provider);
             const apiKey = await this.getAPIKey(data.provider);
             if (!apiKey) {
-              webviewView.webview.postMessage({ type: "requestApiKey", provider: data.provider });
+              this.post({ type: "requestApiKey", provider: data.provider });
               return;
             }
-            webviewView.webview.postMessage({
+            this.post({
               type: "setModels",
               models: await this.getModelsFromProvider(data.provider, apiKey)
             });
           } catch (e2) {
             vscode4.window.showErrorMessage(`Failed to fetch models: ${e2}`);
-            webviewView.webview.postMessage({ type: "error" });
+            this.post({ type: "error" });
           }
           break;
         }
@@ -50804,13 +50969,13 @@ var Sidebar = class {
           try {
             const secretKey = `${data.provider.toUpperCase()}_API_KEY`;
             await this._context.secrets.store(secretKey, data.key);
-            webviewView.webview.postMessage({
+            this.post({
               type: "setModels",
               models: await this.getModelsFromProvider(data.provider, data.key)
             });
           } catch (e2) {
             vscode4.window.showErrorMessage(`Invalid key or Failed to fetch models: ${e2}`);
-            webviewView.webview.postMessage({ type: "requestApiKey", provider: data.provider });
+            this.post({ type: "requestApiKey", provider: data.provider });
           }
           break;
         }
@@ -50822,26 +50987,7 @@ var Sidebar = class {
           if (!data.value) {
             return;
           }
-          const apiKey = await this.getAPIKey(data.provider);
-          if (!apiKey) {
-            vscode4.window.showErrorMessage(`No API key for ${data.provider}`);
-            return;
-          }
-          try {
-            const providerInstance = LLMFactory.create(data.provider, apiKey);
-            const conversationHistory = [
-              { role: "user", content: data.value }
-            ];
-            const llmResponse = await providerInstance.fetch(data.model, conversationHistory, []);
-            if (llmResponse.text) {
-              webviewView.webview.postMessage({ type: "receiveMessage", text: llmResponse.text });
-            }
-          } catch (e2) {
-            webviewView.webview.postMessage({
-              type: "receiveMessage",
-              text: `Error: could not fetch response ${e2}`
-            });
-          }
+          this.runAgentTurn(data.provider, data.model, data.value);
           break;
         }
       }
@@ -50849,8 +50995,11 @@ var Sidebar = class {
   }
   _getHtml() {
     const htmlPath = vscode4.Uri.joinPath(this._context.extensionUri, "media", "sidebar.html");
+    const cssPath = vscode4.Uri.joinPath(this._context.extensionUri, "media", "sidebar.css");
     try {
-      const html = fs3.readFileSync(htmlPath.fsPath, "utf-8");
+      let html = fs3.readFileSync(htmlPath.fsPath, "utf-8");
+      const styleUri = this._view.webview.asWebviewUri(cssPath);
+      html = html.replace("{{styleUri}}", styleUri.toString());
       return html;
     } catch (e2) {
       vscode4.window.showErrorMessage(`Error loading sidebar html: ${e2}`);

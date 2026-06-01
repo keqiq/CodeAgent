@@ -81,11 +81,15 @@ const normalize = (str: string) => str.replace(/\r\n/g, '\n').replace(/[ \t]+/g,
 export async function executeEdit(filePath: string, oldText: string, newText: string) {
     try {
         const fileUri = getWorkspaceUri(filePath);
-        const fileContent = await getFileContent(fileUri);
+        const rawFileContent = await getFileContent(fileUri);
+
+        const fileContent = rawFileContent.replace(/\r\n/g, '\n');
+        const searchOldText = oldText.replace(/\r\n/g, '\n');
+        const applyNewText = newText.replace(/\r\n/g, '\n');
 
         // Try stict matching first
-        if (fileContent.includes(oldText)) {
-            const updatedContent =fileContent.replace(oldText, newText);
+        if (fileContent.includes(searchOldText)) {
+            const updatedContent = fileContent.replace(searchOldText, applyNewText);
             await vscode.workspace.fs.writeFile(fileUri, textEncoder.encode(updatedContent));
             return `Successfully edited ${filePath} with strict matching.`;
         }

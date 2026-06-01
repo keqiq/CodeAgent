@@ -14,6 +14,6 @@ export interface LLMResponse {
 
 export abstract class LLMProvider {
     abstract getModels(): Promise<string[]>;
-    abstract fetch(model: string, messages: ChatMessage[], toolSchemas: any[]): Promise<LLMResponse>;
+    abstract fetch(model: string, messages: ChatMessage[]): Promise<LLMResponse>;
 }
 

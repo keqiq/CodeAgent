@@ -3,7 +3,7 @@
 import * as vscode from 'vscode';
 import { allToolSchemas, toolRegistry } from './tools';
 import { LLMFactory } from './apis/factory';
-import { Sidebar } from './Sidebar';
+import { Sidebar } from './main';
 
 declare const console: any;
 

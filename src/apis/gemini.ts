@@ -37,7 +37,7 @@ export class GeminiProvider extends LLMProvider {
         return [{ functionDeclarations: declarations }];
     }
 
-    async fetch(model: string, messages: ChatMessage[], toolSchemas: any[]): Promise<LLMResponse> {
+    async fetch(model: string, messages: ChatMessage[]): Promise<LLMResponse> {
 
         const geminiMessages = messages.map(msg => {
             return {
