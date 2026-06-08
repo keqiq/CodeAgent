@@ -9,7 +9,40 @@ body {
     background-color: var(--vscode-sideBar-background);
     color: var(--vscode-foreground);
 }
+.chat-header {
+    position: relative; 
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--vscode-widget-border);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--vscode-descriptionForeground);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
 
+/* floating clear chat confirmation box */
+.floating-confirm {
+    display: none; 
+    position: absolute;
+    top: calc(100% + 4px); 
+    right: 8px; 
+    z-index: 1000;
+    width: 180px; 
+    padding: 10px;
+    background: var(--vscode-editorWidget-background);
+    border: 1px solid var(--vscode-widget-border);
+    border-radius: 6px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); 
+    flex-direction: column;
+    gap: 8px;
+}
+
+.floating-confirm.visible {
+    display: flex; 
+}
 /*chat history container*/
 .chat-container {
     flex: 1; 
@@ -184,12 +217,12 @@ input[type="password"] {
 
 /* --- MESSAGE STYLES --- */
 .message.agent {
-    align-self: flex-start;
-    background: transparent; /* Remove the bubble background */
-    border: none; /* Remove the border */
+    width: 100%;
+    box-sizing: border-box;
+    background: transparent; 
+    border: none; 
     color: var(--vscode-foreground);
-    max-width: 100%; /* Take up the full width of the sidebar */
-    padding: 4px 0; /* Reduce padding since there is no border */
+    padding: 4px 0;
 }
 
 /* --- MARKDOWN FORMATTING --- */

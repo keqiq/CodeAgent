@@ -41036,16 +41036,49 @@ var GeminiProvider = class extends LLMProvider {
     }));
     return [{ functionDeclarations: declarations }];
   }
-  async fetch(model, messages) {
-    const geminiMessages = messages.map((msg) => {
+  parseMessages(messages) {
+    return messages.map((msg) => {
       return {
         role: msg.role === "assistant" ? "model" : "user",
         parts: [{ text: msg.content }]
       };
     });
+  }
+  async *fetchStream(model, history) {
+    const stream = await this.client.models.generateContentStream({
+      model,
+      contents: this.parseMessages(history),
+      config: {
+        tools: this.geminiTools,
+        systemInstruction: "You are an expert AI coding assistant inside VS Code."
+      }
+    });
+    let fullText = "";
+    let toolCallsBuffer = [];
+    for await (const chunk of stream) {
+      if (chunk.functionCalls) {
+        for (const call of chunk.functionCalls) {
+          toolCallsBuffer.push({
+            name: call.name || "",
+            arguments: call.args
+          });
+        }
+        return { text: null, tool_calls: toolCallsBuffer };
+      }
+      if (chunk.text) {
+        fullText += chunk.text;
+        yield chunk.text;
+      }
+    }
+    return {
+      text: fullText,
+      tool_calls: null
+    };
+  }
+  async fetch(model, messages) {
     const response = await this.client.models.generateContent({
       model,
-      contents: geminiMessages,
+      contents: this.parseMessages(messages),
       config: {
         tools: this.geminiTools,
         systemInstruction: "You are an expert AI coding assistant inside VS Code."
@@ -50828,20 +50861,24 @@ var LLMFactory = class {
 var Sidebar = class {
   constructor(_context) {
     this._context = _context;
+    const savedHistory = _context.workspaceState.get("agentChatHistory");
+    if (savedHistory && savedHistory.length > 0) this.chatHistory = savedHistory;
+    else this.chatHistory = this.getInitialChatMessages();
   }
   _context;
   _view;
   MAX_TURN_COUNT = 15;
-  chatHistory = [
-    {
+  chatHistory;
+  getInitialChatMessages() {
+    return [{
       role: "system",
       content: `You are an autonomous, expert software engineering agent integrated into VS Code. 
                       You have access to tools that can search, read, write, and edit files in the user's workspace.
                       When a user asks you to find a bug or fix a problem, DO NOT ask them for the file name if you can search for it yourself. 
                       Proactively use your 'glob' and 'grep' tools to explore the workspace, find the relevant code, read it, and edit it to fix the issue. 
                       Always explain your thought process before executing a tool.`
-    }
-  ];
+    }];
+  }
   async getModelsFromProvider(provider, apiKey) {
     const providerInstance = LLMFactory.create(provider, apiKey);
     const models = await providerInstance.getModels();
@@ -50854,6 +50891,9 @@ var Sidebar = class {
   post(message) {
     this._view?.webview.postMessage(message);
   }
+  async saveChatHistory() {
+    await this._context.workspaceState.update("agentChatHistory", this.chatHistory);
+  }
   async runAgentTurn(provider, model, userMessage) {
     const apiKey = await this.getAPIKey(provider);
     if (!apiKey) {
@@ -50863,27 +50903,36 @@ var Sidebar = class {
     try {
       const providerInstance = LLMFactory.create(provider, apiKey);
       this.chatHistory.push({ role: "user", content: userMessage });
+      await this.saveChatHistory();
       let keepGoing = true;
       let turnCount = 0;
       let hasStartedToolGroup = false;
       let toolsRunThisTurn = 0;
       while (keepGoing && turnCount < this.MAX_TURN_COUNT) {
         turnCount++;
-        const llmResponse = await providerInstance.fetch(model, this.chatHistory);
-        if (llmResponse.text) {
-          this.chatHistory.push({ role: "assistant", content: llmResponse.text });
-          this.post({ type: "receiveMessage", text: llmResponse.text });
+        const streamGenerator = providerInstance.fetchStream(model, this.chatHistory);
+        let streamResult = await streamGenerator.next();
+        while (!streamResult.done) {
+          if (streamResult.value) {
+            this.post({ type: "streamChunk", chunk: streamResult.value });
+          }
+          streamResult = await streamGenerator.next();
         }
-        if (llmResponse.tool_calls && llmResponse.tool_calls.length > 0) {
+        this.post({ type: "streamEnd" });
+        const finalResponse = streamResult.value;
+        if (finalResponse && finalResponse.text) {
+          this.chatHistory.push({ role: "assistant", content: finalResponse.text });
+        }
+        if (finalResponse && finalResponse.tool_calls) {
           if (!hasStartedToolGroup) {
             hasStartedToolGroup = true;
             this.post({ type: "startToolGroup" });
           }
           this.chatHistory.push({
             role: "assistant",
-            content: JSON.stringify(llmResponse.tool_calls)
+            content: JSON.stringify(finalResponse.tool_calls)
           });
-          for (const toolCall of llmResponse.tool_calls) {
+          for (const toolCall of finalResponse.tool_calls) {
             toolsRunThisTurn++;
             const toolName = toolCall.name;
             const toolArgs = toolCall.arguments;
@@ -50912,9 +50961,11 @@ var Sidebar = class {
           keepGoing = false;
         }
       }
-      this.post({ type: "endToolGroup", totalCount: toolsRunThisTurn });
+      if (hasStartedToolGroup) this.post({ type: "endToolGroup", totalCount: toolsRunThisTurn });
+      await this.saveChatHistory();
     } catch (e2) {
       this.post({ type: "receiveMessage", text: `\u274C Error: ${e2}` });
+      this.post({ type: "streamEnd" });
     }
   }
   resolveWebviewView(webviewView, context, token) {
@@ -50929,6 +50980,7 @@ var Sidebar = class {
         case "webviewReady": {
           const savedProvider = this._context.globalState.get("selectedProvider");
           const savedModel = this._context.globalState.get("selectedModel");
+          this.post({ type: "restoreHistory", history: this.chatHistory });
           if (savedProvider) {
             const apiKey = await this.getAPIKey(savedProvider);
             if (apiKey) {
@@ -50988,6 +51040,11 @@ var Sidebar = class {
             return;
           }
           this.runAgentTurn(data.provider, data.model, data.value);
+          break;
+        }
+        case "clearChat": {
+          this.chatHistory = this.getInitialChatMessages();
+          await this._context.workspaceState.update("agentChatHistory", this.chatHistory);
           break;
         }
       }

@@ -9,7 +9,23 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 </head>
 <body>
-    
+    <div class="chat-header">
+        <span></span>
+        
+        <button id="clearChatBtn" class="icon-btn" title="Clear Chat History">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+                <path fill-rule="evenodd" clip-rule="evenodd" d="M10 3h3v1h-1v9l-1 1H4l-1-1V4H2V3h3V2a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v1zM9 2H6v1h3V2zM4 13h7V4H4v9zm2-8H5v7h1V5zm1 0h1v7H7V5zm2 0h1v7H9V5z" />
+            </svg>
+        </button>
+
+        <div id="clearConfirmContainer" class="floating-confirm">
+            <label style="font-size: 11px; font-weight: bold; text-align: center; color: var(--vscode-foreground);">Clear all history?</label>
+            <div class="api-key-row">
+                <button id="cancelClearBtn" class="send-btn" style="flex: 1; background: var(--vscode-button-secondaryBackground); color: var(--vscode-button-secondaryForeground); justify-content: center;">Cancel</button>
+                <button id="confirmClearBtn" class="send-btn" style="flex: 1; background: var(--vscode-errorForeground); color: white; justify-content: center;">Clear</button>
+            </div>
+        </div>
+    </div>
     <div class="chat-container" id="chatContainer"></div>
 
     <div class="input-wrapper">
@@ -53,19 +69,27 @@
     <script>
         const vscode = acquireVsCodeApi();
         vscode.postMessage({ type: 'webviewReady' });
-
+        
         const providerSelect = document.getElementById('providerSelect');
         const apiKeyBtn = document.getElementById('apiKeyBtn');
         const modelSelect = document.getElementById('modelSelect');
         const sendBtn = document.getElementById('sendBtn');
         const promptInput = document.getElementById('prompt');
-
+        
         const apiKeyContainer = document.getElementById('apiKeyContainer');
         const apiKeyLabel = document.getElementById('apiKeyLabel');
         const apiKeyInput = document.getElementById('apiKeyInput');
         const saveKeyBtn = document.getElementById('saveKeyBtn');
-
+        
         const chatContainer = document.getElementById('chatContainer');
+        
+        const clearChatBtn = document.getElementById('clearChatBtn');
+        const clearConfirmContainer = document.getElementById('clearConfirmContainer');
+        const cancelClearBtn = document.getElementById('cancelClearBtn');
+        const confirmClearBtn = document.getElementById('confirmClearBtn');
+
+        let activeStreamDiv = null;
+        let activeStreamRawText = "";
 
         let activeToolGroup = null;
         let activeToolSummary = null;
@@ -304,6 +328,19 @@
         // Listen for backend events
         window.addEventListener('message', event => {
             const message = event.data;
+
+            // On restart, restore chat history
+            if (message.type === 'restoreHistory') {
+                chatContainer.innerHTML = '';
+
+                message.history.forEach(msg => {
+                    if (msg.role === 'user') appendMessage('user', msg.content);
+                    else if (msg.role === 'assistant' && !msg.content.startsWith('[')) {
+                        appendMessage('agent', msg.content);
+                    }
+                });
+                scrollToTop();
+            }
             
             // On restart, restore provider and model choice from last session
             if  (message.type === 'restoreState') {
@@ -335,6 +372,38 @@
                 appendMessage('agent', message.text);
             }
 
+            // Initialize and set div for agent response streaming
+            else if (message.type === 'streamStart') {
+                
+            }
+            
+            // Accumulate response stream and reparse formatting
+            else if (message.type === 'streamChunk') {
+                if (!activeStreamDiv) {
+                    removeTypingIndicator();
+                    activeStreamDiv = document.createElement('div');
+                    activeStreamDiv.classList.add('message', 'agent');
+                    chatContainer.appendChild(activeStreamDiv);
+                }
+
+                activeStreamRawText += message.chunk;
+                activeStreamDiv.innerHTML = parseMarkdown(activeStreamRawText);
+                scrollToTop();
+            }
+
+            // Finalize and apply syntax highlighting
+            else if (message.type === 'streamEnd') {
+                if (!activeStreamDiv) return;
+
+                activeStreamDiv.querySelectorAll('pre code').forEach((block) => {
+                    hljs.highlightElement(block);
+                });
+
+                activeStreamDiv = null;
+                activeStreamRawText = "";
+            }
+
+
             else if (message.type === 'startToolGroup') makeCurrentToolGroup(message)
 
             else if (message.type === 'updateTool') updateCurrentToolGroup(message);
@@ -362,6 +431,27 @@
                 promptInput.style.height = '20px';
                 sendBtn.disabled = true;
             }
+        });
+
+        clearChatBtn.addEventListener('click', () => {
+                clearConfirmContainer.classList.toggle('visible');
+            });
+
+        // Hide if they cancel
+        cancelClearBtn.addEventListener('click', () => {
+            clearConfirmContainer.classList.remove('visible');
+        });
+
+        // Execute the wipe
+        confirmClearBtn.addEventListener('click', () => {
+            // 1. Hide the box
+            clearConfirmContainer.classList.remove('visible');
+            
+            // 2. Instantly wipe the frontend UI
+            chatContainer.innerHTML = '';
+            
+            // 3. Tell the backend to wipe the saved state
+            vscode.postMessage({ type: 'clearChat' });
         });
     </script>
 </body>

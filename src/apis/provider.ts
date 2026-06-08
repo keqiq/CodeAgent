@@ -15,5 +15,6 @@ export interface LLMResponse {
 export abstract class LLMProvider {
     abstract getModels(): Promise<string[]>;
     abstract fetch(model: string, messages: ChatMessage[]): Promise<LLMResponse>;
+    abstract fetchStream(model: string, history: ChatMessage[]): AsyncGenerator<string, LLMResponse, unknown>;
 }
 

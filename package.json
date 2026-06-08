@@ -12,18 +12,12 @@
   "activationEvents": [],
   "main": "./dist/extension.js",
   "contributes": {
-    "commands": [
-      {
-        "command": "CodeAgent.ask",
-        "title": "CA Prompt"
-      }
-    ],
     "viewsContainers": {
       "activitybar": [
         {
           "id": "codeagent-container",
           "title": "CodeAgent",
-          "icon": "$(hubot)" 
+          "icon": "$(hubot)"
         }
       ]
     },
@@ -65,7 +59,9 @@
   },
   "dependencies": {
     "@google/genai": "^2.6.0",
+    "@lancedb/lancedb": "^0.30.0",
     "dotenv": "^17.4.2",
-    "openai": "^6.39.0"
+    "openai": "^6.39.0",
+    "web-tree-sitter": "^0.26.9"
   }
 }

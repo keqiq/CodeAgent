@@ -37,18 +37,58 @@ export class GeminiProvider extends LLMProvider {
         return [{ functionDeclarations: declarations }];
     }
 
-    async fetch(model: string, messages: ChatMessage[]): Promise<LLMResponse> {
-
-        const geminiMessages = messages.map(msg => {
+    private parseMessages(messages: ChatMessage[]) {
+        return messages.map(msg => {
             return {
                 role: msg.role === 'assistant' ? 'model' : 'user',
                 parts: [{ text: msg.content}]
             };
         });
+    }
+
+    async *fetchStream(model: string, history: ChatMessage[]): AsyncGenerator<string, LLMResponse, unknown> {
+        const stream = await this.client.models.generateContentStream({
+            model: model,
+            contents: this.parseMessages(history),
+            config: {
+                tools: this.geminiTools,
+                systemInstruction: "You are an expert AI coding assistant inside VS Code."
+            }
+        });
+
+        
+        let fullText = "";
+        let toolCallsBuffer: any[] = [];
+        
+        for await (const chunk of stream) {
+            if (chunk.functionCalls) {
+                for (const call of chunk.functionCalls) {
+                    toolCallsBuffer.push({
+                        name: call.name || "",
+                        arguments: call.args
+                    });
+                }
+
+                return { text: null, tool_calls: toolCallsBuffer };
+            }
+
+            if (chunk.text) {
+                fullText += chunk.text;
+                yield chunk.text;
+            }
+        }
+
+        return {
+            text: fullText,
+            tool_calls: null
+        };
+    }
+
+    async fetch(model: string, messages: ChatMessage[]): Promise<LLMResponse> {
 
         const response = await this.client.models.generateContent({
             model: model,
-            contents: geminiMessages,
+            contents: this.parseMessages(messages),
             config: {
                 tools: this.geminiTools,
                 systemInstruction: "You are an expert AI coding assistant inside VS Code."
