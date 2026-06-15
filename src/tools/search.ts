@@ -39,7 +39,7 @@ export async function executeGlob(pattern: string): Promise<string> {
     const exludePattern = '{**/node_modules/**,**/.git/**,**/dist/**}';
     const uris = await vscode.workspace.findFiles(pattern, exludePattern, 1000);
 
-    if (uris.length === 0) { return "No files found."; }
+    if (uris.length === 0) return "No files found.";
     return uris.map(uri => vscode.workspace.asRelativePath(uri)).join('\n');
 };
 
@@ -62,7 +62,7 @@ export async function executeGrep(query: string, filePattern: string = '**/*'): 
 
             for (let i = 0; i < lines.length; i++) {
                 if (regex.test(lines[i])) {
-                    results.push(`${vscode.workspace.asRelativePath(uri)}:${i + 1}:${lines[i].trim()}`)
+                    results.push(`${vscode.workspace.asRelativePath(uri)}:${i + 1}:${lines[i].trim()}`);
                 }
             };
         } catch(e) { continue; }

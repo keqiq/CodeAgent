@@ -1,43 +1,30 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
-import { LLMFactory } from './apis/factory';
-import { ChatMessage } from './apis/provider';
+import { ChatFactory } from './apis/chat/chatFactory';
+import { ChatMessage } from './apis/chat/chatProvider';
 import { toolRegistry } from './tools';
-import { VectorDB } from './vector/vectorDB';
+import { EmbedFactory } from './apis/embed/embedFactory';
+import { Indexer } from './indexing/indexer';
+
+declare const console: any;
 
 export class Sidebar implements vscode.WebviewViewProvider {
 
     private _view?: vscode.WebviewView;
-    private vectorDB?: VectorDB;
     private MAX_TURN_COUNT = 15;
 
-    private chatHistory: ChatMessage[] 
+    private chatHistory: ChatMessage[];
 
     constructor(private readonly context: vscode.ExtensionContext) {
         const savedHistory = context.workspaceState.get<ChatMessage[]>('agentChatHistory');
 
-        if (savedHistory && savedHistory.length > 0) this.chatHistory = savedHistory
-        else this.chatHistory = this.getInitialChatMessages()
-
-        this.initVectorDB();
-    }
-
-    private async initVectorDB() {
-        if (!this.context.storageUri) {
-            vscode.window.showWarningMessage("No active workspace. Limited Functionality");
-            return;
-        }
-
-        try {
-            this.vectorDB = await VectorDB.create(this.context);
-        } catch (e) {
-            vscode.window.showErrorMessage(`Failed to initialize code search index: ${e}`);
-        }
+        if (savedHistory && savedHistory.length > 0) this.chatHistory = savedHistory;
+        else this.chatHistory = this.getInitialChatMessages();
     }
 
     private getInitialChatMessages(): ChatMessage[] {
-        return [{ 
-            role: 'system', 
+        return [{
+            role: 'system',
             content: `You are an autonomous, expert software engineering agent integrated into VS Code. 
                       You have access to tools that can search, read, write, and edit files in the user's workspace.
                       When a user asks you to find a bug or fix a problem, DO NOT ask them for the file name if you can search for it yourself. 
@@ -47,13 +34,22 @@ export class Sidebar implements vscode.WebviewViewProvider {
     }
 
     private async getModelsFromProvider(provider: string, apiKey: string) {
-        const providerInstance = LLMFactory.create(provider, apiKey);
-        const models = await providerInstance.getModels();
-        return models
+        const providerInstance = ChatFactory.create(provider, apiKey);
+        return await providerInstance.getModels();
+    }
+
+    private async getEmbeddingModelsFromProvider(provider: string, apiKey: string) {
+        const providerInstance = EmbedFactory.create(provider, apiKey);
+        return await providerInstance.getModels();
     }
 
     private async getAPIKey(provider: string) {
         const secretKey = `${provider.toUpperCase()}_API_KEY`;
+        return await this.context.secrets.get(secretKey);
+    }
+
+    private async getEmbeddingAPIKey(provider: string) {
+        const secretKey = `${provider.toUpperCase()}_EMBEDDING_API_KEY`;
         return await this.context.secrets.get(secretKey);
     }
 
@@ -65,10 +61,10 @@ export class Sidebar implements vscode.WebviewViewProvider {
         const apiKey = await this.getAPIKey(provider);
 
         // This shouldn't happen as the send functin is disabled without apiKey
-        if (!apiKey) { vscode.window.showErrorMessage(`No API key for ${provider}`); return;}
+        if (!apiKey) { vscode.window.showErrorMessage(`No API key for ${provider}`); return; }
 
         try {
-            const providerInstance = LLMFactory.create(provider, apiKey);
+            const providerInstance = ChatFactory.create(provider, apiKey);
             this.chatHistory.push({ role: 'user', content: userMessage });
             await this.saveChatHistory();
 
@@ -93,10 +89,10 @@ export class Sidebar implements vscode.WebviewViewProvider {
                 }
 
                 this.post({ type: 'streamEnd' });
-                const finalResponse = streamResult.value as { text? : string, tool_calls?: any[] };
+                const finalResponse = streamResult.value as { text?: string, tool_calls?: any[] };
 
                 if (finalResponse && finalResponse.text) {
-                    this.chatHistory.push({ role: 'assistant', content:finalResponse.text });
+                    this.chatHistory.push({ role: 'assistant', content: finalResponse.text });
                 }
 
 
@@ -142,14 +138,14 @@ export class Sidebar implements vscode.WebviewViewProvider {
                                 this.post({ type: 'updateTool', status: 'success' });
                             } catch (e) {
                                 result = `Error executing ${toolName}: ${e}`;
-                                this.post({ type: 'updateTool', status: 'error', error: String(e) })
+                                this.post({ type: 'updateTool', status: 'error', error: String(e) });
                             }
                         } else {
                             result = `Error: Tool '${toolName}' is not registered`;
                             this.post({ type: 'updateTool', status: 'error', error: "Invalid tool call" });
                         }
 
-                        this.chatHistory.push({ role: 'system', content: `${toolName} result: ${result}` })
+                        this.chatHistory.push({ role: 'system', content: `${toolName} result: ${result}` });
                     }
 
                 } else {
@@ -157,11 +153,11 @@ export class Sidebar implements vscode.WebviewViewProvider {
                 }
             }
 
-            if (hasStartedToolGroup) this.post({ type: 'endToolGroup', totalCount: toolsRunThisTurn});
+            if (hasStartedToolGroup) this.post({ type: 'endToolGroup', totalCount: toolsRunThisTurn });
             await this.saveChatHistory();
 
         } catch (e) {
-            this.post({ type: 'receiveMessage', text: `❌ Error: ${e}`})
+            this.post({ type: 'receiveMessage', text: `❌ Error: ${e}` });
             this.post({ type: 'streamEnd' });
         }
     }
@@ -187,20 +183,41 @@ export class Sidebar implements vscode.WebviewViewProvider {
                     this.post({ type: 'restoreHistory', history: this.chatHistory });
 
                     if (savedProvider) {
-                        const apiKey = await this.getAPIKey(savedProvider)
+                        const apiKey = await this.getAPIKey(savedProvider);
                         if (apiKey) {
                             try {
-                                const providerInstance = LLMFactory.create(savedProvider, apiKey);
-                                const models = await providerInstance.getModels();
+                                const models = await this.getModelsFromProvider(savedProvider, apiKey);
                                 this.post({
                                     type: 'restoreState',
                                     provider: savedProvider,
                                     model: savedModel,
                                     models: models
-                                })
+                                });
                             } catch (e) {
 
                             }
+                        }
+                    }
+
+                    const indexingEnabled = this.context.globalState.get<boolean>('indexingEnabled') ?? false;
+                    const savedEmbeddingProvider = this.context.globalState.get<string>('selectedEmbeddingProvider');
+                    const savedEmbeddingModel = this.context.globalState.get<string>('selectedEmbeddingModel');
+
+                    if (savedEmbeddingProvider) {
+                        const embedApiKey = await this.getEmbeddingAPIKey(savedEmbeddingProvider);
+
+                        if (embedApiKey) {
+                            try {
+                                const models = await this.getEmbeddingModelsFromProvider(savedEmbeddingProvider, embedApiKey);
+                                this.post({
+                                    type: 'restoreIndexingState',
+                                    enabled: indexingEnabled,
+                                    provider: savedEmbeddingProvider,
+                                    model: savedEmbeddingModel,
+                                    models: models,
+                                    status: indexingEnabled ? 'Ready' : 'Disabled'
+                                }); 
+                            } catch (e) {}
                         }
                     }
                     break;
@@ -208,43 +225,47 @@ export class Sidebar implements vscode.WebviewViewProvider {
                 case 'fetchModels': {
                     try {
                         await this.context.globalState.update('selectedProvider', data.provider);
-                        
+
                         const apiKey = await this.getAPIKey(data.provider);
-                        
+
                         if (!apiKey) {
                             this.post({ type: 'requestApiKey', provider: data.provider });
                             return;
                         }
-                        this.post({ type: 'setModels',
-                            models: await this.getModelsFromProvider(data.provider, apiKey) })
-                            
-                        } catch (e) {
-                            vscode.window.showErrorMessage(`Failed to fetch models: ${e}`);
-                            this.post({ type: 'error' });
-                        }
-                        break;
+                        this.post({
+                            type: 'setModels',
+                            models: await this.getModelsFromProvider(data.provider, apiKey)
+                        });
+
+                    } catch (e) {
+                        vscode.window.showErrorMessage(`Failed to fetch models: ${e}`);
+                        this.post({ type: 'error' });
                     }
+                    break;
+                }
                 case 'saveApiKey': {
                     try {
                         const secretKey = `${data.provider.toUpperCase()}_API_KEY`;
                         await this.context.secrets.store(secretKey, data.key);
-                        
-                        this.post({ type: 'setModels',
-                            models: await this.getModelsFromProvider(data.provider, data.key) })
-                        } catch (e) {
-                            vscode.window.showErrorMessage(`Invalid key or Failed to fetch models: ${e}`);
-                            this.post({ type: 'requestApiKey', provider: data.provider });
-                        }
-                        break;
+
+                        this.post({
+                            type: 'setModels',
+                            models: await this.getModelsFromProvider(data.provider, data.key)
+                        });
+                    } catch (e) {
+                        vscode.window.showErrorMessage(`Invalid key or Failed to fetch models: ${e}`);
+                        this.post({ type: 'requestApiKey', provider: data.provider });
                     }
-                        
+                    break;
+                }
+
                 case 'saveModelPreference': {
                     await this.context.globalState.update('selectedModel', data.model);
                     break;
                 }
                 case 'askAgent': {
                     if (!data.value) { return; }
-                    this.runAgentTurn(data.provider, data.model, data.value)
+                    this.runAgentTurn(data.provider, data.model, data.value);
                     break;
                 }
                 case 'clearChat': {
@@ -252,13 +273,51 @@ export class Sidebar implements vscode.WebviewViewProvider {
                     await this.context.workspaceState.update('agentChatHistory', this.chatHistory);
                     break;
                 }
+                case 'setIndexingEnabled': {
+                    await this.context.globalState.update('indexingEnabled', data.enabled);
+                    break;
+                }
+                case 'fetchEmbeddingModels': {
+                    try {
+                        await this.context.globalState.update('selectedEmbeddingProvider', data.provider);
+                        const apiKey = await this.getEmbeddingAPIKey(data.provider);
+                        if (!apiKey) {
+                            this.post({ type: 'requestEmbeddingApiKey', provider: data.provider });
+                            return;
+                        }
+
+                        const models = await this.getEmbeddingModelsFromProvider(data.provider, apiKey);
+                        this.post({ type: 'setEmbeddingModels', models });
+                    } catch (e) {
+                        vscode.window.showErrorMessage(`Failed to fetch embedding models: ${e}`);
+                        this.post({ type: 'requestEmbeddingApiKey', provider: data.provider });
+                    }
+                    break;
+                }
+                case 'saveEmbeddingApiKey': {
+                    try {
+                        const secretKey = `${data.provider.toUpperCase()}_EMBEDDING_API_KEY`;
+                        await this.context.secrets.store(secretKey, data.key);
+
+                        const models = await this.getEmbeddingModelsFromProvider(data.provider, data.key);
+                        this.post ({type: 'setEmbeddingModels', models });
+                    } catch (e) {
+                        vscode.window.showErrorMessage(`Invalid embedding API key: ${e}`);
+                        this.post({ type: 'requestEmbeddingApiKey', provider: data.provider });
+                    }
+                    break;
+                }
+                case 'saveEmbeddingModelPreference': {
+                    await this.context.globalState.update('selectedEmbeddingModel', data.model);
+                    break;
+                }
             }
         });
     }
-            
+
     private _getHtml(): string {
         const htmlPath = vscode.Uri.joinPath(this.context.extensionUri, 'media', 'sidebar.html');
-        const cssPath  = vscode.Uri.joinPath(this.context.extensionUri, 'media', 'sidebar.css')        
+        const cssPath = vscode.Uri.joinPath(this.context.extensionUri, 'media', 'sidebar.css');
         try {
             let html = fs.readFileSync(htmlPath.fsPath, 'utf-8');
             const styleUri = this._view!.webview.asWebviewUri(cssPath);
@@ -266,7 +325,7 @@ export class Sidebar implements vscode.WebviewViewProvider {
             return html;
         } catch (e) {
             vscode.window.showErrorMessage(`Error loading sidebar html: ${e}`);
-            return `<!DOCTYPE html><html><body>Error loading UI</body></html>`; 
+            return `<!DOCTYPE html><html><body>Error loading UI</body></html>`;
         }
     }
 }

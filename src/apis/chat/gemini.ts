@@ -1,8 +1,8 @@
 import { GoogleGenAI } from '@google/genai';
-import { ChatMessage, LLMProvider, LLMResponse } from './provider';
-import { allToolSchemas } from '../tools';
+import { ChatMessage, ChatProvider, ChatResponse } from './chatProvider';
+import { allToolSchemas } from '../../tools';
 
-export class GeminiProvider extends LLMProvider {
+export class GeminiChatProvider extends ChatProvider {
     private client: GoogleGenAI;
     private geminiTools: any;
 
@@ -17,10 +17,13 @@ export class GeminiProvider extends LLMProvider {
         const modelNames: string[] = [];
 
         for await (const m of response) {
-            if (m.name) {
-                const cleanName = m.name.replace('models/', '');
-
-                if (cleanName.startsWith('gemini')) modelNames.push(cleanName)
+            if (m.supportedActions && m.supportedActions.includes('generateContent')) {
+                if (m.name) {
+                    const cleanName = m.name.replace('models/', '');
+    
+                    // if (cleanName.startsWith('gemini')) modelNames.push(cleanName);
+                    modelNames.push(cleanName);
+                }
             }
         }
 
@@ -46,7 +49,7 @@ export class GeminiProvider extends LLMProvider {
         });
     }
 
-    async *fetchStream(model: string, history: ChatMessage[]): AsyncGenerator<string, LLMResponse, unknown> {
+    async *fetchStream(model: string, history: ChatMessage[]): AsyncGenerator<string, ChatResponse, unknown> {
         const stream = await this.client.models.generateContentStream({
             model: model,
             contents: this.parseMessages(history),
@@ -84,7 +87,7 @@ export class GeminiProvider extends LLMProvider {
         };
     }
 
-    async fetch(model: string, messages: ChatMessage[]): Promise<LLMResponse> {
+    async fetch(model: string, messages: ChatMessage[]): Promise<ChatResponse> {
 
         const response = await this.client.models.generateContent({
             model: model,

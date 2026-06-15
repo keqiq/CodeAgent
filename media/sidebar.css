@@ -372,3 +372,120 @@ input[type="password"] {
 @keyframes spin { 
     100% { transform: rotate(360deg); } 
 }
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.header-action-btn {
+    background: transparent;
+    color: var(--vscode-descriptionForeground);
+    border: 1px solid transparent;
+    border-radius: 4px;
+    padding: 3px 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.header-action-btn:hover {
+    background: var(--vscode-toolbar-hoverBackground);
+    color: var(--vscode-foreground);
+}
+
+.status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--vscode-descriptionForeground);
+}
+
+.status-dot.disabled {
+    opacity: 0.45;
+}
+
+.status-dot.ready {
+    background: var(--vscode-testing-iconPassed);
+}
+
+.status-dot.warning {
+    background: var(--vscode-charts-yellow);
+}
+
+.status-dot.error {
+    background: var(--vscode-testing-iconFailed);
+}
+
+.floating-panel {
+    display: none;
+    position: absolute;
+    top: calc(100% + 4px);
+    z-index: 1000;
+    padding: 10px;
+    background: var(--vscode-editorWidget-background);
+    border: 1px solid var(--vscode-widget-border);
+    border-radius: 6px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    flex-direction: column;
+    gap: 8px;
+    text-transform: none;
+    letter-spacing: normal;
+    font-weight: normal;
+}
+
+.floating-panel.visible {
+    display: flex;
+}
+
+.indexing-panel {
+    left: 8px;
+    width: 260px;
+}
+
+.panel-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--vscode-foreground);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.indexing-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--vscode-foreground);
+    user-select: none;
+}
+
+.indexing-toggle input {
+    margin: 0;
+}
+
+.header-api-key-container {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.indexing-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.indexing-status {
+    font-size: 11px;
+    color: var(--vscode-descriptionForeground);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}

@@ -3,7 +3,7 @@ export interface ChatMessage {
     content: string;
 }
 
-export interface LLMResponse {
+export interface ChatResponse {
     text: string | null;
     tool_calls: {
         id?: string;
@@ -12,9 +12,9 @@ export interface LLMResponse {
     }[] | null;
 }
 
-export abstract class LLMProvider {
+export abstract class ChatProvider {
     abstract getModels(): Promise<string[]>;
-    abstract fetch(model: string, messages: ChatMessage[]): Promise<LLMResponse>;
-    abstract fetchStream(model: string, history: ChatMessage[]): AsyncGenerator<string, LLMResponse, unknown>;
+    abstract fetch(model: string, messages: ChatMessage[]): Promise<ChatResponse>;
+    abstract fetchStream(model: string, history: ChatMessage[]): AsyncGenerator<string, ChatResponse, unknown>;
 }
 

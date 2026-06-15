@@ -6,16 +6,16 @@ import { Sidebar } from './main';
 declare const console: any;
 
 export function activate(context: vscode.ExtensionContext) {
-	console.log('Plugin "CodeAgent" is active!');
+	// console.log('Plugin "CodeAgent" is active!');
 
 	const sidebar = new Sidebar(context);
-
 	context.subscriptions.push(
 		vscode.window.registerWebviewViewProvider(
 			"codeagent-sidebar",
 			sidebar
 		)
 	);
+	
 
 }
 

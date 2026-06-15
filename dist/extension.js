@@ -2137,10 +2137,10 @@ var require_dist2 = __commonJS({
         const proxyResponsePromise = (0, parse_proxy_response_1.parseProxyResponse)(socket);
         socket.write(`${payload}\r
 `);
-        const { connect, buffered } = await proxyResponsePromise;
-        req.emit("proxyConnect", connect);
-        this.emit("proxyConnect", connect, req);
-        if (connect.statusCode === 200) {
+        const { connect: connect2, buffered } = await proxyResponsePromise;
+        req.emit("proxyConnect", connect2);
+        this.emit("proxyConnect", connect2, req);
+        if (connect2.statusCode === 200) {
           req.once("socket", resume);
           if (opts.secureEndpoint) {
             debug("Upgrading socket connection to TLS");
@@ -22240,10 +22240,10 @@ __export(extension_exports, {
   deactivate: () => deactivate
 });
 module.exports = __toCommonJS(extension_exports);
-var vscode5 = __toESM(require("vscode"));
+var vscode6 = __toESM(require("vscode"));
 
 // src/main.ts
-var vscode4 = __toESM(require("vscode"));
+var vscode5 = __toESM(require("vscode"));
 var fs3 = __toESM(require("fs"));
 
 // node_modules/@google/genai/dist/node/index.mjs
@@ -40813,8 +40813,8 @@ function getApiKeyFromEnv() {
   return envGoogleApiKey || envGeminiApiKey || void 0;
 }
 
-// src/apis/provider.ts
-var LLMProvider = class {
+// src/apis/chat/chatProvider.ts
+var ChatProvider = class {
 };
 
 // src/tools/search.ts
@@ -40868,9 +40868,7 @@ var searchSchemas = [
 async function executeGlob(pattern) {
   const exludePattern = "{**/node_modules/**,**/.git/**,**/dist/**}";
   const uris = await vscode2.workspace.findFiles(pattern, exludePattern, 1e3);
-  if (uris.length === 0) {
-    return "No files found.";
-  }
+  if (uris.length === 0) return "No files found.";
   return uris.map((uri) => vscode2.workspace.asRelativePath(uri)).join("\n");
 }
 var textDecoder2 = new TextDecoder("utf-8");
@@ -41008,8 +41006,8 @@ var toolRegistry = {
   "edit": async (args) => await executeEdit(args.filePath, args.oldText, args.newText)
 };
 
-// src/apis/gemini.ts
-var GeminiProvider = class extends LLMProvider {
+// src/apis/chat/gemini.ts
+var GeminiChatProvider = class extends ChatProvider {
   client;
   geminiTools;
   constructor(apiKey) {
@@ -41021,9 +41019,11 @@ var GeminiProvider = class extends LLMProvider {
     const response = await this.client.models.list();
     const modelNames = [];
     for await (const m2 of response) {
-      if (m2.name) {
-        const cleanName = m2.name.replace("models/", "");
-        if (cleanName.startsWith("gemini")) modelNames.push(cleanName);
+      if (m2.supportedActions && m2.supportedActions.includes("generateContent")) {
+        if (m2.name) {
+          const cleanName = m2.name.replace("models/", "");
+          modelNames.push(cleanName);
+        }
       }
     }
     return modelNames.sort();
@@ -50797,8 +50797,8 @@ OpenAI.Containers = Containers;
 OpenAI.Skills = Skills;
 OpenAI.Videos = Videos;
 
-// src/apis/openai.ts
-var OpenAIProvider = class extends LLMProvider {
+// src/apis/chat/openai.ts
+var OpenAIChatProvider = class extends ChatProvider {
   client;
   GPTTools;
   constructor(apiKey) {
@@ -50812,6 +50812,9 @@ var OpenAIProvider = class extends LLMProvider {
   }
   parseTools() {
   }
+  //@ts-expect-error TODO: stub not implemented yet
+  async fetchStream(model, history) {
+  }
   async fetch(model, messages) {
     const response = await this.client.chat.completions.create({
       model,
@@ -50822,7 +50825,7 @@ var OpenAIProvider = class extends LLMProvider {
     const reason = action.finish_reason;
     const msg = action.message;
     const tools = msg.tool_calls;
-    if (reason == "tool_calls" && tools && tools.length > 0) {
+    if (reason === "tool_calls" && tools && tools.length > 0) {
       const parsedCalls = [];
       for (const tool of tools) {
         if (tool.type === "function") {
@@ -50843,14 +50846,129 @@ var OpenAIProvider = class extends LLMProvider {
   }
 };
 
-// src/apis/factory.ts
-var LLMFactory = class {
+// src/apis/chat/chatFactory.ts
+var ChatFactory = class {
   static create(providerName, apiKey) {
     switch (providerName.toLowerCase()) {
       case "openai":
-        return new OpenAIProvider(apiKey);
+        return new OpenAIChatProvider(apiKey);
       case "gemini":
-        return new GeminiProvider(apiKey);
+        return new GeminiChatProvider(apiKey);
+      default:
+        throw new Error(`Unsupported api: ${providerName}`);
+    }
+  }
+};
+
+// src/indexing/vectorDB.ts
+var lancedb = __toESM(require("@lancedb/lancedb"));
+var vscode4 = __toESM(require("vscode"));
+var VectorDB = class _VectorDB {
+  connection;
+  table;
+  tableName = "workspace_chunks";
+  constructor(connection, table) {
+    this.connection = connection;
+    this.table = table;
+  }
+  static async create(context) {
+    if (!context.storageUri) throw new Error("Cannot initialze VectorDB: No active workspace");
+    await vscode4.workspace.fs.createDirectory(context.storageUri);
+    const dbPath = context.storageUri.fsPath;
+    const connection = await lancedb.connect(dbPath);
+    let table;
+    const tableName = "workspace_chunks";
+    const tableNames = await connection.tableNames();
+    if (tableNames.includes(tableName)) table = await connection.openTable(tableName);
+    else {
+      const initialSchema = [
+        {
+          vector: Array(1536).fill(0),
+          text: "__INITIAL_SCHEMA__",
+          filePath: "sytsem",
+          startLine: 0,
+          endLine: 0,
+          type: "system"
+        }
+      ];
+      table = await connection.createTable(tableName, initialSchema);
+    }
+    return new _VectorDB(connection, table);
+  }
+  async insertChunk(chunks) {
+    if (chunks.length === 0) return;
+    await this.table.add(chunks);
+  }
+  async vectorSearch(queryVector, limit2 = 3) {
+    const results = await this.table.search(queryVector).limit(limit2).toArray();
+    return results.filter((row) => row.filePath !== "system");
+  }
+  async clearAll() {
+    const initialSchema = [
+      {
+        vector: Array(1536).fill(0),
+        text: "__INITIAL_SCHEMA__",
+        filePath: "system",
+        startLine: 0,
+        endLine: 0,
+        type: "system"
+      }
+    ];
+    this.table = await this.connection.createTable(
+      this.tableName,
+      initialSchema,
+      { mode: "overwrite" }
+    );
+  }
+};
+
+// src/apis/embed/embedProvider.ts
+var EmbedProvider = class {
+};
+
+// src/apis/embed/gemini.ts
+var GeminiEmbedProvider = class extends EmbedProvider {
+  providerId = "Gemini";
+  client;
+  constructor(apiKey) {
+    super();
+    this.client = new GoogleGenAI({ apiKey });
+  }
+  async getModels() {
+    const response = await this.client.models.list();
+    const modelNames = [];
+    for await (const m2 of response) {
+      if (m2.supportedActions && m2.supportedActions.includes("embedContent")) {
+        if (m2.name) {
+          const cleanName = m2.name.replace("models/", "");
+          modelNames.push(cleanName);
+        }
+      }
+    }
+    return modelNames.sort();
+  }
+  async embed(model, text) {
+    const result = await this.client.models.embedContent({
+      model,
+      contents: text
+      // config: { outputDimensionality: this.dimensions }
+    });
+    if (!result.embeddings) throw new Error("Gemini did not return embeddings");
+    return result.embeddings.map((embedding) => {
+      if (!embedding.values) {
+        throw new Error("Gemini returned an embedding without values");
+      }
+      return embedding.values;
+    });
+  }
+};
+
+// src/apis/embed/embedFactory.ts
+var EmbedFactory = class {
+  static create(providerName, apiKey) {
+    switch (providerName.toLowerCase()) {
+      case "gemini":
+        return new GeminiEmbedProvider(apiKey);
       default:
         throw new Error(`Unsupported api: ${providerName}`);
     }
@@ -50859,16 +50977,29 @@ var LLMFactory = class {
 
 // src/main.ts
 var Sidebar = class {
-  constructor(_context) {
-    this._context = _context;
-    const savedHistory = _context.workspaceState.get("agentChatHistory");
+  constructor(context) {
+    this.context = context;
+    const savedHistory = context.workspaceState.get("agentChatHistory");
     if (savedHistory && savedHistory.length > 0) this.chatHistory = savedHistory;
     else this.chatHistory = this.getInitialChatMessages();
+    this.initVectorDB();
   }
-  _context;
+  context;
   _view;
+  vectorDB;
   MAX_TURN_COUNT = 15;
   chatHistory;
+  async initVectorDB() {
+    if (!this.context.storageUri) {
+      vscode5.window.showWarningMessage("No active workspace. Limited Functionality");
+      return;
+    }
+    try {
+      this.vectorDB = await VectorDB.create(this.context);
+    } catch (e2) {
+      vscode5.window.showErrorMessage(`Failed to initialize code search index: ${e2}`);
+    }
+  }
   getInitialChatMessages() {
     return [{
       role: "system",
@@ -50880,28 +51011,35 @@ var Sidebar = class {
     }];
   }
   async getModelsFromProvider(provider, apiKey) {
-    const providerInstance = LLMFactory.create(provider, apiKey);
-    const models = await providerInstance.getModels();
-    return models;
+    const providerInstance = ChatFactory.create(provider, apiKey);
+    return await providerInstance.getModels();
+  }
+  async getEmbeddingModelsFromProvider(provider, apiKey) {
+    const providerInstance = EmbedFactory.create(provider, apiKey);
+    return await providerInstance.getModels();
   }
   async getAPIKey(provider) {
     const secretKey = `${provider.toUpperCase()}_API_KEY`;
-    return await this._context.secrets.get(secretKey);
+    return await this.context.secrets.get(secretKey);
+  }
+  async getEmbeddingAPIKey(provider) {
+    const secretKey = `${provider.toUpperCase()}_EMBEDDING_API_KEY`;
+    return await this.context.secrets.get(secretKey);
   }
   post(message) {
     this._view?.webview.postMessage(message);
   }
   async saveChatHistory() {
-    await this._context.workspaceState.update("agentChatHistory", this.chatHistory);
+    await this.context.workspaceState.update("agentChatHistory", this.chatHistory);
   }
   async runAgentTurn(provider, model, userMessage) {
     const apiKey = await this.getAPIKey(provider);
     if (!apiKey) {
-      vscode4.window.showErrorMessage(`No API key for ${provider}`);
+      vscode5.window.showErrorMessage(`No API key for ${provider}`);
       return;
     }
     try {
-      const providerInstance = LLMFactory.create(provider, apiKey);
+      const providerInstance = ChatFactory.create(provider, apiKey);
       this.chatHistory.push({ role: "user", content: userMessage });
       await this.saveChatHistory();
       let keepGoing = true;
@@ -50972,21 +51110,20 @@ var Sidebar = class {
     this._view = webviewView;
     webviewView.webview.options = {
       enableScripts: true,
-      localResourceRoots: [this._context.extensionUri]
+      localResourceRoots: [this.context.extensionUri]
     };
     webviewView.webview.html = this._getHtml();
     webviewView.webview.onDidReceiveMessage(async (data) => {
       switch (data.type) {
         case "webviewReady": {
-          const savedProvider = this._context.globalState.get("selectedProvider");
-          const savedModel = this._context.globalState.get("selectedModel");
+          const savedProvider = this.context.globalState.get("selectedProvider");
+          const savedModel = this.context.globalState.get("selectedModel");
           this.post({ type: "restoreHistory", history: this.chatHistory });
           if (savedProvider) {
             const apiKey = await this.getAPIKey(savedProvider);
             if (apiKey) {
               try {
-                const providerInstance = LLMFactory.create(savedProvider, apiKey);
-                const models = await providerInstance.getModels();
+                const models = await this.getModelsFromProvider(savedProvider, apiKey);
                 this.post({
                   type: "restoreState",
                   provider: savedProvider,
@@ -50997,11 +51134,31 @@ var Sidebar = class {
               }
             }
           }
+          const indexingEnabled = this.context.globalState.get("indexingEnabled") ?? false;
+          const savedEmbeddingProvider = this.context.globalState.get("selectedEmbeddingProvider");
+          const savedEmbeddingModel = this.context.globalState.get("selectedEmbeddingModel");
+          if (savedEmbeddingProvider) {
+            const embedApiKey = await this.getEmbeddingAPIKey(savedEmbeddingProvider);
+            if (embedApiKey) {
+              try {
+                const models = await this.getEmbeddingModelsFromProvider(savedEmbeddingProvider, embedApiKey);
+                this.post({
+                  type: "restoreIndexingState",
+                  enabled: indexingEnabled,
+                  provider: savedEmbeddingProvider,
+                  model: savedEmbeddingModel,
+                  models,
+                  status: indexingEnabled ? "Ready" : "Disabled"
+                });
+              } catch (e2) {
+              }
+            }
+          }
           break;
         }
         case "fetchModels": {
           try {
-            await this._context.globalState.update("selectedProvider", data.provider);
+            await this.context.globalState.update("selectedProvider", data.provider);
             const apiKey = await this.getAPIKey(data.provider);
             if (!apiKey) {
               this.post({ type: "requestApiKey", provider: data.provider });
@@ -51012,7 +51169,7 @@ var Sidebar = class {
               models: await this.getModelsFromProvider(data.provider, apiKey)
             });
           } catch (e2) {
-            vscode4.window.showErrorMessage(`Failed to fetch models: ${e2}`);
+            vscode5.window.showErrorMessage(`Failed to fetch models: ${e2}`);
             this.post({ type: "error" });
           }
           break;
@@ -51020,19 +51177,19 @@ var Sidebar = class {
         case "saveApiKey": {
           try {
             const secretKey = `${data.provider.toUpperCase()}_API_KEY`;
-            await this._context.secrets.store(secretKey, data.key);
+            await this.context.secrets.store(secretKey, data.key);
             this.post({
               type: "setModels",
               models: await this.getModelsFromProvider(data.provider, data.key)
             });
           } catch (e2) {
-            vscode4.window.showErrorMessage(`Invalid key or Failed to fetch models: ${e2}`);
+            vscode5.window.showErrorMessage(`Invalid key or Failed to fetch models: ${e2}`);
             this.post({ type: "requestApiKey", provider: data.provider });
           }
           break;
         }
         case "saveModelPreference": {
-          await this._context.globalState.update("selectedModel", data.model);
+          await this.context.globalState.update("selectedModel", data.model);
           break;
         }
         case "askAgent": {
@@ -51044,22 +51201,58 @@ var Sidebar = class {
         }
         case "clearChat": {
           this.chatHistory = this.getInitialChatMessages();
-          await this._context.workspaceState.update("agentChatHistory", this.chatHistory);
+          await this.context.workspaceState.update("agentChatHistory", this.chatHistory);
+          break;
+        }
+        case "setIndexingEnabled": {
+          await this.context.globalState.update("indexingEnabled", data.enabled);
+          break;
+        }
+        case "fetchEmbeddingModels": {
+          try {
+            await this.context.globalState.update("selectedEmbeddingProvider", data.provider);
+            const apiKey = await this.getEmbeddingAPIKey(data.provider);
+            if (!apiKey) {
+              this.post({ type: "requestEmbeddingApiKey", provider: data.provider });
+              return;
+            }
+            const models = await this.getEmbeddingModelsFromProvider(data.provider, apiKey);
+            this.post({ type: "setEmbeddingModels", models });
+          } catch (e2) {
+            vscode5.window.showErrorMessage(`Failed to fetch embedding models: ${e2}`);
+            this.post({ type: "requestEmbeddingApiKey", provider: data.provider });
+          }
+          break;
+        }
+        case "saveEmbeddingApiKey": {
+          try {
+            const secretKey = `${data.provider.toUpperCase()}_EMBEDDING_API_KEY`;
+            await this.context.secrets.store(secretKey, data.key);
+            const models = await this.getEmbeddingModelsFromProvider(data.provider, data.key);
+            this.post({ type: "setEmbeddingModels", models });
+          } catch (e2) {
+            vscode5.window.showErrorMessage(`Invalid embedding API key: ${e2}`);
+            this.post({ type: "requestEmbeddingApiKey", provider: data.provider });
+          }
+          break;
+        }
+        case "saveEmbeddingModelPreference": {
+          await this.context.globalState.update("selectedEmbeddingModel", data.model);
           break;
         }
       }
     });
   }
   _getHtml() {
-    const htmlPath = vscode4.Uri.joinPath(this._context.extensionUri, "media", "sidebar.html");
-    const cssPath = vscode4.Uri.joinPath(this._context.extensionUri, "media", "sidebar.css");
+    const htmlPath = vscode5.Uri.joinPath(this.context.extensionUri, "media", "sidebar.html");
+    const cssPath = vscode5.Uri.joinPath(this.context.extensionUri, "media", "sidebar.css");
     try {
       let html = fs3.readFileSync(htmlPath.fsPath, "utf-8");
       const styleUri = this._view.webview.asWebviewUri(cssPath);
       html = html.replace("{{styleUri}}", styleUri.toString());
       return html;
     } catch (e2) {
-      vscode4.window.showErrorMessage(`Error loading sidebar html: ${e2}`);
+      vscode5.window.showErrorMessage(`Error loading sidebar html: ${e2}`);
       return `<!DOCTYPE html><html><body>Error loading UI</body></html>`;
     }
   }
@@ -51067,10 +51260,9 @@ var Sidebar = class {
 
 // src/extension.ts
 function activate(context) {
-  console.log('Plugin "CodeAgent" is active!');
   const sidebar = new Sidebar(context);
   context.subscriptions.push(
-    vscode5.window.registerWebviewViewProvider(
+    vscode6.window.registerWebviewViewProvider(
       "codeagent-sidebar",
       sidebar
     )

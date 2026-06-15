@@ -41,6 +41,11 @@ async function main() {
 			/* add to the end of plugins array */
 			esbuildProblemMatcherPlugin,
 		],
+		external: [
+			'vscode',
+			'@lancedb/lancedb',
+			'@lancedb/lancedb-*'
+		]
 	});
 	if (watch) {
 		await ctx.watch();
