@@ -1,6 +1,6 @@
 import { GoogleGenAI } from '@google/genai';
 import { ChatMessage, ChatProvider, ChatResponse } from './chatProvider';
-import { allToolSchemas } from '../../tools';
+import { allToolSchemas } from '../../tools/toolIndex';
 
 export class GeminiChatProvider extends ChatProvider {
     private client: GoogleGenAI;

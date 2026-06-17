@@ -1,6 +1,14 @@
 import * as vscode from 'vscode';
 import { getFileContent } from '../utils/workspace';
-import { ToolSchema } from '.';
+import { ToolSchema } from './toolIndex';
+import { EmbedProvider } from '../apis/embed/embedProvider';
+import { Indexer } from '../indexing/indexer';
+
+export type SearchCodebaseDeps = {
+    indexer: Indexer,
+    embedProvider: EmbedProvider,
+    model: string
+}
 
 export const searchSchemas: ToolSchema[] = [
     {
@@ -31,13 +39,30 @@ export const searchSchemas: ToolSchema[] = [
                 required: ["query"]
             }
         }
+    },
+    {
+        type: "function",
+        function: {
+            name: "searchCodebase",
+            description: "Semantically search indexed workspace code using embeddings.",
+            parameters: {
+                type: "object",
+                properties: {
+                    query: {
+                        type: "string",
+                        description: "Natural language description of the code to find"
+                    }
+                },
+                required: ["query"]
+            }
+        }
     }
 
 ];
 
 export async function executeGlob(pattern: string): Promise<string> {
-    const exludePattern = '{**/node_modules/**,**/.git/**,**/dist/**}';
-    const uris = await vscode.workspace.findFiles(pattern, exludePattern, 1000);
+    const excludePattern = '{**/node_modules/**,**/.git/**,**/dist/**}';
+    const uris = await vscode.workspace.findFiles(pattern, excludePattern, 1000);
 
     if (uris.length === 0) return "No files found.";
     return uris.map(uri => vscode.workspace.asRelativePath(uri)).join('\n');
@@ -71,5 +96,19 @@ export async function executeGrep(query: string, filePattern: string = '**/*'): 
     return results.length > 0 ? results.slice(0, 500).join('\n') : "No matches found.";
     
 };
+
+export async function executeSearchCodebase(query: string, deps: SearchCodebaseDeps ): Promise<string> {
+    if (!query.trim()) return "Search query is empty.";
+
+    const [queryVector] = await deps.embedProvider.embed(deps.model, [query]);
+    const results = await deps.indexer.search(queryVector, 10);
+
+    if (results.length === 0) return "No relevant code found.";
+
+    // TODO: add distance
+    return results.map((r, i) =>
+        `Result ${i + 1}\nFile: ${r.filePath}\nLines: ${r.startLine}-${r.endLine}\n\n${r.text}`
+    ).join('\n\n---\n\n');
+}
 
 

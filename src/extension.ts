@@ -1,22 +1,17 @@
-// The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
-import { Sidebar } from './main';
+import { ChatApp } from './main';
 
 declare const console: any;
 
 export function activate(context: vscode.ExtensionContext) {
-	// console.log('Plugin "CodeAgent" is active!');
 
-	const sidebar = new Sidebar(context);
+	const chatApp = new ChatApp(context);
 	context.subscriptions.push(
 		vscode.window.registerWebviewViewProvider(
 			"codeagent-sidebar",
-			sidebar
+			chatApp
 		)
 	);
-	
-
 }
 
 export function deactivate() {}

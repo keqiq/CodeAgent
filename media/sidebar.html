@@ -610,8 +610,15 @@
                     return;
                 }
 
-                indexingStatus.textContent = message.status || (message.enabled ? 'Ready' : 'Disabled');
-                indexingDot.className = message.enabled ? 'status-dot ready' : 'status-dot disabled';
+                indexingStatus.textContent = message.status;
+
+                if (message.status === 'Ready') {
+                    indexingDot.className = 'status-dot ready';
+                } else if (message.status === 'Not Indexed') {
+                    indexingDot.className = 'status-dot warning';
+                } else {
+                    indexingDot.className = 'status-dot disabled';
+                }
             }
 
             else if (message.type === 'requestEmbeddingApiKey') {
@@ -638,6 +645,7 @@
                 indexingStatus.textContent = message.status;
 
                 if (message.done) {
+                    indexingDot.className = 'status-dot ready';
                     indexWorkspaceBtn.disabled = false;
                 }
             }

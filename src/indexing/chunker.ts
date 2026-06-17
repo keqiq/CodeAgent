@@ -29,8 +29,8 @@ export class CodeChunker {
         const wasmUri = vscode.Uri.joinPath(extensionUri, 'wasm');
 
         await Parser.init({
-            locateFile(scriptName: string) {
-                return vscode.Uri.joinPath(wasmUri, scriptName).fsPath;
+            locateFile() {
+                return vscode.Uri.joinPath(wasmUri, 'runtime', 'web-tree-sitter.wasm').fsPath;
             }
         });
 
@@ -48,7 +48,7 @@ export class CodeChunker {
         // Error if we do not have extension support, handle it outside
         if (!wasmFile) throw Error(`Unsupported extension: ${extension}`);
 
-        const wasmPath = vscode.Uri.joinPath(this.wasmUri, wasmFile).fsPath;
+        const wasmPath = vscode.Uri.joinPath(this.wasmUri, 'languages', wasmFile).fsPath;
         const language = await Language.load(wasmPath);
 
         this.languageCache.set(extension, language);

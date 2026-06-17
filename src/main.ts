@@ -2,24 +2,52 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import { ChatFactory } from './apis/chat/chatFactory';
 import { ChatMessage } from './apis/chat/chatProvider';
-import { toolRegistry } from './tools';
+import { createToolRegistry } from './tools/toolIndex';
 import { EmbedFactory } from './apis/embed/embedFactory';
 import { Indexer } from './indexing/indexer';
 
 declare const console: any;
 
-export class Sidebar implements vscode.WebviewViewProvider {
+export class ChatApp implements vscode.WebviewViewProvider {
 
     private _view?: vscode.WebviewView;
     private MAX_TURN_COUNT = 15;
+    private indexer? : Indexer;
+    private indexLoadPromise: Promise<Indexer>;
 
     private chatHistory: ChatMessage[];
+    private toolRegistry: any;
 
     constructor(private readonly context: vscode.ExtensionContext) {
         const savedHistory = context.workspaceState.get<ChatMessage[]>('agentChatHistory');
 
         if (savedHistory && savedHistory.length > 0) this.chatHistory = savedHistory;
         else this.chatHistory = this.getInitialChatMessages();
+        
+        this.indexLoadPromise = Indexer.create(this.context).then(indexer => {
+            this.indexer = indexer;
+            return indexer;
+        });
+
+        this.toolRegistry = createToolRegistry({
+            createSearchCodebaseDeps: async () => {
+                const providerId = this.context.globalState.get<string>('selectedEmbeddingProvider');
+                const model = this.context.globalState.get<string>('selectedEmbeddingModel');
+
+                if (!providerId || !model) throw new Error("embedding provider/model is not configured");
+                
+
+                const apiKey = await this.getEmbeddingAPIKey(providerId);
+                if (!apiKey) throw new Error("missing embedding API key");
+                const indexer = await this.indexLoadPromise;
+
+                return {
+                    indexer: indexer,
+                    embedProvider: EmbedFactory.create(providerId, apiKey),
+                    model
+                };
+            }
+        });
     }
 
     private getInitialChatMessages(): ChatMessage[] {
@@ -32,6 +60,7 @@ export class Sidebar implements vscode.WebviewViewProvider {
                       Always explain your thought process before executing a tool.`
         }];
     }
+
 
     private async getModelsFromProvider(provider: string, apiKey: string) {
         const providerInstance = ChatFactory.create(provider, apiKey);
@@ -60,7 +89,7 @@ export class Sidebar implements vscode.WebviewViewProvider {
     private async runAgentTurn(provider: string, model: string, userMessage: string,): Promise<void> {
         const apiKey = await this.getAPIKey(provider);
 
-        // This shouldn't happen as the send functin is disabled without apiKey
+        // This shouldn't happen as the send function is disabled without apiKey
         if (!apiKey) { vscode.window.showErrorMessage(`No API key for ${provider}`); return; }
 
         try {
@@ -77,27 +106,25 @@ export class Sidebar implements vscode.WebviewViewProvider {
             while (keepGoing && turnCount < this.MAX_TURN_COUNT) {
                 turnCount++;
 
-                // const llmResponse = await providerInstance.fetch(model, this.chatHistory);
                 const streamGenerator = providerInstance.fetchStream(model, this.chatHistory);
                 let streamResult = await streamGenerator.next();
-
+                
                 while (!streamResult.done) {
                     if (streamResult.value) {
                         this.post({ type: 'streamChunk', chunk: streamResult.value });
                     }
                     streamResult = await streamGenerator.next();
                 }
-
+                
                 this.post({ type: 'streamEnd' });
                 const finalResponse = streamResult.value as { text?: string, tool_calls?: any[] };
-
+                
                 if (finalResponse && finalResponse.text) {
                     this.chatHistory.push({ role: 'assistant', content: finalResponse.text });
                 }
-
-
-
+                
                 // // Text reply
+                // const llmResponse = await providerInstance.fetch(model, this.chatHistory);
                 // if (llmResponse.text) {
                 //     this.chatHistory.push({ role: 'assistant', content: llmResponse.text });
                 //     this.post({ type: 'streamStart'})
@@ -132,9 +159,9 @@ export class Sidebar implements vscode.WebviewViewProvider {
 
                         let result = "";
 
-                        if (toolRegistry[toolName]) {
+                        if (this.toolRegistry[toolName]) {
                             try {
-                                result = await toolRegistry[toolName](toolArgs);
+                                result = await this.toolRegistry[toolName](toolArgs);
                                 this.post({ type: 'updateTool', status: 'success' });
                             } catch (e) {
                                 result = `Error executing ${toolName}: ${e}`;
@@ -162,7 +189,7 @@ export class Sidebar implements vscode.WebviewViewProvider {
         }
     }
 
-    public resolveWebviewView(webviewView: vscode.WebviewView, context: vscode.WebviewViewResolveContext, token: vscode.CancellationToken): Thenable<void> | void {
+    public resolveWebviewView(webviewView: vscode.WebviewView, ctx: vscode.WebviewViewResolveContext, token: vscode.CancellationToken): Thenable<void> | void {
         this._view = webviewView;
 
         webviewView.webview.options = {
@@ -204,7 +231,9 @@ export class Sidebar implements vscode.WebviewViewProvider {
                     const savedEmbeddingModel = this.context.globalState.get<string>('selectedEmbeddingModel');
 
                     if (savedEmbeddingProvider) {
+                        const indexer = await this.indexLoadPromise;
                         const embedApiKey = await this.getEmbeddingAPIKey(savedEmbeddingProvider);
+                        const hasIndex = indexer.dbConnected();
 
                         if (embedApiKey) {
                             try {
@@ -215,11 +244,13 @@ export class Sidebar implements vscode.WebviewViewProvider {
                                     provider: savedEmbeddingProvider,
                                     model: savedEmbeddingModel,
                                     models: models,
-                                    status: indexingEnabled ? 'Ready' : 'Disabled'
+                                    status: hasIndex ? 'Ready' :
+                                            indexingEnabled ? 'Not Indexed' : 'Disabled'
                                 }); 
                             } catch (e) {}
                         }
                     }
+                    
                     break;
                 }
                 case 'fetchModels': {
@@ -311,6 +342,31 @@ export class Sidebar implements vscode.WebviewViewProvider {
                     await this.context.globalState.update('selectedEmbeddingModel', data.model);
                     break;
                 }
+                case 'indexWorkspace': {
+                    try {
+                        const apiKey = await this.getEmbeddingAPIKey(data.provider);
+                        if (!apiKey) {
+                            this.post({ type: 'requestEmbeddingApiKey', provider: data.provider });
+                            return;
+                        }
+                        
+                        if (!this.indexer) this.indexer = await Indexer.create(this.context);
+                        const embedProvider = EmbedFactory.create(data.provider, apiKey);
+
+                        await this.indexer.indexWorkspace(embedProvider, data.model);
+
+                        this.post({
+                            type: 'indexingStatus',
+                            status: 'Indexed',
+                            done: true,
+                            hasIndex: true
+                        });
+                    } catch (e) {
+                        vscode.window.showErrorMessage(`Indexing failed: ${formatError(e)}`);
+                        this.post({ type: 'indexingError' });
+                    }
+                    break;
+                }
             }
         });
     }
@@ -328,4 +384,12 @@ export class Sidebar implements vscode.WebviewViewProvider {
             return `<!DOCTYPE html><html><body>Error loading UI</body></html>`;
         }
     }
+}
+
+function formatError(e: unknown): string{
+    if (e instanceof Error) {
+        return e.stack ?? e.message;
+    }
+
+    return String(e);
 }

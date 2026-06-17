@@ -22240,10 +22240,10 @@ __export(extension_exports, {
   deactivate: () => deactivate
 });
 module.exports = __toCommonJS(extension_exports);
-var vscode6 = __toESM(require("vscode"));
+var vscode7 = __toESM(require("vscode"));
 
 // src/main.ts
-var vscode5 = __toESM(require("vscode"));
+var vscode6 = __toESM(require("vscode"));
 var fs3 = __toESM(require("fs"));
 
 // node_modules/@google/genai/dist/node/index.mjs
@@ -22752,9 +22752,9 @@ var Outcome;
   Outcome2["OUTCOME_DEADLINE_EXCEEDED"] = "OUTCOME_DEADLINE_EXCEEDED";
 })(Outcome || (Outcome = {}));
 var Language;
-(function(Language2) {
-  Language2["LANGUAGE_UNSPECIFIED"] = "LANGUAGE_UNSPECIFIED";
-  Language2["PYTHON"] = "PYTHON";
+(function(Language3) {
+  Language3["LANGUAGE_UNSPECIFIED"] = "LANGUAGE_UNSPECIFIED";
+  Language3["PYTHON"] = "PYTHON";
 })(Language || (Language = {}));
 var FunctionResponseScheduling;
 (function(FunctionResponseScheduling2) {
@@ -40863,11 +40863,28 @@ var searchSchemas = [
         required: ["query"]
       }
     }
+  },
+  {
+    type: "function",
+    function: {
+      name: "searchCodebase",
+      description: "Semantically search indexed workspace code using embeddings.",
+      parameters: {
+        type: "object",
+        properties: {
+          query: {
+            type: "string",
+            description: "Natural language description of the code to find"
+          }
+        },
+        required: ["query"]
+      }
+    }
   }
 ];
 async function executeGlob(pattern) {
-  const exludePattern = "{**/node_modules/**,**/.git/**,**/dist/**}";
-  const uris = await vscode2.workspace.findFiles(pattern, exludePattern, 1e3);
+  const excludePattern = "{**/node_modules/**,**/.git/**,**/dist/**}";
+  const uris = await vscode2.workspace.findFiles(pattern, excludePattern, 1e3);
   if (uris.length === 0) return "No files found.";
   return uris.map((uri) => vscode2.workspace.asRelativePath(uri)).join("\n");
 }
@@ -40897,6 +40914,19 @@ async function executeGrep(query, filePattern = "**/*") {
     }
   }
   return results.length > 0 ? results.slice(0, 500).join("\n") : "No matches found.";
+}
+async function executeSearchCodebase(query, deps) {
+  if (!query.trim()) return "Search query is empty.";
+  const [queryVector] = await deps.embedProvider.embed(deps.model, [query]);
+  const results = await deps.indexer.search(queryVector, 10);
+  if (results.length === 0) return "No relevant code found.";
+  return results.map(
+    (r2, i2) => `Result ${i2 + 1}
+File: ${r2.filePath}
+Lines: ${r2.startLine}-${r2.endLine}
+
+${r2.text}`
+  ).join("\n\n---\n\n");
 }
 
 // src/tools/files.ts
@@ -40993,18 +41023,28 @@ async function executeEdit(filePath, oldText, newText) {
   }
 }
 
-// src/tools/index.ts
+// src/tools/toolIndex.ts
 var allToolSchemas = [
   ...searchSchemas,
   ...fileSchemas
 ];
-var toolRegistry = {
-  "glob": async (args) => await executeGlob(args.pattern),
-  "grep": async (args) => await executeGrep(args.query, args.filePattern),
-  "read": async (args) => await executeRead(args.filePath),
-  "write": async (args) => await executeWrite(args.filePath, args.content),
-  "edit": async (args) => await executeEdit(args.filePath, args.oldText, args.newText)
-};
+function createToolRegistry(deps) {
+  return {
+    glob: async (args) => await executeGlob(args.pattern),
+    grep: async (args) => await executeGrep(args.query, args.filePattern),
+    read: async (args) => await executeRead(args.filePath),
+    write: async (args) => await executeWrite(args.filePath, args.content),
+    edit: async (args) => await executeEdit(args.filePath, args.oldText, args.newText),
+    searchCodebase: async (args) => {
+      try {
+        const searchDeps = await deps.createSearchCodebaseDeps();
+        return await executeSearchCodebase(args.query, searchDeps);
+      } catch (e2) {
+        return `Codebase semantic search unavailable: ${e2 instanceof Error ? e2.message : String(e2)}. Use glob, grep, or read instead.`;
+      }
+    }
+  };
+}
 
 // src/apis/chat/gemini.ts
 var GeminiChatProvider = class extends ChatProvider {
@@ -50860,68 +50900,6 @@ var ChatFactory = class {
   }
 };
 
-// src/indexing/vectorDB.ts
-var lancedb = __toESM(require("@lancedb/lancedb"));
-var vscode4 = __toESM(require("vscode"));
-var VectorDB = class _VectorDB {
-  connection;
-  table;
-  tableName = "workspace_chunks";
-  constructor(connection, table) {
-    this.connection = connection;
-    this.table = table;
-  }
-  static async create(context) {
-    if (!context.storageUri) throw new Error("Cannot initialze VectorDB: No active workspace");
-    await vscode4.workspace.fs.createDirectory(context.storageUri);
-    const dbPath = context.storageUri.fsPath;
-    const connection = await lancedb.connect(dbPath);
-    let table;
-    const tableName = "workspace_chunks";
-    const tableNames = await connection.tableNames();
-    if (tableNames.includes(tableName)) table = await connection.openTable(tableName);
-    else {
-      const initialSchema = [
-        {
-          vector: Array(1536).fill(0),
-          text: "__INITIAL_SCHEMA__",
-          filePath: "sytsem",
-          startLine: 0,
-          endLine: 0,
-          type: "system"
-        }
-      ];
-      table = await connection.createTable(tableName, initialSchema);
-    }
-    return new _VectorDB(connection, table);
-  }
-  async insertChunk(chunks) {
-    if (chunks.length === 0) return;
-    await this.table.add(chunks);
-  }
-  async vectorSearch(queryVector, limit2 = 3) {
-    const results = await this.table.search(queryVector).limit(limit2).toArray();
-    return results.filter((row) => row.filePath !== "system");
-  }
-  async clearAll() {
-    const initialSchema = [
-      {
-        vector: Array(1536).fill(0),
-        text: "__INITIAL_SCHEMA__",
-        filePath: "system",
-        startLine: 0,
-        endLine: 0,
-        type: "system"
-      }
-    ];
-    this.table = await this.connection.createTable(
-      this.tableName,
-      initialSchema,
-      { mode: "overwrite" }
-    );
-  }
-};
-
 // src/apis/embed/embedProvider.ts
 var EmbedProvider = class {
 };
@@ -50975,31 +50953,264 @@ var EmbedFactory = class {
   }
 };
 
+// src/indexing/vectorDB.ts
+var lancedb = __toESM(require("@lancedb/lancedb"));
+var vscode4 = __toESM(require("vscode"));
+var VectorDB = class _VectorDB {
+  constructor(dimension, connection, table) {
+    this.dimension = dimension;
+    this.connection = connection;
+    this.table = table;
+  }
+  dimension;
+  connection;
+  table;
+  static async create(context, dimension = void 0) {
+    if (!context.storageUri) throw new Error("Cannot initialze VectorDB: No active workspace");
+    const dbUri = vscode4.Uri.joinPath(context.storageUri, "vector-db");
+    await vscode4.workspace.fs.createDirectory(dbUri);
+    const dbPath = dbUri.fsPath;
+    const connection = await lancedb.connect(dbPath);
+    const tableName = "workspace_chunks";
+    const tableNames = await connection.tableNames();
+    console.log(`Current tables in workspace: ${tableNames}`);
+    const tableExists = tableNames.includes(tableName);
+    let table;
+    if (dimension === void 0 && tableExists) {
+      table = await connection.openTable(tableName);
+      const rows = await table.query().limit(1).toArray();
+      if (rows.length > 0) {
+        const existingDimension = rows[0].vector.length;
+        return new _VectorDB(existingDimension, connection, table);
+      }
+    }
+    if (dimension === void 0) throw new Error("Workspace has not been indexed yet.");
+    if (tableExists) await connection.dropTable(tableName);
+    const initialSchema = [
+      {
+        vector: Array(dimension).fill(0),
+        text: "__INITIAL_SCHEMA__",
+        filePath: "system",
+        startLine: 0,
+        endLine: 0,
+        type: "system"
+      }
+    ];
+    table = await connection.createTable(tableName, initialSchema);
+    return new _VectorDB(dimension, connection, table);
+  }
+  async insertRows(rows) {
+    if (rows.length === 0) return;
+    await this.table.add(rows);
+  }
+  async vectorSearch(queryVector, limit2) {
+    const results = await this.table.search(queryVector).limit(limit2).toArray();
+    return results.filter((row) => row.filePath !== "system");
+  }
+  async clearAll() {
+    const initialSchema = [
+      {
+        vector: Array(this.dimension).fill(0),
+        text: "__INITIAL_SCHEMA__",
+        filePath: "system",
+        startLine: 0,
+        endLine: 0,
+        type: "system"
+      }
+    ];
+    this.table = await this.connection.createTable(
+      "workspace_chunks",
+      initialSchema,
+      { mode: "overwrite" }
+    );
+  }
+};
+
+// src/indexing/chunker.ts
+var vscode5 = __toESM(require("vscode"));
+var import_web_tree_sitter = require("web-tree-sitter");
+var CodeChunker = class _CodeChunker {
+  constructor(parser, wasmUri) {
+    this.parser = parser;
+    this.wasmUri = wasmUri;
+  }
+  parser;
+  wasmUri;
+  languageCache = /* @__PURE__ */ new Map();
+  languageConfigs = /* @__PURE__ */ new Map([
+    [".ts", "tree-sitter-typescript.wasm"],
+    [".tsx", "tree-sitter-tsx.wasm"],
+    [".js", "tree-sitter-javascript.wasm"],
+    [".jsx", "tree-sitter-javascript.wasm"]
+  ]);
+  static async create(extensionUri) {
+    const wasmUri = vscode5.Uri.joinPath(extensionUri, "wasm");
+    await import_web_tree_sitter.Parser.init({
+      locateFile() {
+        return vscode5.Uri.joinPath(wasmUri, "runtime", "web-tree-sitter.wasm").fsPath;
+      }
+    });
+    const parser = new import_web_tree_sitter.Parser();
+    return new _CodeChunker(parser, wasmUri);
+  }
+  async getLanguageForExtension(extension2) {
+    const cachedLanguage = this.languageCache.get(extension2);
+    if (cachedLanguage) return cachedLanguage;
+    const wasmFile = this.languageConfigs.get(extension2);
+    if (!wasmFile) throw Error(`Unsupported extension: ${extension2}`);
+    const wasmPath = vscode5.Uri.joinPath(this.wasmUri, "languages", wasmFile).fsPath;
+    const language = await import_web_tree_sitter.Language.load(wasmPath);
+    this.languageCache.set(extension2, language);
+    return language;
+  }
+  async chunkWorkspace() {
+    const includePattern = "**/*.{ts,tsx,js,jsx}";
+    const excludePattern = "{**/node_modules/**,**/.git/**,**/dist/**,**/out/**,**/build/**,**/.next/**,**/coverage/**}";
+    const uris = await vscode5.workspace.findFiles(
+      includePattern,
+      excludePattern,
+      5e3
+    );
+    const chunks = [];
+    for (const uri of uris) {
+      try {
+        const fileChunk = await this.chunkFile(uri);
+        console.log(`Chunked file ${uri.fsPath}`);
+        chunks.push(...fileChunk);
+      } catch (e2) {
+        console.warn(`Failed to Chunk file ${uri.fsPath}`, e2);
+      }
+    }
+    return chunks;
+  }
+  async chunkFile(uri) {
+    const filePath = vscode5.workspace.asRelativePath(uri);
+    const extension2 = this.getExtension(filePath);
+    const language = await this.getLanguageForExtension(extension2);
+    const content = await getFileContent(uri);
+    if (!content.trim()) return [];
+    this.parser.setLanguage(language);
+    const tree = this.parser.parse(content);
+    const lines = content.split(/\r?\n/);
+    if (!tree) return [];
+    return this.chunkRootNode(tree.rootNode, lines, filePath);
+  }
+  getExtension(filePath) {
+    const match = filePath.match(/\.[^.]+$/);
+    return match ? match[0] : "";
+  }
+  chunkRootNode(rootNode, lines, filePath) {
+    const chunks = [];
+    for (let i2 = 0; i2 < rootNode.namedChildCount; i2++) {
+      const node = rootNode.namedChild(i2);
+      if (!node) continue;
+      if (!this.isChunkableNode(node)) continue;
+      chunks.push(this.nodeToChunk(node, lines, filePath));
+    }
+    return chunks;
+  }
+  isChunkableNode(node) {
+    return [
+      "function_declaration",
+      "class_declaration",
+      "interface_declaration",
+      "type_alias_declaration",
+      "enum_declaration",
+      "lexical_declaration",
+      "export_statement"
+    ].includes(node.type);
+  }
+  nodeToChunk(node, lines, filePath) {
+    const startLine = node.startPosition.row;
+    const endLine = node.endPosition.row;
+    const text = lines.slice(startLine, endLine + 1).join("\n");
+    return {
+      text,
+      filePath,
+      startLine: startLine + 1,
+      endLine: endLine + 1,
+      type: node.type
+    };
+  }
+};
+
+// src/indexing/indexer.ts
+var Indexer = class _Indexer {
+  constructor(context, cc, db) {
+    this.context = context;
+    this.cc = cc;
+    this.db = db;
+  }
+  context;
+  cc;
+  db;
+  static async create(context) {
+    const cc = await CodeChunker.create(context.extensionUri);
+    let db;
+    try {
+      db = await VectorDB.create(context);
+    } catch (e2) {
+      console.log(`Failed to connect to database: ${e2}`);
+      db = void 0;
+    }
+    return new _Indexer(context, cc, db);
+  }
+  // Initial indexing of all relevant files in the workspace
+  async indexWorkspace(embedProvider, model) {
+    const chunks = await this.cc.chunkWorkspace();
+    if (chunks.length === 0) return;
+    const texts = chunks.map((chunk) => chunk.text);
+    const vectors = await embedProvider.embed(model, texts);
+    const dimension = vectors[0].length;
+    this.db = await VectorDB.create(this.context, dimension);
+    const rows = chunks.map((chunk, i2) => ({
+      vector: vectors[i2],
+      ...chunk
+    }));
+    await this.db.insertRows(rows);
+  }
+  async search(vector, limit2 = 10) {
+    return this.db.vectorSearch(vector, limit2);
+  }
+  dbConnected() {
+    return this.db !== void 0;
+  }
+};
+
 // src/main.ts
-var Sidebar = class {
+var ChatApp = class {
   constructor(context) {
     this.context = context;
     const savedHistory = context.workspaceState.get("agentChatHistory");
     if (savedHistory && savedHistory.length > 0) this.chatHistory = savedHistory;
     else this.chatHistory = this.getInitialChatMessages();
-    this.initVectorDB();
+    this.indexLoadPromise = Indexer.create(this.context).then((indexer) => {
+      this.indexer = indexer;
+      return indexer;
+    });
+    this.toolRegistry = createToolRegistry({
+      createSearchCodebaseDeps: async () => {
+        const providerId = this.context.globalState.get("selectedEmbeddingProvider");
+        const model = this.context.globalState.get("selectedEmbeddingModel");
+        if (!providerId || !model) throw new Error("embedding provider/model is not configured");
+        const apiKey = await this.getEmbeddingAPIKey(providerId);
+        if (!apiKey) throw new Error("missing embedding API key");
+        const indexer = await this.indexLoadPromise;
+        return {
+          indexer,
+          embedProvider: EmbedFactory.create(providerId, apiKey),
+          model
+        };
+      }
+    });
   }
   context;
   _view;
-  vectorDB;
   MAX_TURN_COUNT = 15;
+  indexer;
+  indexLoadPromise;
   chatHistory;
-  async initVectorDB() {
-    if (!this.context.storageUri) {
-      vscode5.window.showWarningMessage("No active workspace. Limited Functionality");
-      return;
-    }
-    try {
-      this.vectorDB = await VectorDB.create(this.context);
-    } catch (e2) {
-      vscode5.window.showErrorMessage(`Failed to initialize code search index: ${e2}`);
-    }
-  }
+  toolRegistry;
   getInitialChatMessages() {
     return [{
       role: "system",
@@ -51035,7 +51246,7 @@ var Sidebar = class {
   async runAgentTurn(provider, model, userMessage) {
     const apiKey = await this.getAPIKey(provider);
     if (!apiKey) {
-      vscode5.window.showErrorMessage(`No API key for ${provider}`);
+      vscode6.window.showErrorMessage(`No API key for ${provider}`);
       return;
     }
     try {
@@ -51081,9 +51292,9 @@ var Sidebar = class {
               args: toolArgs
             });
             let result = "";
-            if (toolRegistry[toolName]) {
+            if (this.toolRegistry[toolName]) {
               try {
-                result = await toolRegistry[toolName](toolArgs);
+                result = await this.toolRegistry[toolName](toolArgs);
                 this.post({ type: "updateTool", status: "success" });
               } catch (e2) {
                 result = `Error executing ${toolName}: ${e2}`;
@@ -51106,7 +51317,7 @@ var Sidebar = class {
       this.post({ type: "streamEnd" });
     }
   }
-  resolveWebviewView(webviewView, context, token) {
+  resolveWebviewView(webviewView, ctx, token) {
     this._view = webviewView;
     webviewView.webview.options = {
       enableScripts: true,
@@ -51138,7 +51349,9 @@ var Sidebar = class {
           const savedEmbeddingProvider = this.context.globalState.get("selectedEmbeddingProvider");
           const savedEmbeddingModel = this.context.globalState.get("selectedEmbeddingModel");
           if (savedEmbeddingProvider) {
+            const indexer = await this.indexLoadPromise;
             const embedApiKey = await this.getEmbeddingAPIKey(savedEmbeddingProvider);
+            const hasIndex = indexer.dbConnected();
             if (embedApiKey) {
               try {
                 const models = await this.getEmbeddingModelsFromProvider(savedEmbeddingProvider, embedApiKey);
@@ -51148,7 +51361,7 @@ var Sidebar = class {
                   provider: savedEmbeddingProvider,
                   model: savedEmbeddingModel,
                   models,
-                  status: indexingEnabled ? "Ready" : "Disabled"
+                  status: hasIndex ? "Ready" : indexingEnabled ? "Not Indexed" : "Disabled"
                 });
               } catch (e2) {
               }
@@ -51169,7 +51382,7 @@ var Sidebar = class {
               models: await this.getModelsFromProvider(data.provider, apiKey)
             });
           } catch (e2) {
-            vscode5.window.showErrorMessage(`Failed to fetch models: ${e2}`);
+            vscode6.window.showErrorMessage(`Failed to fetch models: ${e2}`);
             this.post({ type: "error" });
           }
           break;
@@ -51183,7 +51396,7 @@ var Sidebar = class {
               models: await this.getModelsFromProvider(data.provider, data.key)
             });
           } catch (e2) {
-            vscode5.window.showErrorMessage(`Invalid key or Failed to fetch models: ${e2}`);
+            vscode6.window.showErrorMessage(`Invalid key or Failed to fetch models: ${e2}`);
             this.post({ type: "requestApiKey", provider: data.provider });
           }
           break;
@@ -51219,7 +51432,7 @@ var Sidebar = class {
             const models = await this.getEmbeddingModelsFromProvider(data.provider, apiKey);
             this.post({ type: "setEmbeddingModels", models });
           } catch (e2) {
-            vscode5.window.showErrorMessage(`Failed to fetch embedding models: ${e2}`);
+            vscode6.window.showErrorMessage(`Failed to fetch embedding models: ${e2}`);
             this.post({ type: "requestEmbeddingApiKey", provider: data.provider });
           }
           break;
@@ -51231,7 +51444,7 @@ var Sidebar = class {
             const models = await this.getEmbeddingModelsFromProvider(data.provider, data.key);
             this.post({ type: "setEmbeddingModels", models });
           } catch (e2) {
-            vscode5.window.showErrorMessage(`Invalid embedding API key: ${e2}`);
+            vscode6.window.showErrorMessage(`Invalid embedding API key: ${e2}`);
             this.post({ type: "requestEmbeddingApiKey", provider: data.provider });
           }
           break;
@@ -51240,31 +51453,59 @@ var Sidebar = class {
           await this.context.globalState.update("selectedEmbeddingModel", data.model);
           break;
         }
+        case "indexWorkspace": {
+          try {
+            const apiKey = await this.getEmbeddingAPIKey(data.provider);
+            if (!apiKey) {
+              this.post({ type: "requestEmbeddingApiKey", provider: data.provider });
+              return;
+            }
+            if (!this.indexer) this.indexer = await Indexer.create(this.context);
+            const embedProvider = EmbedFactory.create(data.provider, apiKey);
+            await this.indexer.indexWorkspace(embedProvider, data.model);
+            this.post({
+              type: "indexingStatus",
+              status: "Indexed",
+              done: true,
+              hasIndex: true
+            });
+          } catch (e2) {
+            vscode6.window.showErrorMessage(`Indexing failed: ${formatError(e2)}`);
+            this.post({ type: "indexingError" });
+          }
+          break;
+        }
       }
     });
   }
   _getHtml() {
-    const htmlPath = vscode5.Uri.joinPath(this.context.extensionUri, "media", "sidebar.html");
-    const cssPath = vscode5.Uri.joinPath(this.context.extensionUri, "media", "sidebar.css");
+    const htmlPath = vscode6.Uri.joinPath(this.context.extensionUri, "media", "sidebar.html");
+    const cssPath = vscode6.Uri.joinPath(this.context.extensionUri, "media", "sidebar.css");
     try {
       let html = fs3.readFileSync(htmlPath.fsPath, "utf-8");
       const styleUri = this._view.webview.asWebviewUri(cssPath);
       html = html.replace("{{styleUri}}", styleUri.toString());
       return html;
     } catch (e2) {
-      vscode5.window.showErrorMessage(`Error loading sidebar html: ${e2}`);
+      vscode6.window.showErrorMessage(`Error loading sidebar html: ${e2}`);
       return `<!DOCTYPE html><html><body>Error loading UI</body></html>`;
     }
   }
 };
+function formatError(e2) {
+  if (e2 instanceof Error) {
+    return e2.stack ?? e2.message;
+  }
+  return String(e2);
+}
 
 // src/extension.ts
 function activate(context) {
-  const sidebar = new Sidebar(context);
+  const chatApp = new ChatApp(context);
   context.subscriptions.push(
-    vscode6.window.registerWebviewViewProvider(
+    vscode7.window.registerWebviewViewProvider(
       "codeagent-sidebar",
-      sidebar
+      chatApp
     )
   );
 }

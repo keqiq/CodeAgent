@@ -1,4 +1,4 @@
-import * as vscode from 'vscode'
+import * as vscode from 'vscode';
 export function getWorkspaceUri(filePath: string): vscode.Uri {
     const folders = vscode.workspace.workspaceFolders;
     if (!folders || folders.length === 0) throw new Error("No workspace open");

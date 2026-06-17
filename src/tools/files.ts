@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { getWorkspaceUri, getFileContent } from '../utils/workspace';
-import { ToolSchema } from '.';
+import { ToolSchema } from './toolIndex';
 
 export const fileSchemas: ToolSchema[] = [
     {
@@ -36,7 +36,7 @@ export const fileSchemas: ToolSchema[] = [
         type: "function",
         function: {
             name: "edit",
-            description: "Replace a specific block of text in an existing file.",
+            description: "Edit a file by replacing exact oldText with newText. Use read first if you are not certain oldText exactly matches the current file.",
             parameters: {
                 type: "object",
                 properties: {

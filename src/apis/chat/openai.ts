@@ -1,6 +1,6 @@
 import OpenAI from 'openai';
 import { ChatMessage, ChatProvider, ChatResponse } from './chatProvider';
-import { allToolSchemas } from '../../tools';
+import { allToolSchemas } from '../../tools/toolIndex';
 
 export class OpenAIChatProvider extends ChatProvider {
     private client: OpenAI;
