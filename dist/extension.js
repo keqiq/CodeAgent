@@ -11845,22 +11845,22 @@ var require_crypto2 = __commonJS({
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.NodeCrypto = void 0;
-    var crypto2 = require("crypto");
+    var crypto3 = require("crypto");
     var NodeCrypto = class {
       async sha256DigestBase64(str2) {
-        return crypto2.createHash("sha256").update(str2).digest("base64");
+        return crypto3.createHash("sha256").update(str2).digest("base64");
       }
       randomBytesBase64(count) {
-        return crypto2.randomBytes(count).toString("base64");
+        return crypto3.randomBytes(count).toString("base64");
       }
       async verify(pubkey, data, signature) {
-        const verifier = crypto2.createVerify("RSA-SHA256");
+        const verifier = crypto3.createVerify("RSA-SHA256");
         verifier.update(data);
         verifier.end();
         return verifier.verify(pubkey, signature, "base64");
       }
       async sign(privateKey, data) {
-        const signer = crypto2.createSign("RSA-SHA256");
+        const signer = crypto3.createSign("RSA-SHA256");
         signer.update(data);
         signer.end();
         return signer.sign(privateKey, "base64");
@@ -11878,7 +11878,7 @@ var require_crypto2 = __commonJS({
        *   string in hexadecimal encoding.
        */
       async sha256DigestHex(str2) {
-        return crypto2.createHash("sha256").update(str2).digest("hex");
+        return crypto3.createHash("sha256").update(str2).digest("hex");
       }
       /**
        * Computes the HMAC hash of a message using the provided crypto key and the
@@ -11890,7 +11890,7 @@ var require_crypto2 = __commonJS({
        */
       async signWithHmacSha256(key, msg) {
         const cryptoKey = typeof key === "string" ? key : toBuffer(key);
-        return toArrayBuffer(crypto2.createHmac("sha256", cryptoKey).update(msg).digest());
+        return toArrayBuffer(crypto3.createHmac("sha256", cryptoKey).update(msg).digest());
       }
     };
     exports2.NodeCrypto = NodeCrypto;
@@ -12804,10 +12804,10 @@ var require_oauth2client = __commonJS({
        * https://github.com/googleapis/google-auth-library-nodejs/blob/main/samples/oauth2-codeVerifier.js
        */
       async generateCodeVerifierAsync() {
-        const crypto2 = (0, crypto_1.createCrypto)();
-        const randomString = crypto2.randomBytesBase64(96);
+        const crypto3 = (0, crypto_1.createCrypto)();
+        const randomString = crypto3.randomBytesBase64(96);
         const codeVerifier = randomString.replace(/\+/g, "~").replace(/=/g, "_").replace(/\//g, "-");
-        const unencodedCodeChallenge = await crypto2.sha256DigestBase64(codeVerifier);
+        const unencodedCodeChallenge = await crypto3.sha256DigestBase64(codeVerifier);
         const codeChallenge = unencodedCodeChallenge.split("=")[0].replace(/\+/g, "-").replace(/\//g, "_");
         return { codeVerifier, codeChallenge };
       }
@@ -13248,7 +13248,7 @@ var require_oauth2client = __commonJS({
        * @return Returns a promise resolving to LoginTicket on verification.
        */
       async verifySignedJwtWithCertsAsync(jwt, certs, requiredAudience, issuers, maxExpiry) {
-        const crypto2 = (0, crypto_1.createCrypto)();
+        const crypto3 = (0, crypto_1.createCrypto)();
         if (!maxExpiry) {
           maxExpiry = _OAuth2Client.DEFAULT_MAX_TOKEN_LIFETIME_SECS_;
         }
@@ -13261,7 +13261,7 @@ var require_oauth2client = __commonJS({
         let envelope;
         let payload;
         try {
-          envelope = JSON.parse(crypto2.decodeBase64StringUtf8(segments[0]));
+          envelope = JSON.parse(crypto3.decodeBase64StringUtf8(segments[0]));
         } catch (err) {
           if (err instanceof Error) {
             err.message = `Can't parse token envelope: ${segments[0]}': ${err.message}`;
@@ -13272,7 +13272,7 @@ var require_oauth2client = __commonJS({
           throw new Error("Can't parse token envelope: " + segments[0]);
         }
         try {
-          payload = JSON.parse(crypto2.decodeBase64StringUtf8(segments[1]));
+          payload = JSON.parse(crypto3.decodeBase64StringUtf8(segments[1]));
         } catch (err) {
           if (err instanceof Error) {
             err.message = `Can't parse token payload '${segments[0]}`;
@@ -13289,7 +13289,7 @@ var require_oauth2client = __commonJS({
         if (envelope.alg === "ES256") {
           signature = formatEcdsa.joseToDer(signature, "ES256").toString("base64");
         }
-        const verified = await crypto2.verify(cert, signed, signature);
+        const verified = await crypto3.verify(cert, signed, signature);
         if (!verified) {
           throw new Error("Invalid token signature: " + jwt);
         }
@@ -13664,14 +13664,14 @@ var require_buffer_equal_constant_time = __commonJS({
 var require_jwa = __commonJS({
   "node_modules/jwa/index.js"(exports2, module2) {
     var Buffer4 = require_safe_buffer().Buffer;
-    var crypto2 = require("crypto");
+    var crypto3 = require("crypto");
     var formatEcdsa = require_ecdsa_sig_formatter();
     var util = require("util");
     var MSG_INVALID_ALGORITHM = '"%s" is not a valid algorithm.\n  Supported algorithms are:\n  "HS256", "HS384", "HS512", "RS256", "RS384", "RS512", "PS256", "PS384", "PS512", "ES256", "ES384", "ES512" and "none".';
     var MSG_INVALID_SECRET = "secret must be a string or buffer";
     var MSG_INVALID_VERIFIER_KEY = "key must be a string or a buffer";
     var MSG_INVALID_SIGNER_KEY = "key must be a string, a buffer or an object";
-    var supportsKeyObjects = typeof crypto2.createPublicKey === "function";
+    var supportsKeyObjects = typeof crypto3.createPublicKey === "function";
     if (supportsKeyObjects) {
       MSG_INVALID_VERIFIER_KEY += " or a KeyObject";
       MSG_INVALID_SECRET += "or a KeyObject";
@@ -13761,17 +13761,17 @@ var require_jwa = __commonJS({
       return function sign(thing, secret) {
         checkIsSecretKey(secret);
         thing = normalizeInput(thing);
-        var hmac = crypto2.createHmac("sha" + bits, secret);
+        var hmac = crypto3.createHmac("sha" + bits, secret);
         var sig = (hmac.update(thing), hmac.digest("base64"));
         return fromBase64(sig);
       };
     }
     var bufferEqual;
-    var timingSafeEqual = "timingSafeEqual" in crypto2 ? function timingSafeEqual2(a, b) {
+    var timingSafeEqual = "timingSafeEqual" in crypto3 ? function timingSafeEqual2(a, b) {
       if (a.byteLength !== b.byteLength) {
         return false;
       }
-      return crypto2.timingSafeEqual(a, b);
+      return crypto3.timingSafeEqual(a, b);
     } : function timingSafeEqual2(a, b) {
       if (!bufferEqual) {
         bufferEqual = require_buffer_equal_constant_time();
@@ -13788,7 +13788,7 @@ var require_jwa = __commonJS({
       return function sign(thing, privateKey) {
         checkIsPrivateKey(privateKey);
         thing = normalizeInput(thing);
-        var signer = crypto2.createSign("RSA-SHA" + bits);
+        var signer = crypto3.createSign("RSA-SHA" + bits);
         var sig = (signer.update(thing), signer.sign(privateKey, "base64"));
         return fromBase64(sig);
       };
@@ -13798,7 +13798,7 @@ var require_jwa = __commonJS({
         checkIsPublicKey(publicKey);
         thing = normalizeInput(thing);
         signature = toBase64(signature);
-        var verifier = crypto2.createVerify("RSA-SHA" + bits);
+        var verifier = crypto3.createVerify("RSA-SHA" + bits);
         verifier.update(thing);
         return verifier.verify(publicKey, signature, "base64");
       };
@@ -13807,11 +13807,11 @@ var require_jwa = __commonJS({
       return function sign(thing, privateKey) {
         checkIsPrivateKey(privateKey);
         thing = normalizeInput(thing);
-        var signer = crypto2.createSign("RSA-SHA" + bits);
+        var signer = crypto3.createSign("RSA-SHA" + bits);
         var sig = (signer.update(thing), signer.sign({
           key: privateKey,
-          padding: crypto2.constants.RSA_PKCS1_PSS_PADDING,
-          saltLength: crypto2.constants.RSA_PSS_SALTLEN_DIGEST
+          padding: crypto3.constants.RSA_PKCS1_PSS_PADDING,
+          saltLength: crypto3.constants.RSA_PSS_SALTLEN_DIGEST
         }, "base64"));
         return fromBase64(sig);
       };
@@ -13821,12 +13821,12 @@ var require_jwa = __commonJS({
         checkIsPublicKey(publicKey);
         thing = normalizeInput(thing);
         signature = toBase64(signature);
-        var verifier = crypto2.createVerify("RSA-SHA" + bits);
+        var verifier = crypto3.createVerify("RSA-SHA" + bits);
         verifier.update(thing);
         return verifier.verify({
           key: publicKey,
-          padding: crypto2.constants.RSA_PKCS1_PSS_PADDING,
-          saltLength: crypto2.constants.RSA_PSS_SALTLEN_DIGEST
+          padding: crypto3.constants.RSA_PKCS1_PSS_PADDING,
+          saltLength: crypto3.constants.RSA_PSS_SALTLEN_DIGEST
         }, signature, "base64");
       };
     }
@@ -16402,14 +16402,14 @@ var require_awsrequestsigner = __commonJS({
       }
     };
     exports2.AwsRequestSigner = AwsRequestSigner;
-    async function sign(crypto2, key, msg) {
-      return await crypto2.signWithHmacSha256(key, msg);
+    async function sign(crypto3, key, msg) {
+      return await crypto3.signWithHmacSha256(key, msg);
     }
-    async function getSigningKey(crypto2, key, dateStamp, region, serviceName) {
-      const kDate = await sign(crypto2, `AWS4${key}`, dateStamp);
-      const kRegion = await sign(crypto2, kDate, region);
-      const kService = await sign(crypto2, kRegion, serviceName);
-      const kSigning = await sign(crypto2, kService, "aws4_request");
+    async function getSigningKey(crypto3, key, dateStamp, region, serviceName) {
+      const kDate = await sign(crypto3, `AWS4${key}`, dateStamp);
+      const kRegion = await sign(crypto3, kDate, region);
+      const kService = await sign(crypto3, kRegion, serviceName);
+      const kSigning = await sign(crypto3, kService, "aws4_request");
       return kSigning;
     }
     async function generateAuthenticationHeaderMap(options) {
@@ -18128,24 +18128,24 @@ var require_googleauth = __commonJS({
           const signed = await client.sign(data);
           return signed.signedBlob;
         }
-        const crypto2 = (0, crypto_1.createCrypto)();
+        const crypto3 = (0, crypto_1.createCrypto)();
         if (client instanceof jwtclient_1.JWT && client.key) {
-          const sign = await crypto2.sign(client.key, data);
+          const sign = await crypto3.sign(client.key, data);
           return sign;
         }
         const creds = await this.getCredentials();
         if (!creds.client_email) {
           throw new Error("Cannot sign data without `client_email`.");
         }
-        return this.signBlob(crypto2, creds.client_email, data, endpoint);
+        return this.signBlob(crypto3, creds.client_email, data, endpoint);
       }
-      async signBlob(crypto2, emailOrUniqueId, data, endpoint) {
+      async signBlob(crypto3, emailOrUniqueId, data, endpoint) {
         const url = new URL(endpoint + `${emailOrUniqueId}:signBlob`);
         const res = await this.request({
           method: "POST",
           url: url.href,
           data: {
-            payload: crypto2.encodeBase64StringUtf8(data)
+            payload: crypto3.encodeBase64StringUtf8(data)
           },
           retry: true,
           retryConfig: {
@@ -20802,7 +20802,7 @@ var require_websocket = __commonJS({
     var http3 = require("http");
     var net = require("net");
     var tls = require("tls");
-    var { randomBytes, createHash } = require("crypto");
+    var { randomBytes, createHash: createHash2 } = require("crypto");
     var { Duplex, Readable: Readable2 } = require("stream");
     var { URL: URL2 } = require("url");
     var PerMessageDeflate2 = require_permessage_deflate();
@@ -21470,7 +21470,7 @@ var require_websocket = __commonJS({
           abortHandshake(websocket, socket, "Invalid Upgrade header");
           return;
         }
-        const digest = createHash("sha1").update(key + GUID).digest("base64");
+        const digest = createHash2("sha1").update(key + GUID).digest("base64");
         if (res.headers["sec-websocket-accept"] !== digest) {
           abortHandshake(websocket, socket, "Invalid Sec-WebSocket-Accept header");
           return;
@@ -21839,7 +21839,7 @@ var require_websocket_server = __commonJS({
     var EventEmitter = require("events");
     var http3 = require("http");
     var { Duplex } = require("stream");
-    var { createHash } = require("crypto");
+    var { createHash: createHash2 } = require("crypto");
     var extension2 = require_extension();
     var PerMessageDeflate2 = require_permessage_deflate();
     var subprotocol2 = require_subprotocol();
@@ -22146,7 +22146,7 @@ var require_websocket_server = __commonJS({
           );
         }
         if (this._state > RUNNING) return abortHandshake(socket, 503);
-        const digest = createHash("sha1").update(key + GUID).digest("base64");
+        const digest = createHash2("sha1").update(key + GUID).digest("base64");
         const headers = [
           "HTTP/1.1 101 Switching Protocols",
           "Upgrade: websocket",
@@ -37114,13 +37114,13 @@ var FileSearchStores = class extends BaseModule {
   }
 };
 var uuid4Internal = function() {
-  const { crypto: crypto2 } = globalThis;
-  if (crypto2 === null || crypto2 === void 0 ? void 0 : crypto2.randomUUID) {
-    uuid4Internal = crypto2.randomUUID.bind(crypto2);
-    return crypto2.randomUUID();
+  const { crypto: crypto3 } = globalThis;
+  if (crypto3 === null || crypto3 === void 0 ? void 0 : crypto3.randomUUID) {
+    uuid4Internal = crypto3.randomUUID.bind(crypto3);
+    return crypto3.randomUUID();
   }
   const u8 = new Uint8Array(1);
-  const randomByte = crypto2 ? () => crypto2.getRandomValues(u8)[0] : () => Math.random() * 255 & 255;
+  const randomByte = crypto3 ? () => crypto3.getRandomValues(u8)[0] : () => Math.random() * 255 & 255;
   return "10000000-1000-4000-8000-100000000000".replace(/[018]/g, (c) => (+c ^ randomByte() & 15 >> +c / 4).toString(16));
 };
 var uuid4 = () => uuid4Internal();
@@ -40885,8 +40885,14 @@ var searchSchemas = [
 async function executeGlob(pattern) {
   const excludePattern = "{**/node_modules/**,**/.git/**,**/dist/**}";
   const uris = await vscode2.workspace.findFiles(pattern, excludePattern, 1e3);
-  if (uris.length === 0) return "No files found.";
-  return uris.map((uri) => vscode2.workspace.asRelativePath(uri)).join("\n");
+  if (uris.length === 0) {
+    return {
+      message: "No files found in workspace"
+    };
+  }
+  return {
+    message: uris.map((uri) => vscode2.workspace.asRelativePath(uri)).join("\n")
+  };
 }
 var textDecoder2 = new TextDecoder("utf-8");
 async function executeGrep(query, filePattern = "**/*") {
@@ -40894,7 +40900,7 @@ async function executeGrep(query, filePattern = "**/*") {
   try {
     regex = new RegExp(query);
   } catch (e2) {
-    return `Error: Invalid regex : ${e2}`;
+    throw new Error(`Invalid regex: ${e2}`);
   }
   const excludePattern = "{**/node_modules/**,**/.git/**,**/dist/**,**/*.{png,jpg,jpeg,ico,bin}}";
   const uris = await vscode2.workspace.findFiles(filePattern, excludePattern, 1e3);
@@ -40913,20 +40919,34 @@ async function executeGrep(query, filePattern = "**/*") {
       continue;
     }
   }
-  return results.length > 0 ? results.slice(0, 500).join("\n") : "No matches found.";
+  return {
+    message: results.length > 0 ? results.slice(0, 500).join("\n") : "No matches found."
+  };
 }
 async function executeSearchCodebase(query, deps) {
-  if (!query.trim()) return "Search query is empty.";
+  if (!query.trim()) throw new Error("Search query is emtpy");
   const [queryVector] = await deps.embedProvider.embed(deps.model, [query]);
   const results = await deps.indexer.search(queryVector, 10);
-  if (results.length === 0) return "No relevant code found.";
-  return results.map(
-    (r2, i2) => `Result ${i2 + 1}
+  console.log(`[SEARCH DEBUG] Query: ${query}`);
+  console.log(`[SEARCH DEBUG] Result count: ${results.length}`);
+  if (results.length === 0) {
+    return {
+      message: "No relevant code found"
+    };
+  }
+  for (const r2 of results.slice(0, 5)) {
+    console.log(`[SEARCH DEBUG] ${r2.filePath}:${r2.startLine}-${r2.endLine}`);
+    console.log(`[SEARCH DEBUG] preview: ${String(r2.text).slice(0, 160).replace(/\s+/g, " ")}`);
+  }
+  return {
+    message: results.map(
+      (r2, i2) => `Result ${i2 + 1}
 File: ${r2.filePath}
 Lines: ${r2.startLine}-${r2.endLine}
 
 ${r2.text}`
-  ).join("\n\n---\n\n");
+    ).join("\n\n---\n\n")
+  };
 }
 
 // src/tools/files.ts
@@ -40965,7 +40985,7 @@ var fileSchemas = [
     type: "function",
     function: {
       name: "edit",
-      description: "Replace a specific block of text in an existing file.",
+      description: "Edit a file by replacing exact oldText with newText. Use read first if you are not certain oldText exactly matches the current file.",
       parameters: {
         type: "object",
         properties: {
@@ -40981,46 +41001,42 @@ var fileSchemas = [
 var textDecoder3 = new TextDecoder("utf-8");
 var textEncoder = new TextEncoder();
 async function executeRead(filePath) {
-  try {
-    const fileUri = getWorkspaceUri(filePath);
-    const uint8Array = await vscode3.workspace.fs.readFile(fileUri);
-    return textDecoder3.decode(uint8Array);
-  } catch (e2) {
-    return `Error reading file: ${e2}`;
-  }
+  const fileUri = getWorkspaceUri(filePath);
+  const uint8Array = await vscode3.workspace.fs.readFile(fileUri);
+  return {
+    message: textDecoder3.decode(uint8Array)
+  };
 }
 async function executeWrite(filePath, content) {
-  try {
-    const fileUri = getWorkspaceUri(filePath);
-    const uint8Array = textEncoder.encode(content);
-    await vscode3.workspace.fs.writeFile(fileUri, uint8Array);
-    return `Successfully wrote to ${filePath}`;
-  } catch (e2) {
-    return `Error writing file: ${e2}`;
-  }
+  const fileUri = getWorkspaceUri(filePath);
+  const uint8Array = textEncoder.encode(content);
+  await vscode3.workspace.fs.writeFile(fileUri, uint8Array);
+  return {
+    message: `Successfully wrote to ${filePath}`,
+    changedFiles: [filePath]
+  };
 }
 var normalize = (str2) => str2.replace(/\r\n/g, "\n").replace(/[ \t]+/g, " ").trim();
 async function executeEdit(filePath, oldText, newText) {
-  try {
-    const fileUri = getWorkspaceUri(filePath);
-    const rawFileContent = await getFileContent(fileUri);
-    const fileContent = rawFileContent.replace(/\r\n/g, "\n");
-    const searchOldText = oldText.replace(/\r\n/g, "\n");
-    const applyNewText = newText.replace(/\r\n/g, "\n");
-    if (fileContent.includes(searchOldText)) {
-      const updatedContent = fileContent.replace(searchOldText, applyNewText);
-      await vscode3.workspace.fs.writeFile(fileUri, textEncoder.encode(updatedContent));
-      return `Successfully edited ${filePath} with strict matching.`;
-    }
-    const normalizedFile = normalize(fileContent);
-    const normalizedOldText = normalize(oldText);
-    if (normalizedFile.includes(normalizedOldText)) {
-      return "Error: oldText was found, but the indentation or line breaks did not match the file perfectly. Please use readFile to check the exact whitespace and try again.";
-    }
-    return "Error: oldText was not found in the file at all. Ensure you are targeting the right code.";
-  } catch (e2) {
-    return `Error editing file: ${e2}`;
+  const fileUri = getWorkspaceUri(filePath);
+  const rawFileContent = await getFileContent(fileUri);
+  const fileContent = rawFileContent.replace(/\r\n/g, "\n");
+  const searchOldText = oldText.replace(/\r\n/g, "\n");
+  const applyNewText = newText.replace(/\r\n/g, "\n");
+  if (fileContent.includes(searchOldText)) {
+    const updatedContent = fileContent.replace(searchOldText, applyNewText);
+    await vscode3.workspace.fs.writeFile(fileUri, textEncoder.encode(updatedContent));
+    return {
+      message: `Successfully edited ${filePath} with strict matching.`,
+      changedFiles: [filePath]
+    };
   }
+  const normalizedFile = normalize(fileContent);
+  const normalizedOldText = normalize(oldText);
+  if (normalizedFile.includes(normalizedOldText)) {
+    throw new Error("oldText was found, but the indentation or line breaks did not match the file perfectly. Please use readFile to check the exact whitespace and try again.");
+  }
+  throw new Error("oldText was not found in the file at all. Ensure you are targeting the right code.");
 }
 
 // src/tools/toolIndex.ts
@@ -41040,7 +41056,10 @@ function createToolRegistry(deps) {
         const searchDeps = await deps.createSearchCodebaseDeps();
         return await executeSearchCodebase(args.query, searchDeps);
       } catch (e2) {
-        return `Codebase semantic search unavailable: ${e2 instanceof Error ? e2.message : String(e2)}. Use glob, grep, or read instead.`;
+        return {
+          ok: false,
+          message: `Codebase semantic search unavailable: ${e2 instanceof Error ? e2.message : String(e2)}. Use glob, grep, or read instead.`
+        };
       }
     }
   };
@@ -41162,13 +41181,13 @@ function __classPrivateFieldGet(receiver, state, kind, f3) {
 
 // node_modules/openai/internal/utils/uuid.mjs
 var uuid42 = function() {
-  const { crypto: crypto2 } = globalThis;
-  if (crypto2?.randomUUID) {
-    uuid42 = crypto2.randomUUID.bind(crypto2);
-    return crypto2.randomUUID();
+  const { crypto: crypto3 } = globalThis;
+  if (crypto3?.randomUUID) {
+    uuid42 = crypto3.randomUUID.bind(crypto3);
+    return crypto3.randomUUID();
   }
   const u8 = new Uint8Array(1);
-  const randomByte = crypto2 ? () => crypto2.getRandomValues(u8)[0] : () => Math.random() * 255 & 255;
+  const randomByte = crypto3 ? () => crypto3.getRandomValues(u8)[0] : () => Math.random() * 255 & 255;
   return "10000000-1000-4000-8000-100000000000".replace(/[018]/g, (c) => (+c ^ randomByte() & 15 >> +c / 4).toString(16));
 };
 
@@ -50925,19 +50944,19 @@ var GeminiEmbedProvider = class extends EmbedProvider {
     }
     return modelNames.sort();
   }
-  async embed(model, text) {
-    const result = await this.client.models.embedContent({
-      model,
-      contents: text
-      // config: { outputDimensionality: this.dimensions }
-    });
-    if (!result.embeddings) throw new Error("Gemini did not return embeddings");
-    return result.embeddings.map((embedding) => {
-      if (!embedding.values) {
-        throw new Error("Gemini returned an embedding without values");
-      }
-      return embedding.values;
-    });
+  async embed(model, texts) {
+    const vectors = [];
+    for (const text of texts) {
+      const result = await this.client.models.embedContent({
+        model,
+        contents: text
+        // config: { outputDimensionality: this.dimensions }
+      });
+      const vector = result.embeddings?.[0]?.values;
+      if (!vector) throw new Error("Gemini did not return embeddings");
+      vectors.push(vector);
+    }
+    return vectors;
   }
 };
 
@@ -51003,6 +51022,9 @@ var VectorDB = class _VectorDB {
     if (rows.length === 0) return;
     await this.table.add(rows);
   }
+  async deleteByFilePath(filePath) {
+    await this.table.delete(`filePath = '${filePath.replace(/'/g, "''")}'`);
+  }
   async vectorSearch(queryVector, limit2) {
     const results = await this.table.search(queryVector).limit(limit2).toArray();
     return results.filter((row) => row.filePath !== "system");
@@ -51023,6 +51045,9 @@ var VectorDB = class _VectorDB {
       initialSchema,
       { mode: "overwrite" }
     );
+  }
+  async getRowsByFilePath(filePath) {
+    return await this.table.query().where(`filePath = '${filePath.replace(/'/g, "''")}'`).toArray();
   }
 };
 
@@ -51135,6 +51160,7 @@ var CodeChunker = class _CodeChunker {
 };
 
 // src/indexing/indexer.ts
+var crypto2 = __toESM(require("crypto"));
 var Indexer = class _Indexer {
   constructor(context, cc, db) {
     this.context = context;
@@ -51169,11 +51195,46 @@ var Indexer = class _Indexer {
     }));
     await this.db.insertRows(rows);
   }
+  async reindexFile(filePath, embedProvider, model) {
+    if (!this.db) throw new Error("Cannot reindex file: VectorDB is not connected");
+    const workspaceUri = getWorkspaceUri(filePath);
+    const chunks = await this.cc.chunkFile(workspaceUri);
+    await this.db.deleteByFilePath(filePath);
+    console.log(`[INDEX DEBUG] chunk count for ${filePath}: ${chunks.length}`);
+    console.log(`[INDEX DEBUG] first chunk preview: ${chunks[0]?.text.slice(0, 120).replace(/\s+/g, " ")}`);
+    if (chunks.length === 0) return;
+    const texts = chunks.map((chunk) => chunk.text);
+    const vectors = await embedProvider.embed(model, texts);
+    console.log(`[INDEX DEBUG] Embedded ${vectors.length} vector(s)`);
+    const rows = chunks.map((chunk, i2) => ({
+      vector: vectors[i2],
+      ...chunk
+    }));
+    await this.db.insertRows(rows);
+    const storedRows = await this.db.getRowsByFilePath(filePath);
+    console.log(`[INDEX DEBUG] Stored row count after insert: ${storedRows.length}`);
+    for (let i2 = 0; i2 < Math.min(3, storedRows.length); i2++) {
+      this.debugVector(`stored vector ${i2 + 1} for ${filePath}`, storedRows[i2].vector, storedRows[i2].text);
+    }
+  }
   async search(vector, limit2 = 10) {
     return this.db.vectorSearch(vector, limit2);
   }
+  async deleteFile(filePath) {
+    if (!this.db) throw new Error("Cannot delete file: VectorDB is not connected");
+    await this.db.deleteByFilePath(filePath);
+  }
   dbConnected() {
     return this.db !== void 0;
+  }
+  debugVector(label, vector, text) {
+    const values = Array.from(vector);
+    const textHash = crypto2.createHash("sha256").update(text).digest("hex").slice(0, 12);
+    console.log(`[INDEX DEBUG] ${label}`);
+    console.log(`  textHash: ${textHash}`);
+    console.log(`  dimension: ${values.length}`);
+    console.log(`  first10: ${values.slice(0, 10).map((n) => Number(n).toFixed(5)).join(", ")}`);
+    console.log(`  preview: ${text.slice(0, 160).replace(/\s+/g, " ")}`);
   }
 };
 
@@ -51203,14 +51264,33 @@ var ChatApp = class {
         };
       }
     });
+    const watcher = vscode6.workspace.createFileSystemWatcher("**/*.{ts,tsx,js,jsx}");
+    watcher.onDidChange((uri) => {
+      if (this.context.globalState.get("indexingEnabled")) {
+        this.scheduleReindex([vscode6.workspace.asRelativePath(uri)]);
+      }
+    });
+    watcher.onDidCreate((uri) => {
+      if (this.context.globalState.get("indexingEnabled")) {
+        this.scheduleReindex([vscode6.workspace.asRelativePath(uri)]);
+      }
+    });
+    watcher.onDidDelete((uri) => {
+      if (this.context.globalState.get("indexingEnabled")) {
+        this.scheduleDeleteFile([vscode6.workspace.asRelativePath(uri)]);
+      }
+    });
   }
   context;
   _view;
   MAX_TURN_COUNT = 15;
-  indexer;
-  indexLoadPromise;
   chatHistory;
   toolRegistry;
+  indexer;
+  indexLoadPromise;
+  dirtyFiles = /* @__PURE__ */ new Set();
+  deletedFiles = /* @__PURE__ */ new Set();
+  reindexTimer;
   getInitialChatMessages() {
     return [{
       role: "system",
@@ -51291,20 +51371,22 @@ var ChatApp = class {
               toolName,
               args: toolArgs
             });
-            let result = "";
+            let result;
             if (this.toolRegistry[toolName]) {
               try {
                 result = await this.toolRegistry[toolName](toolArgs);
                 this.post({ type: "updateTool", status: "success" });
+                if (result.changedFiles?.length) this.scheduleReindex(result.changedFiles);
               } catch (e2) {
-                result = `Error executing ${toolName}: ${e2}`;
-                this.post({ type: "updateTool", status: "error", error: String(e2) });
+                const message = e2 instanceof Error ? e2.message : String(e2);
+                result = { message: `Error executing ${toolName}: ${message}` };
+                this.post({ type: "updateTool", status: "error", error: message });
               }
             } else {
-              result = `Error: Tool '${toolName}' is not registered`;
+              result = { message: `Error: Tool '${toolName}' is not registered` };
               this.post({ type: "updateTool", status: "error", error: "Invalid tool call" });
             }
-            this.chatHistory.push({ role: "system", content: `${toolName} result: ${result}` });
+            this.chatHistory.push({ role: "system", content: `${toolName} result: ${result.message}` });
           }
         } else {
           keepGoing = false;
@@ -51315,6 +51397,59 @@ var ChatApp = class {
     } catch (e2) {
       this.post({ type: "receiveMessage", text: `\u274C Error: ${e2}` });
       this.post({ type: "streamEnd" });
+    }
+  }
+  async scheduleReindex(filePaths) {
+    for (const filePath of filePaths) {
+      this.dirtyFiles.add(filePath);
+    }
+    if (this.reindexTimer) clearTimeout(this.reindexTimer);
+    this.reindexTimer = setTimeout(() => {
+      void this.flushReindexQueue();
+    }, 1500);
+  }
+  async scheduleDeleteFile(filePaths) {
+    for (const filePath of filePaths) {
+      this.deletedFiles.add(filePath);
+      this.dirtyFiles.delete(filePath);
+    }
+    if (this.reindexTimer) clearTimeout(this.reindexTimer);
+    this.reindexTimer = setTimeout(() => {
+      void this.flushReindexQueue();
+    }, 1500);
+  }
+  async flushReindexQueue() {
+    const dirtyFiles = [...this.dirtyFiles];
+    const deletedFiles = [...this.deletedFiles];
+    this.dirtyFiles.clear();
+    this.deletedFiles.clear();
+    const providerId = this.context.globalState.get("selectedEmbeddingProvider");
+    const model = this.context.globalState.get("selectedEmbeddingModel");
+    if (!providerId || !model) return;
+    const apiKey = await this.getEmbeddingAPIKey(providerId);
+    if (!apiKey) return;
+    const indexer = await this.indexLoadPromise;
+    if (!indexer.dbConnected()) return;
+    this.post({
+      type: "indexingStatus",
+      status: `Reindexing ${dirtyFiles.length + deletedFiles.length} file(s)...`,
+      done: false
+    });
+    const embedProvider = EmbedFactory.create(providerId, apiKey);
+    try {
+      for (const file of deletedFiles) await indexer.deleteFile(file);
+      for (const file of dirtyFiles) await indexer.reindexFile(file, embedProvider, model);
+      this.post({
+        type: "indexingStatus",
+        status: "Ready",
+        done: true
+      });
+    } catch (e2) {
+      console.error(`Failed to flush reindex queue: ${e2}`);
+      this.post({
+        type: "indexingError",
+        error: e2 instanceof Error ? e2.message : String(e2)
+      });
     }
   }
   resolveWebviewView(webviewView, ctx, token) {

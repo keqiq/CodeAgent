@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { getWorkspaceUri, getFileContent } from '../utils/workspace';
-import { ToolSchema } from './toolIndex';
+import { ToolResult, ToolSchema } from './toolIndex';
 
 export const fileSchemas: ToolSchema[] = [
     {
@@ -53,56 +53,53 @@ export const fileSchemas: ToolSchema[] = [
 const textDecoder = new TextDecoder('utf-8');
 const textEncoder = new TextEncoder();
 
-export async function executeRead(filePath: string): Promise<string> {
-    try {
+export async function executeRead(filePath: string): Promise<ToolResult> {
+    const fileUri = getWorkspaceUri(filePath);
 
-        const fileUri = getWorkspaceUri(filePath);
+    const uint8Array = await vscode.workspace.fs.readFile(fileUri);
 
-        const uint8Array = await vscode.workspace.fs.readFile(fileUri);
-
-        return textDecoder.decode(uint8Array);
-    } catch (e) {
-        return `Error reading file: ${e}`;
-    }
+    return {
+        message: textDecoder.decode(uint8Array)
+    };
 }
 
-export async function executeWrite(filePath: string, content: string): Promise<string> {
-    try {
-        const fileUri = getWorkspaceUri(filePath);
-        const uint8Array = textEncoder.encode(content);
-        await vscode.workspace.fs.writeFile(fileUri, uint8Array);
-        return `Successfully wrote to ${filePath}`;
-    } catch (e) {
-        return `Error writing file: ${e}`;
-    }
+export async function executeWrite(filePath: string, content: string): Promise<ToolResult> {
+    const fileUri = getWorkspaceUri(filePath);
+    const uint8Array = textEncoder.encode(content);
+    await vscode.workspace.fs.writeFile(fileUri, uint8Array);
+    return {
+        message: `Successfully wrote to ${filePath}`,
+        changedFiles: [filePath]
+    };
 }
 
 const normalize = (str: string) => str.replace(/\r\n/g, '\n').replace(/[ \t]+/g, ' ').trim();
-export async function executeEdit(filePath: string, oldText: string, newText: string) {
-    try {
-        const fileUri = getWorkspaceUri(filePath);
-        const rawFileContent = await getFileContent(fileUri);
+export async function executeEdit(filePath: string, oldText: string, newText: string): Promise<ToolResult> {
+    const fileUri = getWorkspaceUri(filePath);
+    const rawFileContent = await getFileContent(fileUri);
 
-        const fileContent = rawFileContent.replace(/\r\n/g, '\n');
-        const searchOldText = oldText.replace(/\r\n/g, '\n');
-        const applyNewText = newText.replace(/\r\n/g, '\n');
+    const fileContent = rawFileContent.replace(/\r\n/g, '\n');
+    const searchOldText = oldText.replace(/\r\n/g, '\n');
+    const applyNewText = newText.replace(/\r\n/g, '\n');
 
-        // Try stict matching first
-        if (fileContent.includes(searchOldText)) {
-            const updatedContent = fileContent.replace(searchOldText, applyNewText);
-            await vscode.workspace.fs.writeFile(fileUri, textEncoder.encode(updatedContent));
-            return `Successfully edited ${filePath} with strict matching.`;
-        }
+    // Try stict matching first
+    if (fileContent.includes(searchOldText)) {
+        const updatedContent = fileContent.replace(searchOldText, applyNewText);
+        await vscode.workspace.fs.writeFile(fileUri, textEncoder.encode(updatedContent));
 
-        // Whitespace agnostic matching fallback
-        const normalizedFile = normalize(fileContent);
-        const normalizedOldText = normalize(oldText);
-
-        if (normalizedFile.includes(normalizedOldText)) {
-            return "Error: oldText was found, but the indentation or line breaks did not match the file perfectly. Please use readFile to check the exact whitespace and try again.";
-        }
-        return "Error: oldText was not found in the file at all. Ensure you are targeting the right code.";
-    } catch (e) {
-        return `Error editing file: ${e}`;
+        return {
+            message: `Successfully edited ${filePath} with strict matching.`,
+            changedFiles: [filePath]
+        };
     }
+
+    // Whitespace agnostic matching fallback
+    const normalizedFile = normalize(fileContent);
+    const normalizedOldText = normalize(oldText);
+
+    if (normalizedFile.includes(normalizedOldText)) {
+        throw new Error("oldText was found, but the indentation or line breaks did not match the file perfectly. Please use readFile to check the exact whitespace and try again.");
+    }
+    throw new Error("oldText was not found in the file at all. Ensure you are targeting the right code.");
+
 }

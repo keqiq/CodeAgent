@@ -65,19 +65,23 @@ export class VectorDB {
         return new VectorDB(dimension, connection, table);
     }
 
-    async insertRows(rows: VectorRow[]): Promise<void> {
+    public async insertRows(rows: VectorRow[]): Promise<void> {
         if (rows.length === 0) return;
 
         await this.table.add(rows as unknown as Record<string, unknown>[]);
     }
 
-    async vectorSearch(queryVector: number[], limit: number): Promise<any[]> {
+    public async deleteByFilePath(filePath: string): Promise<void> {
+        await this.table.delete(`filePath = '${filePath.replace(/'/g, "''")}'`);
+    }
+
+    public async vectorSearch(queryVector: number[], limit: number): Promise<any[]> {
         const results = await this.table.search(queryVector).limit(limit).toArray();
 
         return results.filter(row => row.filePath !== "system");
     }
 
-    async clearAll(): Promise<void> {
+    public async clearAll(): Promise<void> {
         const initialSchema: Record<string, unknown>[] = [
             {
                 vector: Array(this.dimension).fill(0),
@@ -96,4 +100,10 @@ export class VectorDB {
         );
     }
 
+    public async getRowsByFilePath(filePath: string): Promise<VectorRow[]> {
+        return await this.table
+            .query()
+            .where(`filePath = '${filePath.replace(/'/g, "''")}'`)
+            .toArray() as unknown as VectorRow[];
+    }
 }

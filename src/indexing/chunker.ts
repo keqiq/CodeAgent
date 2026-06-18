@@ -77,7 +77,7 @@ export class CodeChunker {
         return chunks;
     }
 
-    private async chunkFile(uri: vscode.Uri): Promise<CodeChunk[]> {
+    public async chunkFile(uri: vscode.Uri): Promise<CodeChunk[]> {
         const filePath = vscode.workspace.asRelativePath(uri);
         const extension = this.getExtension(filePath);
 

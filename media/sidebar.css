@@ -422,6 +422,16 @@ input[type="password"] {
     background: var(--vscode-testing-iconFailed);
 }
 
+.status-dot.spinning {
+    width: 10px;
+    height: 10px;
+    background: transparent;
+    border: 2px solid var(--vscode-charts-yellow);
+    border-top-color: transparent;
+    animation: spin 1s linear infinite;
+    opacity: 1;
+}
+
 .floating-panel {
     display: none;
     position: absolute;

@@ -22,6 +22,12 @@ export interface ToolSchema {
     type: string, function: ToolFunction
 }
 
+export interface ToolResult {
+    message: string;
+
+    changedFiles?: string[];
+    data?: unknown;
+}
 export const allToolSchemas: ToolSchema[] = [
     ...searchSchemas,
     ...fileSchemas,
@@ -39,7 +45,7 @@ export type ToolDeps = {
     createSearchCodebaseDeps: () => Promise<SearchCodebaseDeps>;
 };
 
-export function createToolRegistry(deps: ToolDeps): Record<string, (args: any) => Promise<string>> {
+export function createToolRegistry(deps: ToolDeps): Record<string, (args: any) => Promise<ToolResult>> {
     return {
         glob: async (args) => await executeGlob(args.pattern),
 
@@ -56,7 +62,10 @@ export function createToolRegistry(deps: ToolDeps): Record<string, (args: any) =
                 const searchDeps = await deps.createSearchCodebaseDeps();
                 return await executeSearchCodebase(args.query, searchDeps);
             } catch (e) {
-                return `Codebase semantic search unavailable: ${e instanceof Error ? e.message : String(e)}. Use glob, grep, or read instead.`;
+                return {
+                    ok: false,
+                    message: `Codebase semantic search unavailable: ${e instanceof Error ? e.message : String(e)}. Use glob, grep, or read instead.`
+                };
             }
         }
     };

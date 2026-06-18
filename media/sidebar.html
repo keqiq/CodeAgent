@@ -499,6 +499,7 @@
 
             indexWorkspaceBtn.disabled = true;
             indexingStatus.textContent = 'Indexing...';
+            indexingDot.className = 'status-dot spinning';
 
             vscode.postMessage({ type: 'indexWorkspace', provider, model });
         });
@@ -647,10 +648,14 @@
                 if (message.done) {
                     indexingDot.className = 'status-dot ready';
                     indexWorkspaceBtn.disabled = false;
+                } else {
+                    indexingDot.className = 'status-dot spinning';
+                    indexWorkspaceBtn.disabled = true;
                 }
             }
 
             else if (message.type === 'indexingError') {
+                indexingDot.className = 'status-dot error';
                 indexingStatus.textContent = 'Indexing failed';
                 indexWorkspaceBtn.disabled = false;
             }

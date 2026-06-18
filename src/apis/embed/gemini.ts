@@ -28,21 +28,22 @@ export class GeminiEmbedProvider extends EmbedProvider {
 
     }
 
-    async embed(model: string, text: string[]): Promise<number[][]> {
-        const result = await this.client.models.embedContent ({
-            model: model,
-            contents: text,
-            // config: { outputDimensionality: this.dimensions }
-        });
+    async embed(model: string, texts: string[]): Promise<number[][]> {
+        const vectors: number[][] = [];
+        for (const text of texts) {
+            const result = await this.client.models.embedContent ({
+                model: model,
+                contents: text,
+                // config: { outputDimensionality: this.dimensions }
+            });
+            const vector = result.embeddings?.[0]?.values;
 
-        if (!result.embeddings) throw new Error("Gemini did not return embeddings");
+            if (!vector) throw new Error("Gemini did not return embeddings");
 
-        return result.embeddings.map(embedding => {
-            if (!embedding.values) {
-                throw new Error("Gemini returned an embedding without values");
-            }
 
-            return embedding.values;
-        });
+            vectors.push(vector);
+        }
+
+        return vectors;
     }
 }

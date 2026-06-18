@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import { ChatFactory } from './apis/chat/chatFactory';
 import { ChatMessage } from './apis/chat/chatProvider';
-import { createToolRegistry } from './tools/toolIndex';
+import { createToolRegistry, ToolResult } from './tools/toolIndex';
 import { EmbedFactory } from './apis/embed/embedFactory';
 import { Indexer } from './indexing/indexer';
 
@@ -12,15 +12,21 @@ export class ChatApp implements vscode.WebviewViewProvider {
 
     private _view?: vscode.WebviewView;
     private MAX_TURN_COUNT = 15;
+    
+    private chatHistory: ChatMessage[];
+    private toolRegistry: any;
+    
     private indexer? : Indexer;
     private indexLoadPromise: Promise<Indexer>;
 
-    private chatHistory: ChatMessage[];
-    private toolRegistry: any;
+    private dirtyFiles = new Set<string>();
+    private deletedFiles = new Set<string>();
+    private reindexTimer?: NodeJS.Timeout;
 
+    
     constructor(private readonly context: vscode.ExtensionContext) {
         const savedHistory = context.workspaceState.get<ChatMessage[]>('agentChatHistory');
-
+        
         if (savedHistory && savedHistory.length > 0) this.chatHistory = savedHistory;
         else this.chatHistory = this.getInitialChatMessages();
         
@@ -28,24 +34,43 @@ export class ChatApp implements vscode.WebviewViewProvider {
             this.indexer = indexer;
             return indexer;
         });
-
+        
         this.toolRegistry = createToolRegistry({
             createSearchCodebaseDeps: async () => {
                 const providerId = this.context.globalState.get<string>('selectedEmbeddingProvider');
                 const model = this.context.globalState.get<string>('selectedEmbeddingModel');
-
+                
                 if (!providerId || !model) throw new Error("embedding provider/model is not configured");
                 
-
+                
                 const apiKey = await this.getEmbeddingAPIKey(providerId);
                 if (!apiKey) throw new Error("missing embedding API key");
                 const indexer = await this.indexLoadPromise;
-
+                
                 return {
                     indexer: indexer,
                     embedProvider: EmbedFactory.create(providerId, apiKey),
                     model
                 };
+            }
+        });
+        const watcher = vscode.workspace.createFileSystemWatcher('**/*.{ts,tsx,js,jsx}');
+
+        watcher.onDidChange(uri => {
+            if (this.context.globalState.get<boolean>('indexingEnabled')) {
+                this.scheduleReindex([vscode.workspace.asRelativePath(uri)]);
+            }
+        });
+
+        watcher.onDidCreate(uri => {
+            if (this.context.globalState.get<boolean>('indexingEnabled')) {
+                this.scheduleReindex([vscode.workspace.asRelativePath(uri)]);
+            }
+        });
+
+        watcher.onDidDelete(uri => {
+            if (this.context.globalState.get<boolean>('indexingEnabled')) {
+                this.scheduleDeleteFile([vscode.workspace.asRelativePath(uri)]);
             }
         });
     }
@@ -157,22 +182,24 @@ export class ChatApp implements vscode.WebviewViewProvider {
                             args: toolArgs
                         });
 
-                        let result = "";
+                        let result: ToolResult;
 
                         if (this.toolRegistry[toolName]) {
                             try {
                                 result = await this.toolRegistry[toolName](toolArgs);
                                 this.post({ type: 'updateTool', status: 'success' });
+                                if (result.changedFiles?.length) this.scheduleReindex(result.changedFiles);
                             } catch (e) {
-                                result = `Error executing ${toolName}: ${e}`;
-                                this.post({ type: 'updateTool', status: 'error', error: String(e) });
+                                const message = e instanceof Error ? e.message : String(e);
+                                result = { message: `Error executing ${toolName}: ${message}`};
+                                this.post({ type: 'updateTool', status: 'error', error: message });
                             }
                         } else {
-                            result = `Error: Tool '${toolName}' is not registered`;
+                            result =  {message: `Error: Tool '${toolName}' is not registered`};
                             this.post({ type: 'updateTool', status: 'error', error: "Invalid tool call" });
                         }
 
-                        this.chatHistory.push({ role: 'system', content: `${toolName} result: ${result}` });
+                        this.chatHistory.push({ role: 'system', content: `${toolName} result: ${result.message}` });
                     }
 
                 } else {
@@ -186,6 +213,75 @@ export class ChatApp implements vscode.WebviewViewProvider {
         } catch (e) {
             this.post({ type: 'receiveMessage', text: `❌ Error: ${e}` });
             this.post({ type: 'streamEnd' });
+        }
+    }
+
+    private async scheduleReindex(filePaths: string[]) {
+        for (const filePath of filePaths) {
+            this.dirtyFiles.add(filePath);
+        }
+
+        if (this.reindexTimer) clearTimeout(this.reindexTimer);
+        this.reindexTimer = setTimeout(() => {
+            void this.flushReindexQueue ();
+        }, 1500);
+    }
+
+    private async scheduleDeleteFile(filePaths: string[]) {
+        for (const filePath of filePaths) {
+            this.deletedFiles.add(filePath);
+            this.dirtyFiles.delete(filePath);
+        }
+
+        if (this.reindexTimer) clearTimeout(this.reindexTimer);
+        this.reindexTimer = setTimeout(() => {
+            void this.flushReindexQueue();
+        }, 1500);
+    }
+
+    private async flushReindexQueue() {
+        const dirtyFiles = [...this.dirtyFiles];
+        const deletedFiles = [...this.deletedFiles];
+
+        this.dirtyFiles.clear();
+        this.deletedFiles.clear();
+
+        const providerId = this.context.globalState.get<string>("selectedEmbeddingProvider");
+        const model = this.context.globalState.get<string>("selectedEmbeddingModel");
+
+        if (!providerId || !model) return;
+
+        const apiKey = await this.getEmbeddingAPIKey(providerId);
+        if (!apiKey) return;
+
+        const indexer = await this.indexLoadPromise;
+        if (!indexer.dbConnected()) return;
+
+        this.post({
+            type: 'indexingStatus',
+            status: `Reindexing ${dirtyFiles.length + deletedFiles.length} file(s)...`,
+            done: false
+        });
+
+        const embedProvider = EmbedFactory.create(providerId, apiKey);
+
+        try {
+            for (const file of deletedFiles) await indexer.deleteFile(file);
+            for (const file of dirtyFiles) await indexer.reindexFile(file, embedProvider, model);
+                
+
+            this.post({
+                type: 'indexingStatus',
+                status: 'Ready',
+                done: true
+            });
+        } catch (e) {
+            console.error(`Failed to flush reindex queue: ${e}`);
+
+            this.post({
+                type: 'indexingError',
+                error: e instanceof Error ? e.message : String(e)
+            });
         }
     }
 

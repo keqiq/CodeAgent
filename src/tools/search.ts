@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { getFileContent } from '../utils/workspace';
-import { ToolSchema } from './toolIndex';
+import { ToolResult, ToolSchema } from './toolIndex';
 import { EmbedProvider } from '../apis/embed/embedProvider';
 import { Indexer } from '../indexing/indexer';
 
@@ -60,21 +60,30 @@ export const searchSchemas: ToolSchema[] = [
 
 ];
 
-export async function executeGlob(pattern: string): Promise<string> {
+export async function executeGlob(pattern: string): Promise<ToolResult> {
     const excludePattern = '{**/node_modules/**,**/.git/**,**/dist/**}';
     const uris = await vscode.workspace.findFiles(pattern, excludePattern, 1000);
 
-    if (uris.length === 0) return "No files found.";
-    return uris.map(uri => vscode.workspace.asRelativePath(uri)).join('\n');
+    if (uris.length === 0) {
+        return {
+            message: 'No files found in workspace'
+        };
+    }
+
+    return {
+        message: uris.map(uri => vscode.workspace.asRelativePath(uri)).join('\n')
+    };
 };
 
 
 const textDecoder = new TextDecoder('utf-8');
 
-export async function executeGrep(query: string, filePattern: string = '**/*'): Promise<string> {
+export async function executeGrep(query: string, filePattern: string = '**/*'): Promise<ToolResult> {
     let regex: RegExp;
     try { regex = new RegExp(query); }
-    catch(e) { return `Error: Invalid regex : ${e}`;}
+    catch(e) { 
+        throw new Error(`Invalid regex: ${e}`);
+    }
 
     const excludePattern = '{**/node_modules/**,**/.git/**,**/dist/**,**/*.{png,jpg,jpeg,ico,bin}}';
     const uris = await vscode.workspace.findFiles(filePattern, excludePattern, 1000);
@@ -93,22 +102,37 @@ export async function executeGrep(query: string, filePattern: string = '**/*'): 
         } catch(e) { continue; }
 
     }
-    return results.length > 0 ? results.slice(0, 500).join('\n') : "No matches found.";
-    
+    return {
+        message: results.length > 0 ? results.slice(0, 500).join('\n') : "No matches found." 
+    };
 };
 
-export async function executeSearchCodebase(query: string, deps: SearchCodebaseDeps ): Promise<string> {
-    if (!query.trim()) return "Search query is empty.";
+export async function executeSearchCodebase(query: string, deps: SearchCodebaseDeps ): Promise<ToolResult> {
+    if (!query.trim()) throw new Error('Search query is emtpy');
 
     const [queryVector] = await deps.embedProvider.embed(deps.model, [query]);
     const results = await deps.indexer.search(queryVector, 10);
 
-    if (results.length === 0) return "No relevant code found.";
+    // console.log(`[SEARCH DEBUG] Query: ${query}`);
+    // console.log(`[SEARCH DEBUG] Result count: ${results.length}`);
+
+    if (results.length === 0){
+        return {
+            message: 'No relevant code found'
+        };
+    }
+
+    // for (const r of results.slice(0, 5)) {
+    //     console.log(`[SEARCH DEBUG] ${r.filePath}:${r.startLine}-${r.endLine}`);
+    //     console.log(`[SEARCH DEBUG] preview: ${String(r.text).slice(0, 160).replace(/\s+/g, ' ')}`);
+    // }
 
     // TODO: add distance
-    return results.map((r, i) =>
-        `Result ${i + 1}\nFile: ${r.filePath}\nLines: ${r.startLine}-${r.endLine}\n\n${r.text}`
-    ).join('\n\n---\n\n');
+    return {
+        message: results.map((r, i) =>
+            `Result ${i + 1}\nFile: ${r.filePath}\nLines: ${r.startLine}-${r.endLine}\n\n${r.text}`
+            ).join('\n\n---\n\n')
+    };
 }
 
 
