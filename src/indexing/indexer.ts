@@ -39,6 +39,8 @@ export class Indexer {
         const vectors = await embedProvider.embed(model, texts);
         const dimension = vectors[0].length;
 
+        console.log('Embedding complete');
+
         this.db = await VectorDB.create(this.context, dimension);
         const rows = chunks.map((chunk, i) =>  ({
             vector:vectors[i],

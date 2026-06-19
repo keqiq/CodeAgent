@@ -43,8 +43,7 @@
     "pretest": "npm run compile-tests && npm run compile && npm run lint",
     "check-types": "tsc --noEmit",
     "lint": "eslint src",
-    "test": "vscode-test",
-    "copy-wasm": "mkdir -p wasm && cp node_modules/web-tree-sitter/web-tree-sitter.wasm wasm/ && cp node_modules/tree-sitter-javascript/tree-sitter-javascript.wasm wasm/ && cp node_modules/tree-sitter-typescript/tree-sitter-typescript.wasm wasm/ && cp node_modules/tree-sitter-typescript/tree-sitter-tsx.wasm wasm/"
+    "test": "vscode-test"
   },
   "devDependencies": {
     "@types/mocha": "^10.0.10",
@@ -65,6 +64,13 @@
     "@lancedb/lancedb": "^0.30.0",
     "dotenv": "^17.4.2",
     "openai": "^6.39.0",
+    "tree-sitter-c": "^0.24.1",
+    "tree-sitter-c-sharp": "^0.23.5",
+    "tree-sitter-cpp": "^0.23.4",
+    "tree-sitter-go": "^0.25.0",
+    "tree-sitter-java": "^0.23.5",
+    "tree-sitter-python": "^0.25.0",
+    "tree-sitter-rust": "^0.24.0",
     "web-tree-sitter": "^0.26.9"
   }
 }

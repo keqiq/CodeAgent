@@ -40883,8 +40883,8 @@ var searchSchemas = [
   }
 ];
 async function executeGlob(pattern) {
-  const excludePattern = "{**/node_modules/**,**/.git/**,**/dist/**}";
-  const uris = await vscode2.workspace.findFiles(pattern, excludePattern, 1e3);
+  const excludePattern2 = "{**/node_modules/**,**/.git/**,**/dist/**}";
+  const uris = await vscode2.workspace.findFiles(pattern, excludePattern2, 1e3);
   if (uris.length === 0) {
     return {
       message: "No files found in workspace"
@@ -40902,8 +40902,8 @@ async function executeGrep(query, filePattern = "**/*") {
   } catch (e2) {
     throw new Error(`Invalid regex: ${e2}`);
   }
-  const excludePattern = "{**/node_modules/**,**/.git/**,**/dist/**,**/*.{png,jpg,jpeg,ico,bin}}";
-  const uris = await vscode2.workspace.findFiles(filePattern, excludePattern, 1e3);
+  const excludePattern2 = "{**/node_modules/**,**/.git/**,**/dist/**,**/*.{png,jpg,jpeg,ico,bin}}";
+  const uris = await vscode2.workspace.findFiles(filePattern, excludePattern2, 1e3);
   const results = [];
   for (const uri of uris) {
     try {
@@ -40927,16 +40927,10 @@ async function executeSearchCodebase(query, deps) {
   if (!query.trim()) throw new Error("Search query is emtpy");
   const [queryVector] = await deps.embedProvider.embed(deps.model, [query]);
   const results = await deps.indexer.search(queryVector, 10);
-  console.log(`[SEARCH DEBUG] Query: ${query}`);
-  console.log(`[SEARCH DEBUG] Result count: ${results.length}`);
   if (results.length === 0) {
     return {
       message: "No relevant code found"
     };
-  }
-  for (const r2 of results.slice(0, 5)) {
-    console.log(`[SEARCH DEBUG] ${r2.filePath}:${r2.startLine}-${r2.endLine}`);
-    console.log(`[SEARCH DEBUG] preview: ${String(r2.text).slice(0, 160).replace(/\s+/g, " ")}`);
   }
   return {
     message: results.map(
@@ -51012,7 +51006,9 @@ var VectorDB = class _VectorDB {
         filePath: "system",
         startLine: 0,
         endLine: 0,
-        type: "system"
+        type: "system",
+        symbol: "",
+        parentSymbol: ""
       }
     ];
     table = await connection.createTable(tableName, initialSchema);
@@ -51037,7 +51033,9 @@ var VectorDB = class _VectorDB {
         filePath: "system",
         startLine: 0,
         endLine: 0,
-        type: "system"
+        type: "system",
+        symbol: "",
+        parentSymbol: ""
       }
     ];
     this.table = await this.connection.createTable(
@@ -51054,6 +51052,331 @@ var VectorDB = class _VectorDB {
 // src/indexing/chunker.ts
 var vscode5 = __toESM(require("vscode"));
 var import_web_tree_sitter = require("web-tree-sitter");
+
+// src/indexing/languages/javascript.ts
+function isFunctionVariable(node) {
+  if (node.type !== "variable_declarator") return false;
+  const value = node.childForFieldName("value");
+  if (!value) return false;
+  return [
+    "arrow_function",
+    "function",
+    "function_expression"
+  ].includes(value.type);
+}
+var javascriptChunkConfig = {
+  chunkableNodeTypes: /* @__PURE__ */ new Set([
+    "function_declaration",
+    "class_declaration",
+    "method_definition",
+    "interface_declaration",
+    "type_alias_declaration",
+    "enum_declaration",
+    "variable_declarator"
+  ]),
+  symbolNodeTypes: /* @__PURE__ */ new Set([
+    "function_declaration",
+    "class_declaration",
+    "method_definition",
+    "interface_declaration",
+    "type_alias_declaration",
+    "enum_declaration",
+    "variable_declarator"
+  ]),
+  getSymbolName(node) {
+    return node.childForFieldName("name")?.text;
+  },
+  isChunkableNode(node) {
+    if (isFunctionVariable(node)) return true;
+    return this.chunkableNodeTypes.has(node.type);
+  },
+  shouldRecurseInto(_node) {
+    return true;
+  }
+};
+
+// src/indexing/languages/c.ts
+var cChunkConfig = {
+  chunkableNodeTypes: /* @__PURE__ */ new Set([
+    "function_definition",
+    "struct_specifier",
+    "enum_specifier",
+    "union_specifier"
+  ]),
+  symbolNodeTypes: /* @__PURE__ */ new Set([
+    "function_definition",
+    "struct_specifier",
+    "enum_specifier",
+    "union_specifier"
+  ]),
+  getSymbolName(node) {
+    const name = node.childForFieldName("name")?.text;
+    if (name) return name;
+    const declarator = node.childForFieldName("declarator");
+    return declarator?.childForFieldName("declarator")?.text ?? declarator?.text;
+  },
+  shouldRecurseInto(_node) {
+    return true;
+  }
+};
+
+// src/indexing/languages/cpp.ts
+var cppChunkConfig = {
+  chunkableNodeTypes: /* @__PURE__ */ new Set([
+    "function_definition",
+    "class_specifier",
+    "struct_specifier",
+    "enum_specifier",
+    "namespace_definition"
+  ]),
+  symbolNodeTypes: /* @__PURE__ */ new Set([
+    "function_definition",
+    "class_specifier",
+    "struct_specifier",
+    "enum_specifier",
+    "namespace_definition"
+  ]),
+  getSymbolName(node) {
+    const name = node.childForFieldName("name")?.text;
+    if (name) return name;
+    const declarator = node.childForFieldName("declarator");
+    return declarator?.childForFieldName("declarator")?.text ?? declarator?.text;
+  },
+  shouldRecurseInto(_node) {
+    return true;
+  }
+};
+
+// src/indexing/languages/csharp.ts
+var csharpChunkConfig = {
+  chunkableNodeTypes: /* @__PURE__ */ new Set([
+    "class_declaration",
+    "interface_declaration",
+    "struct_declaration",
+    "enum_declaration",
+    "record_declaration",
+    "method_declaration",
+    "constructor_declaration",
+    "property_declaration"
+  ]),
+  symbolNodeTypes: /* @__PURE__ */ new Set([
+    "class_declaration",
+    "interface_declaration",
+    "struct_declaration",
+    "enum_declaration",
+    "record_declaration",
+    "method_declaration",
+    "constructor_declaration",
+    "property_declaration"
+  ]),
+  getSymbolName(node) {
+    return node.childForFieldName("name")?.text;
+  },
+  shouldRecurseInto(_node) {
+    return true;
+  }
+};
+
+// src/indexing/languages/java.ts
+var javaChunkConfig = {
+  chunkableNodeTypes: /* @__PURE__ */ new Set([
+    "class_declaration",
+    "interface_declaration",
+    "enum_declaration",
+    "record_declaration",
+    "method_declaration",
+    "constructor_declaration"
+  ]),
+  symbolNodeTypes: /* @__PURE__ */ new Set([
+    "class_declaration",
+    "interface_declaration",
+    "enum_declaration",
+    "record_declaration",
+    "method_declaration",
+    "constructor_declaration"
+  ]),
+  getSymbolName(node) {
+    return node.childForFieldName("name")?.text;
+  },
+  shouldRecurseInto(_node) {
+    return true;
+  }
+};
+
+// src/indexing/languages/python.ts
+function findNamedChild(node, types3) {
+  for (let i2 = 0; i2 < node.namedChildCount; i2++) {
+    const child = node.namedChild(i2);
+    if (child && types3.includes(child.type)) return child;
+  }
+  return void 0;
+}
+var pythonChunkConfig = {
+  chunkableNodeTypes: /* @__PURE__ */ new Set([
+    "function_definition",
+    "class_definition",
+    "decorated_definition"
+  ]),
+  symbolNodeTypes: /* @__PURE__ */ new Set([
+    "function_definition",
+    "class_definition",
+    "decorated_definition"
+  ]),
+  getSymbolName(node) {
+    const directName = node.childForFieldName("name")?.text;
+    if (directName) return directName;
+    if (node.type === "decorated_definition") {
+      const inner = findNamedChild(node, [
+        "function_definition",
+        "class_definition"
+      ]);
+      return inner?.childForFieldName("name")?.text;
+    }
+    return void 0;
+  },
+  shouldRecurseInto(_node) {
+    return true;
+  }
+};
+
+// src/indexing/languages/rust.ts
+var rustChunkConfig = {
+  chunkableNodeTypes: /* @__PURE__ */ new Set([
+    "function_item",
+    "struct_item",
+    "enum_item",
+    "trait_item",
+    "impl_item",
+    "mod_item",
+    "type_item"
+  ]),
+  symbolNodeTypes: /* @__PURE__ */ new Set([
+    "function_item",
+    "struct_item",
+    "enum_item",
+    "trait_item",
+    "impl_item",
+    "mod_item",
+    "type_item"
+  ]),
+  getSymbolName(node) {
+    return node.childForFieldName("name")?.text;
+  },
+  shouldRecurseInto(_node) {
+    return true;
+  }
+};
+
+// src/indexing/languages/go.ts
+var goChunkConfig = {
+  chunkableNodeTypes: /* @__PURE__ */ new Set([
+    "function_declaration",
+    "method_declaration",
+    "type_declaration"
+  ]),
+  symbolNodeTypes: /* @__PURE__ */ new Set([
+    "function_declaration",
+    "method_declaration",
+    "type_declaration"
+  ]),
+  getSymbolName(node) {
+    return node.childForFieldName("name")?.text;
+  },
+  shouldRecurseInto(_node) {
+    return true;
+  }
+};
+
+// src/indexing/languages/_languageIndex.ts
+var languageConfigs = /* @__PURE__ */ new Map([
+  [".ts", {
+    ...javascriptChunkConfig,
+    wasmFile: "tree-sitter-typescript.wasm"
+  }],
+  [".tsx", {
+    ...javascriptChunkConfig,
+    wasmFile: "tree-sitter-tsx.wasm"
+  }],
+  [".js", {
+    ...javascriptChunkConfig,
+    wasmFile: "tree-sitter-javascript.wasm"
+  }],
+  [".jsx", {
+    ...javascriptChunkConfig,
+    wasmFile: "tree-sitter-javascript.wasm"
+  }],
+  [".c", {
+    ...cChunkConfig,
+    wasmFile: "tree-sitter-c.wasm"
+  }],
+  [".cpp", {
+    ...cppChunkConfig,
+    wasmFile: "tree-sitter-cpp.wasm"
+  }],
+  [".cs", {
+    ...csharpChunkConfig,
+    wasmFile: "tree-sitter-c_sharp.wasm"
+  }],
+  [".java", {
+    ...javaChunkConfig,
+    wasmFile: "tree-sitter-java.wasm"
+  }],
+  [".py", {
+    ...pythonChunkConfig,
+    wasmFile: "tree-sitter-python.wasm"
+  }],
+  [".rs", {
+    ...rustChunkConfig,
+    wasmFile: "tree-sitter-rust.wasm"
+  }],
+  [".go", {
+    ...goChunkConfig,
+    wasmFile: "tree-sitter-go.wasm"
+  }]
+]);
+var supportedExtensions = [...languageConfigs.keys()];
+var includePattern = `**/*.{${supportedExtensions.map((ext) => ext.slice(1)).join(",")}}`;
+var globalExcludePatterns = [
+  "**/.git/**",
+  "**/.svn/**",
+  "**/.hg/**",
+  "**/node_modules/**",
+  "**/dist/**",
+  "**/out/**",
+  "**/build/**",
+  "**/.next/**",
+  "**/coverage/**",
+  "**/.DS_Store"
+];
+var languageExcludePatterns = [
+  // Python
+  "**/__pycache__/**",
+  "**/.venv/**",
+  "**/venv/**",
+  "**/.mypy_cache/**",
+  "**/.pytest_cache/**",
+  "**/.ruff_cache/**",
+  // Rust
+  "**/target/**",
+  // Go
+  "**/vendor/**",
+  // Java / JVM
+  "**/.gradle/**",
+  "**/.idea/**",
+  "**/target/**",
+  // C / C++
+  "**/cmake-build-*/**",
+  "**/CMakeFiles/**",
+  // C#
+  "**/bin/**",
+  "**/obj/**"
+];
+var excludePattern = `{${[
+  ...globalExcludePatterns,
+  ...languageExcludePatterns
+].join(",")}}`;
+
+// src/indexing/chunker.ts
 var CodeChunker = class _CodeChunker {
   constructor(parser, wasmUri) {
     this.parser = parser;
@@ -51061,13 +51384,9 @@ var CodeChunker = class _CodeChunker {
   }
   parser;
   wasmUri;
+  MAX_CHUNK_LINES = 120;
+  MIN_CHUNK_LINES = 3;
   languageCache = /* @__PURE__ */ new Map();
-  languageConfigs = /* @__PURE__ */ new Map([
-    [".ts", "tree-sitter-typescript.wasm"],
-    [".tsx", "tree-sitter-tsx.wasm"],
-    [".js", "tree-sitter-javascript.wasm"],
-    [".jsx", "tree-sitter-javascript.wasm"]
-  ]);
   static async create(extensionUri) {
     const wasmUri = vscode5.Uri.joinPath(extensionUri, "wasm");
     await import_web_tree_sitter.Parser.init({
@@ -51081,16 +51400,14 @@ var CodeChunker = class _CodeChunker {
   async getLanguageForExtension(extension2) {
     const cachedLanguage = this.languageCache.get(extension2);
     if (cachedLanguage) return cachedLanguage;
-    const wasmFile = this.languageConfigs.get(extension2);
-    if (!wasmFile) throw Error(`Unsupported extension: ${extension2}`);
-    const wasmPath = vscode5.Uri.joinPath(this.wasmUri, "languages", wasmFile).fsPath;
+    const config = languageConfigs.get(extension2);
+    if (!config) throw Error(`Unsupported extension: ${extension2}`);
+    const wasmPath = vscode5.Uri.joinPath(this.wasmUri, "languages", config.wasmFile).fsPath;
     const language = await import_web_tree_sitter.Language.load(wasmPath);
     this.languageCache.set(extension2, language);
     return language;
   }
   async chunkWorkspace() {
-    const includePattern = "**/*.{ts,tsx,js,jsx}";
-    const excludePattern = "{**/node_modules/**,**/.git/**,**/dist/**,**/out/**,**/build/**,**/.next/**,**/coverage/**}";
     const uris = await vscode5.workspace.findFiles(
       includePattern,
       excludePattern,
@@ -51113,49 +51430,67 @@ var CodeChunker = class _CodeChunker {
     const extension2 = this.getExtension(filePath);
     const language = await this.getLanguageForExtension(extension2);
     const content = await getFileContent(uri);
+    const config = languageConfigs.get(extension2);
+    if (!config) throw Error(`Unsupported extension: ${extension2}`);
     if (!content.trim()) return [];
     this.parser.setLanguage(language);
     const tree = this.parser.parse(content);
     const lines = content.split(/\r?\n/);
     if (!tree) return [];
-    return this.chunkRootNode(tree.rootNode, lines, filePath);
+    return this.chunkRootNode(tree.rootNode, config, lines, filePath);
   }
   getExtension(filePath) {
     const match = filePath.match(/\.[^.]+$/);
     return match ? match[0] : "";
   }
-  chunkRootNode(rootNode, lines, filePath) {
+  chunkRootNode(rootNode, config, lines, filePath) {
     const chunks = [];
-    for (let i2 = 0; i2 < rootNode.namedChildCount; i2++) {
-      const node = rootNode.namedChild(i2);
-      if (!node) continue;
-      if (!this.isChunkableNode(node)) continue;
-      chunks.push(this.nodeToChunk(node, lines, filePath));
-    }
+    this.collectChunks(rootNode, config, lines, filePath, chunks, void 0);
     return chunks;
   }
-  isChunkableNode(node) {
-    return [
-      "function_declaration",
-      "class_declaration",
-      "interface_declaration",
-      "type_alias_declaration",
-      "enum_declaration",
-      "lexical_declaration",
-      "export_statement"
-    ].includes(node.type);
+  collectChunks(node, config, lines, filePath, chunks, parentSymbol) {
+    const symbol = config.getSymbolName(node);
+    const nextParent = symbol ?? parentSymbol;
+    const isChunkable = config.isChunkableNode ? config.isChunkableNode(node) : config.chunkableNodeTypes.has(node.type);
+    if (isChunkable && this.shouldEmitWholeNode(node)) {
+      chunks.push(this.nodeToChunk(node, config, lines, filePath, parentSymbol));
+      return;
+    }
+    if (config.shouldRecurseInto && !config.shouldRecurseInto(node)) return;
+    for (let i2 = 0; i2 < node.namedChildCount; i2++) {
+      const child = node.namedChild(i2);
+      if (!child) continue;
+      this.collectChunks(child, config, lines, filePath, chunks, nextParent);
+    }
   }
-  nodeToChunk(node, lines, filePath) {
+  nodeToChunk(node, config, lines, filePath, parentSymbol) {
     const startLine = node.startPosition.row;
     const endLine = node.endPosition.row;
-    const text = lines.slice(startLine, endLine + 1).join("\n");
+    const sourceText = lines.slice(startLine, endLine + 1).join("\n");
+    const symbol = config.getSymbolName(node);
+    const header = [
+      `File: ${filePath}`,
+      parentSymbol ? `Parent: ${parentSymbol}` : void 0,
+      symbol ? `Symbol: ${symbol}` : void 0,
+      `Type: ${node.type}`
+    ].filter(Boolean).join("\n");
+    const text = `${header}
+
+${sourceText}`;
     return {
       text,
       filePath,
       startLine: startLine + 1,
       endLine: endLine + 1,
-      type: node.type
+      type: node.type,
+      symbol: symbol ?? "",
+      parentSymbol: parentSymbol ?? ""
     };
+  }
+  // Limit to to max line count per node for better embedding
+  shouldEmitWholeNode(node) {
+    const lineCount = node.endPosition.row - node.startPosition.row + 1;
+    return lineCount <= this.MAX_CHUNK_LINES;
   }
 };
 
@@ -51188,6 +51523,7 @@ var Indexer = class _Indexer {
     const texts = chunks.map((chunk) => chunk.text);
     const vectors = await embedProvider.embed(model, texts);
     const dimension = vectors[0].length;
+    console.log("Embedding complete");
     this.db = await VectorDB.create(this.context, dimension);
     const rows = chunks.map((chunk, i2) => ({
       vector: vectors[i2],
@@ -51200,19 +51536,15 @@ var Indexer = class _Indexer {
     const workspaceUri = getWorkspaceUri(filePath);
     const chunks = await this.cc.chunkFile(workspaceUri);
     await this.db.deleteByFilePath(filePath);
-    console.log(`[INDEX DEBUG] chunk count for ${filePath}: ${chunks.length}`);
-    console.log(`[INDEX DEBUG] first chunk preview: ${chunks[0]?.text.slice(0, 120).replace(/\s+/g, " ")}`);
     if (chunks.length === 0) return;
     const texts = chunks.map((chunk) => chunk.text);
     const vectors = await embedProvider.embed(model, texts);
-    console.log(`[INDEX DEBUG] Embedded ${vectors.length} vector(s)`);
     const rows = chunks.map((chunk, i2) => ({
       vector: vectors[i2],
       ...chunk
     }));
     await this.db.insertRows(rows);
     const storedRows = await this.db.getRowsByFilePath(filePath);
-    console.log(`[INDEX DEBUG] Stored row count after insert: ${storedRows.length}`);
     for (let i2 = 0; i2 < Math.min(3, storedRows.length); i2++) {
       this.debugVector(`stored vector ${i2 + 1} for ${filePath}`, storedRows[i2].vector, storedRows[i2].text);
     }

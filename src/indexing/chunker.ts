@@ -1,6 +1,8 @@
 import * as vscode from 'vscode';
 import { Language, Parser, Node } from 'web-tree-sitter';
 import { getFileContent } from '../utils/workspace';
+import { languageConfigs, includePattern, excludePattern} from './languages/_languageIndex';
+import { LanguageConfig } from './languages/_languageTypes';
 
 export interface CodeChunk {
     text: string;
@@ -8,22 +10,19 @@ export interface CodeChunk {
     startLine: number;
     endLine: number;
     type: string;
+    symbol: string;
+    parentSymbol: string;
 }
 
 export class CodeChunker {
+    private readonly MAX_CHUNK_LINES = 120;
+    private readonly MIN_CHUNK_LINES = 3;
+
     private readonly languageCache = new Map<string, Language>();
 
-    private readonly languageConfigs = new Map<string, string>([
-        [".ts", "tree-sitter-typescript.wasm"],
-        [".tsx", "tree-sitter-tsx.wasm"],
-        [".js", "tree-sitter-javascript.wasm"],
-        [".jsx", "tree-sitter-javascript.wasm"],
-    ]);
-
-
-    private constructor (private readonly parser: Parser, 
-                         private readonly wasmUri: vscode.Uri
-    ) {}
+    private constructor(private readonly parser: Parser,
+        private readonly wasmUri: vscode.Uri
+    ) { }
 
     static async create(extensionUri: vscode.Uri): Promise<CodeChunker> {
         const wasmUri = vscode.Uri.joinPath(extensionUri, 'wasm');
@@ -43,12 +42,13 @@ export class CodeChunker {
 
         if (cachedLanguage) return cachedLanguage;
 
-        const wasmFile = this.languageConfigs.get(extension);
+        const config = languageConfigs.get(extension);
 
         // Error if we do not have extension support, handle it outside
-        if (!wasmFile) throw Error(`Unsupported extension: ${extension}`);
+        if (!config) throw Error(`Unsupported extension: ${extension}`);
 
-        const wasmPath = vscode.Uri.joinPath(this.wasmUri, 'languages', wasmFile).fsPath;
+        const wasmPath = vscode.Uri.joinPath(this.wasmUri, 'languages', config.wasmFile).fsPath;
+
         const language = await Language.load(wasmPath);
 
         this.languageCache.set(extension, language);
@@ -57,9 +57,6 @@ export class CodeChunker {
     }
 
     public async chunkWorkspace(): Promise<CodeChunk[]> {
-        const includePattern = "**/*.{ts,tsx,js,jsx}";
-        const excludePattern = "{**/node_modules/**,**/.git/**,**/dist/**,**/out/**,**/build/**,**/.next/**,**/coverage/**}";
-
         const uris = await vscode.workspace.findFiles(
             includePattern, excludePattern, 5000
         );
@@ -83,6 +80,9 @@ export class CodeChunker {
 
         const language = await this.getLanguageForExtension(extension);
         const content = await getFileContent(uri);
+        const config = languageConfigs.get(extension);
+
+        if (!config) throw Error(`Unsupported extension: ${extension}`);
 
         // skip empty files
         if (!content.trim()) return [];
@@ -90,9 +90,9 @@ export class CodeChunker {
         this.parser.setLanguage(language);
         const tree = this.parser.parse(content);
         const lines = content.split(/\r?\n/);
-        
+
         if (!tree) return [];
-        return this.chunkRootNode(tree.rootNode, lines, filePath);
+        return this.chunkRootNode(tree.rootNode, config, lines, filePath);
 
     }
 
@@ -101,44 +101,73 @@ export class CodeChunker {
         return match ? match[0] : "";
     }
 
-    private chunkRootNode(rootNode: Node, lines: string[], filePath: string): CodeChunk[] {
+    private chunkRootNode(rootNode: Node, config: LanguageConfig, lines: string[], filePath: string): CodeChunk[] {
         const chunks: CodeChunk[] = [];
-
-        for (let i = 0; i < rootNode.namedChildCount; i++) {
-            const node = rootNode.namedChild(i);
-            if (!node) continue;
-
-            if (!this.isChunkableNode(node)) continue;
-
-            chunks.push(this.nodeToChunk(node, lines, filePath));
-        }
+        this.collectChunks(rootNode, config, lines, filePath, chunks, undefined);
         return chunks;
     }
 
-    private isChunkableNode(node: Node): boolean {
-        return [
-            "function_declaration",
-            "class_declaration",
-            "interface_declaration",
-            "type_alias_declaration",
-            "enum_declaration",
-            "lexical_declaration",
-            "export_statement",
-        ].includes(node.type);
+    private collectChunks(
+        node: Node,
+        config: LanguageConfig,
+        lines: string[],
+        filePath: string,
+        chunks: CodeChunk[],
+        parentSymbol?: string)
+        : void {
+
+        const symbol = config.getSymbolName(node);
+        const nextParent = symbol ?? parentSymbol;
+
+        const isChunkable = config.isChunkableNode
+            ? config.isChunkableNode(node)
+            : config.chunkableNodeTypes.has(node.type);
+
+        if (isChunkable && this.shouldEmitWholeNode(node)) {
+            chunks.push(this.nodeToChunk(node, config, lines, filePath, parentSymbol));
+            return;
+        }
+
+        if (config.shouldRecurseInto && !config.shouldRecurseInto(node)) return;
+
+        for (let i = 0; i < node.namedChildCount; i++) {
+            const child = node.namedChild(i);
+            if (!child) continue;
+
+            this.collectChunks(child, config, lines, filePath, chunks, nextParent);
+        }
     }
 
-    private nodeToChunk(node: Node, lines: string[], filePath: string): CodeChunk {
+    private nodeToChunk(node: Node, config: LanguageConfig, lines: string[], filePath: string, parentSymbol?: string): CodeChunk {
         const startLine = node.startPosition.row;
         const endLine = node.endPosition.row;
 
-        const text = lines.slice(startLine, endLine + 1).join("\n");
+        const sourceText = lines.slice(startLine, endLine + 1).join("\n");
+        const symbol = config.getSymbolName(node);
+
+        const header = [
+            `File: ${filePath}`,
+            parentSymbol ? `Parent: ${parentSymbol}` : undefined,
+            symbol ? `Symbol: ${symbol}` : undefined,
+            `Type: ${node.type}`,
+        ].filter(Boolean).join("\n");
+
+        const text = `${header}\n\n${sourceText}`;
 
         return {
             text,
             filePath,
             startLine: startLine + 1,
             endLine: endLine + 1,
-            type: node.type
+            type: node.type,
+            symbol: symbol ?? "",
+            parentSymbol: parentSymbol ?? ""
         };
+    }
+
+    // Limit to to max line count per node for better embedding
+    private shouldEmitWholeNode(node: Node): boolean {
+        const lineCount = node.endPosition.row - node.startPosition.row + 1;
+        return lineCount <= this.MAX_CHUNK_LINES;
     }
 }

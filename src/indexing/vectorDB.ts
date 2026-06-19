@@ -8,6 +8,8 @@ export interface VectorRow {
     startLine: number;
     endLine: number;
     type: string;
+    symbol: string;
+    parentSymbol: string;
 }
 
 export class VectorDB {
@@ -28,7 +30,7 @@ export class VectorDB {
         
         const tableName = 'workspace_chunks';
         const tableNames = await connection.tableNames();
-        console.log(`Current tables in workspace: ${tableNames}`);
+        // console.log(`Current tables in workspace: ${tableNames}`);
         const tableExists = tableNames.includes(tableName);
         
         let table: lancedb.Table;
@@ -56,7 +58,9 @@ export class VectorDB {
                 filePath: "system",
                 startLine: 0,
                 endLine: 0,
-                type: "system"
+                type: "system",
+                symbol: "",
+                parentSymbol: "",
             }
         ];
 
@@ -82,6 +86,7 @@ export class VectorDB {
     }
 
     public async clearAll(): Promise<void> {
+
         const initialSchema: Record<string, unknown>[] = [
             {
                 vector: Array(this.dimension).fill(0),
@@ -90,6 +95,8 @@ export class VectorDB {
                 startLine: 0,
                 endLine: 0,
                 type: "system",
+                symbol: "",
+                parentSymbol: "",
             }
         ];
 
