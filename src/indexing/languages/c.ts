@@ -16,6 +16,10 @@ export const cChunkConfig: Omit<LanguageConfig, "wasmFile"> = {
         "union_specifier",
     ]),
 
+    importNodeTypes: new Set([
+        "preproc_include"
+    ]),
+
     getSymbolName(node: Node): string | undefined {
         const name = node.childForFieldName("name")?.text;
         if (name) return name;

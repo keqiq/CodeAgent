@@ -44,13 +44,13 @@ export const searchSchemas: ToolSchema[] = [
         type: "function",
         function: {
             name: "searchCodebase",
-            description: "Semantically search indexed workspace code using embeddings.",
+            description: "Search indexed workspace code using a hybrid of semantic meaning and exact keyword matching. For best results, include specific code identifiers, variable names, or technical terms alongside the semantic intent.",
             parameters: {
                 type: "object",
                 properties: {
                     query: {
                         type: "string",
-                        description: "Natural language description of the code to find"
+                        description: "A concise, keyword-rich search query. Avoid conversational sentences. Example: 'user authentication login auth' rather than 'where is the user login handled?'"
                     }
                 },
                 required: ["query"]
@@ -111,7 +111,7 @@ export async function executeSearchCodebase(query: string, deps: SearchCodebaseD
     if (!query.trim()) throw new Error('Search query is emtpy');
 
     const [queryVector] = await deps.embedProvider.embed(deps.model, [query]);
-    const results = await deps.indexer.search(queryVector, 10);
+    const results = await deps.indexer.search(query, queryVector, 10);
 
     // console.log(`[SEARCH DEBUG] Query: ${query}`);
     // console.log(`[SEARCH DEBUG] Result count: ${results.length}`);

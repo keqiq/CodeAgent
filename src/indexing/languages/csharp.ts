@@ -24,6 +24,12 @@ export const csharpChunkConfig: Omit<LanguageConfig, "wasmFile"> = {
         "property_declaration",
     ]),
 
+    importNodeTypes: new Set([
+        "using_directive",
+        "namespace_declaration",
+        "file_scoped_namespace_declaration"
+    ]),
+
     getSymbolName(node: Node): string | undefined {
         return node.childForFieldName("name")?.text;
     },

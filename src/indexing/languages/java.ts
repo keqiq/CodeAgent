@@ -20,6 +20,11 @@ export const javaChunkConfig: Omit<LanguageConfig, "wasmFile"> = {
         "constructor_declaration",
     ]),
 
+    importNodeTypes: new Set([
+        "import_declaration",
+        "package_declaration"
+    ]),
+
     getSymbolName(node: Node): string | undefined {
         return node.childForFieldName("name")?.text;
     },

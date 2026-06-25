@@ -210,12 +210,43 @@ input[type="password"] {
 
 .message.user {
     align-self: flex-end;
-    background: var(--vscode-button-background);
-    color: var(--vscode-button-foreground);
+    background-color: var(--vscode-editorWidget-background);
+    color: var(--vscode-foreground);
+    border: 2px solid var(--vscode-widget-border);
     border-bottom-right-radius: 2px;
+    display: flex;
+    flex-direction: column;
 }
 
-/* --- MESSAGE STYLES --- */
+.user-text-content {
+    white-space: pre-wrap; 
+    word-wrap: break-word;
+}
+
+.user-text-content.clamped {
+    display: -webkit-box;
+    line-clamp: 5;
+    -webkit-line-clamp: 5; /* Shows exactly 5 lines before truncating */
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.toggle-text-btn {
+    background: transparent;
+    border: none;
+    color: var(--vscode-textLink-foreground);
+    cursor: pointer;
+    padding: 6px 0 0 0;
+    font-size: 11px;
+    font-family: inherit;
+    align-self: flex-end;
+    margin-top: 2px;
+}
+
+.toggle-text-btn:hover {
+    text-decoration: underline;
+}
+
 .message.agent {
     width: 100%;
     box-sizing: border-box;
@@ -223,6 +254,28 @@ input[type="password"] {
     border: none; 
     color: var(--vscode-foreground);
     padding: 4px 0;
+}
+
+.message.agent p {
+    margin-top: 0;
+    margin-bottom: 2px;
+}
+
+/* Ensure the last paragraph doesn't add extra dead space at the bottom of the bubble */
+.message.agent p:last-child {
+    margin-bottom: 0;
+}
+
+.message.agent ul, 
+.message.agent ol {
+    margin-top: 4px;
+    margin-bottom: 4px;
+    padding-left: 20px;
+}
+
+.message.agent pre {
+    margin-top: 8px;
+    margin-bottom: 8px;
 }
 
 /* --- MARKDOWN FORMATTING --- */
@@ -498,4 +551,33 @@ input[type="password"] {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+.scroll-bottom-btn {
+    display: none; 
+    position: absolute;
+    bottom: 90px; /* Sits right above the input box */
+    right: 20px;
+    z-index: 100;
+    background: var(--vscode-editorWidget-background);
+    color: var(--vscode-foreground);
+    border: 1px solid var(--vscode-widget-border);
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    cursor: pointer;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.2s, background-color 0.2s;
+    opacity: 0.8;
+}
+
+.scroll-bottom-btn.visible {
+    display: flex;
+}
+
+.scroll-bottom-btn:hover {
+    background: var(--vscode-list-hoverBackground);
+    opacity: 1;
 }

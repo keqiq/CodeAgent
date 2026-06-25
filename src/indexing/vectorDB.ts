@@ -1,5 +1,6 @@
 import * as lancedb from '@lancedb/lancedb';
 import * as vscode from 'vscode';
+import * as arrow from 'apache-arrow';
 
 export interface VectorRow {
     vector: number[];
@@ -12,12 +13,28 @@ export interface VectorRow {
     parentSymbol: string;
 }
 
+function getSchema(dimension: number): arrow.Schema {
+    return new arrow.Schema([
+        new arrow.Field('vector', new arrow.FixedSizeList(dimension, new arrow.Field('item', new arrow.Float32()))),
+        new arrow.Field('text', new arrow.Utf8()),
+        new arrow.Field('filePath', new arrow.Utf8()),
+        new arrow.Field('startLine', new arrow.Int32()),
+        new arrow.Field('endLine', new arrow.Int32()),
+        new arrow.Field('type', new arrow.Utf8()),
+        new arrow.Field('symbol', new arrow.Utf8()),
+        new arrow.Field('parentSymbol', new arrow.Utf8())
+    ]);
+}
+
 export class VectorDB {
 
     private constructor(private readonly dimension: number, 
-                        private readonly connection: lancedb.Connection, 
-                        private table: lancedb.Table
-    ) {}
+        private readonly connection: lancedb.Connection, 
+        private table: lancedb.Table,
+        private reranker: lancedb.rerankers.RRFReranker
+    ) {
+
+    }
 
     static async create(context: vscode.ExtensionContext, dimension: number | undefined = undefined): Promise<VectorDB> {
         if (!context.storageUri) throw new Error("Cannot initialze VectorDB: No active workspace");
@@ -34,6 +51,8 @@ export class VectorDB {
         const tableExists = tableNames.includes(tableName);
         
         let table: lancedb.Table;
+
+        const reranker = await lancedb.rerankers.RRFReranker.create();
         
         // Open existing table
         if (dimension === undefined && tableExists) {
@@ -43,7 +62,7 @@ export class VectorDB {
 
             if (rows.length > 0) {
                 const existingDimension = rows[0].vector.length;
-                return new VectorDB(existingDimension, connection, table);
+                return new VectorDB(existingDimension, connection, table, reranker);
             }
         }
 
@@ -51,22 +70,12 @@ export class VectorDB {
         if (dimension === undefined) throw new Error("Workspace has not been indexed yet.");
         if (tableExists) await connection.dropTable(tableName);
 
-        const initialSchema: Record<string, unknown>[] = [
-            {
-                vector: Array(dimension).fill(0),
-                text: "__INITIAL_SCHEMA__",
-                filePath: "system",
-                startLine: 0,
-                endLine: 0,
-                type: "system",
-                symbol: "",
-                parentSymbol: "",
-            }
-        ];
+        const schema = getSchema(dimension);
 
-        table = await connection.createTable(tableName, initialSchema);
+        table = await connection.createTable(tableName, [], { schema: schema});
+        await table.createIndex('text', { config: lancedb.Index.fts() });
 
-        return new VectorDB(dimension, connection, table);
+        return new VectorDB(dimension, connection, table, reranker);
     }
 
     public async insertRows(rows: VectorRow[]): Promise<void> {
@@ -79,32 +88,34 @@ export class VectorDB {
         await this.table.delete(`filePath = '${filePath.replace(/'/g, "''")}'`);
     }
 
-    public async vectorSearch(queryVector: number[], limit: number): Promise<any[]> {
-        const results = await this.table.search(queryVector).limit(limit).toArray();
+    public async hybridSearch(queryText: string, queryVector: number[], limit: number): Promise<any[]> {
 
-        return results.filter(row => row.filePath !== "system");
+        const results = await this.table
+            .query()
+            .fullTextSearch(queryText)
+            .nearestTo(queryVector)
+            .rerank(this.reranker)
+            .limit(limit)
+            .toArray();
+
+        return results;
+
+        // const results = await this.table.search(queryVector).limit(limit).toArray();
+
+        // return results.filter(row => row.filePath !== "system");
     }
 
     public async clearAll(): Promise<void> {
 
-        const initialSchema: Record<string, unknown>[] = [
-            {
-                vector: Array(this.dimension).fill(0),
-                text: "__INITIAL_SCHEMA__",
-                filePath: "system",
-                startLine: 0,
-                endLine: 0,
-                type: "system",
-                symbol: "",
-                parentSymbol: "",
-            }
-        ];
+        const schema = getSchema(this.dimension);
 
         this.table = await this.connection.createTable(
             'workspace_chunks',
-            initialSchema,
-            { mode: 'overwrite' }
+            [],
+            { schema: schema, mode: 'overwrite' }
         );
+
+        await this.table.createIndex('text', { config: lancedb.Index.fts() });
     }
 
     public async getRowsByFilePath(filePath: string): Promise<VectorRow[]> {
@@ -112,5 +123,15 @@ export class VectorDB {
             .query()
             .where(`filePath = '${filePath.replace(/'/g, "''")}'`)
             .toArray() as unknown as VectorRow[];
+    }
+
+    public async getFilePathByImport(importName: string): Promise<any[]>  {
+        const result = await this.table
+            .query()
+            .fullTextSearch(importName)
+            .select(['filePath'])
+            .toArray();
+
+        return result;
     }
 }

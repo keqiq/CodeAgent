@@ -35,6 +35,10 @@ export const javascriptChunkConfig: Omit<LanguageConfig, "wasmFile"> = {
         "variable_declarator",
     ]),
 
+    importNodeTypes: new Set([
+        "import_statement"
+    ]),
+
     getSymbolName(node: Node): string | undefined {
         return node.childForFieldName("name")?.text;
     },

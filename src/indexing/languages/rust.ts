@@ -22,6 +22,10 @@ export const rustChunkConfig: Omit<LanguageConfig, "wasmFile"> = {
         "type_item",
     ]),
 
+    importNodeTypes: new Set([
+        "use_declaration"
+    ]),
+
     getSymbolName(node: Node): string | undefined {
         return node.childForFieldName("name")?.text;
     },

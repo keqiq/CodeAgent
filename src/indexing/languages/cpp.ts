@@ -18,6 +18,10 @@ export const cppChunkConfig: Omit<LanguageConfig, "wasmFile"> = {
         "namespace_definition",
     ]),
 
+    importNodeTypes: new Set([
+        "preproc_include"
+    ]),
+
     getSymbolName(node: Node): string | undefined {
         const name = node.childForFieldName("name")?.text;
         if (name) return name;

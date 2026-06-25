@@ -34,6 +34,15 @@ export const languageConfigs = new Map<string, LanguageConfig>([
         ...cppChunkConfig,
         wasmFile: "tree-sitter-cpp.wasm"
     }],
+    [".hpp", {
+        ...cppChunkConfig,
+        wasmFile: "tree-sitter-cpp.wasm"
+    }],
+    [".h", {
+        ...cppChunkConfig,
+        wasmFile: "tree-sitter-cpp.wasm"
+    }],
+
     [".cs", {
         ...csharpChunkConfig,
         wasmFile: "tree-sitter-c_sharp.wasm"

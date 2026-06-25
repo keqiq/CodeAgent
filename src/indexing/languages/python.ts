@@ -21,6 +21,11 @@ export const pythonChunkConfig: Omit<LanguageConfig, "wasmFile"> = {
         "class_definition",
         "decorated_definition",
     ]),
+    
+    importNodeTypes: new Set([
+        "import_statement",
+        "import_from_statement"
+    ]),
 
     getSymbolName(node: Node): string | undefined {
         const directName = node.childForFieldName("name")?.text;

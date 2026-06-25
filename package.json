@@ -46,6 +46,7 @@
     "test": "vscode-test"
   },
   "devDependencies": {
+    "@types/minimatch": "^5.1.2",
     "@types/mocha": "^10.0.10",
     "@types/node": "^22.19.19",
     "@types/vscode": "^1.120.0",
@@ -62,7 +63,9 @@
   "dependencies": {
     "@google/genai": "^2.6.0",
     "@lancedb/lancedb": "^0.30.0",
+    "apache-arrow": "^18.1.0",
     "dotenv": "^17.4.2",
+    "minimatch": "^10.2.5",
     "openai": "^6.39.0",
     "tree-sitter-c": "^0.24.1",
     "tree-sitter-c-sharp": "^0.23.5",

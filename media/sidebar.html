@@ -8,6 +8,7 @@
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/vs2015.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 
 <body>
@@ -79,6 +80,12 @@
         </div>
     </div>
     <div class="chat-container" id="chatContainer"></div>
+
+    <button id="scrollToBottomBtn" class="scroll-bottom-btn" title="Scroll to bottom">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M8 11L3 6l.7-.7L8 9.6l4.3-4.3.7.7L8 11z"/>
+        </svg>
+    </button>
 
     <div class="input-wrapper">
         <div class="unified-box">
@@ -171,6 +178,8 @@
         const indexingPanel = document.getElementById('indexingPanel');
         const indexingDot = document.getElementById('indexingDot')
 
+        const scrollToBottomBtn = document.getElementById('scrollToBottomBtn');
+
         function formatToolArgs(args) {
             try {
                 const parsed = typeof args === 'string' ? JSON.parse(args) : args;
@@ -199,26 +208,12 @@
 
         // Convert agent's text response in proper markdown
         function parseMarkdown(text) {
-            let html = text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-
-            // Parse Code Blocks (```language ... ```)
-            html = html.replace(/```(\w+)?\n([\s\S]*?)```/g, function (match, language, code) {
-                return `<pre class="md-code-block"><code>${code}</code></pre>`;
+            marked.setOptions({
+                gfm: true,
+                breaks: true
             });
 
-            // Parse Inline Code (`code`)
-            html = html.replace(/`([^`]+)`/g, '<code class="md-inline-code">$1</code>');
-
-            // Parse Bold (**text**)
-            html = html.replace(/\*\*([^*]+)\*\*/g, '<strong class="md-bold">$1</strong>');
-
-            // Parse Italic (*text*)
-            html = html.replace(/\*([^*]+)\*/g, '<em class="md-italic">$1</em>');
-
-            // Parse Links [text](url)
-            html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="md-link" target="_blank">$1</a>');
-
-            return html;
+            return marked.parse(text);
         }
 
 
@@ -258,17 +253,47 @@
             const msgDiv = document.createElement('div');
             msgDiv.classList.add('message', role);
 
-            if (role === 'agent') msgDiv.innerHTML = parseMarkdown(text);
-            else msgDiv.textContent = text;
-
             if (role === 'agent') {
+                msgDiv.innerHTML = parseMarkdown(text);
                 msgDiv.querySelectorAll('pre code').forEach((block) => {
                     hljs.highlightElement(block);
                 });
+                chatContainer.appendChild(msgDiv);
+            } else {
+                // User message logic
+                const textContainer = document.createElement('div');
+                textContainer.classList.add('user-text-content');
+                textContainer.textContent = text;
+                msgDiv.appendChild(textContainer);
+
+                // Check if text is long enough to warrant clamping
+                const lineCount = text.split('\n').length;
+                if (text.length > 250 || lineCount > 5) {
+                    textContainer.classList.add('clamped');
+                    
+                    const toggleBtn = document.createElement('button');
+                    toggleBtn.classList.add('toggle-text-btn');
+                    toggleBtn.textContent = 'Show more';
+                    
+                    toggleBtn.addEventListener('click', () => {
+                        if (textContainer.classList.contains('clamped')) {
+                            textContainer.classList.remove('clamped');
+                            toggleBtn.textContent = 'Show less';
+                        } else {
+                            textContainer.classList.add('clamped');
+                            toggleBtn.textContent = 'Show more';
+                            // Optional: gently scroll back to the message when collapsing
+                            msgDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                        }
+                    });
+                    
+                    msgDiv.appendChild(toggleBtn);
+                }
+                
+                chatContainer.appendChild(msgDiv);
             }
 
-            chatContainer.appendChild(msgDiv);
-            scrollToTop()
+            scrollToTop();
         }
 
         function scrollToTop() { chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'smooth' }); }
@@ -502,6 +527,38 @@
             indexingDot.className = 'status-dot spinning';
 
             vscode.postMessage({ type: 'indexWorkspace', provider, model });
+        });
+
+        // Listen for scrolling in the chat container
+        chatContainer.addEventListener('scroll', () => {
+            // Calculate how far the user has scrolled up from the bottom
+            const distanceToBottom = chatContainer.scrollHeight - chatContainer.scrollTop - chatContainer.clientHeight;
+            
+            // If they are scrolled up more than 50 pixels, show the button
+            if (distanceToBottom > 50) {
+                scrollToBottomBtn.classList.add('visible');
+            } else {
+                scrollToBottomBtn.classList.remove('visible');
+            }
+        });
+
+        // When clicked, smoothly scroll back to the bottom
+        scrollToBottomBtn.addEventListener('click', () => {
+            chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'smooth' });
+        });
+
+        // Handle Enter key for sending, Shift+Enter for new lines
+        promptInput.addEventListener('keydown', (e) => {
+            // Check if the key pressed is Enter and Shift is NOT being held
+            if (e.key === 'Enter' && !e.shiftKey) {
+                // Prevent the default behavior (which is adding a new line)
+                e.preventDefault();
+                
+                // Only trigger the send if the button is actually enabled
+                if (!sendBtn.disabled) {
+                    sendBtn.click();
+                }
+            }
         });
 
         // Listen for backend events

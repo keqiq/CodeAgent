@@ -13,6 +13,10 @@ export const goChunkConfig: Omit<LanguageConfig, "wasmFile"> = {
         "method_declaration",
         "type_declaration",
     ]),
+    
+    importNodeTypes: new Set([
+        "import_declaration"
+    ]),
 
     getSymbolName(node: Node): string | undefined {
         return node.childForFieldName("name")?.text;

@@ -627,11 +627,11 @@ var require_common = __commonJS({
        * @see {@link GAXIOS_ERROR_SYMBOL}
        * @see {@link GaxiosError[GAXIOS_ERROR_SYMBOL]}
        */
-      static [Symbol.hasInstance](instance) {
-        if (instance && typeof instance === "object" && exports2.GAXIOS_ERROR_SYMBOL in instance && instance[exports2.GAXIOS_ERROR_SYMBOL] === pkg.version) {
+      static [Symbol.hasInstance](instance8) {
+        if (instance8 && typeof instance8 === "object" && exports2.GAXIOS_ERROR_SYMBOL in instance8 && instance8[exports2.GAXIOS_ERROR_SYMBOL] === pkg.version) {
           return true;
         }
-        return Function.prototype[Symbol.hasInstance].call(_GaxiosError, instance);
+        return Function.prototype[Symbol.hasInstance].call(_GaxiosError, instance8);
       }
       constructor(message, config, response, cause) {
         super(message, { cause });
@@ -938,14 +938,14 @@ var require_ms = __commonJS({
       if (str2.length > 100) {
         return;
       }
-      var match = /^(-?(?:\d+)?\.?\d+) *(milliseconds?|msecs?|ms|seconds?|secs?|s|minutes?|mins?|m|hours?|hrs?|h|days?|d|weeks?|w|years?|yrs?|y)?$/i.exec(
+      var match2 = /^(-?(?:\d+)?\.?\d+) *(milliseconds?|msecs?|ms|seconds?|secs?|s|minutes?|mins?|m|hours?|hrs?|h|days?|d|weeks?|w|years?|yrs?|y)?$/i.exec(
         str2
       );
-      if (!match) {
+      if (!match2) {
         return;
       }
-      var n = parseFloat(match[1]);
-      var type = (match[2] || "ms").toLowerCase();
+      var n = parseFloat(match2[1]);
+      var type = (match2[2] || "ms").toLowerCase();
       switch (type) {
         case "years":
         case "year":
@@ -1076,19 +1076,19 @@ var require_common2 = __commonJS({
             args.unshift("%O");
           }
           let index = 0;
-          args[0] = args[0].replace(/%([a-zA-Z%])/g, (match, format) => {
-            if (match === "%%") {
+          args[0] = args[0].replace(/%([a-zA-Z%])/g, (match2, format) => {
+            if (match2 === "%%") {
               return "%";
             }
             index++;
             const formatter = createDebug.formatters[format];
             if (typeof formatter === "function") {
               const val = args[index];
-              match = formatter.call(self2, val);
+              match2 = formatter.call(self2, val);
               args.splice(index, 1);
               index--;
             }
-            return match;
+            return match2;
           });
           createDebug.formatArgs.call(self2, args);
           const logFn = self2.log || createDebug.log;
@@ -1323,12 +1323,12 @@ var require_browser = __commonJS({
       args.splice(1, 0, c, "color: inherit");
       let index = 0;
       let lastC = 0;
-      args[0].replace(/%[a-zA-Z%]/g, (match) => {
-        if (match === "%%") {
+      args[0].replace(/%[a-zA-Z%]/g, (match2) => {
+        if (match2 === "%%") {
           return;
         }
         index++;
-        if (match === "%c") {
+        if (match2 === "%c") {
           lastC = index;
         }
       });
@@ -1528,14 +1528,14 @@ var init_supports_color = __esm({
 var require_node = __commonJS({
   "node_modules/debug/src/node.js"(exports2, module2) {
     var tty2 = require("tty");
-    var util = require("util");
+    var util2 = require("util");
     exports2.init = init;
     exports2.log = log;
     exports2.formatArgs = formatArgs;
     exports2.save = save;
     exports2.load = load;
     exports2.useColors = useColors;
-    exports2.destroy = util.deprecate(
+    exports2.destroy = util2.deprecate(
       () => {
       },
       "Instance method `debug.destroy()` is deprecated and no longer does anything. It will be removed in the next major version of `debug`."
@@ -1656,17 +1656,17 @@ var require_node = __commonJS({
         args[0] = prefix + args[0].split("\n").join("\n" + prefix);
         args.push(colorCode + "m+" + module2.exports.humanize(this.diff) + "\x1B[0m");
       } else {
-        args[0] = getDate() + name + " " + args[0];
+        args[0] = getDate2() + name + " " + args[0];
       }
     }
-    function getDate() {
+    function getDate2() {
       if (exports2.inspectOpts.hideDate) {
         return "";
       }
       return (/* @__PURE__ */ new Date()).toISOString() + " ";
     }
     function log(...args) {
-      return process.stderr.write(util.formatWithOptions(exports2.inspectOpts, ...args) + "\n");
+      return process.stderr.write(util2.formatWithOptions(exports2.inspectOpts, ...args) + "\n");
     }
     function save(namespaces) {
       if (namespaces) {
@@ -1689,11 +1689,11 @@ var require_node = __commonJS({
     var { formatters: formatters2 } = module2.exports;
     formatters2.o = function(v) {
       this.inspectOpts.colors = this.useColors;
-      return util.inspect(v, this.inspectOpts).split("\n").map((str2) => str2.trim()).join(" ");
+      return util2.inspect(v, this.inspectOpts).split("\n").map((str2) => str2.trim()).join(" ");
     };
     formatters2.O = function(v) {
       this.inspectOpts.colors = this.useColors;
-      return util.inspect(v, this.inspectOpts);
+      return util2.inspect(v, this.inspectOpts);
     };
   }
 });
@@ -2245,7 +2245,7 @@ var require_ponyfill_es2018 = __commonJS({
             value: name,
             configurable: true
           });
-        } catch (_a5) {
+        } catch (_a10) {
         }
       }
       const originalPromise = Promise;
@@ -2477,11 +2477,11 @@ var require_ponyfill_es2018 = __commonJS({
           throw new TypeError(`${context} is not a function.`);
         }
       }
-      function isObject(x2) {
+      function isObject2(x2) {
         return typeof x2 === "object" && x2 !== null || typeof x2 === "function";
       }
       function assertObject(x2, context) {
-        if (!isObject(x2)) {
+        if (!isObject2(x2)) {
           throw new TypeError(`${context} is not an object.`);
         }
       }
@@ -2777,7 +2777,7 @@ var require_ponyfill_es2018 = __commonJS({
         }
         try {
           return x2._asyncIteratorImpl instanceof ReadableStreamAsyncIteratorImpl;
-        } catch (_a5) {
+        } catch (_a10) {
           return false;
         }
       }
@@ -2787,7 +2787,7 @@ var require_ponyfill_es2018 = __commonJS({
       const NumberIsNaN = Number.isNaN || function(x2) {
         return x2 !== x2;
       };
-      var _a4, _b, _c;
+      var _a9, _b2, _c2;
       function CreateArrayFromList(elements) {
         return elements.slice();
       }
@@ -2841,7 +2841,7 @@ var require_ponyfill_es2018 = __commonJS({
         const nextMethod = asyncIterator.next;
         return { iterator: asyncIterator, nextMethod, done: false };
       }
-      const SymbolAsyncIterator = (_c = (_a4 = Symbol.asyncIterator) !== null && _a4 !== void 0 ? _a4 : (_b = Symbol.for) === null || _b === void 0 ? void 0 : _b.call(Symbol, "Symbol.asyncIterator")) !== null && _c !== void 0 ? _c : "@@asyncIterator";
+      const SymbolAsyncIterator = (_c2 = (_a9 = Symbol.asyncIterator) !== null && _a9 !== void 0 ? _a9 : (_b2 = Symbol.for) === null || _b2 === void 0 ? void 0 : _b2.call(Symbol, "Symbol.asyncIterator")) !== null && _c2 !== void 0 ? _c2 : "@@asyncIterator";
       function GetIterator(obj, hint = "sync", method) {
         if (method === void 0) {
           if (hint === "async") {
@@ -3618,9 +3618,9 @@ var require_ponyfill_es2018 = __commonJS({
         return mode;
       }
       function convertByobReadOptions(options, context) {
-        var _a5;
+        var _a10;
         assertDictionary(options, context);
-        const min = (_a5 = options === null || options === void 0 ? void 0 : options.min) !== null && _a5 !== void 0 ? _a5 : 1;
+        const min = (_a10 = options === null || options === void 0 ? void 0 : options.min) !== null && _a10 !== void 0 ? _a10 : 1;
         return {
           min: convertUnsignedLongLongWithEnforceRange(min, `${context} has member 'min' that`)
         };
@@ -3877,7 +3877,7 @@ var require_ponyfill_es2018 = __commonJS({
         }
         try {
           return typeof value.aborted === "boolean";
-        } catch (_a5) {
+        } catch (_a10) {
           return false;
         }
       }
@@ -3888,7 +3888,7 @@ var require_ponyfill_es2018 = __commonJS({
         }
         return void 0;
       }
-      class WritableStream {
+      class WritableStream2 {
         constructor(rawUnderlyingSink = {}, rawStrategy = {}) {
           if (rawUnderlyingSink === void 0) {
             rawUnderlyingSink = null;
@@ -3968,17 +3968,17 @@ var require_ponyfill_es2018 = __commonJS({
           return AcquireWritableStreamDefaultWriter(this);
         }
       }
-      Object.defineProperties(WritableStream.prototype, {
+      Object.defineProperties(WritableStream2.prototype, {
         abort: { enumerable: true },
         close: { enumerable: true },
         getWriter: { enumerable: true },
         locked: { enumerable: true }
       });
-      setFunctionName(WritableStream.prototype.abort, "abort");
-      setFunctionName(WritableStream.prototype.close, "close");
-      setFunctionName(WritableStream.prototype.getWriter, "getWriter");
+      setFunctionName(WritableStream2.prototype.abort, "abort");
+      setFunctionName(WritableStream2.prototype.close, "close");
+      setFunctionName(WritableStream2.prototype.getWriter, "getWriter");
       if (typeof Symbol.toStringTag === "symbol") {
-        Object.defineProperty(WritableStream.prototype, Symbol.toStringTag, {
+        Object.defineProperty(WritableStream2.prototype, Symbol.toStringTag, {
           value: "WritableStream",
           configurable: true
         });
@@ -3987,7 +3987,7 @@ var require_ponyfill_es2018 = __commonJS({
         return new WritableStreamDefaultWriter(stream);
       }
       function CreateWritableStream(startAlgorithm, writeAlgorithm, closeAlgorithm, abortAlgorithm, highWaterMark = 1, sizeAlgorithm = () => 1) {
-        const stream = Object.create(WritableStream.prototype);
+        const stream = Object.create(WritableStream2.prototype);
         InitializeWritableStream(stream);
         const controller = Object.create(WritableStreamDefaultController.prototype);
         SetUpWritableStreamDefaultController(stream, controller, startAlgorithm, writeAlgorithm, closeAlgorithm, abortAlgorithm, highWaterMark, sizeAlgorithm);
@@ -4012,7 +4012,7 @@ var require_ponyfill_es2018 = __commonJS({
         if (!Object.prototype.hasOwnProperty.call(x2, "_writableStreamController")) {
           return false;
         }
-        return x2 instanceof WritableStream;
+        return x2 instanceof WritableStream2;
       }
       function IsWritableStreamLocked(stream) {
         if (stream._writer === void 0) {
@@ -4021,12 +4021,12 @@ var require_ponyfill_es2018 = __commonJS({
         return true;
       }
       function WritableStreamAbort(stream, reason) {
-        var _a5;
+        var _a10;
         if (stream._state === "closed" || stream._state === "errored") {
           return promiseResolvedWith(void 0);
         }
         stream._writableStreamController._abortReason = reason;
-        (_a5 = stream._writableStreamController._abortController) === null || _a5 === void 0 ? void 0 : _a5.abort(reason);
+        (_a10 = stream._writableStreamController._abortController) === null || _a10 === void 0 ? void 0 : _a10.abort(reason);
         const state = stream._state;
         if (state === "closed" || state === "errored") {
           return promiseResolvedWith(void 0);
@@ -4789,7 +4789,7 @@ var require_ponyfill_es2018 = __commonJS({
         try {
           new ctor();
           return true;
-        } catch (_a5) {
+        } catch (_a10) {
           return false;
         }
       }
@@ -6493,7 +6493,7 @@ var require_ponyfill_es2018 = __commonJS({
       exports3.ReadableStreamDefaultReader = ReadableStreamDefaultReader;
       exports3.TransformStream = TransformStream;
       exports3.TransformStreamDefaultController = TransformStreamDefaultController;
-      exports3.WritableStream = WritableStream;
+      exports3.WritableStream = WritableStream2;
       exports3.WritableStreamDefaultController = WritableStreamDefaultController;
       exports3.WritableStreamDefaultWriter = WritableStreamDefaultWriter;
     }));
@@ -6611,7 +6611,7 @@ var init_fetch_blob = __esm({
           throw new TypeError("Failed to construct 'Blob': parameter 2 cannot convert to dictionary.");
         }
         if (options === null) options = {};
-        const encoder = new TextEncoder();
+        const encoder2 = new TextEncoder();
         for (const element of blobParts) {
           let part;
           if (ArrayBuffer.isView(element)) {
@@ -6621,7 +6621,7 @@ var init_fetch_blob = __esm({
           } else if (element instanceof Blob2) {
             part = element;
           } else {
-            part = encoder.encode(`${element}`);
+            part = encoder2.encode(`${element}`);
           }
           this.#size += ArrayBuffer.isView(part) ? part.byteLength : part.size;
           this.#parts.push(part);
@@ -6651,12 +6651,12 @@ var init_fetch_blob = __esm({
        * @return {Promise<string>}
        */
       async text() {
-        const decoder = new TextDecoder();
+        const decoder2 = new TextDecoder();
         let str2 = "";
         for await (const part of toIterator(this.#parts, false)) {
-          str2 += decoder.decode(part, { stream: true });
+          str2 += decoder2.decode(part, { stream: true });
         }
-        str2 += decoder.decode();
+        str2 += decoder2.decode();
         return str2;
       }
       /**
@@ -6985,22 +6985,22 @@ var init_from = __esm({
     init_file();
     init_fetch_blob();
     ({ stat } = import_node_fs.promises);
-    blobFromSync = (path3, type) => fromBlob((0, import_node_fs.statSync)(path3), path3, type);
-    blobFrom = (path3, type) => stat(path3).then((stat3) => fromBlob(stat3, path3, type));
-    fileFrom = (path3, type) => stat(path3).then((stat3) => fromFile(stat3, path3, type));
-    fileFromSync = (path3, type) => fromFile((0, import_node_fs.statSync)(path3), path3, type);
-    fromBlob = (stat3, path3, type = "") => new fetch_blob_default([new BlobDataItem({
-      path: path3,
+    blobFromSync = (path4, type) => fromBlob((0, import_node_fs.statSync)(path4), path4, type);
+    blobFrom = (path4, type) => stat(path4).then((stat3) => fromBlob(stat3, path4, type));
+    fileFrom = (path4, type) => stat(path4).then((stat3) => fromFile(stat3, path4, type));
+    fileFromSync = (path4, type) => fromFile((0, import_node_fs.statSync)(path4), path4, type);
+    fromBlob = (stat3, path4, type = "") => new fetch_blob_default([new BlobDataItem({
+      path: path4,
       size: stat3.size,
       lastModified: stat3.mtimeMs,
       start: 0
     })], { type });
-    fromFile = (stat3, path3, type = "") => new file_default([new BlobDataItem({
-      path: path3,
+    fromFile = (stat3, path4, type = "") => new file_default([new BlobDataItem({
+      path: path4,
       size: stat3.size,
       lastModified: stat3.mtimeMs,
       start: 0
-    })], (0, import_node_path.basename)(path3), { type, lastModified: stat3.mtimeMs });
+    })], (0, import_node_path.basename)(path4), { type, lastModified: stat3.mtimeMs });
     BlobDataItem = class _BlobDataItem {
       #path;
       #start;
@@ -7049,8 +7049,8 @@ function _fileName(headerValue) {
   if (!m2) {
     return;
   }
-  const match = m2[2] || m2[3] || "";
-  let filename = match.slice(match.lastIndexOf("\\") + 1);
+  const match2 = m2[2] || m2[3] || "";
+  let filename = match2.slice(match2.lastIndexOf("\\") + 1);
   filename = filename.replace(/%22/g, '"');
   filename = filename.replace(/&#(\d{4});/g, (m3, code) => {
     return String.fromCharCode(code);
@@ -7075,7 +7075,7 @@ async function toFormData(Body2, ct) {
   const entryChunks = [];
   const formData = new FormData2();
   const onPartData = (ui8a) => {
-    entryValue += decoder.decode(ui8a, { stream: true });
+    entryValue += decoder2.decode(ui8a, { stream: true });
   };
   const appendToFile = (ui8a) => {
     entryChunks.push(ui8a);
@@ -7087,8 +7087,8 @@ async function toFormData(Body2, ct) {
   const appendEntryToFormData = () => {
     formData.append(entryName, entryValue);
   };
-  const decoder = new TextDecoder("utf-8");
-  decoder.decode();
+  const decoder2 = new TextDecoder("utf-8");
+  decoder2.decode();
   parser.onPartBegin = function() {
     parser.onPartData = onPartData;
     parser.onPartEnd = appendEntryToFormData;
@@ -7101,13 +7101,13 @@ async function toFormData(Body2, ct) {
     entryChunks.length = 0;
   };
   parser.onHeaderField = function(ui8a) {
-    headerField += decoder.decode(ui8a, { stream: true });
+    headerField += decoder2.decode(ui8a, { stream: true });
   };
   parser.onHeaderValue = function(ui8a) {
-    headerValue += decoder.decode(ui8a, { stream: true });
+    headerValue += decoder2.decode(ui8a, { stream: true });
   };
   parser.onHeaderEnd = function() {
-    headerValue += decoder.decode();
+    headerValue += decoder2.decode();
     headerField = headerField.toLowerCase();
     if (headerField === "content-disposition") {
       const m3 = headerValue.match(/\bname=("([^"]*)"|([^()<>@,;:\\"/[\]?={}\s\t]+))/i);
@@ -7584,11 +7584,11 @@ var init_body = __esm({
         "https://github.com/node-fetch/node-fetch/issues/1000 (response)"
       ) }
     });
-    clone = (instance, highWaterMark) => {
+    clone = (instance8, highWaterMark) => {
       let p1;
       let p2;
-      let { body } = instance[INTERNALS];
-      if (instance.bodyUsed) {
+      let { body } = instance8[INTERNALS];
+      if (instance8.bodyUsed) {
         throw new Error("cannot clone body after it is used");
       }
       if (body instanceof import_node_stream.default && typeof body.getBoundary !== "function") {
@@ -7596,7 +7596,7 @@ var init_body = __esm({
         p2 = new import_node_stream.PassThrough({ highWaterMark });
         body.pipe(p1);
         body.pipe(p2);
-        instance[INTERNALS].stream = p1;
+        instance8[INTERNALS].stream = p1;
         body = p2;
       }
       return body;
@@ -8675,7 +8675,7 @@ var require_gaxios = __commonJS({
     var __importDefault = exports2 && exports2.__importDefault || function(mod) {
       return mod && mod.__esModule ? mod : { "default": mod };
     };
-    var _a4;
+    var _a9;
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.Gaxios = void 0;
     var extend_1 = __importDefault(require_extend());
@@ -8700,8 +8700,8 @@ var require_gaxios = __commonJS({
        * The Gaxios class is responsible for making HTTP requests.
        * @param defaults The default set of options to be used for this instance.
        */
-      constructor(defaults2) {
-        this.defaults = defaults2 || {};
+      constructor(defaults3) {
+        this.defaults = defaults3 || {};
         this.interceptors = {
           request: new interceptor_js_1.GaxiosInterceptorManager(),
           response: new interceptor_js_1.GaxiosInterceptorManager()
@@ -8738,10 +8738,10 @@ var require_gaxios = __commonJS({
           url = new URL(input.url);
         }
         if (input && typeof input === "object" && "headers" in input) {
-          _a4.mergeHeaders(headers, input.headers);
+          _a9.mergeHeaders(headers, input.headers);
         }
         if (init) {
-          _a4.mergeHeaders(headers, new Headers(init.headers));
+          _a9.mergeHeaders(headers, new Headers(init.headers));
         }
         if (typeof input === "object" && !(input instanceof URL)) {
           return this.request({ ...init, ...input, headers, url });
@@ -8759,7 +8759,7 @@ var require_gaxios = __commonJS({
         return this.#applyResponseInterceptors(this._request(prepared));
       }
       async _defaultAdapter(config) {
-        const fetchImpl = config.fetchImplementation || this.defaults.fetchImplementation || await _a4.#getFetch();
+        const fetchImpl = config.fetchImplementation || this.defaults.fetchImplementation || await _a9.#getFetch();
         const preparedOpts = { ...config };
         delete preparedOpts.data;
         const res = await fetchImpl(config.url, preparedOpts);
@@ -8919,7 +8919,7 @@ var require_gaxios = __commonJS({
        */
       async #prepareRequest(options) {
         const preparedHeaders = new Headers(this.defaults.headers);
-        _a4.mergeHeaders(preparedHeaders, options.headers);
+        _a9.mergeHeaders(preparedHeaders, options.headers);
         const opts = (0, extend_1.default)(true, {}, this.defaults, options);
         if (!opts.url) {
           throw new Error("URL is required.");
@@ -8982,7 +8982,7 @@ var require_gaxios = __commonJS({
         const proxy = opts.proxy || process?.env?.HTTPS_PROXY || process?.env?.https_proxy || process?.env?.HTTP_PROXY || process?.env?.http_proxy;
         if (opts.agent) {
         } else if (proxy && this.#urlMayUseProxy(opts.url, opts.noProxy)) {
-          const HttpsProxyAgent = await _a4.#getProxyAgent();
+          const HttpsProxyAgent = await _a9.#getProxyAgent();
           if (this.agentCache.has(proxy)) {
             opts.agent = this.agentCache.get(proxy);
           } else {
@@ -9138,7 +9138,7 @@ Content-Type: ${partContentType}\r
       }
     };
     exports2.Gaxios = Gaxios;
-    _a4 = Gaxios;
+    _a9 = Gaxios;
   }
 });
 
@@ -11107,7 +11107,7 @@ var require_logging_utils = __commonJS({
     exports2.log = log;
     var events_1 = require("events");
     var process3 = __importStar(require("process"));
-    var util = __importStar(require("util"));
+    var util2 = __importStar(require("util"));
     var colours_1 = require_colours();
     var LogSeverity;
     (function(LogSeverity2) {
@@ -11159,11 +11159,11 @@ var require_logging_utils = __commonJS({
     }).func;
     var DebugLogBackendBase = class {
       constructor() {
-        var _a4;
+        var _a9;
         this.cached = /* @__PURE__ */ new Map();
         this.filters = [];
         this.filtersSet = false;
-        let nodeFlag = (_a4 = process3.env[exports2.env.nodeEnables]) !== null && _a4 !== void 0 ? _a4 : "*";
+        let nodeFlag = (_a9 = process3.env[exports2.env.nodeEnables]) !== null && _a9 !== void 0 ? _a9 : "*";
         if (nodeFlag === "all") {
           nodeFlag = "*";
         }
@@ -11201,7 +11201,7 @@ var require_logging_utils = __commonJS({
           };
         }
         return (fields, ...args) => {
-          var _a4;
+          var _a9;
           const nscolour = `${colours_1.Colours.green}${namespace}${colours_1.Colours.reset}`;
           const pid = `${colours_1.Colours.yellow}${process3.pid}${colours_1.Colours.reset}`;
           let level;
@@ -11216,10 +11216,10 @@ var require_logging_utils = __commonJS({
               level = `${colours_1.Colours.yellow}${fields.severity}${colours_1.Colours.reset}`;
               break;
             default:
-              level = (_a4 = fields.severity) !== null && _a4 !== void 0 ? _a4 : LogSeverity.DEFAULT;
+              level = (_a9 = fields.severity) !== null && _a9 !== void 0 ? _a9 : LogSeverity.DEFAULT;
               break;
           }
-          const msg = util.formatWithOptions({ colors: colours_1.Colours.enabled }, ...args);
+          const msg = util2.formatWithOptions({ colors: colours_1.Colours.enabled }, ...args);
           const filteredFields = Object.assign({}, fields);
           delete filteredFields.severity;
           const fieldsJson = Object.getOwnPropertyNames(filteredFields).length ? JSON.stringify(filteredFields) : "";
@@ -11250,8 +11250,8 @@ var require_logging_utils = __commonJS({
         };
       }
       setFilters() {
-        var _a4;
-        const existingFilters = (_a4 = process3.env["NODE_DEBUG"]) !== null && _a4 !== void 0 ? _a4 : "";
+        var _a9;
+        const existingFilters = (_a9 = process3.env["NODE_DEBUG"]) !== null && _a9 !== void 0 ? _a9 : "";
         process3.env["NODE_DEBUG"] = `${existingFilters}${existingFilters ? "," : ""}${this.filters.join(",")}`;
       }
     };
@@ -11260,19 +11260,19 @@ var require_logging_utils = __commonJS({
     }
     var StructuredBackend = class extends DebugLogBackendBase {
       constructor(upstream) {
-        var _a4;
+        var _a9;
         super();
-        this.upstream = (_a4 = upstream) !== null && _a4 !== void 0 ? _a4 : void 0;
+        this.upstream = (_a9 = upstream) !== null && _a9 !== void 0 ? _a9 : void 0;
       }
       makeLogger(namespace) {
-        var _a4;
-        const debugLogger = (_a4 = this.upstream) === null || _a4 === void 0 ? void 0 : _a4.makeLogger(namespace);
+        var _a9;
+        const debugLogger = (_a9 = this.upstream) === null || _a9 === void 0 ? void 0 : _a9.makeLogger(namespace);
         return (fields, ...args) => {
-          var _a5;
-          const severity = (_a5 = fields.severity) !== null && _a5 !== void 0 ? _a5 : LogSeverity.INFO;
+          var _a10;
+          const severity = (_a10 = fields.severity) !== null && _a10 !== void 0 ? _a10 : LogSeverity.INFO;
           const json = Object.assign({
             severity,
-            message: util.format(...args)
+            message: util2.format(...args)
           }, fields);
           const jsonString = JSON.stringify(json);
           if (debugLogger) {
@@ -11283,8 +11283,8 @@ var require_logging_utils = __commonJS({
         };
       }
       setFilters() {
-        var _a4;
-        (_a4 = this.upstream) === null || _a4 === void 0 ? void 0 : _a4.setFilters();
+        var _a9;
+        (_a9 = this.upstream) === null || _a9 === void 0 ? void 0 : _a9.setFilters();
       }
     };
     function getStructuredBackend(upstream) {
@@ -11417,7 +11417,7 @@ var require_src4 = __commonJS({
     };
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.gcpResidencyCache = exports2.METADATA_SERVER_DETECTION = exports2.HEADERS = exports2.HEADER_VALUE = exports2.HEADER_NAME = exports2.SECONDARY_HOST_ADDRESS = exports2.HOST_ADDRESS = exports2.BASE_PATH = void 0;
-    exports2.instance = instance;
+    exports2.instance = instance8;
     exports2.project = project;
     exports2.universe = universe;
     exports2.bulk = bulk;
@@ -11523,7 +11523,7 @@ var require_src4 = __commonJS({
       const r2 = (0, gaxios_1.request)(secondaryOptions);
       return Promise.any([r1, r2]);
     }
-    function instance(options) {
+    function instance8(options) {
       return metadataAccessor("instance", options);
     }
     function project(options) {
@@ -11666,7 +11666,7 @@ var require_base64_js = __commonJS({
       return (validLen + placeHoldersLen) * 3 / 4 - placeHoldersLen;
     }
     function toByteArray(b64) {
-      var tmp;
+      var tmp2;
       var lens = getLens(b64);
       var validLen = lens[0];
       var placeHoldersLen = lens[1];
@@ -11675,19 +11675,19 @@ var require_base64_js = __commonJS({
       var len2 = placeHoldersLen > 0 ? validLen - 4 : validLen;
       var i3;
       for (i3 = 0; i3 < len2; i3 += 4) {
-        tmp = revLookup[b64.charCodeAt(i3)] << 18 | revLookup[b64.charCodeAt(i3 + 1)] << 12 | revLookup[b64.charCodeAt(i3 + 2)] << 6 | revLookup[b64.charCodeAt(i3 + 3)];
-        arr[curByte++] = tmp >> 16 & 255;
-        arr[curByte++] = tmp >> 8 & 255;
-        arr[curByte++] = tmp & 255;
+        tmp2 = revLookup[b64.charCodeAt(i3)] << 18 | revLookup[b64.charCodeAt(i3 + 1)] << 12 | revLookup[b64.charCodeAt(i3 + 2)] << 6 | revLookup[b64.charCodeAt(i3 + 3)];
+        arr[curByte++] = tmp2 >> 16 & 255;
+        arr[curByte++] = tmp2 >> 8 & 255;
+        arr[curByte++] = tmp2 & 255;
       }
       if (placeHoldersLen === 2) {
-        tmp = revLookup[b64.charCodeAt(i3)] << 2 | revLookup[b64.charCodeAt(i3 + 1)] >> 4;
-        arr[curByte++] = tmp & 255;
+        tmp2 = revLookup[b64.charCodeAt(i3)] << 2 | revLookup[b64.charCodeAt(i3 + 1)] >> 4;
+        arr[curByte++] = tmp2 & 255;
       }
       if (placeHoldersLen === 1) {
-        tmp = revLookup[b64.charCodeAt(i3)] << 10 | revLookup[b64.charCodeAt(i3 + 1)] << 4 | revLookup[b64.charCodeAt(i3 + 2)] >> 2;
-        arr[curByte++] = tmp >> 8 & 255;
-        arr[curByte++] = tmp & 255;
+        tmp2 = revLookup[b64.charCodeAt(i3)] << 10 | revLookup[b64.charCodeAt(i3 + 1)] << 4 | revLookup[b64.charCodeAt(i3 + 2)] >> 2;
+        arr[curByte++] = tmp2 >> 8 & 255;
+        arr[curByte++] = tmp2 & 255;
       }
       return arr;
     }
@@ -11695,16 +11695,16 @@ var require_base64_js = __commonJS({
       return lookup[num >> 18 & 63] + lookup[num >> 12 & 63] + lookup[num >> 6 & 63] + lookup[num & 63];
     }
     function encodeChunk(uint8, start, end) {
-      var tmp;
+      var tmp2;
       var output = [];
       for (var i3 = start; i3 < end; i3 += 3) {
-        tmp = (uint8[i3] << 16 & 16711680) + (uint8[i3 + 1] << 8 & 65280) + (uint8[i3 + 2] & 255);
-        output.push(tripletToBase64(tmp));
+        tmp2 = (uint8[i3] << 16 & 16711680) + (uint8[i3 + 1] << 8 & 65280) + (uint8[i3 + 2] & 255);
+        output.push(tripletToBase64(tmp2));
       }
       return output.join("");
     }
     function fromByteArray(uint8) {
-      var tmp;
+      var tmp2;
       var len2 = uint8.length;
       var extraBytes = len2 % 3;
       var parts = [];
@@ -11713,14 +11713,14 @@ var require_base64_js = __commonJS({
         parts.push(encodeChunk(uint8, i3, i3 + maxChunkLength > len22 ? len22 : i3 + maxChunkLength));
       }
       if (extraBytes === 1) {
-        tmp = uint8[len2 - 1];
+        tmp2 = uint8[len2 - 1];
         parts.push(
-          lookup[tmp >> 2] + lookup[tmp << 4 & 63] + "=="
+          lookup[tmp2 >> 2] + lookup[tmp2 << 4 & 63] + "=="
         );
       } else if (extraBytes === 2) {
-        tmp = (uint8[len2 - 2] << 8) + uint8[len2 - 1];
+        tmp2 = (uint8[len2 - 2] << 8) + uint8[len2 - 1];
         parts.push(
-          lookup[tmp >> 10] + lookup[tmp >> 4 & 63] + lookup[tmp << 2 & 63] + "="
+          lookup[tmp2 >> 10] + lookup[tmp2 >> 4 & 63] + lookup[tmp2 << 2 & 63] + "="
         );
       }
       return parts.join("");
@@ -11950,33 +11950,33 @@ var require_crypto3 = __commonJS({
 var require_safe_buffer = __commonJS({
   "node_modules/safe-buffer/index.js"(exports2, module2) {
     var buffer = require("buffer");
-    var Buffer4 = buffer.Buffer;
+    var Buffer5 = buffer.Buffer;
     function copyProps(src, dst) {
       for (var key in src) {
         dst[key] = src[key];
       }
     }
-    if (Buffer4.from && Buffer4.alloc && Buffer4.allocUnsafe && Buffer4.allocUnsafeSlow) {
+    if (Buffer5.from && Buffer5.alloc && Buffer5.allocUnsafe && Buffer5.allocUnsafeSlow) {
       module2.exports = buffer;
     } else {
       copyProps(buffer, exports2);
       exports2.Buffer = SafeBuffer;
     }
     function SafeBuffer(arg, encodingOrOffset, length) {
-      return Buffer4(arg, encodingOrOffset, length);
+      return Buffer5(arg, encodingOrOffset, length);
     }
-    copyProps(Buffer4, SafeBuffer);
+    copyProps(Buffer5, SafeBuffer);
     SafeBuffer.from = function(arg, encodingOrOffset, length) {
       if (typeof arg === "number") {
         throw new TypeError("Argument must not be a number");
       }
-      return Buffer4(arg, encodingOrOffset, length);
+      return Buffer5(arg, encodingOrOffset, length);
     };
     SafeBuffer.alloc = function(size, fill, encoding) {
       if (typeof size !== "number") {
         throw new TypeError("Argument must be a number");
       }
-      var buf = Buffer4(size);
+      var buf = Buffer5(size);
       if (fill !== void 0) {
         if (typeof encoding === "string") {
           buf.fill(fill, encoding);
@@ -11992,7 +11992,7 @@ var require_safe_buffer = __commonJS({
       if (typeof size !== "number") {
         throw new TypeError("Argument must be a number");
       }
-      return Buffer4(size);
+      return Buffer5(size);
     };
     SafeBuffer.allocUnsafeSlow = function(size) {
       if (typeof size !== "number") {
@@ -12031,7 +12031,7 @@ var require_param_bytes_for_alg = __commonJS({
 var require_ecdsa_sig_formatter = __commonJS({
   "node_modules/ecdsa-sig-formatter/src/ecdsa-sig-formatter.js"(exports2, module2) {
     "use strict";
-    var Buffer4 = require_safe_buffer().Buffer;
+    var Buffer5 = require_safe_buffer().Buffer;
     var getParamBytesForAlg = require_param_bytes_for_alg();
     var MAX_OCTET = 128;
     var CLASS_UNIVERSAL = 0;
@@ -12044,10 +12044,10 @@ var require_ecdsa_sig_formatter = __commonJS({
       return base64.replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
     }
     function signatureAsBuffer(signature) {
-      if (Buffer4.isBuffer(signature)) {
+      if (Buffer5.isBuffer(signature)) {
         return signature;
       } else if ("string" === typeof signature) {
-        return Buffer4.from(signature, "base64");
+        return Buffer5.from(signature, "base64");
       }
       throw new TypeError("ECDSA signature must be a Base64 string or a Buffer");
     }
@@ -12095,7 +12095,7 @@ var require_ecdsa_sig_formatter = __commonJS({
         throw new Error('Expected to consume entire buffer, but "' + (inputLength - offset) + '" bytes remain');
       }
       var rPadding = paramBytes - rLength, sPadding = paramBytes - sLength;
-      var dst = Buffer4.allocUnsafe(rPadding + rLength + sPadding + sLength);
+      var dst = Buffer5.allocUnsafe(rPadding + rLength + sPadding + sLength);
       for (offset = 0; offset < rPadding; ++offset) {
         dst[offset] = 0;
       }
@@ -12133,7 +12133,7 @@ var require_ecdsa_sig_formatter = __commonJS({
       var sLength = paramBytes - sPadding;
       var rsBytes = 1 + 1 + rLength + 1 + 1 + sLength;
       var shortLength = rsBytes < MAX_OCTET;
-      var dst = Buffer4.allocUnsafe((shortLength ? 2 : 3) + rsBytes);
+      var dst = Buffer5.allocUnsafe((shortLength ? 2 : 3) + rsBytes);
       var offset = 0;
       dst[offset++] = ENCODED_TAG_SEQ;
       if (shortLength) {
@@ -12180,11 +12180,11 @@ var require_util2 = __commonJS({
     exports2.getWellKnownCertificateConfigFileLocation = getWellKnownCertificateConfigFileLocation;
     var fs4 = require("fs");
     var os2 = require("os");
-    var path3 = require("path");
+    var path4 = require("path");
     var WELL_KNOWN_CERTIFICATE_CONFIG_FILE = "certificate_config.json";
     var CLOUDSDK_CONFIG_DIRECTORY = "gcloud";
     function snakeToCamel(str2) {
-      return str2.replace(/([_][^_])/g, (match) => match.slice(1).toUpperCase());
+      return str2.replace(/([_][^_])/g, (match2) => match2.slice(1).toUpperCase());
     }
     function originalOrCamelOptions(obj) {
       function get(key) {
@@ -12273,8 +12273,8 @@ var require_util2 = __commonJS({
       }
     }
     function getWellKnownCertificateConfigFileLocation() {
-      const configDir = process.env.CLOUDSDK_CONFIG || (_isWindows() ? path3.join(process.env.APPDATA || "", CLOUDSDK_CONFIG_DIRECTORY) : path3.join(process.env.HOME || "", ".config", CLOUDSDK_CONFIG_DIRECTORY));
-      return path3.join(configDir, WELL_KNOWN_CERTIFICATE_CONFIG_FILE);
+      const configDir = process.env.CLOUDSDK_CONFIG || (_isWindows() ? path4.join(process.env.APPDATA || "", CLOUDSDK_CONFIG_DIRECTORY) : path4.join(process.env.HOME || "", ".config", CLOUDSDK_CONFIG_DIRECTORY));
+      return path4.join(configDir, WELL_KNOWN_CERTIFICATE_CONFIG_FILE);
     }
     function _isWindows() {
       return os2.platform().startsWith("win");
@@ -13581,19 +13581,19 @@ var require_envDetect = __commonJS({
 // node_modules/jws/lib/data-stream.js
 var require_data_stream = __commonJS({
   "node_modules/jws/lib/data-stream.js"(exports2, module2) {
-    var Buffer4 = require_safe_buffer().Buffer;
+    var Buffer5 = require_safe_buffer().Buffer;
     var Stream5 = require("stream");
-    var util = require("util");
+    var util2 = require("util");
     function DataStream(data) {
       this.buffer = null;
       this.writable = true;
       this.readable = true;
       if (!data) {
-        this.buffer = Buffer4.alloc(0);
+        this.buffer = Buffer5.alloc(0);
         return this;
       }
       if (typeof data.pipe === "function") {
-        this.buffer = Buffer4.alloc(0);
+        this.buffer = Buffer5.alloc(0);
         data.pipe(this);
         return this;
       }
@@ -13609,9 +13609,9 @@ var require_data_stream = __commonJS({
       }
       throw new TypeError("Unexpected data type (" + typeof data + ")");
     }
-    util.inherits(DataStream, Stream5);
+    util2.inherits(DataStream, Stream5);
     DataStream.prototype.write = function write(data) {
-      this.buffer = Buffer4.concat([this.buffer, Buffer4.from(data)]);
+      this.buffer = Buffer5.concat([this.buffer, Buffer5.from(data)]);
       this.emit("data", data);
     };
     DataStream.prototype.end = function end(data) {
@@ -13630,11 +13630,11 @@ var require_data_stream = __commonJS({
 var require_buffer_equal_constant_time = __commonJS({
   "node_modules/buffer-equal-constant-time/index.js"(exports2, module2) {
     "use strict";
-    var Buffer4 = require("buffer").Buffer;
+    var Buffer5 = require("buffer").Buffer;
     var SlowBuffer = require("buffer").SlowBuffer;
     module2.exports = bufferEq;
     function bufferEq(a, b) {
-      if (!Buffer4.isBuffer(a) || !Buffer4.isBuffer(b)) {
+      if (!Buffer5.isBuffer(a) || !Buffer5.isBuffer(b)) {
         return false;
       }
       if (a.length !== b.length) {
@@ -13647,14 +13647,14 @@ var require_buffer_equal_constant_time = __commonJS({
       return c === 0;
     }
     bufferEq.install = function() {
-      Buffer4.prototype.equal = SlowBuffer.prototype.equal = function equal(that) {
+      Buffer5.prototype.equal = SlowBuffer.prototype.equal = function equal(that) {
         return bufferEq(this, that);
       };
     };
-    var origBufEqual = Buffer4.prototype.equal;
+    var origBufEqual = Buffer5.prototype.equal;
     var origSlowBufEqual = SlowBuffer.prototype.equal;
     bufferEq.restore = function() {
-      Buffer4.prototype.equal = origBufEqual;
+      Buffer5.prototype.equal = origBufEqual;
       SlowBuffer.prototype.equal = origSlowBufEqual;
     };
   }
@@ -13663,10 +13663,10 @@ var require_buffer_equal_constant_time = __commonJS({
 // node_modules/jwa/index.js
 var require_jwa = __commonJS({
   "node_modules/jwa/index.js"(exports2, module2) {
-    var Buffer4 = require_safe_buffer().Buffer;
+    var Buffer5 = require_safe_buffer().Buffer;
     var crypto3 = require("crypto");
     var formatEcdsa = require_ecdsa_sig_formatter();
-    var util = require("util");
+    var util2 = require("util");
     var MSG_INVALID_ALGORITHM = '"%s" is not a valid algorithm.\n  Supported algorithms are:\n  "HS256", "HS384", "HS512", "RS256", "RS384", "RS512", "PS256", "PS384", "PS512", "ES256", "ES384", "ES512" and "none".';
     var MSG_INVALID_SECRET = "secret must be a string or buffer";
     var MSG_INVALID_VERIFIER_KEY = "key must be a string or a buffer";
@@ -13677,7 +13677,7 @@ var require_jwa = __commonJS({
       MSG_INVALID_SECRET += "or a KeyObject";
     }
     function checkIsPublicKey(key) {
-      if (Buffer4.isBuffer(key)) {
+      if (Buffer5.isBuffer(key)) {
         return;
       }
       if (typeof key === "string") {
@@ -13700,7 +13700,7 @@ var require_jwa = __commonJS({
       }
     }
     function checkIsPrivateKey(key) {
-      if (Buffer4.isBuffer(key)) {
+      if (Buffer5.isBuffer(key)) {
         return;
       }
       if (typeof key === "string") {
@@ -13712,7 +13712,7 @@ var require_jwa = __commonJS({
       throw typeError(MSG_INVALID_SIGNER_KEY);
     }
     function checkIsSecretKey(key) {
-      if (Buffer4.isBuffer(key)) {
+      if (Buffer5.isBuffer(key)) {
         return;
       }
       if (typeof key === "string") {
@@ -13746,11 +13746,11 @@ var require_jwa = __commonJS({
     }
     function typeError(template) {
       var args = [].slice.call(arguments, 1);
-      var errMsg = util.format.bind(util, template).apply(null, args);
+      var errMsg = util2.format.bind(util2, template).apply(null, args);
       return new TypeError(errMsg);
     }
     function bufferOrString(obj) {
-      return Buffer4.isBuffer(obj) || typeof obj === "string";
+      return Buffer5.isBuffer(obj) || typeof obj === "string";
     }
     function normalizeInput(thing) {
       if (!bufferOrString(thing))
@@ -13781,7 +13781,7 @@ var require_jwa = __commonJS({
     function createHmacVerifier(bits) {
       return function verify(thing, signature, secret) {
         var computedSig = createHmacSigner(bits)(thing, secret);
-        return timingSafeEqual(Buffer4.from(signature), Buffer4.from(computedSig));
+        return timingSafeEqual(Buffer5.from(signature), Buffer5.from(computedSig));
       };
     }
     function createKeySigner(bits) {
@@ -13871,11 +13871,11 @@ var require_jwa = __commonJS({
         es: createECDSAVerifer,
         none: createNoneVerifier
       };
-      var match = algorithm.match(/^(RS|PS|ES|HS)(256|384|512)$|^(none)$/);
-      if (!match)
+      var match2 = algorithm.match(/^(RS|PS|ES|HS)(256|384|512)$|^(none)$/);
+      if (!match2)
         throw typeError(MSG_INVALID_ALGORITHM, algorithm);
-      var algo = (match[1] || match[3]).toLowerCase();
-      var bits = match[2];
+      var algo = (match2[1] || match2[3]).toLowerCase();
+      var bits = match2[2];
       return {
         sign: signerFactories[algo](bits),
         verify: verifierFactories[algo](bits)
@@ -13887,11 +13887,11 @@ var require_jwa = __commonJS({
 // node_modules/jws/lib/tostring.js
 var require_tostring = __commonJS({
   "node_modules/jws/lib/tostring.js"(exports2, module2) {
-    var Buffer4 = require("buffer").Buffer;
+    var Buffer5 = require("buffer").Buffer;
     module2.exports = function toString(obj) {
       if (typeof obj === "string")
         return obj;
-      if (typeof obj === "number" || Buffer4.isBuffer(obj))
+      if (typeof obj === "number" || Buffer5.isBuffer(obj))
         return obj.toString();
       return JSON.stringify(obj);
     };
@@ -13901,20 +13901,20 @@ var require_tostring = __commonJS({
 // node_modules/jws/lib/sign-stream.js
 var require_sign_stream = __commonJS({
   "node_modules/jws/lib/sign-stream.js"(exports2, module2) {
-    var Buffer4 = require_safe_buffer().Buffer;
+    var Buffer5 = require_safe_buffer().Buffer;
     var DataStream = require_data_stream();
     var jwa = require_jwa();
     var Stream5 = require("stream");
     var toString = require_tostring();
-    var util = require("util");
+    var util2 = require("util");
     function base64url(string, encoding) {
-      return Buffer4.from(string, encoding).toString("base64").replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
+      return Buffer5.from(string, encoding).toString("base64").replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
     }
     function jwsSecuredInput(header, payload, encoding) {
       encoding = encoding || "utf8";
       var encodedHeader = base64url(toString(header), "binary");
       var encodedPayload = base64url(toString(payload), encoding);
-      return util.format("%s.%s", encodedHeader, encodedPayload);
+      return util2.format("%s.%s", encodedHeader, encodedPayload);
     }
     function jwsSign(opts) {
       var header = opts.header;
@@ -13924,7 +13924,7 @@ var require_sign_stream = __commonJS({
       var algo = jwa(header.alg);
       var securedInput = jwsSecuredInput(header, payload, encoding);
       var signature = algo.sign(securedInput, secretOrKey);
-      return util.format("%s.%s", securedInput, signature);
+      return util2.format("%s.%s", securedInput, signature);
     }
     function SignStream(opts) {
       var secret = opts.secret;
@@ -13948,7 +13948,7 @@ var require_sign_stream = __commonJS({
           this.sign();
       }.bind(this));
     }
-    util.inherits(SignStream, Stream5);
+    util2.inherits(SignStream, Stream5);
     SignStream.prototype.sign = function sign() {
       try {
         var signature = jwsSign({
@@ -13976,18 +13976,18 @@ var require_sign_stream = __commonJS({
 // node_modules/jws/lib/verify-stream.js
 var require_verify_stream = __commonJS({
   "node_modules/jws/lib/verify-stream.js"(exports2, module2) {
-    var Buffer4 = require_safe_buffer().Buffer;
+    var Buffer5 = require_safe_buffer().Buffer;
     var DataStream = require_data_stream();
     var jwa = require_jwa();
     var Stream5 = require("stream");
     var toString = require_tostring();
-    var util = require("util");
+    var util2 = require("util");
     var JWS_REGEX = /^[a-zA-Z0-9\-_]+?\.[a-zA-Z0-9\-_]+?\.([a-zA-Z0-9\-_]+)?$/;
-    function isObject(thing) {
+    function isObject2(thing) {
       return Object.prototype.toString.call(thing) === "[object Object]";
     }
     function safeJsonParse(thing) {
-      if (isObject(thing))
+      if (isObject2(thing))
         return thing;
       try {
         return JSON.parse(thing);
@@ -13997,7 +13997,7 @@ var require_verify_stream = __commonJS({
     }
     function headerFromJWS(jwsSig) {
       var encodedHeader = jwsSig.split(".", 1)[0];
-      return safeJsonParse(Buffer4.from(encodedHeader, "base64").toString("binary"));
+      return safeJsonParse(Buffer5.from(encodedHeader, "base64").toString("binary"));
     }
     function securedInputFromJWS(jwsSig) {
       return jwsSig.split(".", 2).join(".");
@@ -14008,7 +14008,7 @@ var require_verify_stream = __commonJS({
     function payloadFromJWS(jwsSig, encoding) {
       encoding = encoding || "utf8";
       var payload = jwsSig.split(".")[1];
-      return Buffer4.from(payload, "base64").toString(encoding);
+      return Buffer5.from(payload, "base64").toString(encoding);
     }
     function isValidJws(string) {
       return JWS_REGEX.test(string) && !!headerFromJWS(string);
@@ -14065,7 +14065,7 @@ var require_verify_stream = __commonJS({
           this.verify();
       }.bind(this));
     }
-    util.inherits(VerifyStream, Stream5);
+    util2.inherits(VerifyStream, Stream5);
     VerifyStream.prototype.verify = function verify() {
       try {
         var valid = jwsVerify(this.signature.buffer, this.algorithm, this.key.buffer);
@@ -14222,7 +14222,7 @@ var require_getCredentials = __commonJS({
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.getCredentials = getCredentials;
-    var path3 = require("path");
+    var path4 = require("path");
     var fs4 = require("fs");
     var util_1 = require("util");
     var errorWithCode_1 = require_errorWithCode();
@@ -14294,7 +14294,7 @@ var require_getCredentials = __commonJS({
        * @returns An instance of a class that implements ICredentialsProvider.
        */
       static create(keyFilePath) {
-        const keyFileExtension = path3.extname(keyFilePath);
+        const keyFileExtension = path4.extname(keyFilePath);
         switch (keyFileExtension) {
           case ExtensionFiles.JSON:
             return new JsonCredentialsProvider(keyFilePath);
@@ -15823,11 +15823,11 @@ var require_baseexternalclient = __commonJS({
        *   returned.
        */
       getProjectNumber(audience) {
-        const match = audience.match(/\/projects\/([^/]+)/);
-        if (!match) {
+        const match2 = audience.match(/\/projects\/([^/]+)/);
+        if (!match2) {
           return null;
         }
-        return match[1];
+        return match2[1];
       }
       /**
        * Exchanges an external account GCP access token for a service
@@ -16687,11 +16687,11 @@ var require_awsclient = __commonJS({
         this.region = "";
       }
       validateEnvironmentId() {
-        const match = this.environmentId?.match(/^(aws)(\d+)$/);
-        if (!match || !this.regionalCredVerificationUrl) {
+        const match2 = this.environmentId?.match(/^(aws)(\d+)$/);
+        if (!match2 || !this.regionalCredVerificationUrl) {
           throw new Error('No valid AWS "credential_source" provided');
-        } else if (parseInt(match[2], 10) !== 1) {
-          throw new Error(`aws version "${match[2]}" is not supported in the current build.`);
+        } else if (parseInt(match2[2], 10) !== 1) {
+          throw new Error(`aws version "${match2[2]}" is not supported in the current build.`);
         }
       }
       /**
@@ -17380,7 +17380,7 @@ var require_googleauth = __commonJS({
     var gaxios_1 = require_src2();
     var gcpMetadata = require_src4();
     var os2 = require("os");
-    var path3 = require("path");
+    var path4 = require("path");
     var crypto_1 = require_crypto3();
     var computeclient_1 = require_computeclient();
     var idtokenclient_1 = require_idtokenclient();
@@ -17666,11 +17666,11 @@ var require_googleauth = __commonJS({
         } else {
           const home = process.env["HOME"];
           if (home) {
-            location = path3.join(home, ".config");
+            location = path4.join(home, ".config");
           }
         }
         if (location) {
-          location = path3.join(location, "gcloud", "application_default_credentials.json");
+          location = path4.join(location, "gcloud", "application_default_credentials.json");
           if (!fs4.existsSync(location)) {
             location = null;
           }
@@ -18014,7 +18014,7 @@ var require_googleauth = __commonJS({
         if (this.jsonContent) {
           return this._cacheClientFromJSON(this.jsonContent, this.clientOptions);
         } else if (this.keyFilename) {
-          const filePath = path3.resolve(this.keyFilename);
+          const filePath = path4.resolve(this.keyFilename);
           const stream = fs4.createReadStream(filePath);
           return await this.fromStreamAsync(stream, this.clientOptions);
         } else if (this.apiKey) {
@@ -20797,7 +20797,7 @@ var require_extension = __commonJS({
 var require_websocket = __commonJS({
   "node_modules/ws/lib/websocket.js"(exports2, module2) {
     "use strict";
-    var EventEmitter = require("events");
+    var EventEmitter2 = require("events");
     var https2 = require("https");
     var http3 = require("http");
     var net = require("net");
@@ -20829,7 +20829,7 @@ var require_websocket = __commonJS({
     var protocolVersions = [8, 13];
     var readyStates = ["CONNECTING", "OPEN", "CLOSING", "CLOSED"];
     var subprotocolRegex = /^[!#$%&'*+\-.0-9A-Z^_`|a-z~]+$/;
-    var WebSocket2 = class _WebSocket extends EventEmitter {
+    var WebSocket2 = class _WebSocket extends EventEmitter2 {
       /**
        * Create a new `WebSocket`.
        *
@@ -21836,7 +21836,7 @@ var require_subprotocol = __commonJS({
 var require_websocket_server = __commonJS({
   "node_modules/ws/lib/websocket-server.js"(exports2, module2) {
     "use strict";
-    var EventEmitter = require("events");
+    var EventEmitter2 = require("events");
     var http3 = require("http");
     var { Duplex } = require("stream");
     var { createHash: createHash2 } = require("crypto");
@@ -21849,7 +21849,7 @@ var require_websocket_server = __commonJS({
     var RUNNING = 0;
     var CLOSING = 1;
     var CLOSED = 2;
-    var WebSocketServer2 = class extends EventEmitter {
+    var WebSocketServer2 = class extends EventEmitter2 {
       /**
        * Create a `WebSocketServer` instance.
        *
@@ -22233,6 +22233,858 @@ var require_websocket_server = __commonJS({
   }
 });
 
+// node_modules/flatbuffers/js/constants.js
+var require_constants2 = __commonJS({
+  "node_modules/flatbuffers/js/constants.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.SIZE_PREFIX_LENGTH = exports2.FILE_IDENTIFIER_LENGTH = exports2.SIZEOF_INT = exports2.SIZEOF_SHORT = void 0;
+    exports2.SIZEOF_SHORT = 2;
+    exports2.SIZEOF_INT = 4;
+    exports2.FILE_IDENTIFIER_LENGTH = 4;
+    exports2.SIZE_PREFIX_LENGTH = 4;
+  }
+});
+
+// node_modules/flatbuffers/js/utils.js
+var require_utils = __commonJS({
+  "node_modules/flatbuffers/js/utils.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.isLittleEndian = exports2.float64 = exports2.float32 = exports2.int32 = void 0;
+    exports2.int32 = new Int32Array(2);
+    exports2.float32 = new Float32Array(exports2.int32.buffer);
+    exports2.float64 = new Float64Array(exports2.int32.buffer);
+    exports2.isLittleEndian = new Uint16Array(new Uint8Array([1, 0]).buffer)[0] === 1;
+  }
+});
+
+// node_modules/flatbuffers/js/encoding.js
+var require_encoding = __commonJS({
+  "node_modules/flatbuffers/js/encoding.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.Encoding = void 0;
+    var Encoding;
+    (function(Encoding2) {
+      Encoding2[Encoding2["UTF8_BYTES"] = 1] = "UTF8_BYTES";
+      Encoding2[Encoding2["UTF16_STRING"] = 2] = "UTF16_STRING";
+    })(Encoding || (exports2.Encoding = Encoding = {}));
+  }
+});
+
+// node_modules/flatbuffers/js/byte-buffer.js
+var require_byte_buffer = __commonJS({
+  "node_modules/flatbuffers/js/byte-buffer.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.ByteBuffer = void 0;
+    var constants_js_1 = require_constants2();
+    var utils_js_1 = require_utils();
+    var encoding_js_1 = require_encoding();
+    var ByteBuffer6 = class _ByteBuffer {
+      /**
+       * Create a new ByteBuffer with a given array of bytes (`Uint8Array`)
+       */
+      constructor(bytes_) {
+        this.bytes_ = bytes_;
+        this.position_ = 0;
+        this.text_decoder_ = new TextDecoder();
+      }
+      /**
+       * Create and allocate a new ByteBuffer with a given size.
+       */
+      static allocate(byte_size) {
+        return new _ByteBuffer(new Uint8Array(byte_size));
+      }
+      clear() {
+        this.position_ = 0;
+      }
+      /**
+       * Get the underlying `Uint8Array`.
+       */
+      bytes() {
+        return this.bytes_;
+      }
+      /**
+       * Get the buffer's position.
+       */
+      position() {
+        return this.position_;
+      }
+      /**
+       * Set the buffer's position.
+       */
+      setPosition(position) {
+        this.position_ = position;
+      }
+      /**
+       * Get the buffer's capacity.
+       */
+      capacity() {
+        return this.bytes_.length;
+      }
+      readInt8(offset) {
+        return this.readUint8(offset) << 24 >> 24;
+      }
+      readUint8(offset) {
+        return this.bytes_[offset];
+      }
+      readInt16(offset) {
+        return this.readUint16(offset) << 16 >> 16;
+      }
+      readUint16(offset) {
+        return this.bytes_[offset] | this.bytes_[offset + 1] << 8;
+      }
+      readInt32(offset) {
+        return this.bytes_[offset] | this.bytes_[offset + 1] << 8 | this.bytes_[offset + 2] << 16 | this.bytes_[offset + 3] << 24;
+      }
+      readUint32(offset) {
+        return this.readInt32(offset) >>> 0;
+      }
+      readInt64(offset) {
+        return BigInt.asIntN(64, BigInt(this.readUint32(offset)) + (BigInt(this.readUint32(offset + 4)) << BigInt(32)));
+      }
+      readUint64(offset) {
+        return BigInt.asUintN(64, BigInt(this.readUint32(offset)) + (BigInt(this.readUint32(offset + 4)) << BigInt(32)));
+      }
+      readFloat32(offset) {
+        utils_js_1.int32[0] = this.readInt32(offset);
+        return utils_js_1.float32[0];
+      }
+      readFloat64(offset) {
+        utils_js_1.int32[utils_js_1.isLittleEndian ? 0 : 1] = this.readInt32(offset);
+        utils_js_1.int32[utils_js_1.isLittleEndian ? 1 : 0] = this.readInt32(offset + 4);
+        return utils_js_1.float64[0];
+      }
+      writeInt8(offset, value) {
+        this.bytes_[offset] = value;
+      }
+      writeUint8(offset, value) {
+        this.bytes_[offset] = value;
+      }
+      writeInt16(offset, value) {
+        this.bytes_[offset] = value;
+        this.bytes_[offset + 1] = value >> 8;
+      }
+      writeUint16(offset, value) {
+        this.bytes_[offset] = value;
+        this.bytes_[offset + 1] = value >> 8;
+      }
+      writeInt32(offset, value) {
+        this.bytes_[offset] = value;
+        this.bytes_[offset + 1] = value >> 8;
+        this.bytes_[offset + 2] = value >> 16;
+        this.bytes_[offset + 3] = value >> 24;
+      }
+      writeUint32(offset, value) {
+        this.bytes_[offset] = value;
+        this.bytes_[offset + 1] = value >> 8;
+        this.bytes_[offset + 2] = value >> 16;
+        this.bytes_[offset + 3] = value >> 24;
+      }
+      writeInt64(offset, value) {
+        this.writeInt32(offset, Number(BigInt.asIntN(32, value)));
+        this.writeInt32(offset + 4, Number(BigInt.asIntN(32, value >> BigInt(32))));
+      }
+      writeUint64(offset, value) {
+        this.writeUint32(offset, Number(BigInt.asUintN(32, value)));
+        this.writeUint32(offset + 4, Number(BigInt.asUintN(32, value >> BigInt(32))));
+      }
+      writeFloat32(offset, value) {
+        utils_js_1.float32[0] = value;
+        this.writeInt32(offset, utils_js_1.int32[0]);
+      }
+      writeFloat64(offset, value) {
+        utils_js_1.float64[0] = value;
+        this.writeInt32(offset, utils_js_1.int32[utils_js_1.isLittleEndian ? 0 : 1]);
+        this.writeInt32(offset + 4, utils_js_1.int32[utils_js_1.isLittleEndian ? 1 : 0]);
+      }
+      /**
+       * Return the file identifier.   Behavior is undefined for FlatBuffers whose
+       * schema does not include a file_identifier (likely points at padding or the
+       * start of a the root vtable).
+       */
+      getBufferIdentifier() {
+        if (this.bytes_.length < this.position_ + constants_js_1.SIZEOF_INT + constants_js_1.FILE_IDENTIFIER_LENGTH) {
+          throw new Error("FlatBuffers: ByteBuffer is too short to contain an identifier.");
+        }
+        let result = "";
+        for (let i2 = 0; i2 < constants_js_1.FILE_IDENTIFIER_LENGTH; i2++) {
+          result += String.fromCharCode(this.readInt8(this.position_ + constants_js_1.SIZEOF_INT + i2));
+        }
+        return result;
+      }
+      /**
+       * Look up a field in the vtable, return an offset into the object, or 0 if the
+       * field is not present.
+       */
+      __offset(bb_pos, vtable_offset) {
+        const vtable = bb_pos - this.readInt32(bb_pos);
+        return vtable_offset < this.readInt16(vtable) ? this.readInt16(vtable + vtable_offset) : 0;
+      }
+      /**
+       * Initialize any Table-derived type to point to the union at the given offset.
+       */
+      __union(t2, offset) {
+        t2.bb_pos = offset + this.readInt32(offset);
+        t2.bb = this;
+        return t2;
+      }
+      /**
+       * Create a JavaScript string from UTF-8 data stored inside the FlatBuffer.
+       * This allocates a new string and converts to wide chars upon each access.
+       *
+       * To avoid the conversion to string, pass Encoding.UTF8_BYTES as the
+       * "optionalEncoding" argument. This is useful for avoiding conversion when
+       * the data will just be packaged back up in another FlatBuffer later on.
+       *
+       * @param offset
+       * @param opt_encoding Defaults to UTF16_STRING
+       */
+      __string(offset, opt_encoding) {
+        offset += this.readInt32(offset);
+        const length = this.readInt32(offset);
+        offset += constants_js_1.SIZEOF_INT;
+        const utf8bytes = this.bytes_.subarray(offset, offset + length);
+        if (opt_encoding === encoding_js_1.Encoding.UTF8_BYTES)
+          return utf8bytes;
+        else
+          return this.text_decoder_.decode(utf8bytes);
+      }
+      /**
+       * Handle unions that can contain string as its member, if a Table-derived type then initialize it,
+       * if a string then return a new one
+       *
+       * WARNING: strings are immutable in JS so we can't change the string that the user gave us, this
+       * makes the behaviour of __union_with_string different compared to __union
+       */
+      __union_with_string(o, offset) {
+        if (typeof o === "string") {
+          return this.__string(offset);
+        }
+        return this.__union(o, offset);
+      }
+      /**
+       * Retrieve the relative offset stored at "offset"
+       */
+      __indirect(offset) {
+        return offset + this.readInt32(offset);
+      }
+      /**
+       * Get the start of data of a vector whose offset is stored at "offset" in this object.
+       */
+      __vector(offset) {
+        return offset + this.readInt32(offset) + constants_js_1.SIZEOF_INT;
+      }
+      /**
+       * Get the length of a vector whose offset is stored at "offset" in this object.
+       */
+      __vector_len(offset) {
+        return this.readInt32(offset + this.readInt32(offset));
+      }
+      __has_identifier(ident) {
+        if (ident.length != constants_js_1.FILE_IDENTIFIER_LENGTH) {
+          throw new Error("FlatBuffers: file identifier must be length " + constants_js_1.FILE_IDENTIFIER_LENGTH);
+        }
+        for (let i2 = 0; i2 < constants_js_1.FILE_IDENTIFIER_LENGTH; i2++) {
+          if (ident.charCodeAt(i2) != this.readInt8(this.position() + constants_js_1.SIZEOF_INT + i2)) {
+            return false;
+          }
+        }
+        return true;
+      }
+      /**
+       * A helper function for generating list for obj api
+       */
+      createScalarList(listAccessor, listLength) {
+        const ret = [];
+        for (let i2 = 0; i2 < listLength; ++i2) {
+          const val = listAccessor(i2);
+          if (val !== null) {
+            ret.push(val);
+          }
+        }
+        return ret;
+      }
+      /**
+       * A helper function for generating list for obj api
+       * @param listAccessor function that accepts an index and return data at that index
+       * @param listLength listLength
+       * @param res result list
+       */
+      createObjList(listAccessor, listLength) {
+        const ret = [];
+        for (let i2 = 0; i2 < listLength; ++i2) {
+          const val = listAccessor(i2);
+          if (val !== null) {
+            ret.push(val.unpack());
+          }
+        }
+        return ret;
+      }
+    };
+    exports2.ByteBuffer = ByteBuffer6;
+  }
+});
+
+// node_modules/flatbuffers/js/builder.js
+var require_builder = __commonJS({
+  "node_modules/flatbuffers/js/builder.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.Builder = void 0;
+    var byte_buffer_js_1 = require_byte_buffer();
+    var constants_js_1 = require_constants2();
+    var Builder6 = class _Builder {
+      /**
+       * Create a FlatBufferBuilder.
+       */
+      constructor(opt_initial_size) {
+        this.minalign = 1;
+        this.vtable = null;
+        this.vtable_in_use = 0;
+        this.isNested = false;
+        this.object_start = 0;
+        this.vtables = [];
+        this.vector_num_elems = 0;
+        this.force_defaults = false;
+        this.string_maps = null;
+        this.text_encoder = new TextEncoder();
+        let initial_size;
+        if (!opt_initial_size) {
+          initial_size = 1024;
+        } else {
+          initial_size = opt_initial_size;
+        }
+        this.bb = byte_buffer_js_1.ByteBuffer.allocate(initial_size);
+        this.space = initial_size;
+      }
+      clear() {
+        this.bb.clear();
+        this.space = this.bb.capacity();
+        this.minalign = 1;
+        this.vtable = null;
+        this.vtable_in_use = 0;
+        this.isNested = false;
+        this.object_start = 0;
+        this.vtables = [];
+        this.vector_num_elems = 0;
+        this.force_defaults = false;
+        this.string_maps = null;
+      }
+      /**
+       * In order to save space, fields that are set to their default value
+       * don't get serialized into the buffer. Forcing defaults provides a
+       * way to manually disable this optimization.
+       *
+       * @param forceDefaults true always serializes default values
+       */
+      forceDefaults(forceDefaults) {
+        this.force_defaults = forceDefaults;
+      }
+      /**
+       * Get the ByteBuffer representing the FlatBuffer. Only call this after you've
+       * called finish(). The actual data starts at the ByteBuffer's current position,
+       * not necessarily at 0.
+       */
+      dataBuffer() {
+        return this.bb;
+      }
+      /**
+       * Get the bytes representing the FlatBuffer. Only call this after you've
+       * called finish().
+       */
+      asUint8Array() {
+        return this.bb.bytes().subarray(this.bb.position(), this.bb.position() + this.offset());
+      }
+      /**
+       * Prepare to write an element of `size` after `additional_bytes` have been
+       * written, e.g. if you write a string, you need to align such the int length
+       * field is aligned to 4 bytes, and the string data follows it directly. If all
+       * you need to do is alignment, `additional_bytes` will be 0.
+       *
+       * @param size This is the of the new element to write
+       * @param additional_bytes The padding size
+       */
+      prep(size, additional_bytes) {
+        if (size > this.minalign) {
+          this.minalign = size;
+        }
+        const align_size = ~(this.bb.capacity() - this.space + additional_bytes) + 1 & size - 1;
+        while (this.space < align_size + size + additional_bytes) {
+          const old_buf_size = this.bb.capacity();
+          this.bb = _Builder.growByteBuffer(this.bb);
+          this.space += this.bb.capacity() - old_buf_size;
+        }
+        this.pad(align_size);
+      }
+      pad(byte_size) {
+        for (let i2 = 0; i2 < byte_size; i2++) {
+          this.bb.writeInt8(--this.space, 0);
+        }
+      }
+      writeInt8(value) {
+        this.bb.writeInt8(this.space -= 1, value);
+      }
+      writeInt16(value) {
+        this.bb.writeInt16(this.space -= 2, value);
+      }
+      writeInt32(value) {
+        this.bb.writeInt32(this.space -= 4, value);
+      }
+      writeInt64(value) {
+        this.bb.writeInt64(this.space -= 8, value);
+      }
+      writeFloat32(value) {
+        this.bb.writeFloat32(this.space -= 4, value);
+      }
+      writeFloat64(value) {
+        this.bb.writeFloat64(this.space -= 8, value);
+      }
+      /**
+       * Add an `int8` to the buffer, properly aligned, and grows the buffer (if necessary).
+       * @param value The `int8` to add the buffer.
+       */
+      addInt8(value) {
+        this.prep(1, 0);
+        this.writeInt8(value);
+      }
+      /**
+       * Add an `int16` to the buffer, properly aligned, and grows the buffer (if necessary).
+       * @param value The `int16` to add the buffer.
+       */
+      addInt16(value) {
+        this.prep(2, 0);
+        this.writeInt16(value);
+      }
+      /**
+       * Add an `int32` to the buffer, properly aligned, and grows the buffer (if necessary).
+       * @param value The `int32` to add the buffer.
+       */
+      addInt32(value) {
+        this.prep(4, 0);
+        this.writeInt32(value);
+      }
+      /**
+       * Add an `int64` to the buffer, properly aligned, and grows the buffer (if necessary).
+       * @param value The `int64` to add the buffer.
+       */
+      addInt64(value) {
+        this.prep(8, 0);
+        this.writeInt64(value);
+      }
+      /**
+       * Add a `float32` to the buffer, properly aligned, and grows the buffer (if necessary).
+       * @param value The `float32` to add the buffer.
+       */
+      addFloat32(value) {
+        this.prep(4, 0);
+        this.writeFloat32(value);
+      }
+      /**
+       * Add a `float64` to the buffer, properly aligned, and grows the buffer (if necessary).
+       * @param value The `float64` to add the buffer.
+       */
+      addFloat64(value) {
+        this.prep(8, 0);
+        this.writeFloat64(value);
+      }
+      addFieldInt8(voffset, value, defaultValue) {
+        if (this.force_defaults || value != defaultValue) {
+          this.addInt8(value);
+          this.slot(voffset);
+        }
+      }
+      addFieldInt16(voffset, value, defaultValue) {
+        if (this.force_defaults || value != defaultValue) {
+          this.addInt16(value);
+          this.slot(voffset);
+        }
+      }
+      addFieldInt32(voffset, value, defaultValue) {
+        if (this.force_defaults || value != defaultValue) {
+          this.addInt32(value);
+          this.slot(voffset);
+        }
+      }
+      addFieldInt64(voffset, value, defaultValue) {
+        if (this.force_defaults || value !== defaultValue) {
+          this.addInt64(value);
+          this.slot(voffset);
+        }
+      }
+      addFieldFloat32(voffset, value, defaultValue) {
+        if (this.force_defaults || value != defaultValue) {
+          this.addFloat32(value);
+          this.slot(voffset);
+        }
+      }
+      addFieldFloat64(voffset, value, defaultValue) {
+        if (this.force_defaults || value != defaultValue) {
+          this.addFloat64(value);
+          this.slot(voffset);
+        }
+      }
+      addFieldOffset(voffset, value, defaultValue) {
+        if (this.force_defaults || value != defaultValue) {
+          this.addOffset(value);
+          this.slot(voffset);
+        }
+      }
+      /**
+       * Structs are stored inline, so nothing additional is being added. `d` is always 0.
+       */
+      addFieldStruct(voffset, value, defaultValue) {
+        if (value != defaultValue) {
+          this.nested(value);
+          this.slot(voffset);
+        }
+      }
+      /**
+       * Structures are always stored inline, they need to be created right
+       * where they're used.  You'll get this assertion failure if you
+       * created it elsewhere.
+       */
+      nested(obj) {
+        if (obj != this.offset()) {
+          throw new TypeError("FlatBuffers: struct must be serialized inline.");
+        }
+      }
+      /**
+       * Should not be creating any other object, string or vector
+       * while an object is being constructed
+       */
+      notNested() {
+        if (this.isNested) {
+          throw new TypeError("FlatBuffers: object serialization must not be nested.");
+        }
+      }
+      /**
+       * Set the current vtable at `voffset` to the current location in the buffer.
+       */
+      slot(voffset) {
+        if (this.vtable !== null)
+          this.vtable[voffset] = this.offset();
+      }
+      /**
+       * @returns Offset relative to the end of the buffer.
+       */
+      offset() {
+        return this.bb.capacity() - this.space;
+      }
+      /**
+       * Doubles the size of the backing ByteBuffer and copies the old data towards
+       * the end of the new buffer (since we build the buffer backwards).
+       *
+       * @param bb The current buffer with the existing data
+       * @returns A new byte buffer with the old data copied
+       * to it. The data is located at the end of the buffer.
+       *
+       * uint8Array.set() formally takes {Array<number>|ArrayBufferView}, so to pass
+       * it a uint8Array we need to suppress the type check:
+       * @suppress {checkTypes}
+       */
+      static growByteBuffer(bb) {
+        const old_buf_size = bb.capacity();
+        if (old_buf_size & 3221225472) {
+          throw new Error("FlatBuffers: cannot grow buffer beyond 2 gigabytes.");
+        }
+        const new_buf_size = old_buf_size << 1;
+        const nbb = byte_buffer_js_1.ByteBuffer.allocate(new_buf_size);
+        nbb.setPosition(new_buf_size - old_buf_size);
+        nbb.bytes().set(bb.bytes(), new_buf_size - old_buf_size);
+        return nbb;
+      }
+      /**
+       * Adds on offset, relative to where it will be written.
+       *
+       * @param offset The offset to add.
+       */
+      addOffset(offset) {
+        this.prep(constants_js_1.SIZEOF_INT, 0);
+        this.writeInt32(this.offset() - offset + constants_js_1.SIZEOF_INT);
+      }
+      /**
+       * Start encoding a new object in the buffer.  Users will not usually need to
+       * call this directly. The FlatBuffers compiler will generate helper methods
+       * that call this method internally.
+       */
+      startObject(numfields) {
+        this.notNested();
+        if (this.vtable == null) {
+          this.vtable = [];
+        }
+        this.vtable_in_use = numfields;
+        for (let i2 = 0; i2 < numfields; i2++) {
+          this.vtable[i2] = 0;
+        }
+        this.isNested = true;
+        this.object_start = this.offset();
+      }
+      /**
+       * Finish off writing the object that is under construction.
+       *
+       * @returns The offset to the object inside `dataBuffer`
+       */
+      endObject() {
+        if (this.vtable == null || !this.isNested) {
+          throw new Error("FlatBuffers: endObject called without startObject");
+        }
+        this.addInt32(0);
+        const vtableloc = this.offset();
+        let i2 = this.vtable_in_use - 1;
+        for (; i2 >= 0 && this.vtable[i2] == 0; i2--) {
+        }
+        const trimmed_size = i2 + 1;
+        for (; i2 >= 0; i2--) {
+          this.addInt16(this.vtable[i2] != 0 ? vtableloc - this.vtable[i2] : 0);
+        }
+        const standard_fields = 2;
+        this.addInt16(vtableloc - this.object_start);
+        const len = (trimmed_size + standard_fields) * constants_js_1.SIZEOF_SHORT;
+        this.addInt16(len);
+        let existing_vtable = 0;
+        const vt1 = this.space;
+        outer_loop: for (i2 = 0; i2 < this.vtables.length; i2++) {
+          const vt2 = this.bb.capacity() - this.vtables[i2];
+          if (len == this.bb.readInt16(vt2)) {
+            for (let j = constants_js_1.SIZEOF_SHORT; j < len; j += constants_js_1.SIZEOF_SHORT) {
+              if (this.bb.readInt16(vt1 + j) != this.bb.readInt16(vt2 + j)) {
+                continue outer_loop;
+              }
+            }
+            existing_vtable = this.vtables[i2];
+            break;
+          }
+        }
+        if (existing_vtable) {
+          this.space = this.bb.capacity() - vtableloc;
+          this.bb.writeInt32(this.space, existing_vtable - vtableloc);
+        } else {
+          this.vtables.push(this.offset());
+          this.bb.writeInt32(this.bb.capacity() - vtableloc, this.offset() - vtableloc);
+        }
+        this.isNested = false;
+        return vtableloc;
+      }
+      /**
+       * Finalize a buffer, poiting to the given `root_table`.
+       */
+      finish(root_table, opt_file_identifier, opt_size_prefix) {
+        const size_prefix = opt_size_prefix ? constants_js_1.SIZE_PREFIX_LENGTH : 0;
+        if (opt_file_identifier) {
+          const file_identifier = opt_file_identifier;
+          this.prep(this.minalign, constants_js_1.SIZEOF_INT + constants_js_1.FILE_IDENTIFIER_LENGTH + size_prefix);
+          if (file_identifier.length != constants_js_1.FILE_IDENTIFIER_LENGTH) {
+            throw new TypeError("FlatBuffers: file identifier must be length " + constants_js_1.FILE_IDENTIFIER_LENGTH);
+          }
+          for (let i2 = constants_js_1.FILE_IDENTIFIER_LENGTH - 1; i2 >= 0; i2--) {
+            this.writeInt8(file_identifier.charCodeAt(i2));
+          }
+        }
+        this.prep(this.minalign, constants_js_1.SIZEOF_INT + size_prefix);
+        this.addOffset(root_table);
+        if (size_prefix) {
+          this.addInt32(this.bb.capacity() - this.space);
+        }
+        this.bb.setPosition(this.space);
+      }
+      /**
+       * Finalize a size prefixed buffer, pointing to the given `root_table`.
+       */
+      finishSizePrefixed(root_table, opt_file_identifier) {
+        this.finish(root_table, opt_file_identifier, true);
+      }
+      /**
+       * This checks a required field has been set in a given table that has
+       * just been constructed.
+       */
+      requiredField(table, field) {
+        const table_start = this.bb.capacity() - table;
+        const vtable_start = table_start - this.bb.readInt32(table_start);
+        const ok = field < this.bb.readInt16(vtable_start) && this.bb.readInt16(vtable_start + field) != 0;
+        if (!ok) {
+          throw new TypeError("FlatBuffers: field " + field + " must be set");
+        }
+      }
+      /**
+       * Start a new array/vector of objects.  Users usually will not call
+       * this directly. The FlatBuffers compiler will create a start/end
+       * method for vector types in generated code.
+       *
+       * @param elem_size The size of each element in the array
+       * @param num_elems The number of elements in the array
+       * @param alignment The alignment of the array
+       */
+      startVector(elem_size, num_elems, alignment) {
+        this.notNested();
+        this.vector_num_elems = num_elems;
+        this.prep(constants_js_1.SIZEOF_INT, elem_size * num_elems);
+        this.prep(alignment, elem_size * num_elems);
+      }
+      /**
+       * Finish off the creation of an array and all its elements. The array must be
+       * created with `startVector`.
+       *
+       * @returns The offset at which the newly created array
+       * starts.
+       */
+      endVector() {
+        this.writeInt32(this.vector_num_elems);
+        return this.offset();
+      }
+      /**
+       * Encode the string `s` in the buffer using UTF-8. If the string passed has
+       * already been seen, we return the offset of the already written string
+       *
+       * @param s The string to encode
+       * @return The offset in the buffer where the encoded string starts
+       */
+      createSharedString(s2) {
+        if (!s2) {
+          return 0;
+        }
+        if (!this.string_maps) {
+          this.string_maps = /* @__PURE__ */ new Map();
+        }
+        if (this.string_maps.has(s2)) {
+          return this.string_maps.get(s2);
+        }
+        const offset = this.createString(s2);
+        this.string_maps.set(s2, offset);
+        return offset;
+      }
+      /**
+       * Encode the string `s` in the buffer using UTF-8. If a Uint8Array is passed
+       * instead of a string, it is assumed to contain valid UTF-8 encoded data.
+       *
+       * @param s The string to encode
+       * @return The offset in the buffer where the encoded string starts
+       */
+      createString(s2) {
+        if (s2 === null || s2 === void 0) {
+          return 0;
+        }
+        let utf8;
+        if (s2 instanceof Uint8Array) {
+          utf8 = s2;
+        } else {
+          utf8 = this.text_encoder.encode(s2);
+        }
+        this.addInt8(0);
+        this.startVector(1, utf8.length, 1);
+        this.bb.setPosition(this.space -= utf8.length);
+        this.bb.bytes().set(utf8, this.space);
+        return this.endVector();
+      }
+      /**
+       * Create a byte vector.
+       *
+       * @param v The bytes to add
+       * @returns The offset in the buffer where the byte vector starts
+       */
+      createByteVector(v) {
+        if (v === null || v === void 0) {
+          return 0;
+        }
+        this.startVector(1, v.length, 1);
+        this.bb.setPosition(this.space -= v.length);
+        this.bb.bytes().set(v, this.space);
+        return this.endVector();
+      }
+      /**
+       * A helper function to pack an object
+       *
+       * @returns offset of obj
+       */
+      createObjectOffset(obj) {
+        if (obj === null) {
+          return 0;
+        }
+        if (typeof obj === "string") {
+          return this.createString(obj);
+        } else {
+          return obj.pack(this);
+        }
+      }
+      /**
+       * A helper function to pack a list of object
+       *
+       * @returns list of offsets of each non null object
+       */
+      createObjectOffsetList(list) {
+        const ret = [];
+        for (let i2 = 0; i2 < list.length; ++i2) {
+          const val = list[i2];
+          if (val !== null) {
+            ret.push(this.createObjectOffset(val));
+          } else {
+            throw new TypeError("FlatBuffers: Argument for createObjectOffsetList cannot contain null.");
+          }
+        }
+        return ret;
+      }
+      createStructOffsetList(list, startFunc) {
+        startFunc(this, list.length);
+        this.createObjectOffsetList(list.slice().reverse());
+        return this.endVector();
+      }
+    };
+    exports2.Builder = Builder6;
+  }
+});
+
+// node_modules/flatbuffers/js/flatbuffers.js
+var require_flatbuffers = __commonJS({
+  "node_modules/flatbuffers/js/flatbuffers.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.ByteBuffer = exports2.Builder = exports2.Encoding = exports2.isLittleEndian = exports2.float64 = exports2.float32 = exports2.int32 = exports2.SIZE_PREFIX_LENGTH = exports2.FILE_IDENTIFIER_LENGTH = exports2.SIZEOF_INT = exports2.SIZEOF_SHORT = void 0;
+    var constants_js_1 = require_constants2();
+    Object.defineProperty(exports2, "SIZEOF_SHORT", { enumerable: true, get: function() {
+      return constants_js_1.SIZEOF_SHORT;
+    } });
+    var constants_js_2 = require_constants2();
+    Object.defineProperty(exports2, "SIZEOF_INT", { enumerable: true, get: function() {
+      return constants_js_2.SIZEOF_INT;
+    } });
+    var constants_js_3 = require_constants2();
+    Object.defineProperty(exports2, "FILE_IDENTIFIER_LENGTH", { enumerable: true, get: function() {
+      return constants_js_3.FILE_IDENTIFIER_LENGTH;
+    } });
+    var constants_js_4 = require_constants2();
+    Object.defineProperty(exports2, "SIZE_PREFIX_LENGTH", { enumerable: true, get: function() {
+      return constants_js_4.SIZE_PREFIX_LENGTH;
+    } });
+    var utils_js_1 = require_utils();
+    Object.defineProperty(exports2, "int32", { enumerable: true, get: function() {
+      return utils_js_1.int32;
+    } });
+    Object.defineProperty(exports2, "float32", { enumerable: true, get: function() {
+      return utils_js_1.float32;
+    } });
+    Object.defineProperty(exports2, "float64", { enumerable: true, get: function() {
+      return utils_js_1.float64;
+    } });
+    Object.defineProperty(exports2, "isLittleEndian", { enumerable: true, get: function() {
+      return utils_js_1.isLittleEndian;
+    } });
+    var encoding_js_1 = require_encoding();
+    Object.defineProperty(exports2, "Encoding", { enumerable: true, get: function() {
+      return encoding_js_1.Encoding;
+    } });
+    var builder_js_1 = require_builder();
+    Object.defineProperty(exports2, "Builder", { enumerable: true, get: function() {
+      return builder_js_1.Builder;
+    } });
+    var byte_buffer_js_1 = require_byte_buffer();
+    Object.defineProperty(exports2, "ByteBuffer", { enumerable: true, get: function() {
+      return byte_buffer_js_1.ByteBuffer;
+    } });
+  }
+});
+
 // src/extension.ts
 var extension_exports = {};
 __export(extension_exports, {
@@ -22240,10 +23092,10 @@ __export(extension_exports, {
   deactivate: () => deactivate
 });
 module.exports = __toCommonJS(extension_exports);
-var vscode7 = __toESM(require("vscode"));
+var vscode8 = __toESM(require("vscode"));
 
 // src/main.ts
-var vscode6 = __toESM(require("vscode"));
+var vscode7 = __toESM(require("vscode"));
 var fs3 = __toESM(require("fs"));
 
 // node_modules/@google/genai/dist/node/index.mjs
@@ -22276,13 +23128,13 @@ function getDefaultBaseUrls() {
   };
 }
 function getBaseUrl(httpOptions, vertexai, vertexBaseUrlFromEnv, geminiBaseUrlFromEnv) {
-  var _a4, _b;
+  var _a9, _b2;
   if (!(httpOptions === null || httpOptions === void 0 ? void 0 : httpOptions.baseUrl)) {
     const defaultBaseUrls = getDefaultBaseUrls();
     if (vertexai) {
-      return (_a4 = defaultBaseUrls.vertexUrl) !== null && _a4 !== void 0 ? _a4 : vertexBaseUrlFromEnv;
+      return (_a9 = defaultBaseUrls.vertexUrl) !== null && _a9 !== void 0 ? _a9 : vertexBaseUrlFromEnv;
     } else {
-      return (_b = defaultBaseUrls.geminiUrl) !== null && _b !== void 0 ? _b : geminiBaseUrlFromEnv;
+      return (_b2 = defaultBaseUrls.geminiUrl) !== null && _b2 !== void 0 ? _b2 : geminiBaseUrlFromEnv;
     }
   }
   return httpOptions.baseUrl;
@@ -22291,7 +23143,7 @@ var BaseModule = class {
 };
 function formatMap(templateString, valueMap) {
   const regex = /\{([^}]+)\}/g;
-  return templateString.replace(regex, (match, key) => {
+  return templateString.replace(regex, (match2, key) => {
     if (Object.prototype.hasOwnProperty.call(valueMap, key)) {
       const value = valueMap[key];
       return value !== void 0 && value !== null ? String(value) : "";
@@ -22764,15 +23616,15 @@ var FunctionResponseScheduling;
   FunctionResponseScheduling2["INTERRUPT"] = "INTERRUPT";
 })(FunctionResponseScheduling || (FunctionResponseScheduling = {}));
 var Type;
-(function(Type2) {
-  Type2["TYPE_UNSPECIFIED"] = "TYPE_UNSPECIFIED";
-  Type2["STRING"] = "STRING";
-  Type2["NUMBER"] = "NUMBER";
-  Type2["INTEGER"] = "INTEGER";
-  Type2["BOOLEAN"] = "BOOLEAN";
-  Type2["ARRAY"] = "ARRAY";
-  Type2["OBJECT"] = "OBJECT";
-  Type2["NULL"] = "NULL";
+(function(Type4) {
+  Type4["TYPE_UNSPECIFIED"] = "TYPE_UNSPECIFIED";
+  Type4["STRING"] = "STRING";
+  Type4["NUMBER"] = "NUMBER";
+  Type4["INTEGER"] = "INTEGER";
+  Type4["BOOLEAN"] = "BOOLEAN";
+  Type4["ARRAY"] = "ARRAY";
+  Type4["OBJECT"] = "OBJECT";
+  Type4["NULL"] = "NULL";
 })(Type || (Type = {}));
 var Environment;
 (function(Environment2) {
@@ -23346,8 +24198,8 @@ var GenerateContentResponse = class {
    * ```
    */
   get text() {
-    var _a4, _b, _c, _d, _e, _f, _g, _h;
-    if (((_d = (_c = (_b = (_a4 = this.candidates) === null || _a4 === void 0 ? void 0 : _a4[0]) === null || _b === void 0 ? void 0 : _b.content) === null || _c === void 0 ? void 0 : _c.parts) === null || _d === void 0 ? void 0 : _d.length) === 0) {
+    var _a9, _b2, _c2, _d2, _e2, _f2, _g2, _h2;
+    if (((_d2 = (_c2 = (_b2 = (_a9 = this.candidates) === null || _a9 === void 0 ? void 0 : _a9[0]) === null || _b2 === void 0 ? void 0 : _b2.content) === null || _c2 === void 0 ? void 0 : _c2.parts) === null || _d2 === void 0 ? void 0 : _d2.length) === 0) {
       return void 0;
     }
     if (this.candidates && this.candidates.length > 1) {
@@ -23356,7 +24208,7 @@ var GenerateContentResponse = class {
     let text = "";
     let anyTextPartText = false;
     const nonTextParts = [];
-    for (const part of (_h = (_g = (_f = (_e = this.candidates) === null || _e === void 0 ? void 0 : _e[0]) === null || _f === void 0 ? void 0 : _f.content) === null || _g === void 0 ? void 0 : _g.parts) !== null && _h !== void 0 ? _h : []) {
+    for (const part of (_h2 = (_g2 = (_f2 = (_e2 = this.candidates) === null || _e2 === void 0 ? void 0 : _e2[0]) === null || _f2 === void 0 ? void 0 : _f2.content) === null || _g2 === void 0 ? void 0 : _g2.parts) !== null && _h2 !== void 0 ? _h2 : []) {
       for (const [fieldName, fieldValue] of Object.entries(part)) {
         if (fieldName !== "text" && fieldName !== "thought" && fieldName !== "thoughtSignature" && (fieldValue !== null || fieldValue !== void 0)) {
           nonTextParts.push(fieldName);
@@ -23386,8 +24238,8 @@ var GenerateContentResponse = class {
    * a warning will be logged.
    */
   get data() {
-    var _a4, _b, _c, _d, _e, _f, _g, _h;
-    if (((_d = (_c = (_b = (_a4 = this.candidates) === null || _a4 === void 0 ? void 0 : _a4[0]) === null || _b === void 0 ? void 0 : _b.content) === null || _c === void 0 ? void 0 : _c.parts) === null || _d === void 0 ? void 0 : _d.length) === 0) {
+    var _a9, _b2, _c2, _d2, _e2, _f2, _g2, _h2;
+    if (((_d2 = (_c2 = (_b2 = (_a9 = this.candidates) === null || _a9 === void 0 ? void 0 : _a9[0]) === null || _b2 === void 0 ? void 0 : _b2.content) === null || _c2 === void 0 ? void 0 : _c2.parts) === null || _d2 === void 0 ? void 0 : _d2.length) === 0) {
       return void 0;
     }
     if (this.candidates && this.candidates.length > 1) {
@@ -23395,7 +24247,7 @@ var GenerateContentResponse = class {
     }
     let data = "";
     const nonDataParts = [];
-    for (const part of (_h = (_g = (_f = (_e = this.candidates) === null || _e === void 0 ? void 0 : _e[0]) === null || _f === void 0 ? void 0 : _f.content) === null || _g === void 0 ? void 0 : _g.parts) !== null && _h !== void 0 ? _h : []) {
+    for (const part of (_h2 = (_g2 = (_f2 = (_e2 = this.candidates) === null || _e2 === void 0 ? void 0 : _e2[0]) === null || _f2 === void 0 ? void 0 : _f2.content) === null || _g2 === void 0 ? void 0 : _g2.parts) !== null && _h2 !== void 0 ? _h2 : []) {
       for (const [fieldName, fieldValue] of Object.entries(part)) {
         if (fieldName !== "inlineData" && (fieldValue !== null || fieldValue !== void 0)) {
           nonDataParts.push(fieldName);
@@ -23456,14 +24308,14 @@ var GenerateContentResponse = class {
    * ```
    */
   get functionCalls() {
-    var _a4, _b, _c, _d, _e, _f, _g, _h;
-    if (((_d = (_c = (_b = (_a4 = this.candidates) === null || _a4 === void 0 ? void 0 : _a4[0]) === null || _b === void 0 ? void 0 : _b.content) === null || _c === void 0 ? void 0 : _c.parts) === null || _d === void 0 ? void 0 : _d.length) === 0) {
+    var _a9, _b2, _c2, _d2, _e2, _f2, _g2, _h2;
+    if (((_d2 = (_c2 = (_b2 = (_a9 = this.candidates) === null || _a9 === void 0 ? void 0 : _a9[0]) === null || _b2 === void 0 ? void 0 : _b2.content) === null || _c2 === void 0 ? void 0 : _c2.parts) === null || _d2 === void 0 ? void 0 : _d2.length) === 0) {
       return void 0;
     }
     if (this.candidates && this.candidates.length > 1) {
       console.warn("there are multiple candidates in the response, returning function calls from the first one.");
     }
-    const functionCalls = (_h = (_g = (_f = (_e = this.candidates) === null || _e === void 0 ? void 0 : _e[0]) === null || _f === void 0 ? void 0 : _f.content) === null || _g === void 0 ? void 0 : _g.parts) === null || _h === void 0 ? void 0 : _h.filter((part) => part.functionCall).map((part) => part.functionCall).filter((functionCall) => functionCall !== void 0);
+    const functionCalls = (_h2 = (_g2 = (_f2 = (_e2 = this.candidates) === null || _e2 === void 0 ? void 0 : _e2[0]) === null || _f2 === void 0 ? void 0 : _f2.content) === null || _g2 === void 0 ? void 0 : _g2.parts) === null || _h2 === void 0 ? void 0 : _h2.filter((part) => part.functionCall).map((part) => part.functionCall).filter((functionCall) => functionCall !== void 0);
     if ((functionCalls === null || functionCalls === void 0 ? void 0 : functionCalls.length) === 0) {
       return void 0;
     }
@@ -23493,18 +24345,18 @@ var GenerateContentResponse = class {
    * ```
    */
   get executableCode() {
-    var _a4, _b, _c, _d, _e, _f, _g, _h, _j;
-    if (((_d = (_c = (_b = (_a4 = this.candidates) === null || _a4 === void 0 ? void 0 : _a4[0]) === null || _b === void 0 ? void 0 : _b.content) === null || _c === void 0 ? void 0 : _c.parts) === null || _d === void 0 ? void 0 : _d.length) === 0) {
+    var _a9, _b2, _c2, _d2, _e2, _f2, _g2, _h2, _j2;
+    if (((_d2 = (_c2 = (_b2 = (_a9 = this.candidates) === null || _a9 === void 0 ? void 0 : _a9[0]) === null || _b2 === void 0 ? void 0 : _b2.content) === null || _c2 === void 0 ? void 0 : _c2.parts) === null || _d2 === void 0 ? void 0 : _d2.length) === 0) {
       return void 0;
     }
     if (this.candidates && this.candidates.length > 1) {
       console.warn("there are multiple candidates in the response, returning executable code from the first one.");
     }
-    const executableCode = (_h = (_g = (_f = (_e = this.candidates) === null || _e === void 0 ? void 0 : _e[0]) === null || _f === void 0 ? void 0 : _f.content) === null || _g === void 0 ? void 0 : _g.parts) === null || _h === void 0 ? void 0 : _h.filter((part) => part.executableCode).map((part) => part.executableCode).filter((executableCode2) => executableCode2 !== void 0);
+    const executableCode = (_h2 = (_g2 = (_f2 = (_e2 = this.candidates) === null || _e2 === void 0 ? void 0 : _e2[0]) === null || _f2 === void 0 ? void 0 : _f2.content) === null || _g2 === void 0 ? void 0 : _g2.parts) === null || _h2 === void 0 ? void 0 : _h2.filter((part) => part.executableCode).map((part) => part.executableCode).filter((executableCode2) => executableCode2 !== void 0);
     if ((executableCode === null || executableCode === void 0 ? void 0 : executableCode.length) === 0) {
       return void 0;
     }
-    return (_j = executableCode === null || executableCode === void 0 ? void 0 : executableCode[0]) === null || _j === void 0 ? void 0 : _j.code;
+    return (_j2 = executableCode === null || executableCode === void 0 ? void 0 : executableCode[0]) === null || _j2 === void 0 ? void 0 : _j2.code;
   }
   /**
    * Returns the first code execution result from the first candidate in the response.
@@ -23529,18 +24381,18 @@ var GenerateContentResponse = class {
    * ```
    */
   get codeExecutionResult() {
-    var _a4, _b, _c, _d, _e, _f, _g, _h, _j;
-    if (((_d = (_c = (_b = (_a4 = this.candidates) === null || _a4 === void 0 ? void 0 : _a4[0]) === null || _b === void 0 ? void 0 : _b.content) === null || _c === void 0 ? void 0 : _c.parts) === null || _d === void 0 ? void 0 : _d.length) === 0) {
+    var _a9, _b2, _c2, _d2, _e2, _f2, _g2, _h2, _j2;
+    if (((_d2 = (_c2 = (_b2 = (_a9 = this.candidates) === null || _a9 === void 0 ? void 0 : _a9[0]) === null || _b2 === void 0 ? void 0 : _b2.content) === null || _c2 === void 0 ? void 0 : _c2.parts) === null || _d2 === void 0 ? void 0 : _d2.length) === 0) {
       return void 0;
     }
     if (this.candidates && this.candidates.length > 1) {
       console.warn("there are multiple candidates in the response, returning code execution result from the first one.");
     }
-    const codeExecutionResult = (_h = (_g = (_f = (_e = this.candidates) === null || _e === void 0 ? void 0 : _e[0]) === null || _f === void 0 ? void 0 : _f.content) === null || _g === void 0 ? void 0 : _g.parts) === null || _h === void 0 ? void 0 : _h.filter((part) => part.codeExecutionResult).map((part) => part.codeExecutionResult).filter((codeExecutionResult2) => codeExecutionResult2 !== void 0);
+    const codeExecutionResult = (_h2 = (_g2 = (_f2 = (_e2 = this.candidates) === null || _e2 === void 0 ? void 0 : _e2[0]) === null || _f2 === void 0 ? void 0 : _f2.content) === null || _g2 === void 0 ? void 0 : _g2.parts) === null || _h2 === void 0 ? void 0 : _h2.filter((part) => part.codeExecutionResult).map((part) => part.codeExecutionResult).filter((codeExecutionResult2) => codeExecutionResult2 !== void 0);
     if ((codeExecutionResult === null || codeExecutionResult === void 0 ? void 0 : codeExecutionResult.length) === 0) {
       return void 0;
     }
-    return (_j = codeExecutionResult === null || codeExecutionResult === void 0 ? void 0 : codeExecutionResult[0]) === null || _j === void 0 ? void 0 : _j.output;
+    return (_j2 = codeExecutionResult === null || codeExecutionResult === void 0 ? void 0 : codeExecutionResult[0]) === null || _j2 === void 0 ? void 0 : _j2.output;
   }
 };
 var EmbedContentResponse = class {
@@ -23625,11 +24477,11 @@ var LiveServerMessage = class {
    * parts will be returned, and a warning will be logged.
    */
   get text() {
-    var _a4, _b, _c;
+    var _a9, _b2, _c2;
     let text = "";
     let anyTextPartFound = false;
     const nonTextParts = [];
-    for (const part of (_c = (_b = (_a4 = this.serverContent) === null || _a4 === void 0 ? void 0 : _a4.modelTurn) === null || _b === void 0 ? void 0 : _b.parts) !== null && _c !== void 0 ? _c : []) {
+    for (const part of (_c2 = (_b2 = (_a9 = this.serverContent) === null || _a9 === void 0 ? void 0 : _a9.modelTurn) === null || _b2 === void 0 ? void 0 : _b2.parts) !== null && _c2 !== void 0 ? _c2 : []) {
       for (const [fieldName, fieldValue] of Object.entries(part)) {
         if (fieldName !== "text" && fieldName !== "thought" && fieldValue !== null) {
           nonTextParts.push(fieldName);
@@ -23657,10 +24509,10 @@ var LiveServerMessage = class {
    * a warning will be logged.
    */
   get data() {
-    var _a4, _b, _c;
+    var _a9, _b2, _c2;
     let data = "";
     const nonDataParts = [];
-    for (const part of (_c = (_b = (_a4 = this.serverContent) === null || _a4 === void 0 ? void 0 : _a4.modelTurn) === null || _b === void 0 ? void 0 : _b.parts) !== null && _c !== void 0 ? _c : []) {
+    for (const part of (_c2 = (_b2 = (_a9 = this.serverContent) === null || _a9 === void 0 ? void 0 : _a9.modelTurn) === null || _b2 === void 0 ? void 0 : _b2.parts) !== null && _c2 !== void 0 ? _c2 : []) {
       for (const [fieldName, fieldValue] of Object.entries(part)) {
         if (fieldName !== "inlineData" && fieldValue !== null) {
           nonDataParts.push(fieldName);
@@ -24056,7 +24908,7 @@ function isVideo(origin) {
   return origin !== null && origin !== void 0 && typeof origin === "object" && "uri" in origin;
 }
 function tFileName(fromName) {
-  var _a4;
+  var _a9;
   let name;
   if (_isFile(fromName)) {
     name = fromName.name;
@@ -24068,7 +24920,7 @@ function tFileName(fromName) {
     }
   }
   if (isGeneratedVideo(fromName)) {
-    name = (_a4 = fromName.video) === null || _a4 === void 0 ? void 0 : _a4.uri;
+    name = (_a9 = fromName.video) === null || _a9 === void 0 ? void 0 : _a9.uri;
     if (name === void 0) {
       return void 0;
     }
@@ -24081,11 +24933,11 @@ function tFileName(fromName) {
   }
   if (name.startsWith("https://")) {
     const suffix = name.split("files/")[1];
-    const match = suffix.match(/[a-z0-9]+/);
-    if (match === null) {
+    const match2 = suffix.match(/[a-z0-9]+/);
+    if (match2 === null) {
       throw new Error(`Could not extract file name from URI ${name}`);
     }
-    name = match[0];
+    name = match2[0];
   } else if (name.startsWith("files/")) {
     name = name.split("files/")[1];
   }
@@ -25641,7 +26493,7 @@ var Pager = class {
     this.init(name, response, params);
   }
   init(name, response, params) {
-    var _a4, _b;
+    var _a9, _b2;
     this.nameInternal = name;
     this.pageInternal = response[this.nameInternal] || [];
     this.sdkHttpResponseInternal = response === null || response === void 0 ? void 0 : response.sdkHttpResponse;
@@ -25658,7 +26510,7 @@ var Pager = class {
       requestParams["config"]["pageToken"] = response["nextPageToken"];
     }
     this.paramsInternal = requestParams;
-    this.pageInternalSize = (_b = (_a4 = requestParams["config"]) === null || _a4 === void 0 ? void 0 : _a4["pageSize"]) !== null && _b !== void 0 ? _b : this.pageInternal.length;
+    this.pageInternalSize = (_b2 = (_a9 = requestParams["config"]) === null || _a9 === void 0 ? void 0 : _a9["pageSize"]) !== null && _b2 !== void 0 ? _b2 : this.pageInternal.length;
   }
   initNextPage(response) {
     this.init(this.nameInternal, response, this.paramsInternal);
@@ -25786,8 +26638,8 @@ var Pager = class {
    * Returns true if there are more pages to fetch from the API.
    */
   hasNextPage() {
-    var _a4;
-    if (((_a4 = this.params["config"]) === null || _a4 === void 0 ? void 0 : _a4["pageToken"]) !== void 0) {
+    var _a9;
+    if (((_a9 = this.params["config"]) === null || _a9 === void 0 ? void 0 : _a9["pageToken"]) !== void 0) {
       return true;
     }
     return false;
@@ -25822,7 +26674,7 @@ var Batches = class extends BaseModule {
       params
     );
     const urlParams = body["_url"];
-    const path3 = formatMap("{model}:batchGenerateContent", urlParams);
+    const path4 = formatMap("{model}:batchGenerateContent", urlParams);
     const batch = body["batch"];
     const inputConfig = batch["inputConfig"];
     const requestsWrapper = inputConfig["requests"];
@@ -25843,7 +26695,7 @@ var Batches = class extends BaseModule {
     delete body["config"];
     delete body["_url"];
     delete body["_query"];
-    return { path: path3, body };
+    return { path: path4, body };
   }
   // Helper function to get the first GCS URI
   getGcsUri(src) {
@@ -25897,23 +26749,23 @@ var Batches = class extends BaseModule {
    *
    */
   async createInternal(params) {
-    var _a4, _b, _c, _d;
+    var _a9, _b2, _c2, _d2;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = createBatchJobParametersToVertex(this.apiClient, params);
-      path3 = formatMap("batchPredictionJobs", body["_url"]);
+      path4 = formatMap("batchPredictionJobs", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
-        httpOptions: (_a4 = params.config) === null || _a4 === void 0 ? void 0 : _a4.httpOptions,
-        abortSignal: (_b = params.config) === null || _b === void 0 ? void 0 : _b.abortSignal
+        httpOptions: (_a9 = params.config) === null || _a9 === void 0 ? void 0 : _a9.httpOptions,
+        abortSignal: (_b2 = params.config) === null || _b2 === void 0 ? void 0 : _b2.abortSignal
       }).then((httpResponse) => {
         return httpResponse.json();
       });
@@ -25923,17 +26775,17 @@ var Batches = class extends BaseModule {
       });
     } else {
       const body = createBatchJobParametersToMldev(this.apiClient, params);
-      path3 = formatMap("{model}:batchGenerateContent", body["_url"]);
+      path4 = formatMap("{model}:batchGenerateContent", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
-        httpOptions: (_c = params.config) === null || _c === void 0 ? void 0 : _c.httpOptions,
-        abortSignal: (_d = params.config) === null || _d === void 0 ? void 0 : _d.abortSignal
+        httpOptions: (_c2 = params.config) === null || _c2 === void 0 ? void 0 : _c2.httpOptions,
+        abortSignal: (_d2 = params.config) === null || _d2 === void 0 ? void 0 : _d2.abortSignal
       }).then((httpResponse) => {
         return httpResponse.json();
       });
@@ -25951,25 +26803,25 @@ var Batches = class extends BaseModule {
    *
    */
   async createEmbeddingsInternal(params) {
-    var _a4, _b;
+    var _a9, _b2;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       throw new Error("This method is only supported by the Gemini Developer API.");
     } else {
       const body = createEmbeddingsBatchJobParametersToMldev(this.apiClient, params);
-      path3 = formatMap("{model}:asyncBatchEmbedContent", body["_url"]);
+      path4 = formatMap("{model}:asyncBatchEmbedContent", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
-        httpOptions: (_a4 = params.config) === null || _a4 === void 0 ? void 0 : _a4.httpOptions,
-        abortSignal: (_b = params.config) === null || _b === void 0 ? void 0 : _b.abortSignal
+        httpOptions: (_a9 = params.config) === null || _a9 === void 0 ? void 0 : _a9.httpOptions,
+        abortSignal: (_b2 = params.config) === null || _b2 === void 0 ? void 0 : _b2.abortSignal
       }).then((httpResponse) => {
         return httpResponse.json();
       });
@@ -25991,23 +26843,23 @@ var Batches = class extends BaseModule {
    * ```
    */
   async get(params) {
-    var _a4, _b, _c, _d;
+    var _a9, _b2, _c2, _d2;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = getBatchJobParametersToVertex(this.apiClient, params);
-      path3 = formatMap("batchPredictionJobs/{name}", body["_url"]);
+      path4 = formatMap("batchPredictionJobs/{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
-        httpOptions: (_a4 = params.config) === null || _a4 === void 0 ? void 0 : _a4.httpOptions,
-        abortSignal: (_b = params.config) === null || _b === void 0 ? void 0 : _b.abortSignal
+        httpOptions: (_a9 = params.config) === null || _a9 === void 0 ? void 0 : _a9.httpOptions,
+        abortSignal: (_b2 = params.config) === null || _b2 === void 0 ? void 0 : _b2.abortSignal
       }).then((httpResponse) => {
         return httpResponse.json();
       });
@@ -26017,17 +26869,17 @@ var Batches = class extends BaseModule {
       });
     } else {
       const body = getBatchJobParametersToMldev(this.apiClient, params);
-      path3 = formatMap("batches/{name}", body["_url"]);
+      path4 = formatMap("batches/{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
-        httpOptions: (_c = params.config) === null || _c === void 0 ? void 0 : _c.httpOptions,
-        abortSignal: (_d = params.config) === null || _d === void 0 ? void 0 : _d.abortSignal
+        httpOptions: (_c2 = params.config) === null || _c2 === void 0 ? void 0 : _c2.httpOptions,
+        abortSignal: (_d2 = params.config) === null || _d2 === void 0 ? void 0 : _d2.abortSignal
       }).then((httpResponse) => {
         return httpResponse.json();
       });
@@ -26049,57 +26901,57 @@ var Batches = class extends BaseModule {
    * ```
    */
   async cancel(params) {
-    var _a4, _b, _c, _d;
-    let path3 = "";
+    var _a9, _b2, _c2, _d2;
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = cancelBatchJobParametersToVertex(this.apiClient, params);
-      path3 = formatMap("batchPredictionJobs/{name}:cancel", body["_url"]);
+      path4 = formatMap("batchPredictionJobs/{name}:cancel", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       await this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
-        httpOptions: (_a4 = params.config) === null || _a4 === void 0 ? void 0 : _a4.httpOptions,
-        abortSignal: (_b = params.config) === null || _b === void 0 ? void 0 : _b.abortSignal
+        httpOptions: (_a9 = params.config) === null || _a9 === void 0 ? void 0 : _a9.httpOptions,
+        abortSignal: (_b2 = params.config) === null || _b2 === void 0 ? void 0 : _b2.abortSignal
       });
     } else {
       const body = cancelBatchJobParametersToMldev(this.apiClient, params);
-      path3 = formatMap("batches/{name}:cancel", body["_url"]);
+      path4 = formatMap("batches/{name}:cancel", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       await this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
-        httpOptions: (_c = params.config) === null || _c === void 0 ? void 0 : _c.httpOptions,
-        abortSignal: (_d = params.config) === null || _d === void 0 ? void 0 : _d.abortSignal
+        httpOptions: (_c2 = params.config) === null || _c2 === void 0 ? void 0 : _c2.httpOptions,
+        abortSignal: (_d2 = params.config) === null || _d2 === void 0 ? void 0 : _d2.abortSignal
       });
     }
   }
   async listInternal(params) {
-    var _a4, _b, _c, _d;
+    var _a9, _b2, _c2, _d2;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = listBatchJobsParametersToVertex(params);
-      path3 = formatMap("batchPredictionJobs", body["_url"]);
+      path4 = formatMap("batchPredictionJobs", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
-        httpOptions: (_a4 = params.config) === null || _a4 === void 0 ? void 0 : _a4.httpOptions,
-        abortSignal: (_b = params.config) === null || _b === void 0 ? void 0 : _b.abortSignal
+        httpOptions: (_a9 = params.config) === null || _a9 === void 0 ? void 0 : _a9.httpOptions,
+        abortSignal: (_b2 = params.config) === null || _b2 === void 0 ? void 0 : _b2.abortSignal
       }).then((httpResponse) => {
         return httpResponse.json().then((jsonResponse) => {
           const response2 = jsonResponse;
@@ -26117,17 +26969,17 @@ var Batches = class extends BaseModule {
       });
     } else {
       const body = listBatchJobsParametersToMldev(params);
-      path3 = formatMap("batches", body["_url"]);
+      path4 = formatMap("batches", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
-        httpOptions: (_c = params.config) === null || _c === void 0 ? void 0 : _c.httpOptions,
-        abortSignal: (_d = params.config) === null || _d === void 0 ? void 0 : _d.abortSignal
+        httpOptions: (_c2 = params.config) === null || _c2 === void 0 ? void 0 : _c2.httpOptions,
+        abortSignal: (_d2 = params.config) === null || _d2 === void 0 ? void 0 : _d2.abortSignal
       }).then((httpResponse) => {
         return httpResponse.json().then((jsonResponse) => {
           const response2 = jsonResponse;
@@ -26157,23 +27009,23 @@ var Batches = class extends BaseModule {
    * ```
    */
   async delete(params) {
-    var _a4, _b, _c, _d;
+    var _a9, _b2, _c2, _d2;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = deleteBatchJobParametersToVertex(this.apiClient, params);
-      path3 = formatMap("batchPredictionJobs/{name}", body["_url"]);
+      path4 = formatMap("batchPredictionJobs/{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "DELETE",
-        httpOptions: (_a4 = params.config) === null || _a4 === void 0 ? void 0 : _a4.httpOptions,
-        abortSignal: (_b = params.config) === null || _b === void 0 ? void 0 : _b.abortSignal
+        httpOptions: (_a9 = params.config) === null || _a9 === void 0 ? void 0 : _a9.httpOptions,
+        abortSignal: (_b2 = params.config) === null || _b2 === void 0 ? void 0 : _b2.abortSignal
       }).then((httpResponse) => {
         return httpResponse.json().then((jsonResponse) => {
           const response2 = jsonResponse;
@@ -26189,17 +27041,17 @@ var Batches = class extends BaseModule {
       });
     } else {
       const body = deleteBatchJobParametersToMldev(this.apiClient, params);
-      path3 = formatMap("batches/{name}", body["_url"]);
+      path4 = formatMap("batches/{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "DELETE",
-        httpOptions: (_c = params.config) === null || _c === void 0 ? void 0 : _c.httpOptions,
-        abortSignal: (_d = params.config) === null || _d === void 0 ? void 0 : _d.abortSignal
+        httpOptions: (_c2 = params.config) === null || _c2 === void 0 ? void 0 : _c2.httpOptions,
+        abortSignal: (_d2 = params.config) === null || _d2 === void 0 ? void 0 : _d2.abortSignal
       }).then((httpResponse) => {
         return httpResponse.json().then((jsonResponse) => {
           const response2 = jsonResponse;
@@ -27093,23 +27945,23 @@ var Caches = class extends BaseModule {
    * ```
    */
   async create(params) {
-    var _a4, _b, _c, _d;
+    var _a9, _b2, _c2, _d2;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = createCachedContentParametersToVertex(this.apiClient, params);
-      path3 = formatMap("cachedContents", body["_url"]);
+      path4 = formatMap("cachedContents", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
-        httpOptions: (_a4 = params.config) === null || _a4 === void 0 ? void 0 : _a4.httpOptions,
-        abortSignal: (_b = params.config) === null || _b === void 0 ? void 0 : _b.abortSignal
+        httpOptions: (_a9 = params.config) === null || _a9 === void 0 ? void 0 : _a9.httpOptions,
+        abortSignal: (_b2 = params.config) === null || _b2 === void 0 ? void 0 : _b2.abortSignal
       }).then((httpResponse) => {
         return httpResponse.json();
       });
@@ -27118,17 +27970,17 @@ var Caches = class extends BaseModule {
       });
     } else {
       const body = createCachedContentParametersToMldev(this.apiClient, params);
-      path3 = formatMap("cachedContents", body["_url"]);
+      path4 = formatMap("cachedContents", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
-        httpOptions: (_c = params.config) === null || _c === void 0 ? void 0 : _c.httpOptions,
-        abortSignal: (_d = params.config) === null || _d === void 0 ? void 0 : _d.abortSignal
+        httpOptions: (_c2 = params.config) === null || _c2 === void 0 ? void 0 : _c2.httpOptions,
+        abortSignal: (_d2 = params.config) === null || _d2 === void 0 ? void 0 : _d2.abortSignal
       }).then((httpResponse) => {
         return httpResponse.json();
       });
@@ -27149,23 +28001,23 @@ var Caches = class extends BaseModule {
    * ```
    */
   async get(params) {
-    var _a4, _b, _c, _d;
+    var _a9, _b2, _c2, _d2;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = getCachedContentParametersToVertex(this.apiClient, params);
-      path3 = formatMap("{name}", body["_url"]);
+      path4 = formatMap("{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
-        httpOptions: (_a4 = params.config) === null || _a4 === void 0 ? void 0 : _a4.httpOptions,
-        abortSignal: (_b = params.config) === null || _b === void 0 ? void 0 : _b.abortSignal
+        httpOptions: (_a9 = params.config) === null || _a9 === void 0 ? void 0 : _a9.httpOptions,
+        abortSignal: (_b2 = params.config) === null || _b2 === void 0 ? void 0 : _b2.abortSignal
       }).then((httpResponse) => {
         return httpResponse.json();
       });
@@ -27174,17 +28026,17 @@ var Caches = class extends BaseModule {
       });
     } else {
       const body = getCachedContentParametersToMldev(this.apiClient, params);
-      path3 = formatMap("{name}", body["_url"]);
+      path4 = formatMap("{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
-        httpOptions: (_c = params.config) === null || _c === void 0 ? void 0 : _c.httpOptions,
-        abortSignal: (_d = params.config) === null || _d === void 0 ? void 0 : _d.abortSignal
+        httpOptions: (_c2 = params.config) === null || _c2 === void 0 ? void 0 : _c2.httpOptions,
+        abortSignal: (_d2 = params.config) === null || _d2 === void 0 ? void 0 : _d2.abortSignal
       }).then((httpResponse) => {
         return httpResponse.json();
       });
@@ -27205,23 +28057,23 @@ var Caches = class extends BaseModule {
    * ```
    */
   async delete(params) {
-    var _a4, _b, _c, _d;
+    var _a9, _b2, _c2, _d2;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = deleteCachedContentParametersToVertex(this.apiClient, params);
-      path3 = formatMap("{name}", body["_url"]);
+      path4 = formatMap("{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "DELETE",
-        httpOptions: (_a4 = params.config) === null || _a4 === void 0 ? void 0 : _a4.httpOptions,
-        abortSignal: (_b = params.config) === null || _b === void 0 ? void 0 : _b.abortSignal
+        httpOptions: (_a9 = params.config) === null || _a9 === void 0 ? void 0 : _a9.httpOptions,
+        abortSignal: (_b2 = params.config) === null || _b2 === void 0 ? void 0 : _b2.abortSignal
       }).then((httpResponse) => {
         return httpResponse.json().then((jsonResponse) => {
           const response2 = jsonResponse;
@@ -27239,17 +28091,17 @@ var Caches = class extends BaseModule {
       });
     } else {
       const body = deleteCachedContentParametersToMldev(this.apiClient, params);
-      path3 = formatMap("{name}", body["_url"]);
+      path4 = formatMap("{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "DELETE",
-        httpOptions: (_c = params.config) === null || _c === void 0 ? void 0 : _c.httpOptions,
-        abortSignal: (_d = params.config) === null || _d === void 0 ? void 0 : _d.abortSignal
+        httpOptions: (_c2 = params.config) === null || _c2 === void 0 ? void 0 : _c2.httpOptions,
+        abortSignal: (_d2 = params.config) === null || _d2 === void 0 ? void 0 : _d2.abortSignal
       }).then((httpResponse) => {
         return httpResponse.json().then((jsonResponse) => {
           const response2 = jsonResponse;
@@ -27282,23 +28134,23 @@ var Caches = class extends BaseModule {
    * ```
    */
   async update(params) {
-    var _a4, _b, _c, _d;
+    var _a9, _b2, _c2, _d2;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = updateCachedContentParametersToVertex(this.apiClient, params);
-      path3 = formatMap("{name}", body["_url"]);
+      path4 = formatMap("{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "PATCH",
-        httpOptions: (_a4 = params.config) === null || _a4 === void 0 ? void 0 : _a4.httpOptions,
-        abortSignal: (_b = params.config) === null || _b === void 0 ? void 0 : _b.abortSignal
+        httpOptions: (_a9 = params.config) === null || _a9 === void 0 ? void 0 : _a9.httpOptions,
+        abortSignal: (_b2 = params.config) === null || _b2 === void 0 ? void 0 : _b2.abortSignal
       }).then((httpResponse) => {
         return httpResponse.json();
       });
@@ -27307,17 +28159,17 @@ var Caches = class extends BaseModule {
       });
     } else {
       const body = updateCachedContentParametersToMldev(this.apiClient, params);
-      path3 = formatMap("{name}", body["_url"]);
+      path4 = formatMap("{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "PATCH",
-        httpOptions: (_c = params.config) === null || _c === void 0 ? void 0 : _c.httpOptions,
-        abortSignal: (_d = params.config) === null || _d === void 0 ? void 0 : _d.abortSignal
+        httpOptions: (_c2 = params.config) === null || _c2 === void 0 ? void 0 : _c2.httpOptions,
+        abortSignal: (_d2 = params.config) === null || _d2 === void 0 ? void 0 : _d2.abortSignal
       }).then((httpResponse) => {
         return httpResponse.json();
       });
@@ -27327,23 +28179,23 @@ var Caches = class extends BaseModule {
     }
   }
   async listInternal(params) {
-    var _a4, _b, _c, _d;
+    var _a9, _b2, _c2, _d2;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = listCachedContentsParametersToVertex(params);
-      path3 = formatMap("cachedContents", body["_url"]);
+      path4 = formatMap("cachedContents", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
-        httpOptions: (_a4 = params.config) === null || _a4 === void 0 ? void 0 : _a4.httpOptions,
-        abortSignal: (_b = params.config) === null || _b === void 0 ? void 0 : _b.abortSignal
+        httpOptions: (_a9 = params.config) === null || _a9 === void 0 ? void 0 : _a9.httpOptions,
+        abortSignal: (_b2 = params.config) === null || _b2 === void 0 ? void 0 : _b2.abortSignal
       }).then((httpResponse) => {
         return httpResponse.json().then((jsonResponse) => {
           const response2 = jsonResponse;
@@ -27361,17 +28213,17 @@ var Caches = class extends BaseModule {
       });
     } else {
       const body = listCachedContentsParametersToMldev(params);
-      path3 = formatMap("cachedContents", body["_url"]);
+      path4 = formatMap("cachedContents", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
-        httpOptions: (_c = params.config) === null || _c === void 0 ? void 0 : _c.httpOptions,
-        abortSignal: (_d = params.config) === null || _d === void 0 ? void 0 : _d.abortSignal
+        httpOptions: (_c2 = params.config) === null || _c2 === void 0 ? void 0 : _c2.httpOptions,
+        abortSignal: (_d2 = params.config) === null || _d2 === void 0 ? void 0 : _d2.abortSignal
       }).then((httpResponse) => {
         return httpResponse.json().then((jsonResponse) => {
           const response2 = jsonResponse;
@@ -27476,11 +28328,11 @@ function __asyncValues(o) {
   }
 }
 function isValidResponse(response) {
-  var _a4;
+  var _a9;
   if (response.candidates == void 0 || response.candidates.length === 0) {
     return false;
   }
-  const content = (_a4 = response.candidates[0]) === null || _a4 === void 0 ? void 0 : _a4.content;
+  const content = (_a9 = response.candidates[0]) === null || _a9 === void 0 ? void 0 : _a9.content;
   if (content === void 0) {
     return false;
   }
@@ -27607,23 +28459,23 @@ var Chat = class {
    * ```
    */
   async sendMessage(params) {
-    var _a4;
+    var _a9;
     await this.sendPromise;
     const inputContent = tContent(params.message);
     const responsePromise = this.modelsModule.generateContent({
       model: this.model,
       contents: this.getHistory(true).concat(inputContent),
-      config: (_a4 = params.config) !== null && _a4 !== void 0 ? _a4 : this.config
+      config: (_a9 = params.config) !== null && _a9 !== void 0 ? _a9 : this.config
     });
     this.sendPromise = (async () => {
-      var _a5, _b, _c;
+      var _a10, _b2, _c2;
       const response = await responsePromise;
-      const outputContent = (_b = (_a5 = response.candidates) === null || _a5 === void 0 ? void 0 : _a5[0]) === null || _b === void 0 ? void 0 : _b.content;
+      const outputContent = (_b2 = (_a10 = response.candidates) === null || _a10 === void 0 ? void 0 : _a10[0]) === null || _b2 === void 0 ? void 0 : _b2.content;
       const fullAutomaticFunctionCallingHistory = response.automaticFunctionCallingHistory;
       const index = this.getHistory(true).length;
       let automaticFunctionCallingHistory = [];
       if (fullAutomaticFunctionCallingHistory != null) {
-        automaticFunctionCallingHistory = (_c = fullAutomaticFunctionCallingHistory.slice(index)) !== null && _c !== void 0 ? _c : [];
+        automaticFunctionCallingHistory = (_c2 = fullAutomaticFunctionCallingHistory.slice(index)) !== null && _c2 !== void 0 ? _c2 : [];
       }
       const modelOutput = outputContent ? [outputContent] : [];
       this.recordHistory(inputContent, modelOutput, automaticFunctionCallingHistory);
@@ -27657,13 +28509,13 @@ var Chat = class {
    * ```
    */
   async sendMessageStream(params) {
-    var _a4;
+    var _a9;
     await this.sendPromise;
     const inputContent = tContent(params.message);
     const streamResponse = this.modelsModule.generateContentStream({
       model: this.model,
       contents: this.getHistory(true).concat(inputContent),
-      config: (_a4 = params.config) !== null && _a4 !== void 0 ? _a4 : this.config
+      config: (_a9 = params.config) !== null && _a9 !== void 0 ? _a9 : this.config
     });
     this.sendPromise = streamResponse.then(() => void 0).catch(() => void 0);
     const response = await streamResponse;
@@ -27699,16 +28551,16 @@ var Chat = class {
   }
   processStreamResponse(streamResponse, inputContent) {
     return __asyncGenerator(this, arguments, function* processStreamResponse_1() {
-      var _a4, e_1, _b, _c;
-      var _d, _e;
+      var _a9, e_1, _b2, _c2;
+      var _d2, _e2;
       const outputContent = [];
       try {
-        for (var _f = true, streamResponse_1 = __asyncValues(streamResponse), streamResponse_1_1; streamResponse_1_1 = yield __await(streamResponse_1.next()), _a4 = streamResponse_1_1.done, !_a4; _f = true) {
-          _c = streamResponse_1_1.value;
-          _f = false;
-          const chunk = _c;
+        for (var _f2 = true, streamResponse_1 = __asyncValues(streamResponse), streamResponse_1_1; streamResponse_1_1 = yield __await(streamResponse_1.next()), _a9 = streamResponse_1_1.done, !_a9; _f2 = true) {
+          _c2 = streamResponse_1_1.value;
+          _f2 = false;
+          const chunk = _c2;
           if (isValidResponse(chunk)) {
-            const content = (_e = (_d = chunk.candidates) === null || _d === void 0 ? void 0 : _d[0]) === null || _e === void 0 ? void 0 : _e.content;
+            const content = (_e2 = (_d2 = chunk.candidates) === null || _d2 === void 0 ? void 0 : _d2[0]) === null || _e2 === void 0 ? void 0 : _e2.content;
             if (content !== void 0) {
               outputContent.push(content);
             }
@@ -27719,7 +28571,7 @@ var Chat = class {
         e_1 = { error: e_1_1 };
       } finally {
         try {
-          if (!_f && !_a4 && (_b = streamResponse_1.return)) yield __await(_b.call(streamResponse_1));
+          if (!_f2 && !_a9 && (_b2 = streamResponse_1.return)) yield __await(_b2.call(streamResponse_1));
         } finally {
           if (e_1) throw e_1.error;
         }
@@ -27960,25 +28812,25 @@ var Files = class extends BaseModule {
     return this.registerFilesInternal(params);
   }
   async listInternal(params) {
-    var _a4, _b;
+    var _a9, _b2;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       throw new Error("This method is only supported by the Gemini Developer API.");
     } else {
       const body = listFilesParametersToMldev(params);
-      path3 = formatMap("files", body["_url"]);
+      path4 = formatMap("files", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
-        httpOptions: (_a4 = params.config) === null || _a4 === void 0 ? void 0 : _a4.httpOptions,
-        abortSignal: (_b = params.config) === null || _b === void 0 ? void 0 : _b.abortSignal
+        httpOptions: (_a9 = params.config) === null || _a9 === void 0 ? void 0 : _a9.httpOptions,
+        abortSignal: (_b2 = params.config) === null || _b2 === void 0 ? void 0 : _b2.abortSignal
       }).then((httpResponse) => {
         return httpResponse.json().then((jsonResponse) => {
           const response2 = jsonResponse;
@@ -27997,25 +28849,25 @@ var Files = class extends BaseModule {
     }
   }
   async createInternal(params) {
-    var _a4, _b;
+    var _a9, _b2;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       throw new Error("This method is only supported by the Gemini Developer API.");
     } else {
       const body = createFileParametersToMldev(params);
-      path3 = formatMap("upload/v1beta/files", body["_url"]);
+      path4 = formatMap("upload/v1beta/files", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
-        httpOptions: (_a4 = params.config) === null || _a4 === void 0 ? void 0 : _a4.httpOptions,
-        abortSignal: (_b = params.config) === null || _b === void 0 ? void 0 : _b.abortSignal
+        httpOptions: (_a9 = params.config) === null || _a9 === void 0 ? void 0 : _a9.httpOptions,
+        abortSignal: (_b2 = params.config) === null || _b2 === void 0 ? void 0 : _b2.abortSignal
       }).then((httpResponse) => {
         return httpResponse.json();
       });
@@ -28043,25 +28895,25 @@ var Files = class extends BaseModule {
    * ```
    */
   async get(params) {
-    var _a4, _b;
+    var _a9, _b2;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       throw new Error("This method is only supported by the Gemini Developer API.");
     } else {
       const body = getFileParametersToMldev(params);
-      path3 = formatMap("files/{file}", body["_url"]);
+      path4 = formatMap("files/{file}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
-        httpOptions: (_a4 = params.config) === null || _a4 === void 0 ? void 0 : _a4.httpOptions,
-        abortSignal: (_b = params.config) === null || _b === void 0 ? void 0 : _b.abortSignal
+        httpOptions: (_a9 = params.config) === null || _a9 === void 0 ? void 0 : _a9.httpOptions,
+        abortSignal: (_b2 = params.config) === null || _b2 === void 0 ? void 0 : _b2.abortSignal
       }).then((httpResponse) => {
         return httpResponse.json();
       });
@@ -28084,25 +28936,25 @@ var Files = class extends BaseModule {
    * ```
    */
   async delete(params) {
-    var _a4, _b;
+    var _a9, _b2;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       throw new Error("This method is only supported by the Gemini Developer API.");
     } else {
       const body = deleteFileParametersToMldev(params);
-      path3 = formatMap("files/{file}", body["_url"]);
+      path4 = formatMap("files/{file}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "DELETE",
-        httpOptions: (_a4 = params.config) === null || _a4 === void 0 ? void 0 : _a4.httpOptions,
-        abortSignal: (_b = params.config) === null || _b === void 0 ? void 0 : _b.abortSignal
+        httpOptions: (_a9 = params.config) === null || _a9 === void 0 ? void 0 : _a9.httpOptions,
+        abortSignal: (_b2 = params.config) === null || _b2 === void 0 ? void 0 : _b2.abortSignal
       }).then((httpResponse) => {
         return httpResponse.json().then((jsonResponse) => {
           const response2 = jsonResponse;
@@ -28121,25 +28973,25 @@ var Files = class extends BaseModule {
     }
   }
   async registerFilesInternal(params) {
-    var _a4, _b;
+    var _a9, _b2;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       throw new Error("This method is only supported by the Gemini Developer API.");
     } else {
       const body = internalRegisterFilesParametersToMldev(params);
-      path3 = formatMap("files:register", body["_url"]);
+      path4 = formatMap("files:register", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
-        httpOptions: (_a4 = params.config) === null || _a4 === void 0 ? void 0 : _a4.httpOptions,
-        abortSignal: (_b = params.config) === null || _b === void 0 ? void 0 : _b.abortSignal
+        httpOptions: (_a9 = params.config) === null || _a9 === void 0 ? void 0 : _a9.httpOptions,
+        abortSignal: (_b2 = params.config) === null || _b2 === void 0 ? void 0 : _b2.abortSignal
       }).then((httpResponse) => {
         return httpResponse.json();
       });
@@ -33206,9 +34058,9 @@ var DEFAULT_RETRY_HTTP_STATUS_CODES = [
 ];
 var ApiClient = class {
   constructor(opts) {
-    var _a4, _b, _c;
+    var _a9, _b2, _c2;
     this.clientOptions = Object.assign({}, opts);
-    this.customBaseUrl = (_a4 = opts.httpOptions) === null || _a4 === void 0 ? void 0 : _a4.baseUrl;
+    this.customBaseUrl = (_a9 = opts.httpOptions) === null || _a9 === void 0 ? void 0 : _a9.baseUrl;
     if (this.clientOptions.vertexai) {
       if (this.clientOptions.project && this.clientOptions.location) {
         this.clientOptions.apiKey = void 0;
@@ -33238,12 +34090,12 @@ var ApiClient = class {
       } else if (this.clientOptions.project && this.clientOptions.location) {
         initHttpOptions.baseUrl = `https://${this.clientOptions.location}-aiplatform.googleapis.com/`;
       }
-      initHttpOptions.apiVersion = (_b = this.clientOptions.apiVersion) !== null && _b !== void 0 ? _b : VERTEX_AI_API_DEFAULT_VERSION;
+      initHttpOptions.apiVersion = (_b2 = this.clientOptions.apiVersion) !== null && _b2 !== void 0 ? _b2 : VERTEX_AI_API_DEFAULT_VERSION;
     } else {
       if (!this.clientOptions.apiKey) {
         console.warn("API key should be set when using the Gemini API.");
       }
-      initHttpOptions.apiVersion = (_c = this.clientOptions.apiVersion) !== null && _c !== void 0 ? _c : GOOGLE_AI_API_DEFAULT_VERSION;
+      initHttpOptions.apiVersion = (_c2 = this.clientOptions.apiVersion) !== null && _c2 !== void 0 ? _c2 : GOOGLE_AI_API_DEFAULT_VERSION;
       initHttpOptions.baseUrl = `https://generativelanguage.googleapis.com/`;
     }
     initHttpOptions.headers = this.getDefaultHeaders();
@@ -33253,8 +34105,8 @@ var ApiClient = class {
     }
   }
   isVertexAI() {
-    var _a4;
-    return (_a4 = this.clientOptions.vertexai) !== null && _a4 !== void 0 ? _a4 : false;
+    var _a9;
+    return (_a9 = this.clientOptions.vertexai) !== null && _a9 !== void 0 ? _a9 : false;
   }
   getProject() {
     return this.clientOptions.project;
@@ -33322,13 +34174,13 @@ var ApiClient = class {
       throw new Error("HTTP options are not correctly set.");
     }
   }
-  constructUrl(path3, httpOptions, prependProjectLocation) {
+  constructUrl(path4, httpOptions, prependProjectLocation) {
     const urlElement = [this.getRequestUrlInternal(httpOptions)];
     if (prependProjectLocation) {
       urlElement.push(this.getBaseResourcePath());
     }
-    if (path3 !== "") {
-      urlElement.push(path3);
+    if (path4 !== "") {
+      urlElement.push(path4);
     }
     const url = new URL(`${urlElement.join("/")}`);
     return url;
@@ -33463,9 +34315,9 @@ var ApiClient = class {
   }
   processStreamResponse(response) {
     return __asyncGenerator(this, arguments, function* processStreamResponse_1() {
-      var _a4;
-      const reader = (_a4 = response === null || response === void 0 ? void 0 : response.body) === null || _a4 === void 0 ? void 0 : _a4.getReader();
-      const decoder = new TextDecoder("utf-8");
+      var _a9;
+      const reader = (_a9 = response === null || response === void 0 ? void 0 : response.body) === null || _a9 === void 0 ? void 0 : _a9.getReader();
+      const decoder2 = new TextDecoder("utf-8");
       if (!reader) {
         throw new Error("Response body is empty");
       }
@@ -33481,7 +34333,7 @@ var ApiClient = class {
             }
             break;
           }
-          const chunkString = decoder.decode(value, { stream: true });
+          const chunkString = decoder2.decode(value, { stream: true });
           try {
             const chunkJson = JSON.parse(chunkString);
             if ("error" in chunkJson) {
@@ -33543,7 +34395,7 @@ var ApiClient = class {
     });
   }
   async apiCall(url, requestInit) {
-    var _a4;
+    var _a9;
     if (!this.clientOptions.httpOptions || !this.clientOptions.httpOptions.retryOptions) {
       return fetch(url, requestInit);
     }
@@ -33560,7 +34412,7 @@ var ApiClient = class {
     };
     return (0, import_p_retry.default)(runFetch, {
       // Retry attempts is one less than the number of total attempts.
-      retries: ((_a4 = retryOptions.attempts) !== null && _a4 !== void 0 ? _a4 : DEFAULT_RETRY_ATTEMPTS) - 1
+      retries: ((_a9 = retryOptions.attempts) !== null && _a9 !== void 0 ? _a9 : DEFAULT_RETRY_ATTEMPTS) - 1
     });
   }
   getDefaultHeaders() {
@@ -33585,11 +34437,11 @@ var ApiClient = class {
     return headers;
   }
   getFileName(file) {
-    var _a4;
+    var _a9;
     let fileName = "";
     if (typeof file === "string") {
       fileName = file.replace(/[/\\]+$/, "");
-      fileName = (_a4 = fileName.split(/[/\\]/).pop()) !== null && _a4 !== void 0 ? _a4 : "";
+      fileName = (_a9 = fileName.split(/[/\\]/).pop()) !== null && _a9 !== void 0 ? _a9 : "";
     }
     return fileName;
   }
@@ -33605,7 +34457,7 @@ var ApiClient = class {
    * @throws An error if the `mimeType` is not provided and can not be inferred,
    */
   async uploadFile(file, config) {
-    var _a4;
+    var _a9;
     const fileToUpload = {};
     if (config != null) {
       fileToUpload.mimeType = config.mimeType;
@@ -33618,7 +34470,7 @@ var ApiClient = class {
     const uploader = this.clientOptions.uploader;
     const fileStat = await uploader.stat(file);
     fileToUpload.sizeBytes = String(fileStat.size);
-    const mimeType = (_a4 = config === null || config === void 0 ? void 0 : config.mimeType) !== null && _a4 !== void 0 ? _a4 : fileStat.type;
+    const mimeType = (_a9 = config === null || config === void 0 ? void 0 : config.mimeType) !== null && _a9 !== void 0 ? _a9 : fileStat.type;
     if (mimeType === void 0 || mimeType === "") {
       throw new Error("Can not determine mimeType. Please provide mimeType in the config.");
     }
@@ -33627,8 +34479,8 @@ var ApiClient = class {
       file: fileToUpload
     };
     const fileName = this.getFileName(file);
-    const path3 = formatMap("upload/v1beta/files", body["_url"]);
-    const uploadUrl = await this.fetchUploadUrl(path3, fileToUpload.sizeBytes, fileToUpload.mimeType, fileName, body, config === null || config === void 0 ? void 0 : config.httpOptions);
+    const path4 = formatMap("upload/v1beta/files", body["_url"]);
+    const uploadUrl = await this.fetchUploadUrl(path4, fileToUpload.sizeBytes, fileToUpload.mimeType, fileName, body, config === null || config === void 0 ? void 0 : config.httpOptions);
     return uploader.upload(file, uploadUrl, this);
   }
   /**
@@ -33644,21 +34496,21 @@ var ApiClient = class {
    * @throws An error if the `mimeType` is not provided and can not be inferred,
    */
   async uploadFileToFileSearchStore(fileSearchStoreName, file, config) {
-    var _a4;
+    var _a9;
     const uploader = this.clientOptions.uploader;
     const fileStat = await uploader.stat(file);
     const sizeBytes = String(fileStat.size);
-    const mimeType = (_a4 = config === null || config === void 0 ? void 0 : config.mimeType) !== null && _a4 !== void 0 ? _a4 : fileStat.type;
+    const mimeType = (_a9 = config === null || config === void 0 ? void 0 : config.mimeType) !== null && _a9 !== void 0 ? _a9 : fileStat.type;
     if (mimeType === void 0 || mimeType === "") {
       throw new Error("Can not determine mimeType. Please provide mimeType in the config.");
     }
-    const path3 = `upload/v1beta/${fileSearchStoreName}:uploadToFileSearchStore`;
+    const path4 = `upload/v1beta/${fileSearchStoreName}:uploadToFileSearchStore`;
     const fileName = this.getFileName(file);
     const body = {};
     if (config != null) {
       uploadToFileSearchStoreConfigToMldev(config, body);
     }
-    const uploadUrl = await this.fetchUploadUrl(path3, sizeBytes, mimeType, fileName, body, config === null || config === void 0 ? void 0 : config.httpOptions);
+    const uploadUrl = await this.fetchUploadUrl(path4, sizeBytes, mimeType, fileName, body, config === null || config === void 0 ? void 0 : config.httpOptions);
     return uploader.uploadToFileSearchStore(file, uploadUrl, this);
   }
   /**
@@ -33671,8 +34523,8 @@ var ApiClient = class {
     const downloader = this.clientOptions.downloader;
     await downloader.download(params, this);
   }
-  async fetchUploadUrl(path3, sizeBytes, mimeType, fileName, body, configHttpOptions) {
-    var _a4;
+  async fetchUploadUrl(path4, sizeBytes, mimeType, fileName, body, configHttpOptions) {
+    var _a9;
     let httpOptions = {};
     if (configHttpOptions) {
       httpOptions = configHttpOptions;
@@ -33684,7 +34536,7 @@ var ApiClient = class {
       };
     }
     const httpResponse = await this.request({
-      path: path3,
+      path: path4,
       body: JSON.stringify(body),
       httpMethod: "POST",
       httpOptions
@@ -33692,7 +34544,7 @@ var ApiClient = class {
     if (!httpResponse || !(httpResponse === null || httpResponse === void 0 ? void 0 : httpResponse.headers)) {
       throw new Error("Server did not return an HttpResponse or the returned HttpResponse did not have headers.");
     }
-    const uploadUrl = (_a4 = httpResponse === null || httpResponse === void 0 ? void 0 : httpResponse.headers) === null || _a4 === void 0 ? void 0 : _a4["x-goog-upload-url"];
+    const uploadUrl = (_a9 = httpResponse === null || httpResponse === void 0 ? void 0 : httpResponse.headers) === null || _a9 === void 0 ? void 0 : _a9["x-goog-upload-url"];
     if (uploadUrl === void 0) {
       throw new Error("Failed to get upload url. Server did not return the x-google-upload-url in the headers");
     }
@@ -33700,14 +34552,14 @@ var ApiClient = class {
   }
 };
 async function throwErrorIfNotOK(response) {
-  var _a4;
+  var _a9;
   if (response === void 0) {
     throw new Error("response is undefined");
   }
   if (!response.ok) {
     const status = response.status;
     let errorBody;
-    if ((_a4 = response.headers.get("content-type")) === null || _a4 === void 0 ? void 0 : _a4.includes("application/json")) {
+    if ((_a9 = response.headers.get("content-type")) === null || _a9 === void 0 ? void 0 : _a9.includes("application/json")) {
       errorBody = await response.json();
     } else {
       errorBody = {
@@ -33787,8 +34639,8 @@ function hasMcpToolUsage(tools) {
   return hasMcpToolUsageFromMcpToTool;
 }
 function setMcpUsageHeader(headers) {
-  var _a4;
-  const existingHeader = (_a4 = headers[GOOGLE_API_CLIENT_HEADER]) !== null && _a4 !== void 0 ? _a4 : "";
+  var _a9;
+  const existingHeader = (_a9 = headers[GOOGLE_API_CLIENT_HEADER]) !== null && _a9 !== void 0 ? _a9 : "";
   headers[GOOGLE_API_CLIENT_HEADER] = (existingHeader + ` ${MCP_LABEL}`).trimStart();
 }
 function isMcpCallableTool(object) {
@@ -33832,7 +34684,7 @@ var McpCallableTool = class _McpCallableTool {
    *     names.
    */
   async initialize() {
-    var _a4, e_1, _b, _c;
+    var _a9, e_1, _b2, _c2;
     if (this.mcpTools.length > 0) {
       return;
     }
@@ -33840,10 +34692,10 @@ var McpCallableTool = class _McpCallableTool {
     const mcpTools = [];
     for (const mcpClient of this.mcpClients) {
       try {
-        for (var _d = true, _e = (e_1 = void 0, __asyncValues(listAllTools(mcpClient))), _f; _f = await _e.next(), _a4 = _f.done, !_a4; _d = true) {
-          _c = _f.value;
-          _d = false;
-          const mcpTool = _c;
+        for (var _d2 = true, _e2 = (e_1 = void 0, __asyncValues(listAllTools(mcpClient))), _f2; _f2 = await _e2.next(), _a9 = _f2.done, !_a9; _d2 = true) {
+          _c2 = _f2.value;
+          _d2 = false;
+          const mcpTool = _c2;
           mcpTools.push(mcpTool);
           const mcpToolName = mcpTool.name;
           if (functionMap[mcpToolName]) {
@@ -33855,7 +34707,7 @@ var McpCallableTool = class _McpCallableTool {
         e_1 = { error: e_1_1 };
       } finally {
         try {
-          if (!_d && !_a4 && (_b = _e.return)) await _b.call(_e);
+          if (!_d2 && !_a9 && (_b2 = _e2.return)) await _b2.call(_e2);
         } finally {
           if (e_1) throw e_1.error;
         }
@@ -33949,7 +34801,7 @@ var LiveMusic = class {
        ```
       */
   async connect(params) {
-    var _a4, _b;
+    var _a9, _b2;
     if (this.apiClient.isVertexAI()) {
       throw new Error("Live music is not supported for Vertex AI.");
     }
@@ -33974,9 +34826,9 @@ var LiveMusic = class {
       onmessage: (event) => {
         void handleWebSocketMessage$1(apiClient, callbacks.onmessage, event);
       },
-      onerror: (_a4 = callbacks === null || callbacks === void 0 ? void 0 : callbacks.onerror) !== null && _a4 !== void 0 ? _a4 : function(e2) {
+      onerror: (_a9 = callbacks === null || callbacks === void 0 ? void 0 : callbacks.onerror) !== null && _a9 !== void 0 ? _a9 : function(e2) {
       },
-      onclose: (_b = callbacks === null || callbacks === void 0 ? void 0 : callbacks.onclose) !== null && _b !== void 0 ? _b : function(e2) {
+      onclose: (_b2 = callbacks === null || callbacks === void 0 ? void 0 : callbacks.onclose) !== null && _b2 !== void 0 ? _b2 : function(e2) {
       }
     };
     const conn = this.webSocketFactory.create(url, headersToMap$1(headers), websocketCallbacks);
@@ -34163,7 +35015,7 @@ var Live = class {
        ```
       */
   async connect(params) {
-    var _a4, _b, _c, _d, _e, _f;
+    var _a9, _b2, _c2, _d2, _e2, _f2;
     if (params.config && params.config.httpOptions) {
       throw new Error("The Live module does not support httpOptions at request-level in LiveConnectConfig yet. Please use the client-level httpOptions configuration instead.");
     }
@@ -34207,8 +35059,8 @@ var Live = class {
     });
     const callbacks = params.callbacks;
     const onopenAwaitedCallback = function() {
-      var _a5;
-      (_a5 = callbacks === null || callbacks === void 0 ? void 0 : callbacks.onopen) === null || _a5 === void 0 ? void 0 : _a5.call(callbacks);
+      var _a10;
+      (_a10 = callbacks === null || callbacks === void 0 ? void 0 : callbacks.onopen) === null || _a10 === void 0 ? void 0 : _a10.call(callbacks);
       onopenResolve({});
     };
     const apiClient = this.apiClient;
@@ -34217,9 +35069,9 @@ var Live = class {
       onmessage: (event) => {
         void handleWebSocketMessage(apiClient, callbacks.onmessage, event);
       },
-      onerror: (_a4 = callbacks === null || callbacks === void 0 ? void 0 : callbacks.onerror) !== null && _a4 !== void 0 ? _a4 : function(e2) {
+      onerror: (_a9 = callbacks === null || callbacks === void 0 ? void 0 : callbacks.onerror) !== null && _a9 !== void 0 ? _a9 : function(e2) {
       },
-      onclose: (_b = callbacks === null || callbacks === void 0 ? void 0 : callbacks.onclose) !== null && _b !== void 0 ? _b : function(e2) {
+      onclose: (_b2 = callbacks === null || callbacks === void 0 ? void 0 : callbacks.onclose) !== null && _b2 !== void 0 ? _b2 : function(e2) {
       }
     };
     const conn = this.webSocketFactory.create(url, headersToMap(headers), websocketCallbacks);
@@ -34234,17 +35086,17 @@ var Live = class {
       }
     }
     let clientMessage = {};
-    if (this.apiClient.isVertexAI() && ((_c = params.config) === null || _c === void 0 ? void 0 : _c.responseModalities) === void 0) {
+    if (this.apiClient.isVertexAI() && ((_c2 = params.config) === null || _c2 === void 0 ? void 0 : _c2.responseModalities) === void 0) {
       if (params.config === void 0) {
         params.config = { responseModalities: [Modality.AUDIO] };
       } else {
         params.config.responseModalities = [Modality.AUDIO];
       }
     }
-    if ((_d = params.config) === null || _d === void 0 ? void 0 : _d.generationConfig) {
+    if ((_d2 = params.config) === null || _d2 === void 0 ? void 0 : _d2.generationConfig) {
       console.warn("Setting `LiveConnectConfig.generation_config` is deprecated, please set the fields on `LiveConnectConfig` directly. This will become an error in a future version (not before Q3 2025).");
     }
-    const inputTools = (_f = (_e = params.config) === null || _e === void 0 ? void 0 : _e.tools) !== null && _f !== void 0 ? _f : [];
+    const inputTools = (_f2 = (_e2 = params.config) === null || _e2 === void 0 ? void 0 : _e2.tools) !== null && _f2 !== void 0 ? _f2 : [];
     const convertedTools = [];
     for (const tool of inputTools) {
       if (this.isCallableTool(tool)) {
@@ -34292,7 +35144,7 @@ var Session = class {
         if (!apiClient.isVertexAI()) {
           contents = contents.map((item) => contentToMldev$1(item));
         }
-      } catch (_a4) {
+      } catch (_a9) {
         throw new Error(`Failed to parse client content "turns", type: '${typeof params.turns}'`);
       }
       return {
@@ -34482,12 +35334,12 @@ function mapToHeaders(map) {
 }
 var DEFAULT_MAX_REMOTE_CALLS = 10;
 function shouldDisableAfc(config) {
-  var _a4, _b, _c;
-  if ((_a4 = config === null || config === void 0 ? void 0 : config.automaticFunctionCalling) === null || _a4 === void 0 ? void 0 : _a4.disable) {
+  var _a9, _b2, _c2;
+  if ((_a9 = config === null || config === void 0 ? void 0 : config.automaticFunctionCalling) === null || _a9 === void 0 ? void 0 : _a9.disable) {
     return true;
   }
   let callableToolsPresent = false;
-  for (const tool of (_b = config === null || config === void 0 ? void 0 : config.tools) !== null && _b !== void 0 ? _b : []) {
+  for (const tool of (_b2 = config === null || config === void 0 ? void 0 : config.tools) !== null && _b2 !== void 0 ? _b2 : []) {
     if (isCallableTool(tool)) {
       callableToolsPresent = true;
       break;
@@ -34496,7 +35348,7 @@ function shouldDisableAfc(config) {
   if (!callableToolsPresent) {
     return true;
   }
-  const maxCalls = (_c = config === null || config === void 0 ? void 0 : config.automaticFunctionCalling) === null || _c === void 0 ? void 0 : _c.maximumRemoteCalls;
+  const maxCalls = (_c2 = config === null || config === void 0 ? void 0 : config.automaticFunctionCalling) === null || _c2 === void 0 ? void 0 : _c2.maximumRemoteCalls;
   if (maxCalls && (maxCalls < 0 || !Number.isInteger(maxCalls)) || maxCalls == 0) {
     console.warn("Invalid maximumRemoteCalls value provided for automatic function calling. Disabled automatic function calling. Please provide a valid integer value greater than 0. maximumRemoteCalls provided:", maxCalls);
     return true;
@@ -34507,13 +35359,13 @@ function isCallableTool(tool) {
   return "callTool" in tool && typeof tool.callTool === "function";
 }
 function hasCallableTools(params) {
-  var _a4, _b, _c;
-  return (_c = (_b = (_a4 = params.config) === null || _a4 === void 0 ? void 0 : _a4.tools) === null || _b === void 0 ? void 0 : _b.some((tool) => isCallableTool(tool))) !== null && _c !== void 0 ? _c : false;
+  var _a9, _b2, _c2;
+  return (_c2 = (_b2 = (_a9 = params.config) === null || _a9 === void 0 ? void 0 : _a9.tools) === null || _b2 === void 0 ? void 0 : _b2.some((tool) => isCallableTool(tool))) !== null && _c2 !== void 0 ? _c2 : false;
 }
 function findAfcIncompatibleToolIndexes(params) {
-  var _a4;
+  var _a9;
   const afcIncompatibleToolIndexes = [];
-  if (!((_a4 = params === null || params === void 0 ? void 0 : params.config) === null || _a4 === void 0 ? void 0 : _a4.tools)) {
+  if (!((_a9 = params === null || params === void 0 ? void 0 : params.config) === null || _a9 === void 0 ? void 0 : _a9.tools)) {
     return afcIncompatibleToolIndexes;
   }
   params.config.tools.forEach((tool, index) => {
@@ -34528,8 +35380,8 @@ function findAfcIncompatibleToolIndexes(params) {
   return afcIncompatibleToolIndexes;
 }
 function shouldAppendAfcHistory(config) {
-  var _a4;
-  return !((_a4 = config === null || config === void 0 ? void 0 : config.automaticFunctionCalling) === null || _a4 === void 0 ? void 0 : _a4.ignoreCallHistory);
+  var _a9;
+  return !((_a9 = config === null || config === void 0 ? void 0 : config.automaticFunctionCalling) === null || _a9 === void 0 ? void 0 : _a9.ignoreCallHistory);
 }
 var Models = class extends BaseModule {
   constructor(apiClient) {
@@ -34557,7 +35409,7 @@ var Models = class extends BaseModule {
       }
     };
     this.generateContent = async (params) => {
-      var _a4, _b, _c, _d, _e;
+      var _a9, _b2, _c2, _d2, _e2;
       const transformedParams = await this.processParamsMaybeAddMcpUsage(params);
       this.maybeMoveToResponseJsonSchem(params);
       if (!hasCallableTools(params) || shouldDisableAfc(params.config)) {
@@ -34571,7 +35423,7 @@ var Models = class extends BaseModule {
       let response;
       let functionResponseContent;
       const automaticFunctionCallingHistory = tContents(transformedParams.contents);
-      const maxRemoteCalls = (_c = (_b = (_a4 = transformedParams.config) === null || _a4 === void 0 ? void 0 : _a4.automaticFunctionCalling) === null || _b === void 0 ? void 0 : _b.maximumRemoteCalls) !== null && _c !== void 0 ? _c : DEFAULT_MAX_REMOTE_CALLS;
+      const maxRemoteCalls = (_c2 = (_b2 = (_a9 = transformedParams.config) === null || _a9 === void 0 ? void 0 : _a9.automaticFunctionCalling) === null || _b2 === void 0 ? void 0 : _b2.maximumRemoteCalls) !== null && _c2 !== void 0 ? _c2 : DEFAULT_MAX_REMOTE_CALLS;
       let remoteCalls = 0;
       while (remoteCalls < maxRemoteCalls) {
         response = await this.generateContentInternal(transformedParams);
@@ -34580,7 +35432,7 @@ var Models = class extends BaseModule {
         }
         const responseContent = response.candidates[0].content;
         const functionResponseParts = [];
-        for (const tool of (_e = (_d = params.config) === null || _d === void 0 ? void 0 : _d.tools) !== null && _e !== void 0 ? _e : []) {
+        for (const tool of (_e2 = (_d2 = params.config) === null || _d2 === void 0 ? void 0 : _d2.tools) !== null && _e2 !== void 0 ? _e2 : []) {
           if (isCallableTool(tool)) {
             const callableTool = tool;
             const parts = await callableTool.callTool(response.functionCalls);
@@ -34606,7 +35458,7 @@ var Models = class extends BaseModule {
       return response;
     };
     this.generateContentStream = async (params) => {
-      var _a4, _b, _c, _d, _e;
+      var _a9, _b2, _c2, _d2, _e2;
       this.maybeMoveToResponseJsonSchem(params);
       if (shouldDisableAfc(params.config)) {
         const transformedParams = await this.processParamsMaybeAddMcpUsage(params);
@@ -34617,8 +35469,8 @@ var Models = class extends BaseModule {
         const formattedIndexes = incompatibleToolIndexes.map((index) => `tools[${index}]`).join(", ");
         throw new Error(`Incompatible tools found at ${formattedIndexes}. Automatic function calling with CallableTools (or MCP objects) and basic FunctionDeclarations" is not yet supported.`);
       }
-      const streamFunctionCall = (_c = (_b = (_a4 = params === null || params === void 0 ? void 0 : params.config) === null || _a4 === void 0 ? void 0 : _a4.toolConfig) === null || _b === void 0 ? void 0 : _b.functionCallingConfig) === null || _c === void 0 ? void 0 : _c.streamFunctionCallArguments;
-      const disableAfc = (_e = (_d = params === null || params === void 0 ? void 0 : params.config) === null || _d === void 0 ? void 0 : _d.automaticFunctionCalling) === null || _e === void 0 ? void 0 : _e.disable;
+      const streamFunctionCall = (_c2 = (_b2 = (_a9 = params === null || params === void 0 ? void 0 : params.config) === null || _a9 === void 0 ? void 0 : _a9.toolConfig) === null || _b2 === void 0 ? void 0 : _b2.functionCallingConfig) === null || _c2 === void 0 ? void 0 : _c2.streamFunctionCallArguments;
+      const disableAfc = (_e2 = (_d2 = params === null || params === void 0 ? void 0 : params.config) === null || _d2 === void 0 ? void 0 : _d2.automaticFunctionCalling) === null || _e2 === void 0 ? void 0 : _e2.disable;
       if (streamFunctionCall && !disableAfc) {
         throw new Error("Running in streaming mode with 'streamFunctionCallArguments' enabled, this feature is not compatible with automatic function calling (AFC). Please set 'config.automaticFunctionCalling.disable' to true to disable AFC or leave 'config.toolConfig.functionCallingConfig.streamFunctionCallArguments' to be undefined or set to false to disable streaming function call arguments feature.");
       }
@@ -34626,12 +35478,12 @@ var Models = class extends BaseModule {
     };
     this.generateImages = async (params) => {
       return await this.generateImagesInternal(params).then((apiResponse) => {
-        var _a4;
+        var _a9;
         let positivePromptSafetyAttributes;
         const generatedImages = [];
         if (apiResponse === null || apiResponse === void 0 ? void 0 : apiResponse.generatedImages) {
           for (const generatedImage of apiResponse.generatedImages) {
-            if (generatedImage && (generatedImage === null || generatedImage === void 0 ? void 0 : generatedImage.safetyAttributes) && ((_a4 = generatedImage === null || generatedImage === void 0 ? void 0 : generatedImage.safetyAttributes) === null || _a4 === void 0 ? void 0 : _a4.contentType) === "Positive Prompt") {
+            if (generatedImage && (generatedImage === null || generatedImage === void 0 ? void 0 : generatedImage.safetyAttributes) && ((_a9 = generatedImage === null || generatedImage === void 0 ? void 0 : generatedImage.safetyAttributes) === null || _a9 === void 0 ? void 0 : _a9.contentType) === "Positive Prompt") {
               positivePromptSafetyAttributes = generatedImage === null || generatedImage === void 0 ? void 0 : generatedImage.safetyAttributes;
             } else {
               generatedImages.push(generatedImage);
@@ -34655,7 +35507,7 @@ var Models = class extends BaseModule {
       });
     };
     this.list = async (params) => {
-      var _a4;
+      var _a9;
       const defaultConfig = {
         queryBase: true
       };
@@ -34665,7 +35517,7 @@ var Models = class extends BaseModule {
       };
       if (this.apiClient.isVertexAI()) {
         if (!actualParams.config.queryBase) {
-          if ((_a4 = actualParams.config) === null || _a4 === void 0 ? void 0 : _a4.filter) {
+          if ((_a9 = actualParams.config) === null || _a9 === void 0 ? void 0 : _a9.filter) {
             throw new Error("Filtering tuned models list is only supported in Gemini Developer API mode, not in Gemini Enterprise Agent Platform mode.");
           } else {
             actualParams.config.filter = "labels.tune-type:*";
@@ -34705,17 +35557,17 @@ var Models = class extends BaseModule {
       return await this.upscaleImageInternal(apiParams);
     };
     this.generateVideos = async (params) => {
-      var _a4, _b, _c, _d, _e, _f;
+      var _a9, _b2, _c2, _d2, _e2, _f2;
       if ((params.prompt || params.image || params.video) && params.source) {
         throw new Error("Source and prompt/image/video are mutually exclusive. Please only use source.");
       }
       if (!this.apiClient.isVertexAI()) {
-        if (((_a4 = params.video) === null || _a4 === void 0 ? void 0 : _a4.uri) && ((_b = params.video) === null || _b === void 0 ? void 0 : _b.videoBytes)) {
+        if (((_a9 = params.video) === null || _a9 === void 0 ? void 0 : _a9.uri) && ((_b2 = params.video) === null || _b2 === void 0 ? void 0 : _b2.videoBytes)) {
           params.video = {
             uri: params.video.uri,
             mimeType: params.video.mimeType
           };
-        } else if (((_d = (_c = params.source) === null || _c === void 0 ? void 0 : _c.video) === null || _d === void 0 ? void 0 : _d.uri) && ((_f = (_e = params.source) === null || _e === void 0 ? void 0 : _e.video) === null || _f === void 0 ? void 0 : _f.videoBytes)) {
+        } else if (((_d2 = (_c2 = params.source) === null || _c2 === void 0 ? void 0 : _c2.video) === null || _d2 === void 0 ? void 0 : _d2.uri) && ((_f2 = (_e2 = params.source) === null || _e2 === void 0 ? void 0 : _e2.video) === null || _f2 === void 0 ? void 0 : _f2.videoBytes)) {
           params.source.video = {
             uri: params.source.video.uri,
             mimeType: params.source.video.mimeType
@@ -34750,8 +35602,8 @@ var Models = class extends BaseModule {
    * MCP tools in the parameters.
    */
   async processParamsMaybeAddMcpUsage(params) {
-    var _a4, _b, _c;
-    const tools = (_a4 = params.config) === null || _a4 === void 0 ? void 0 : _a4.tools;
+    var _a9, _b2, _c2;
+    const tools = (_a9 = params.config) === null || _a9 === void 0 ? void 0 : _a9.tools;
     if (!tools) {
       return params;
     }
@@ -34769,7 +35621,7 @@ var Models = class extends BaseModule {
     };
     newParams.config.tools = transformedTools;
     if (params.config && params.config.tools && hasMcpToolUsage(params.config.tools)) {
-      const headers = (_c = (_b = params.config.httpOptions) === null || _b === void 0 ? void 0 : _b.headers) !== null && _c !== void 0 ? _c : {};
+      const headers = (_c2 = (_b2 = params.config.httpOptions) === null || _b2 === void 0 ? void 0 : _b2.headers) !== null && _c2 !== void 0 ? _c2 : {};
       let newHeaders = Object.assign({}, headers);
       if (Object.keys(newHeaders).length === 0) {
         newHeaders = this.apiClient.getDefaultHeaders();
@@ -34780,13 +35632,13 @@ var Models = class extends BaseModule {
     return newParams;
   }
   async initAfcToolsMap(params) {
-    var _a4, _b, _c;
+    var _a9, _b2, _c2;
     const afcTools = /* @__PURE__ */ new Map();
-    for (const tool of (_b = (_a4 = params.config) === null || _a4 === void 0 ? void 0 : _a4.tools) !== null && _b !== void 0 ? _b : []) {
+    for (const tool of (_b2 = (_a9 = params.config) === null || _a9 === void 0 ? void 0 : _a9.tools) !== null && _b2 !== void 0 ? _b2 : []) {
       if (isCallableTool(tool)) {
         const callableTool = tool;
         const toolDeclaration = await callableTool.tool();
-        for (const declaration of (_c = toolDeclaration.functionDeclarations) !== null && _c !== void 0 ? _c : []) {
+        for (const declaration of (_c2 = toolDeclaration.functionDeclarations) !== null && _c2 !== void 0 ? _c2 : []) {
           if (!declaration.name) {
             throw new Error("Function declaration name is required.");
           }
@@ -34800,15 +35652,15 @@ var Models = class extends BaseModule {
     return afcTools;
   }
   async processAfcStream(params) {
-    var _a4, _b, _c;
-    const maxRemoteCalls = (_c = (_b = (_a4 = params.config) === null || _a4 === void 0 ? void 0 : _a4.automaticFunctionCalling) === null || _b === void 0 ? void 0 : _b.maximumRemoteCalls) !== null && _c !== void 0 ? _c : DEFAULT_MAX_REMOTE_CALLS;
+    var _a9, _b2, _c2;
+    const maxRemoteCalls = (_c2 = (_b2 = (_a9 = params.config) === null || _a9 === void 0 ? void 0 : _a9.automaticFunctionCalling) === null || _b2 === void 0 ? void 0 : _b2.maximumRemoteCalls) !== null && _c2 !== void 0 ? _c2 : DEFAULT_MAX_REMOTE_CALLS;
     let wereFunctionsCalled = false;
     let remoteCallCount = 0;
     const afcToolsMap = await this.initAfcToolsMap(params);
     return (function(models, afcTools, params2) {
       return __asyncGenerator(this, arguments, function* () {
-        var _a5, e_1, _b2, _c2;
-        var _d, _e;
+        var _a10, e_1, _b3, _c3;
+        var _d2, _e2;
         while (remoteCallCount < maxRemoteCalls) {
           if (wereFunctionsCalled) {
             remoteCallCount++;
@@ -34819,14 +35671,14 @@ var Models = class extends BaseModule {
           const functionResponses = [];
           const responseContents = [];
           try {
-            for (var _f = true, response_1 = (e_1 = void 0, __asyncValues(response)), response_1_1; response_1_1 = yield __await(response_1.next()), _a5 = response_1_1.done, !_a5; _f = true) {
-              _c2 = response_1_1.value;
-              _f = false;
-              const chunk = _c2;
+            for (var _f2 = true, response_1 = (e_1 = void 0, __asyncValues(response)), response_1_1; response_1_1 = yield __await(response_1.next()), _a10 = response_1_1.done, !_a10; _f2 = true) {
+              _c3 = response_1_1.value;
+              _f2 = false;
+              const chunk = _c3;
               yield yield __await(chunk);
-              if (chunk.candidates && ((_d = chunk.candidates[0]) === null || _d === void 0 ? void 0 : _d.content)) {
+              if (chunk.candidates && ((_d2 = chunk.candidates[0]) === null || _d2 === void 0 ? void 0 : _d2.content)) {
                 responseContents.push(chunk.candidates[0].content);
-                for (const part of (_e = chunk.candidates[0].content.parts) !== null && _e !== void 0 ? _e : []) {
+                for (const part of (_e2 = chunk.candidates[0].content.parts) !== null && _e2 !== void 0 ? _e2 : []) {
                   if (remoteCallCount < maxRemoteCalls && part.functionCall) {
                     if (!part.functionCall.name) {
                       throw new Error("Function call name was not returned by the model.");
@@ -34845,7 +35697,7 @@ var Models = class extends BaseModule {
             e_1 = { error: e_1_1 };
           } finally {
             try {
-              if (!_f && !_a5 && (_b2 = response_1.return)) yield __await(_b2.call(response_1));
+              if (!_f2 && !_a10 && (_b3 = response_1.return)) yield __await(_b3.call(response_1));
             } finally {
               if (e_1) throw e_1.error;
             }
@@ -34878,23 +35730,23 @@ var Models = class extends BaseModule {
     })(this, afcToolsMap, params);
   }
   async generateContentInternal(params) {
-    var _a4, _b, _c, _d;
+    var _a9, _b2, _c2, _d2;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = generateContentParametersToVertex(this.apiClient, params);
-      path3 = formatMap("{model}:generateContent", body["_url"]);
+      path4 = formatMap("{model}:generateContent", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
-        httpOptions: (_a4 = params.config) === null || _a4 === void 0 ? void 0 : _a4.httpOptions,
-        abortSignal: (_b = params.config) === null || _b === void 0 ? void 0 : _b.abortSignal
+        httpOptions: (_a9 = params.config) === null || _a9 === void 0 ? void 0 : _a9.httpOptions,
+        abortSignal: (_b2 = params.config) === null || _b2 === void 0 ? void 0 : _b2.abortSignal
       }).then((httpResponse) => {
         return httpResponse.json().then((jsonResponse) => {
           const response2 = jsonResponse;
@@ -34912,17 +35764,17 @@ var Models = class extends BaseModule {
       });
     } else {
       const body = generateContentParametersToMldev(this.apiClient, params);
-      path3 = formatMap("{model}:generateContent", body["_url"]);
+      path4 = formatMap("{model}:generateContent", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
-        httpOptions: (_c = params.config) === null || _c === void 0 ? void 0 : _c.httpOptions,
-        abortSignal: (_d = params.config) === null || _d === void 0 ? void 0 : _d.abortSignal
+        httpOptions: (_c2 = params.config) === null || _c2 === void 0 ? void 0 : _c2.httpOptions,
+        abortSignal: (_d2 = params.config) === null || _d2 === void 0 ? void 0 : _d2.abortSignal
       }).then((httpResponse) => {
         return httpResponse.json().then((jsonResponse) => {
           const response2 = jsonResponse;
@@ -34941,33 +35793,33 @@ var Models = class extends BaseModule {
     }
   }
   async generateContentStreamInternal(params) {
-    var _a4, _b, _c, _d;
+    var _a9, _b2, _c2, _d2;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = generateContentParametersToVertex(this.apiClient, params);
-      path3 = formatMap("{model}:streamGenerateContent?alt=sse", body["_url"]);
+      path4 = formatMap("{model}:streamGenerateContent?alt=sse", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       const apiClient = this.apiClient;
       response = apiClient.requestStream({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
-        httpOptions: (_a4 = params.config) === null || _a4 === void 0 ? void 0 : _a4.httpOptions,
-        abortSignal: (_b = params.config) === null || _b === void 0 ? void 0 : _b.abortSignal
+        httpOptions: (_a9 = params.config) === null || _a9 === void 0 ? void 0 : _a9.httpOptions,
+        abortSignal: (_b2 = params.config) === null || _b2 === void 0 ? void 0 : _b2.abortSignal
       });
       return response.then(function(apiResponse) {
         return __asyncGenerator(this, arguments, function* () {
-          var _a5, e_2, _b2, _c2;
+          var _a10, e_2, _b3, _c3;
           try {
-            for (var _d2 = true, apiResponse_1 = __asyncValues(apiResponse), apiResponse_1_1; apiResponse_1_1 = yield __await(apiResponse_1.next()), _a5 = apiResponse_1_1.done, !_a5; _d2 = true) {
-              _c2 = apiResponse_1_1.value;
-              _d2 = false;
-              const chunk = _c2;
+            for (var _d3 = true, apiResponse_1 = __asyncValues(apiResponse), apiResponse_1_1; apiResponse_1_1 = yield __await(apiResponse_1.next()), _a10 = apiResponse_1_1.done, !_a10; _d3 = true) {
+              _c3 = apiResponse_1_1.value;
+              _d3 = false;
+              const chunk = _c3;
               const resp = generateContentResponseFromVertex(yield __await(chunk.json()), params);
               resp["sdkHttpResponse"] = {
                 headers: chunk.headers
@@ -34980,7 +35832,7 @@ var Models = class extends BaseModule {
             e_2 = { error: e_2_1 };
           } finally {
             try {
-              if (!_d2 && !_a5 && (_b2 = apiResponse_1.return)) yield __await(_b2.call(apiResponse_1));
+              if (!_d3 && !_a10 && (_b3 = apiResponse_1.return)) yield __await(_b3.call(apiResponse_1));
             } finally {
               if (e_2) throw e_2.error;
             }
@@ -34989,27 +35841,27 @@ var Models = class extends BaseModule {
       });
     } else {
       const body = generateContentParametersToMldev(this.apiClient, params);
-      path3 = formatMap("{model}:streamGenerateContent?alt=sse", body["_url"]);
+      path4 = formatMap("{model}:streamGenerateContent?alt=sse", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       const apiClient = this.apiClient;
       response = apiClient.requestStream({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
-        httpOptions: (_c = params.config) === null || _c === void 0 ? void 0 : _c.httpOptions,
-        abortSignal: (_d = params.config) === null || _d === void 0 ? void 0 : _d.abortSignal
+        httpOptions: (_c2 = params.config) === null || _c2 === void 0 ? void 0 : _c2.httpOptions,
+        abortSignal: (_d2 = params.config) === null || _d2 === void 0 ? void 0 : _d2.abortSignal
       });
       return response.then(function(apiResponse) {
         return __asyncGenerator(this, arguments, function* () {
-          var _a5, e_3, _b2, _c2;
+          var _a10, e_3, _b3, _c3;
           try {
-            for (var _d2 = true, apiResponse_2 = __asyncValues(apiResponse), apiResponse_2_1; apiResponse_2_1 = yield __await(apiResponse_2.next()), _a5 = apiResponse_2_1.done, !_a5; _d2 = true) {
-              _c2 = apiResponse_2_1.value;
-              _d2 = false;
-              const chunk = _c2;
+            for (var _d3 = true, apiResponse_2 = __asyncValues(apiResponse), apiResponse_2_1; apiResponse_2_1 = yield __await(apiResponse_2.next()), _a10 = apiResponse_2_1.done, !_a10; _d3 = true) {
+              _c3 = apiResponse_2_1.value;
+              _d3 = false;
+              const chunk = _c3;
               const resp = generateContentResponseFromMldev(yield __await(chunk.json()), params);
               resp["sdkHttpResponse"] = {
                 headers: chunk.headers
@@ -35022,7 +35874,7 @@ var Models = class extends BaseModule {
             e_3 = { error: e_3_1 };
           } finally {
             try {
-              if (!_d2 && !_a5 && (_b2 = apiResponse_2.return)) yield __await(_b2.call(apiResponse_2));
+              if (!_d3 && !_a10 && (_b3 = apiResponse_2.return)) yield __await(_b3.call(apiResponse_2));
             } finally {
               if (e_3) throw e_3.error;
             }
@@ -35053,24 +35905,24 @@ var Models = class extends BaseModule {
    * ```
    */
   async embedContentInternal(params) {
-    var _a4, _b, _c, _d;
+    var _a9, _b2, _c2, _d2;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = embedContentParametersPrivateToVertex(this.apiClient, params, params);
       const endpointUrl = tIsVertexEmbedContentModel(params.model) ? "{model}:embedContent" : "{model}:predict";
-      path3 = formatMap(endpointUrl, body["_url"]);
+      path4 = formatMap(endpointUrl, body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
-        httpOptions: (_a4 = params.config) === null || _a4 === void 0 ? void 0 : _a4.httpOptions,
-        abortSignal: (_b = params.config) === null || _b === void 0 ? void 0 : _b.abortSignal
+        httpOptions: (_a9 = params.config) === null || _a9 === void 0 ? void 0 : _a9.httpOptions,
+        abortSignal: (_b2 = params.config) === null || _b2 === void 0 ? void 0 : _b2.abortSignal
       }).then((httpResponse) => {
         return httpResponse.json().then((jsonResponse) => {
           const response2 = jsonResponse;
@@ -35088,17 +35940,17 @@ var Models = class extends BaseModule {
       });
     } else {
       const body = embedContentParametersPrivateToMldev(this.apiClient, params);
-      path3 = formatMap("{model}:batchEmbedContents", body["_url"]);
+      path4 = formatMap("{model}:batchEmbedContents", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
-        httpOptions: (_c = params.config) === null || _c === void 0 ? void 0 : _c.httpOptions,
-        abortSignal: (_d = params.config) === null || _d === void 0 ? void 0 : _d.abortSignal
+        httpOptions: (_c2 = params.config) === null || _c2 === void 0 ? void 0 : _c2.httpOptions,
+        abortSignal: (_d2 = params.config) === null || _d2 === void 0 ? void 0 : _d2.abortSignal
       }).then((httpResponse) => {
         return httpResponse.json().then((jsonResponse) => {
           const response2 = jsonResponse;
@@ -35120,23 +35972,23 @@ var Models = class extends BaseModule {
    * Private method for generating images.
    */
   async generateImagesInternal(params) {
-    var _a4, _b, _c, _d;
+    var _a9, _b2, _c2, _d2;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = generateImagesParametersToVertex(this.apiClient, params);
-      path3 = formatMap("{model}:predict", body["_url"]);
+      path4 = formatMap("{model}:predict", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
-        httpOptions: (_a4 = params.config) === null || _a4 === void 0 ? void 0 : _a4.httpOptions,
-        abortSignal: (_b = params.config) === null || _b === void 0 ? void 0 : _b.abortSignal
+        httpOptions: (_a9 = params.config) === null || _a9 === void 0 ? void 0 : _a9.httpOptions,
+        abortSignal: (_b2 = params.config) === null || _b2 === void 0 ? void 0 : _b2.abortSignal
       }).then((httpResponse) => {
         return httpResponse.json().then((jsonResponse) => {
           const response2 = jsonResponse;
@@ -35154,17 +36006,17 @@ var Models = class extends BaseModule {
       });
     } else {
       const body = generateImagesParametersToMldev(this.apiClient, params);
-      path3 = formatMap("{model}:predict", body["_url"]);
+      path4 = formatMap("{model}:predict", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
-        httpOptions: (_c = params.config) === null || _c === void 0 ? void 0 : _c.httpOptions,
-        abortSignal: (_d = params.config) === null || _d === void 0 ? void 0 : _d.abortSignal
+        httpOptions: (_c2 = params.config) === null || _c2 === void 0 ? void 0 : _c2.httpOptions,
+        abortSignal: (_d2 = params.config) === null || _d2 === void 0 ? void 0 : _d2.abortSignal
       }).then((httpResponse) => {
         return httpResponse.json().then((jsonResponse) => {
           const response2 = jsonResponse;
@@ -35186,23 +36038,23 @@ var Models = class extends BaseModule {
    * Private method for editing an image.
    */
   async editImageInternal(params) {
-    var _a4, _b;
+    var _a9, _b2;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = editImageParametersInternalToVertex(this.apiClient, params);
-      path3 = formatMap("{model}:predict", body["_url"]);
+      path4 = formatMap("{model}:predict", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
-        httpOptions: (_a4 = params.config) === null || _a4 === void 0 ? void 0 : _a4.httpOptions,
-        abortSignal: (_b = params.config) === null || _b === void 0 ? void 0 : _b.abortSignal
+        httpOptions: (_a9 = params.config) === null || _a9 === void 0 ? void 0 : _a9.httpOptions,
+        abortSignal: (_b2 = params.config) === null || _b2 === void 0 ? void 0 : _b2.abortSignal
       }).then((httpResponse) => {
         return httpResponse.json().then((jsonResponse) => {
           const response2 = jsonResponse;
@@ -35226,23 +36078,23 @@ var Models = class extends BaseModule {
    * Private method for upscaling an image.
    */
   async upscaleImageInternal(params) {
-    var _a4, _b;
+    var _a9, _b2;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = upscaleImageAPIParametersInternalToVertex(this.apiClient, params);
-      path3 = formatMap("{model}:predict", body["_url"]);
+      path4 = formatMap("{model}:predict", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
-        httpOptions: (_a4 = params.config) === null || _a4 === void 0 ? void 0 : _a4.httpOptions,
-        abortSignal: (_b = params.config) === null || _b === void 0 ? void 0 : _b.abortSignal
+        httpOptions: (_a9 = params.config) === null || _a9 === void 0 ? void 0 : _a9.httpOptions,
+        abortSignal: (_b2 = params.config) === null || _b2 === void 0 ? void 0 : _b2.abortSignal
       }).then((httpResponse) => {
         return httpResponse.json().then((jsonResponse) => {
           const response2 = jsonResponse;
@@ -35287,23 +36139,23 @@ var Models = class extends BaseModule {
    * ```
    */
   async recontextImage(params) {
-    var _a4, _b;
+    var _a9, _b2;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = recontextImageParametersToVertex(this.apiClient, params);
-      path3 = formatMap("{model}:predict", body["_url"]);
+      path4 = formatMap("{model}:predict", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
-        httpOptions: (_a4 = params.config) === null || _a4 === void 0 ? void 0 : _a4.httpOptions,
-        abortSignal: (_b = params.config) === null || _b === void 0 ? void 0 : _b.abortSignal
+        httpOptions: (_a9 = params.config) === null || _a9 === void 0 ? void 0 : _a9.httpOptions,
+        abortSignal: (_b2 = params.config) === null || _b2 === void 0 ? void 0 : _b2.abortSignal
       }).then((httpResponse) => {
         return httpResponse.json();
       });
@@ -35338,23 +36190,23 @@ var Models = class extends BaseModule {
    * ```
    */
   async segmentImage(params) {
-    var _a4, _b;
+    var _a9, _b2;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = segmentImageParametersToVertex(this.apiClient, params);
-      path3 = formatMap("{model}:predict", body["_url"]);
+      path4 = formatMap("{model}:predict", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
-        httpOptions: (_a4 = params.config) === null || _a4 === void 0 ? void 0 : _a4.httpOptions,
-        abortSignal: (_b = params.config) === null || _b === void 0 ? void 0 : _b.abortSignal
+        httpOptions: (_a9 = params.config) === null || _a9 === void 0 ? void 0 : _a9.httpOptions,
+        abortSignal: (_b2 = params.config) === null || _b2 === void 0 ? void 0 : _b2.abortSignal
       }).then((httpResponse) => {
         return httpResponse.json();
       });
@@ -35377,23 +36229,23 @@ var Models = class extends BaseModule {
    * ```
    */
   async get(params) {
-    var _a4, _b, _c, _d;
+    var _a9, _b2, _c2, _d2;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = getModelParametersToVertex(this.apiClient, params);
-      path3 = formatMap("{name}", body["_url"]);
+      path4 = formatMap("{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
-        httpOptions: (_a4 = params.config) === null || _a4 === void 0 ? void 0 : _a4.httpOptions,
-        abortSignal: (_b = params.config) === null || _b === void 0 ? void 0 : _b.abortSignal
+        httpOptions: (_a9 = params.config) === null || _a9 === void 0 ? void 0 : _a9.httpOptions,
+        abortSignal: (_b2 = params.config) === null || _b2 === void 0 ? void 0 : _b2.abortSignal
       }).then((httpResponse) => {
         return httpResponse.json();
       });
@@ -35403,17 +36255,17 @@ var Models = class extends BaseModule {
       });
     } else {
       const body = getModelParametersToMldev(this.apiClient, params);
-      path3 = formatMap("{name}", body["_url"]);
+      path4 = formatMap("{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
-        httpOptions: (_c = params.config) === null || _c === void 0 ? void 0 : _c.httpOptions,
-        abortSignal: (_d = params.config) === null || _d === void 0 ? void 0 : _d.abortSignal
+        httpOptions: (_c2 = params.config) === null || _c2 === void 0 ? void 0 : _c2.httpOptions,
+        abortSignal: (_d2 = params.config) === null || _d2 === void 0 ? void 0 : _d2.abortSignal
       }).then((httpResponse) => {
         return httpResponse.json();
       });
@@ -35424,23 +36276,23 @@ var Models = class extends BaseModule {
     }
   }
   async listInternal(params) {
-    var _a4, _b, _c, _d;
+    var _a9, _b2, _c2, _d2;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = listModelsParametersToVertex(this.apiClient, params);
-      path3 = formatMap("{models_url}", body["_url"]);
+      path4 = formatMap("{models_url}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
-        httpOptions: (_a4 = params.config) === null || _a4 === void 0 ? void 0 : _a4.httpOptions,
-        abortSignal: (_b = params.config) === null || _b === void 0 ? void 0 : _b.abortSignal
+        httpOptions: (_a9 = params.config) === null || _a9 === void 0 ? void 0 : _a9.httpOptions,
+        abortSignal: (_b2 = params.config) === null || _b2 === void 0 ? void 0 : _b2.abortSignal
       }).then((httpResponse) => {
         return httpResponse.json().then((jsonResponse) => {
           const response2 = jsonResponse;
@@ -35458,17 +36310,17 @@ var Models = class extends BaseModule {
       });
     } else {
       const body = listModelsParametersToMldev(this.apiClient, params);
-      path3 = formatMap("{models_url}", body["_url"]);
+      path4 = formatMap("{models_url}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
-        httpOptions: (_c = params.config) === null || _c === void 0 ? void 0 : _c.httpOptions,
-        abortSignal: (_d = params.config) === null || _d === void 0 ? void 0 : _d.abortSignal
+        httpOptions: (_c2 = params.config) === null || _c2 === void 0 ? void 0 : _c2.httpOptions,
+        abortSignal: (_d2 = params.config) === null || _d2 === void 0 ? void 0 : _d2.abortSignal
       }).then((httpResponse) => {
         return httpResponse.json().then((jsonResponse) => {
           const response2 = jsonResponse;
@@ -35504,23 +36356,23 @@ var Models = class extends BaseModule {
    * ```
    */
   async update(params) {
-    var _a4, _b, _c, _d;
+    var _a9, _b2, _c2, _d2;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = updateModelParametersToVertex(this.apiClient, params);
-      path3 = formatMap("{model}", body["_url"]);
+      path4 = formatMap("{model}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "PATCH",
-        httpOptions: (_a4 = params.config) === null || _a4 === void 0 ? void 0 : _a4.httpOptions,
-        abortSignal: (_b = params.config) === null || _b === void 0 ? void 0 : _b.abortSignal
+        httpOptions: (_a9 = params.config) === null || _a9 === void 0 ? void 0 : _a9.httpOptions,
+        abortSignal: (_b2 = params.config) === null || _b2 === void 0 ? void 0 : _b2.abortSignal
       }).then((httpResponse) => {
         return httpResponse.json();
       });
@@ -35530,17 +36382,17 @@ var Models = class extends BaseModule {
       });
     } else {
       const body = updateModelParametersToMldev(this.apiClient, params);
-      path3 = formatMap("{name}", body["_url"]);
+      path4 = formatMap("{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "PATCH",
-        httpOptions: (_c = params.config) === null || _c === void 0 ? void 0 : _c.httpOptions,
-        abortSignal: (_d = params.config) === null || _d === void 0 ? void 0 : _d.abortSignal
+        httpOptions: (_c2 = params.config) === null || _c2 === void 0 ? void 0 : _c2.httpOptions,
+        abortSignal: (_d2 = params.config) === null || _d2 === void 0 ? void 0 : _d2.abortSignal
       }).then((httpResponse) => {
         return httpResponse.json();
       });
@@ -35562,23 +36414,23 @@ var Models = class extends BaseModule {
    * ```
    */
   async delete(params) {
-    var _a4, _b, _c, _d;
+    var _a9, _b2, _c2, _d2;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = deleteModelParametersToVertex(this.apiClient, params);
-      path3 = formatMap("{name}", body["_url"]);
+      path4 = formatMap("{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "DELETE",
-        httpOptions: (_a4 = params.config) === null || _a4 === void 0 ? void 0 : _a4.httpOptions,
-        abortSignal: (_b = params.config) === null || _b === void 0 ? void 0 : _b.abortSignal
+        httpOptions: (_a9 = params.config) === null || _a9 === void 0 ? void 0 : _a9.httpOptions,
+        abortSignal: (_b2 = params.config) === null || _b2 === void 0 ? void 0 : _b2.abortSignal
       }).then((httpResponse) => {
         return httpResponse.json().then((jsonResponse) => {
           const response2 = jsonResponse;
@@ -35596,17 +36448,17 @@ var Models = class extends BaseModule {
       });
     } else {
       const body = deleteModelParametersToMldev(this.apiClient, params);
-      path3 = formatMap("{name}", body["_url"]);
+      path4 = formatMap("{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "DELETE",
-        httpOptions: (_c = params.config) === null || _c === void 0 ? void 0 : _c.httpOptions,
-        abortSignal: (_d = params.config) === null || _d === void 0 ? void 0 : _d.abortSignal
+        httpOptions: (_c2 = params.config) === null || _c2 === void 0 ? void 0 : _c2.httpOptions,
+        abortSignal: (_d2 = params.config) === null || _d2 === void 0 ? void 0 : _d2.abortSignal
       }).then((httpResponse) => {
         return httpResponse.json().then((jsonResponse) => {
           const response2 = jsonResponse;
@@ -35641,23 +36493,23 @@ var Models = class extends BaseModule {
    * ```
    */
   async countTokens(params) {
-    var _a4, _b, _c, _d;
+    var _a9, _b2, _c2, _d2;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = countTokensParametersToVertex(this.apiClient, params);
-      path3 = formatMap("{model}:countTokens", body["_url"]);
+      path4 = formatMap("{model}:countTokens", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
-        httpOptions: (_a4 = params.config) === null || _a4 === void 0 ? void 0 : _a4.httpOptions,
-        abortSignal: (_b = params.config) === null || _b === void 0 ? void 0 : _b.abortSignal
+        httpOptions: (_a9 = params.config) === null || _a9 === void 0 ? void 0 : _a9.httpOptions,
+        abortSignal: (_b2 = params.config) === null || _b2 === void 0 ? void 0 : _b2.abortSignal
       }).then((httpResponse) => {
         return httpResponse.json().then((jsonResponse) => {
           const response2 = jsonResponse;
@@ -35675,17 +36527,17 @@ var Models = class extends BaseModule {
       });
     } else {
       const body = countTokensParametersToMldev(this.apiClient, params);
-      path3 = formatMap("{model}:countTokens", body["_url"]);
+      path4 = formatMap("{model}:countTokens", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
-        httpOptions: (_c = params.config) === null || _c === void 0 ? void 0 : _c.httpOptions,
-        abortSignal: (_d = params.config) === null || _d === void 0 ? void 0 : _d.abortSignal
+        httpOptions: (_c2 = params.config) === null || _c2 === void 0 ? void 0 : _c2.httpOptions,
+        abortSignal: (_d2 = params.config) === null || _d2 === void 0 ? void 0 : _d2.abortSignal
       }).then((httpResponse) => {
         return httpResponse.json().then((jsonResponse) => {
           const response2 = jsonResponse;
@@ -35722,23 +36574,23 @@ var Models = class extends BaseModule {
    * ```
    */
   async computeTokens(params) {
-    var _a4, _b;
+    var _a9, _b2;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = computeTokensParametersToVertex(this.apiClient, params);
-      path3 = formatMap("{model}:computeTokens", body["_url"]);
+      path4 = formatMap("{model}:computeTokens", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
-        httpOptions: (_a4 = params.config) === null || _a4 === void 0 ? void 0 : _a4.httpOptions,
-        abortSignal: (_b = params.config) === null || _b === void 0 ? void 0 : _b.abortSignal
+        httpOptions: (_a9 = params.config) === null || _a9 === void 0 ? void 0 : _a9.httpOptions,
+        abortSignal: (_b2 = params.config) === null || _b2 === void 0 ? void 0 : _b2.abortSignal
       }).then((httpResponse) => {
         return httpResponse.json().then((jsonResponse) => {
           const response2 = jsonResponse;
@@ -35762,23 +36614,23 @@ var Models = class extends BaseModule {
    * Private method for generating videos.
    */
   async generateVideosInternal(params) {
-    var _a4, _b, _c, _d;
+    var _a9, _b2, _c2, _d2;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = generateVideosParametersToVertex(this.apiClient, params);
-      path3 = formatMap("{model}:predictLongRunning", body["_url"]);
+      path4 = formatMap("{model}:predictLongRunning", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
-        httpOptions: (_a4 = params.config) === null || _a4 === void 0 ? void 0 : _a4.httpOptions,
-        abortSignal: (_b = params.config) === null || _b === void 0 ? void 0 : _b.abortSignal
+        httpOptions: (_a9 = params.config) === null || _a9 === void 0 ? void 0 : _a9.httpOptions,
+        abortSignal: (_b2 = params.config) === null || _b2 === void 0 ? void 0 : _b2.abortSignal
       }).then((httpResponse) => {
         return httpResponse.json();
       });
@@ -35790,17 +36642,17 @@ var Models = class extends BaseModule {
       });
     } else {
       const body = generateVideosParametersToMldev(this.apiClient, params);
-      path3 = formatMap("{model}:predictLongRunning", body["_url"]);
+      path4 = formatMap("{model}:predictLongRunning", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
-        httpOptions: (_c = params.config) === null || _c === void 0 ? void 0 : _c.httpOptions,
-        abortSignal: (_d = params.config) === null || _d === void 0 ? void 0 : _d.abortSignal
+        httpOptions: (_c2 = params.config) === null || _c2 === void 0 ? void 0 : _c2.httpOptions,
+        abortSignal: (_d2 = params.config) === null || _d2 === void 0 ? void 0 : _d2.abortSignal
       }).then((httpResponse) => {
         return httpResponse.json();
       });
@@ -35895,40 +36747,40 @@ var Operations = class extends BaseModule {
     }
   }
   async getVideosOperationInternal(params) {
-    var _a4, _b, _c, _d;
+    var _a9, _b2, _c2, _d2;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = getOperationParametersToVertex(params);
-      path3 = formatMap("{operationName}", body["_url"]);
+      path4 = formatMap("{operationName}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
-        httpOptions: (_a4 = params.config) === null || _a4 === void 0 ? void 0 : _a4.httpOptions,
-        abortSignal: (_b = params.config) === null || _b === void 0 ? void 0 : _b.abortSignal
+        httpOptions: (_a9 = params.config) === null || _a9 === void 0 ? void 0 : _a9.httpOptions,
+        abortSignal: (_b2 = params.config) === null || _b2 === void 0 ? void 0 : _b2.abortSignal
       }).then((httpResponse) => {
         return httpResponse.json();
       });
       return response;
     } else {
       const body = getOperationParametersToMldev(params);
-      path3 = formatMap("{operationName}", body["_url"]);
+      path4 = formatMap("{operationName}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
-        httpOptions: (_c = params.config) === null || _c === void 0 ? void 0 : _c.httpOptions,
-        abortSignal: (_d = params.config) === null || _d === void 0 ? void 0 : _d.abortSignal
+        httpOptions: (_c2 = params.config) === null || _c2 === void 0 ? void 0 : _c2.httpOptions,
+        abortSignal: (_d2 = params.config) === null || _d2 === void 0 ? void 0 : _d2.abortSignal
       }).then((httpResponse) => {
         return httpResponse.json();
       });
@@ -35936,23 +36788,23 @@ var Operations = class extends BaseModule {
     }
   }
   async fetchPredictVideosOperationInternal(params) {
-    var _a4, _b;
+    var _a9, _b2;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = fetchPredictOperationParametersToVertex(params);
-      path3 = formatMap("{resourceName}:fetchPredictOperation", body["_url"]);
+      path4 = formatMap("{resourceName}:fetchPredictOperation", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
-        httpOptions: (_a4 = params.config) === null || _a4 === void 0 ? void 0 : _a4.httpOptions,
-        abortSignal: (_b = params.config) === null || _b === void 0 ? void 0 : _b.abortSignal
+        httpOptions: (_a9 = params.config) === null || _a9 === void 0 ? void 0 : _a9.httpOptions,
+        abortSignal: (_b2 = params.config) === null || _b2 === void 0 ? void 0 : _b2.abortSignal
       }).then((httpResponse) => {
         return httpResponse.json();
       });
@@ -36617,27 +37469,27 @@ var Tokens = class extends BaseModule {
    * ```
    */
   async create(params) {
-    var _a4, _b;
+    var _a9, _b2;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       throw new Error("The client.tokens.create method is only supported by the Gemini Developer API.");
     } else {
       const body = createAuthTokenParametersToMldev(this.apiClient, params);
-      path3 = formatMap("auth_tokens", body["_url"]);
+      path4 = formatMap("auth_tokens", body["_url"]);
       queryParams = body["_query"];
       delete body["config"];
       delete body["_url"];
       delete body["_query"];
       const transformedBody = convertBidiSetupToTokenSetup(body, params.config);
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(transformedBody),
         httpMethod: "POST",
-        httpOptions: (_a4 = params.config) === null || _a4 === void 0 ? void 0 : _a4.httpOptions,
-        abortSignal: (_b = params.config) === null || _b === void 0 ? void 0 : _b.abortSignal
+        httpOptions: (_a9 = params.config) === null || _a9 === void 0 ? void 0 : _a9.httpOptions,
+        abortSignal: (_b2 = params.config) === null || _b2 === void 0 ? void 0 : _b2.abortSignal
       }).then((httpResponse) => {
         return httpResponse.json();
       });
@@ -36740,25 +37592,25 @@ var Documents = class extends BaseModule {
    * @return Document.
    */
   async get(params) {
-    var _a4, _b;
+    var _a9, _b2;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       throw new Error("This method is only supported by the Gemini Developer API.");
     } else {
       const body = getDocumentParametersToMldev(params);
-      path3 = formatMap("{name}", body["_url"]);
+      path4 = formatMap("{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
-        httpOptions: (_a4 = params.config) === null || _a4 === void 0 ? void 0 : _a4.httpOptions,
-        abortSignal: (_b = params.config) === null || _b === void 0 ? void 0 : _b.abortSignal
+        httpOptions: (_a9 = params.config) === null || _a9 === void 0 ? void 0 : _a9.httpOptions,
+        abortSignal: (_b2 = params.config) === null || _b2 === void 0 ? void 0 : _b2.abortSignal
       }).then((httpResponse) => {
         return httpResponse.json();
       });
@@ -36773,47 +37625,47 @@ var Documents = class extends BaseModule {
    * @param params - The parameters for deleting a document.
    */
   async delete(params) {
-    var _a4, _b;
-    let path3 = "";
+    var _a9, _b2;
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       throw new Error("This method is only supported by the Gemini Developer API.");
     } else {
       const body = deleteDocumentParametersToMldev(params);
-      path3 = formatMap("{name}", body["_url"]);
+      path4 = formatMap("{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       await this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "DELETE",
-        httpOptions: (_a4 = params.config) === null || _a4 === void 0 ? void 0 : _a4.httpOptions,
-        abortSignal: (_b = params.config) === null || _b === void 0 ? void 0 : _b.abortSignal
+        httpOptions: (_a9 = params.config) === null || _a9 === void 0 ? void 0 : _a9.httpOptions,
+        abortSignal: (_b2 = params.config) === null || _b2 === void 0 ? void 0 : _b2.abortSignal
       });
     }
   }
   async listInternal(params) {
-    var _a4, _b;
+    var _a9, _b2;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       throw new Error("This method is only supported by the Gemini Developer API.");
     } else {
       const body = listDocumentsParametersToMldev(params);
-      path3 = formatMap("{parent}/documents", body["_url"]);
+      path4 = formatMap("{parent}/documents", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
-        httpOptions: (_a4 = params.config) === null || _a4 === void 0 ? void 0 : _a4.httpOptions,
-        abortSignal: (_b = params.config) === null || _b === void 0 ? void 0 : _b.abortSignal
+        httpOptions: (_a9 = params.config) === null || _a9 === void 0 ? void 0 : _a9.httpOptions,
+        abortSignal: (_b2 = params.config) === null || _b2 === void 0 ? void 0 : _b2.abortSignal
       }).then((httpResponse) => {
         return httpResponse.json();
       });
@@ -36923,25 +37775,25 @@ var FileSearchStores = class extends BaseModule {
    * @return FileSearchStore.
    */
   async create(params) {
-    var _a4, _b;
+    var _a9, _b2;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       throw new Error("This method is only supported by the Gemini Developer API.");
     } else {
       const body = createFileSearchStoreParametersToMldev(this.apiClient, params);
-      path3 = formatMap("fileSearchStores", body["_url"]);
+      path4 = formatMap("fileSearchStores", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
-        httpOptions: (_a4 = params.config) === null || _a4 === void 0 ? void 0 : _a4.httpOptions,
-        abortSignal: (_b = params.config) === null || _b === void 0 ? void 0 : _b.abortSignal
+        httpOptions: (_a9 = params.config) === null || _a9 === void 0 ? void 0 : _a9.httpOptions,
+        abortSignal: (_b2 = params.config) === null || _b2 === void 0 ? void 0 : _b2.abortSignal
       }).then((httpResponse) => {
         return httpResponse.json();
       });
@@ -36957,25 +37809,25 @@ var FileSearchStores = class extends BaseModule {
    * @return FileSearchStore.
    */
   async get(params) {
-    var _a4, _b;
+    var _a9, _b2;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       throw new Error("This method is only supported by the Gemini Developer API.");
     } else {
       const body = getFileSearchStoreParametersToMldev(params);
-      path3 = formatMap("{name}", body["_url"]);
+      path4 = formatMap("{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
-        httpOptions: (_a4 = params.config) === null || _a4 === void 0 ? void 0 : _a4.httpOptions,
-        abortSignal: (_b = params.config) === null || _b === void 0 ? void 0 : _b.abortSignal
+        httpOptions: (_a9 = params.config) === null || _a9 === void 0 ? void 0 : _a9.httpOptions,
+        abortSignal: (_b2 = params.config) === null || _b2 === void 0 ? void 0 : _b2.abortSignal
       }).then((httpResponse) => {
         return httpResponse.json();
       });
@@ -36990,47 +37842,47 @@ var FileSearchStores = class extends BaseModule {
    * @param params - The parameters for deleting a File Search Store.
    */
   async delete(params) {
-    var _a4, _b;
-    let path3 = "";
+    var _a9, _b2;
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       throw new Error("This method is only supported by the Gemini Developer API.");
     } else {
       const body = deleteFileSearchStoreParametersToMldev(params);
-      path3 = formatMap("{name}", body["_url"]);
+      path4 = formatMap("{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       await this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "DELETE",
-        httpOptions: (_a4 = params.config) === null || _a4 === void 0 ? void 0 : _a4.httpOptions,
-        abortSignal: (_b = params.config) === null || _b === void 0 ? void 0 : _b.abortSignal
+        httpOptions: (_a9 = params.config) === null || _a9 === void 0 ? void 0 : _a9.httpOptions,
+        abortSignal: (_b2 = params.config) === null || _b2 === void 0 ? void 0 : _b2.abortSignal
       });
     }
   }
   async listInternal(params) {
-    var _a4, _b;
+    var _a9, _b2;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       throw new Error("This method is only supported by the Gemini Developer API.");
     } else {
       const body = listFileSearchStoresParametersToMldev(params);
-      path3 = formatMap("fileSearchStores", body["_url"]);
+      path4 = formatMap("fileSearchStores", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
-        httpOptions: (_a4 = params.config) === null || _a4 === void 0 ? void 0 : _a4.httpOptions,
-        abortSignal: (_b = params.config) === null || _b === void 0 ? void 0 : _b.abortSignal
+        httpOptions: (_a9 = params.config) === null || _a9 === void 0 ? void 0 : _a9.httpOptions,
+        abortSignal: (_b2 = params.config) === null || _b2 === void 0 ? void 0 : _b2.abortSignal
       }).then((httpResponse) => {
         return httpResponse.json();
       });
@@ -37043,25 +37895,25 @@ var FileSearchStores = class extends BaseModule {
     }
   }
   async uploadToFileSearchStoreInternal(params) {
-    var _a4, _b;
+    var _a9, _b2;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       throw new Error("This method is only supported by the Gemini Developer API.");
     } else {
       const body = uploadToFileSearchStoreParametersToMldev(params);
-      path3 = formatMap("upload/v1beta/{file_search_store_name}:uploadToFileSearchStore", body["_url"]);
+      path4 = formatMap("upload/v1beta/{file_search_store_name}:uploadToFileSearchStore", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
-        httpOptions: (_a4 = params.config) === null || _a4 === void 0 ? void 0 : _a4.httpOptions,
-        abortSignal: (_b = params.config) === null || _b === void 0 ? void 0 : _b.abortSignal
+        httpOptions: (_a9 = params.config) === null || _a9 === void 0 ? void 0 : _a9.httpOptions,
+        abortSignal: (_b2 = params.config) === null || _b2 === void 0 ? void 0 : _b2.abortSignal
       }).then((httpResponse) => {
         return httpResponse.json();
       });
@@ -37082,25 +37934,25 @@ var FileSearchStores = class extends BaseModule {
    * @return ImportFileOperation.
    */
   async importFile(params) {
-    var _a4, _b;
+    var _a9, _b2;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       throw new Error("This method is only supported by the Gemini Developer API.");
     } else {
       const body = importFileParametersToMldev(params);
-      path3 = formatMap("{file_search_store_name}:importFile", body["_url"]);
+      path4 = formatMap("{file_search_store_name}:importFile", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
-        httpOptions: (_a4 = params.config) === null || _a4 === void 0 ? void 0 : _a4.httpOptions,
-        abortSignal: (_b = params.config) === null || _b === void 0 ? void 0 : _b.abortSignal
+        httpOptions: (_a9 = params.config) === null || _a9 === void 0 ? void 0 : _a9.httpOptions,
+        abortSignal: (_b2 = params.config) === null || _b2 === void 0 ? void 0 : _b2.abortSignal
       }).then((httpResponse) => {
         return httpResponse.json();
       });
@@ -37144,11 +37996,11 @@ var castToError = (err) => {
           error.name = err.name;
         return error;
       }
-    } catch (_a4) {
+    } catch (_a9) {
     }
     try {
       return new Error(JSON.stringify(err));
-    } catch (_b) {
+    } catch (_b2) {
     }
   }
   return new Error(err);
@@ -37253,7 +38105,7 @@ var isReadonlyArray = isReadonlyArrayInternal;
 function isEmptyObj(obj) {
   if (!obj)
     return true;
-  for (const _k in obj)
+  for (const _k2 in obj)
     return false;
   return true;
 }
@@ -37304,8 +38156,8 @@ function ReadableStreamFrom(iterable) {
       }
     },
     async cancel() {
-      var _a4;
-      await ((_a4 = iter.return) === null || _a4 === void 0 ? void 0 : _a4.call(iter));
+      var _a9;
+      await ((_a9 = iter.return) === null || _a9 === void 0 ? void 0 : _a9.call(iter));
     }
   });
 }
@@ -37337,11 +38189,11 @@ function ReadableStreamToAsyncIterable(stream) {
   };
 }
 async function CancelReadableStream(stream) {
-  var _a4, _b;
+  var _a9, _b2;
   if (stream === null || typeof stream !== "object")
     return;
   if (stream[Symbol.asyncIterator]) {
-    await ((_b = (_a4 = stream[Symbol.asyncIterator]()).return) === null || _b === void 0 ? void 0 : _b.call(_a4));
+    await ((_b2 = (_a9 = stream[Symbol.asyncIterator]()).return) === null || _b2 === void 0 ? void 0 : _b2.call(_a9));
     return;
   }
   const reader = stream.getReader();
@@ -37370,10 +38222,10 @@ function stringifyQuery(query) {
 }
 var VERSION = "0.0.1";
 var checkFileSupport = () => {
-  var _a4;
+  var _a9;
   if (typeof File === "undefined") {
     const { process: process3 } = globalThis;
-    const isOldNode = typeof ((_a4 = process3 === null || process3 === void 0 ? void 0 : process3.versions) === null || _a4 === void 0 ? void 0 : _a4.node) === "string" && parseInt(process3.versions.node.split(".")) < 20;
+    const isOldNode = typeof ((_a9 = process3 === null || process3 === void 0 ? void 0 : process3.versions) === null || _a9 === void 0 ? void 0 : _a9.node) === "string" && parseInt(process3.versions.node.split(".")) < 20;
     throw new Error("`File` is not defined as a global, which is required for file uploads." + (isOldNode ? " Update to Node 20 LTS or newer, or set `globalThis.File` to `import('node:buffer').File`." : ""));
   }
 };
@@ -37413,8 +38265,8 @@ async function toFile(value, name, options) {
   return makeFile(parts, name, options);
 }
 async function getBytes(value) {
-  var _a4, e_1, _b, _c;
-  var _d;
+  var _a9, e_1, _b2, _c2;
+  var _d2;
   let parts = [];
   if (typeof value === "string" || ArrayBuffer.isView(value) || // includes Uint8Array, Buffer, etc.
   value instanceof ArrayBuffer) {
@@ -37423,23 +38275,23 @@ async function getBytes(value) {
     parts.push(value instanceof Blob ? value : await value.arrayBuffer());
   } else if (isAsyncIterable(value)) {
     try {
-      for (var _e = true, value_1 = __asyncValues(value), value_1_1; value_1_1 = await value_1.next(), _a4 = value_1_1.done, !_a4; _e = true) {
-        _c = value_1_1.value;
-        _e = false;
-        const chunk = _c;
+      for (var _e2 = true, value_1 = __asyncValues(value), value_1_1; value_1_1 = await value_1.next(), _a9 = value_1_1.done, !_a9; _e2 = true) {
+        _c2 = value_1_1.value;
+        _e2 = false;
+        const chunk = _c2;
         parts.push(...await getBytes(chunk));
       }
     } catch (e_1_1) {
       e_1 = { error: e_1_1 };
     } finally {
       try {
-        if (!_e && !_a4 && (_b = value_1.return)) await _b.call(value_1);
+        if (!_e2 && !_a9 && (_b2 = value_1.return)) await _b2.call(value_1);
       } finally {
         if (e_1) throw e_1.error;
       }
     }
   } else {
-    const constructor = (_d = value === null || value === void 0 ? void 0 : value.constructor) === null || _d === void 0 ? void 0 : _d.name;
+    const constructor = (_d2 = value === null || value === void 0 ? void 0 : value.constructor) === null || _d2 === void 0 ? void 0 : _d2.name;
     throw new Error(`Unexpected data type: ${typeof value}${constructor ? `; constructor: ${constructor}` : ""}${propsForError(value)}`);
   }
   return parts;
@@ -37460,20 +38312,20 @@ function encodeURIPath(str2) {
   return str2.replace(/[^A-Za-z0-9\-._~!$&'()*+,;=:@]+/g, encodeURIComponent);
 }
 var EMPTY = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.create(null));
-var createPathTagFunction = (pathEncoder = encodeURIPath) => (function path3(statics, ...params) {
+var createPathTagFunction = (pathEncoder = encodeURIPath) => (function path4(statics, ...params) {
   if (statics.length === 1)
     return statics[0];
   let postPath = false;
   const invalidSegments = [];
-  const path4 = statics.reduce((previousValue, currentValue, index) => {
-    var _a4, _b, _c;
+  const path5 = statics.reduce((previousValue, currentValue, index) => {
+    var _a9, _b2, _c2;
     if (/[?#]/.test(currentValue)) {
       postPath = true;
     }
     const value = params[index];
     let encoded = (postPath ? encodeURIComponent : pathEncoder)("" + value);
     if (index !== params.length && (value == null || typeof value === "object" && // handle values from other realms
-    value.toString === ((_c = Object.getPrototypeOf((_b = Object.getPrototypeOf((_a4 = value.hasOwnProperty) !== null && _a4 !== void 0 ? _a4 : EMPTY)) !== null && _b !== void 0 ? _b : EMPTY)) === null || _c === void 0 ? void 0 : _c.toString))) {
+    value.toString === ((_c2 = Object.getPrototypeOf((_b2 = Object.getPrototypeOf((_a9 = value.hasOwnProperty) !== null && _a9 !== void 0 ? _a9 : EMPTY)) !== null && _b2 !== void 0 ? _b2 : EMPTY)) === null || _c2 === void 0 ? void 0 : _c2.toString))) {
       encoded = value + "";
       invalidSegments.push({
         start: previousValue.length + currentValue.length,
@@ -37483,15 +38335,15 @@ var createPathTagFunction = (pathEncoder = encodeURIPath) => (function path3(sta
     }
     return previousValue + currentValue + (index === params.length ? "" : encoded);
   }, "");
-  const pathOnly = path4.split(/[?#]/, 1)[0];
+  const pathOnly = path5.split(/[?#]/, 1)[0];
   const invalidSegmentPattern = /(^|\/)(?:\.|%2e){1,2}(?=\/|$)/gi;
-  let match;
-  while ((match = invalidSegmentPattern.exec(pathOnly)) !== null) {
-    const hasLeadingSlash = match[0].startsWith("/");
+  let match2;
+  while ((match2 = invalidSegmentPattern.exec(pathOnly)) !== null) {
+    const hasLeadingSlash = match2[0].startsWith("/");
     const offset = hasLeadingSlash ? 1 : 0;
-    const cleanMatch = hasLeadingSlash ? match[0].slice(1) : match[0];
+    const cleanMatch = hasLeadingSlash ? match2[0].slice(1) : match2[0];
     invalidSegments.push({
-      start: match.index + offset,
+      start: match2.index + offset,
       length: cleanMatch.length,
       error: `Value "${cleanMatch}" can't be safely passed as a path parameter`
     });
@@ -37507,10 +38359,10 @@ var createPathTagFunction = (pathEncoder = encodeURIPath) => (function path3(sta
     }, "");
     throw new GeminiNextGenAPIClientError(`Path parameters result in path with invalid segments:
 ${invalidSegments.map((e2) => e2.error).join("\n")}
-${path4}
+${path5}
 ${underline}`);
   }
-  return path4;
+  return path5;
 });
 var path = /* @__PURE__ */ createPathTagFunction(encodeURIPath);
 var BaseAgents = class extends APIResource {
@@ -37518,14 +38370,14 @@ var BaseAgents = class extends APIResource {
    * Creates a new Agent (Typed version for SDK).
    */
   create(params = {}, options) {
-    const _a4 = params !== null && params !== void 0 ? params : {}, { api_version = this._client.apiVersion } = _a4, body = __rest(_a4, ["api_version"]);
+    const _a9 = params !== null && params !== void 0 ? params : {}, { api_version = this._client.apiVersion } = _a9, body = __rest(_a9, ["api_version"]);
     return this._client.post(path`/${api_version}/agents`, Object.assign({ body }, options));
   }
   /**
    * Lists all Agents.
    */
   list(params = {}, options) {
-    const _a4 = params !== null && params !== void 0 ? params : {}, { api_version = this._client.apiVersion } = _a4, query = __rest(_a4, ["api_version"]);
+    const _a9 = params !== null && params !== void 0 ? params : {}, { api_version = this._client.apiVersion } = _a9, query = __rest(_a9, ["api_version"]);
     return this._client.get(path`/${api_version}/agents`, Object.assign({ query }, options));
   }
   /**
@@ -37561,13 +38413,13 @@ function concatBytes(buffers) {
 }
 var encodeUTF8_;
 function encodeUTF8(str2) {
-  let encoder;
-  return (encodeUTF8_ !== null && encodeUTF8_ !== void 0 ? encodeUTF8_ : (encoder = new globalThis.TextEncoder(), encodeUTF8_ = encoder.encode.bind(encoder)))(str2);
+  let encoder2;
+  return (encodeUTF8_ !== null && encodeUTF8_ !== void 0 ? encodeUTF8_ : (encoder2 = new globalThis.TextEncoder(), encodeUTF8_ = encoder2.encode.bind(encoder2)))(str2);
 }
 var decodeUTF8_;
 function decodeUTF8(bytes) {
-  let decoder;
-  return (decodeUTF8_ !== null && decodeUTF8_ !== void 0 ? decodeUTF8_ : (decoder = new globalThis.TextDecoder(), decodeUTF8_ = decoder.decode.bind(decoder)))(bytes);
+  let decoder2;
+  return (decodeUTF8_ !== null && decodeUTF8_ !== void 0 ? decodeUTF8_ : (decoder2 = new globalThis.TextDecoder(), decodeUTF8_ = decoder2.decode.bind(decoder2)))(bytes);
 }
 var LineDecoder = class {
   constructor() {
@@ -37576,7 +38428,7 @@ var LineDecoder = class {
     this.searchIndex = 0;
   }
   decode(chunk) {
-    var _a4;
+    var _a9;
     if (chunk == null) {
       return [];
     }
@@ -37584,7 +38436,7 @@ var LineDecoder = class {
     this.buffer = concatBytes([this.buffer, binaryChunk]);
     const lines = [];
     let patternIndex;
-    while ((patternIndex = findNewlineIndex(this.buffer, (_a4 = this.carriageReturnIndex) !== null && _a4 !== void 0 ? _a4 : this.searchIndex)) != null) {
+    while ((patternIndex = findNewlineIndex(this.buffer, (_a9 = this.carriageReturnIndex) !== null && _a9 !== void 0 ? _a9 : this.searchIndex)) != null) {
       if (patternIndex.carriage && this.carriageReturnIndex == null) {
         this.carriageReturnIndex = patternIndex.index;
         continue;
@@ -37669,9 +38521,9 @@ var noopLogger = {
 };
 var cachedLoggers = /* @__PURE__ */ new WeakMap();
 function loggerFor(client) {
-  var _a4;
+  var _a9;
   const logger = client.logger;
-  const logLevel = (_a4 = client.logLevel) !== null && _a4 !== void 0 ? _a4 : "off";
+  const logLevel = (_a9 = client.logLevel) !== null && _a9 !== void 0 ? _a9 : "off";
   if (!logger) {
     return noopLogger;
   }
@@ -37718,7 +38570,7 @@ var Stream3 = class _Stream {
     const logger = client ? loggerFor(client) : console;
     function iterator() {
       return __asyncGenerator(this, arguments, function* iterator_1() {
-        var _a4, e_1, _b, _c;
+        var _a9, e_1, _b2, _c2;
         if (consumed) {
           throw new GeminiNextGenAPIClientError("Cannot iterate over a consumed stream, use `.tee()` to split the stream.");
         }
@@ -37726,10 +38578,10 @@ var Stream3 = class _Stream {
         let done = false;
         try {
           try {
-            for (var _d = true, _e = __asyncValues(_iterSSEMessages(response, controller)), _f; _f = yield __await(_e.next()), _a4 = _f.done, !_a4; _d = true) {
-              _c = _f.value;
-              _d = false;
-              const sse = _c;
+            for (var _d2 = true, _e2 = __asyncValues(_iterSSEMessages(response, controller)), _f2; _f2 = yield __await(_e2.next()), _a9 = _f2.done, !_a9; _d2 = true) {
+              _c2 = _f2.value;
+              _d2 = false;
+              const sse = _c2;
               if (done)
                 continue;
               if (sse.data.startsWith("[DONE]")) {
@@ -37749,7 +38601,7 @@ var Stream3 = class _Stream {
             e_1 = { error: e_1_1 };
           } finally {
             try {
-              if (!_d && !_a4 && (_b = _e.return)) yield __await(_b.call(_e));
+              if (!_d2 && !_a9 && (_b2 = _e2.return)) yield __await(_b2.call(_e2));
             } finally {
               if (e_1) throw e_1.error;
             }
@@ -37775,14 +38627,14 @@ var Stream3 = class _Stream {
     let consumed = false;
     function iterLines() {
       return __asyncGenerator(this, arguments, function* iterLines_1() {
-        var _a4, e_2, _b, _c;
+        var _a9, e_2, _b2, _c2;
         const lineDecoder = new LineDecoder();
         const iter = ReadableStreamToAsyncIterable(readableStream);
         try {
-          for (var _d = true, iter_1 = __asyncValues(iter), iter_1_1; iter_1_1 = yield __await(iter_1.next()), _a4 = iter_1_1.done, !_a4; _d = true) {
-            _c = iter_1_1.value;
-            _d = false;
-            const chunk = _c;
+          for (var _d2 = true, iter_1 = __asyncValues(iter), iter_1_1; iter_1_1 = yield __await(iter_1.next()), _a9 = iter_1_1.done, !_a9; _d2 = true) {
+            _c2 = iter_1_1.value;
+            _d2 = false;
+            const chunk = _c2;
             for (const line of lineDecoder.decode(chunk)) {
               yield yield __await(line);
             }
@@ -37791,7 +38643,7 @@ var Stream3 = class _Stream {
           e_2 = { error: e_2_1 };
         } finally {
           try {
-            if (!_d && !_a4 && (_b = iter_1.return)) yield __await(_b.call(iter_1));
+            if (!_d2 && !_a9 && (_b2 = iter_1.return)) yield __await(_b2.call(iter_1));
           } finally {
             if (e_2) throw e_2.error;
           }
@@ -37803,7 +38655,7 @@ var Stream3 = class _Stream {
     }
     function iterator() {
       return __asyncGenerator(this, arguments, function* iterator_2() {
-        var _a4, e_3, _b, _c;
+        var _a9, e_3, _b2, _c2;
         if (consumed) {
           throw new GeminiNextGenAPIClientError("Cannot iterate over a consumed stream, use `.tee()` to split the stream.");
         }
@@ -37811,10 +38663,10 @@ var Stream3 = class _Stream {
         let done = false;
         try {
           try {
-            for (var _d = true, _e = __asyncValues(iterLines()), _f; _f = yield __await(_e.next()), _a4 = _f.done, !_a4; _d = true) {
-              _c = _f.value;
-              _d = false;
-              const line = _c;
+            for (var _d2 = true, _e2 = __asyncValues(iterLines()), _f2; _f2 = yield __await(_e2.next()), _a9 = _f2.done, !_a9; _d2 = true) {
+              _c2 = _f2.value;
+              _d2 = false;
+              const line = _c2;
               if (done)
                 continue;
               if (line)
@@ -37824,7 +38676,7 @@ var Stream3 = class _Stream {
             e_3 = { error: e_3_1 };
           } finally {
             try {
-              if (!_d && !_a4 && (_b = _e.return)) yield __await(_b.call(_e));
+              if (!_d2 && !_a9 && (_b2 = _e2.return)) yield __await(_b2.call(_e2));
             } finally {
               if (e_3) throw e_3.error;
             }
@@ -37894,15 +38746,15 @@ var Stream3 = class _Stream {
         }
       },
       async cancel() {
-        var _a4;
-        await ((_a4 = iter.return) === null || _a4 === void 0 ? void 0 : _a4.call(iter));
+        var _a9;
+        await ((_a9 = iter.return) === null || _a9 === void 0 ? void 0 : _a9.call(iter));
       }
     });
   }
 };
 function _iterSSEMessages(response, controller) {
   return __asyncGenerator(this, arguments, function* _iterSSEMessages_1() {
-    var _a4, e_4, _b, _c;
+    var _a9, e_4, _b2, _c2;
     if (!response.body) {
       controller.abort();
       if (typeof globalThis.navigator !== "undefined" && globalThis.navigator.product === "ReactNative") {
@@ -37914,10 +38766,10 @@ function _iterSSEMessages(response, controller) {
     const lineDecoder = new LineDecoder();
     const iter = ReadableStreamToAsyncIterable(response.body);
     try {
-      for (var _d = true, _e = __asyncValues(iterBinaryChunks(iter)), _f; _f = yield __await(_e.next()), _a4 = _f.done, !_a4; _d = true) {
-        _c = _f.value;
-        _d = false;
-        const sseChunk = _c;
+      for (var _d2 = true, _e2 = __asyncValues(iterBinaryChunks(iter)), _f2; _f2 = yield __await(_e2.next()), _a9 = _f2.done, !_a9; _d2 = true) {
+        _c2 = _f2.value;
+        _d2 = false;
+        const sseChunk = _c2;
         for (const line of lineDecoder.decode(sseChunk)) {
           const sse = sseDecoder.decode(line);
           if (sse)
@@ -37928,7 +38780,7 @@ function _iterSSEMessages(response, controller) {
       e_4 = { error: e_4_1 };
     } finally {
       try {
-        if (!_d && !_a4 && (_b = _e.return)) yield __await(_b.call(_e));
+        if (!_d2 && !_a9 && (_b2 = _e2.return)) yield __await(_b2.call(_e2));
       } finally {
         if (e_4) throw e_4.error;
       }
@@ -37942,12 +38794,12 @@ function _iterSSEMessages(response, controller) {
 }
 function iterBinaryChunks(iterator) {
   return __asyncGenerator(this, arguments, function* iterBinaryChunks_1() {
-    var _a4, e_5, _b, _c;
+    var _a9, e_5, _b2, _c2;
     try {
-      for (var _d = true, iterator_3 = __asyncValues(iterator), iterator_3_1; iterator_3_1 = yield __await(iterator_3.next()), _a4 = iterator_3_1.done, !_a4; _d = true) {
-        _c = iterator_3_1.value;
-        _d = false;
-        const chunk = _c;
+      for (var _d2 = true, iterator_3 = __asyncValues(iterator), iterator_3_1; iterator_3_1 = yield __await(iterator_3.next()), _a9 = iterator_3_1.done, !_a9; _d2 = true) {
+        _c2 = iterator_3_1.value;
+        _d2 = false;
+        const chunk = _c2;
         if (chunk == null) {
           continue;
         }
@@ -37958,7 +38810,7 @@ function iterBinaryChunks(iterator) {
       e_5 = { error: e_5_1 };
     } finally {
       try {
-        if (!_d && !_a4 && (_b = iterator_3.return)) yield __await(_b.call(iterator_3));
+        if (!_d2 && !_a9 && (_b2 = iterator_3.return)) yield __await(_b2.call(iterator_3));
       } finally {
         if (e_5) throw e_5.error;
       }
@@ -38077,19 +38929,19 @@ var LegacyLyriaStream = class _LegacyLyriaStream extends Stream3 {
     const base = Stream3.fromSSEResponse(response, controller, client);
     function wrappedIterator() {
       return __asyncGenerator(this, arguments, function* wrappedIterator_1() {
-        var _a4, e_1, _b, _c;
+        var _a9, e_1, _b2, _c2;
         try {
-          for (var _d = true, base_1 = __asyncValues(base), base_1_1; base_1_1 = yield __await(base_1.next()), _a4 = base_1_1.done, !_a4; _d = true) {
-            _c = base_1_1.value;
-            _d = false;
-            const item = _c;
+          for (var _d2 = true, base_1 = __asyncValues(base), base_1_1; base_1_1 = yield __await(base_1.next()), _a9 = base_1_1.done, !_a9; _d2 = true) {
+            _c2 = base_1_1.value;
+            _d2 = false;
+            const item = _c2;
             yield yield __await(maybeRemapLegacyStreamEvent(item));
           }
         } catch (e_1_1) {
           e_1 = { error: e_1_1 };
         } finally {
           try {
-            if (!_d && !_a4 && (_b = base_1.return)) yield __await(_b.call(base_1));
+            if (!_d2 && !_a9 && (_b2 = base_1.return)) yield __await(_b2.call(base_1));
           } finally {
             if (e_1) throw e_1.error;
           }
@@ -38101,7 +38953,7 @@ var LegacyLyriaStream = class _LegacyLyriaStream extends Stream3 {
 };
 var BaseInteractions = class extends APIResource {
   create(params, options) {
-    var _a4;
+    var _a9;
     const { api_version = this._client.apiVersion } = params, body = __rest(params, ["api_version"]);
     if ("model" in body && "agent_config" in body) {
       throw new GeminiNextGenAPIClientError(`Invalid request: specified \`model\` and \`agent_config\`. If specifying \`model\`, use \`generation_config\`.`);
@@ -38113,7 +38965,7 @@ var BaseInteractions = class extends APIResource {
       isVertex: isVertexClient(this._client),
       model: "model" in body ? body.model : void 0
     });
-    const isStreaming = (_a4 = params.stream) !== null && _a4 !== void 0 ? _a4 : false;
+    const isStreaming = (_a9 = params.stream) !== null && _a9 !== void 0 ? _a9 : false;
     const promise = this._client.post(path`/${api_version}/interactions`, Object.assign(Object.assign(Object.assign({ body }, options), { stream: isStreaming }), needsLegacyLyriaShim && isStreaming ? { __streamClass: LegacyLyriaStream } : {}));
     if (isStreaming) {
       return promise;
@@ -38154,9 +39006,9 @@ var BaseInteractions = class extends APIResource {
     return this._client.post(path`/${api_version}/interactions/${id}/cancel`, options)._thenUnwrap(addOutputProperties);
   }
   get(id, params = {}, options) {
-    var _a4;
-    const _b = params !== null && params !== void 0 ? params : {}, { api_version = this._client.apiVersion } = _b, query = __rest(_b, ["api_version"]);
-    const response = this._client.get(path`/${api_version}/interactions/${id}`, Object.assign(Object.assign({ query }, options), { stream: (_a4 = params === null || params === void 0 ? void 0 : params.stream) !== null && _a4 !== void 0 ? _a4 : false }));
+    var _a9;
+    const _b2 = params !== null && params !== void 0 ? params : {}, { api_version = this._client.apiVersion } = _b2, query = __rest(_b2, ["api_version"]);
+    const response = this._client.get(path`/${api_version}/interactions/${id}`, Object.assign(Object.assign({ query }, options), { stream: (_a9 = params === null || params === void 0 ? void 0 : params.stream) !== null && _a9 !== void 0 ? _a9 : false }));
     if (params === null || params === void 0 ? void 0 : params.stream) {
       return response;
     }
@@ -38167,8 +39019,8 @@ BaseInteractions._key = Object.freeze(["interactions"]);
 var Interactions = class extends BaseInteractions {
 };
 function addOutputProperties(interaction) {
-  var _a4, _b;
-  const steps = (_a4 = interaction.steps) !== null && _a4 !== void 0 ? _a4 : [];
+  var _a9, _b2;
+  const steps = (_a9 = interaction.steps) !== null && _a9 !== void 0 ? _a9 : [];
   const textParts = [];
   let collecting = false;
   outer: for (let i2 = steps.length - 1; i2 >= 0; i2--) {
@@ -38185,7 +39037,7 @@ function addOutputProperties(interaction) {
       const item = content[j];
       if (item.type === "text") {
         collecting = true;
-        textParts.push((_b = item.text) !== null && _b !== void 0 ? _b : "");
+        textParts.push((_b2 = item.text) !== null && _b2 !== void 0 ? _b2 : "");
       } else if (collecting) {
         break outer;
       }
@@ -38230,14 +39082,14 @@ var BaseWebhooks = class extends APIResource {
    * Updates an existing Webhook.
    */
   update(id, params = {}, options) {
-    const _a4 = params !== null && params !== void 0 ? params : {}, { api_version = this._client.apiVersion, update_mask } = _a4, body = __rest(_a4, ["api_version", "update_mask"]);
+    const _a9 = params !== null && params !== void 0 ? params : {}, { api_version = this._client.apiVersion, update_mask } = _a9, body = __rest(_a9, ["api_version", "update_mask"]);
     return this._client.patch(path`/${api_version}/webhooks/${id}`, Object.assign({ query: { update_mask }, body }, options));
   }
   /**
    * Lists all Webhooks.
    */
   list(params = {}, options) {
-    const _a4 = params !== null && params !== void 0 ? params : {}, { api_version = this._client.apiVersion } = _a4, query = __rest(_a4, ["api_version"]);
+    const _a9 = params !== null && params !== void 0 ? params : {}, { api_version = this._client.apiVersion } = _a9, query = __rest(_a9, ["api_version"]);
     return this._client.get(path`/${api_version}/webhooks`, Object.assign({ query }, options));
   }
   /**
@@ -38265,7 +39117,7 @@ var BaseWebhooks = class extends APIResource {
    * Generates a new signing secret for a Webhook.
    */
   rotateSigningSecret(id, params = {}, options) {
-    const _a4 = params !== null && params !== void 0 ? params : {}, { api_version = this._client.apiVersion } = _a4, body = __rest(_a4, ["api_version"]);
+    const _a9 = params !== null && params !== void 0 ? params : {}, { api_version = this._client.apiVersion } = _a9, body = __rest(_a9, ["api_version"]);
     return this._client.post(path`/${api_version}/webhooks/${id}:rotateSigningSecret`, Object.assign({ body }, options));
   }
 };
@@ -38275,7 +39127,7 @@ var Webhooks = class extends BaseWebhooks {
 async function defaultParseResponse(client, props) {
   const { response, requestLogID, retryOfRequestLogID, startTime } = props;
   const body = await (async () => {
-    var _a4;
+    var _a9;
     if (props.options.stream) {
       loggerFor(client).debug("response", response.status, response.url, response.headers, response.body);
       if (props.options.__streamClass) {
@@ -38290,7 +39142,7 @@ async function defaultParseResponse(client, props) {
       return response;
     }
     const contentType = response.headers.get("content-type");
-    const mediaType = (_a4 = contentType === null || contentType === void 0 ? void 0 : contentType.split(";")[0]) === null || _a4 === void 0 ? void 0 : _a4.trim();
+    const mediaType = (_a9 = contentType === null || contentType === void 0 ? void 0 : contentType.split(";")[0]) === null || _a9 === void 0 ? void 0 : _a9.trim();
     const isJSON = (mediaType === null || mediaType === void 0 ? void 0 : mediaType.includes("application/json")) || (mediaType === null || mediaType === void 0 ? void 0 : mediaType.endsWith("+json"));
     if (isJSON) {
       const contentLength = response.headers.get("content-length");
@@ -38430,12 +39282,12 @@ var buildHeaders = (newHeaders) => {
   return { [brand_privateNullableHeaders]: true, values: targetHeaders, nulls: nullHeaders };
 };
 var readEnv = (env2) => {
-  var _a4, _b, _c, _d, _e;
+  var _a9, _b2, _c2, _d2, _e2;
   if (typeof globalThis.process !== "undefined") {
-    return ((_b = (_a4 = globalThis.process.env) === null || _a4 === void 0 ? void 0 : _a4[env2]) === null || _b === void 0 ? void 0 : _b.trim()) || void 0;
+    return ((_b2 = (_a9 = globalThis.process.env) === null || _a9 === void 0 ? void 0 : _a9[env2]) === null || _b2 === void 0 ? void 0 : _b2.trim()) || void 0;
   }
   if (typeof globalThis.Deno !== "undefined") {
-    return ((_e = (_d = (_c = globalThis.Deno.env) === null || _c === void 0 ? void 0 : _c.get) === null || _d === void 0 ? void 0 : _d.call(_c, env2)) === null || _e === void 0 ? void 0 : _e.trim()) || void 0;
+    return ((_e2 = (_d2 = (_c2 = globalThis.Deno.env) === null || _c2 === void 0 ? void 0 : _c2.get) === null || _d2 === void 0 ? void 0 : _d2.call(_c2, env2)) === null || _e2 === void 0 ? void 0 : _e2.trim()) || void 0;
   }
   return void 0;
 };
@@ -38454,22 +39306,22 @@ var BaseGeminiNextGenAPIClient = class _BaseGeminiNextGenAPIClient {
    * @param {HeadersLike} opts.defaultHeaders - Default headers to include with every request to the API.
    * @param {Record<string, string | undefined>} opts.defaultQuery - Default query parameters to include with every request to the API.
    */
-  constructor(_b) {
-    var _c, _d, _e, _f, _g, _h, _j;
-    var { baseURL = readEnv("GEMINI_NEXT_GEN_API_BASE_URL"), apiKey = (_c = readEnv("GEMINI_API_KEY")) !== null && _c !== void 0 ? _c : null, apiVersion = "v1beta" } = _b, opts = __rest(_b, ["baseURL", "apiKey", "apiVersion"]);
+  constructor(_b2) {
+    var _c2, _d2, _e2, _f2, _g2, _h2, _j2;
+    var { baseURL = readEnv("GEMINI_NEXT_GEN_API_BASE_URL"), apiKey = (_c2 = readEnv("GEMINI_API_KEY")) !== null && _c2 !== void 0 ? _c2 : null, apiVersion = "v1beta" } = _b2, opts = __rest(_b2, ["baseURL", "apiKey", "apiVersion"]);
     const options = Object.assign(Object.assign({
       apiKey,
       apiVersion
     }, opts), { baseURL: baseURL || `https://generativelanguage.googleapis.com` });
     this.baseURL = options.baseURL;
-    this.timeout = (_d = options.timeout) !== null && _d !== void 0 ? _d : _BaseGeminiNextGenAPIClient.DEFAULT_TIMEOUT;
-    this.logger = (_e = options.logger) !== null && _e !== void 0 ? _e : console;
+    this.timeout = (_d2 = options.timeout) !== null && _d2 !== void 0 ? _d2 : _BaseGeminiNextGenAPIClient.DEFAULT_TIMEOUT;
+    this.logger = (_e2 = options.logger) !== null && _e2 !== void 0 ? _e2 : console;
     const defaultLogLevel = "warn";
     this.logLevel = defaultLogLevel;
-    this.logLevel = (_g = (_f = parseLogLevel(options.logLevel, "ClientOptions.logLevel", this)) !== null && _f !== void 0 ? _f : parseLogLevel(readEnv("GEMINI_NEXT_GEN_API_LOG"), "process.env['GEMINI_NEXT_GEN_API_LOG']", this)) !== null && _g !== void 0 ? _g : defaultLogLevel;
+    this.logLevel = (_g2 = (_f2 = parseLogLevel(options.logLevel, "ClientOptions.logLevel", this)) !== null && _f2 !== void 0 ? _f2 : parseLogLevel(readEnv("GEMINI_NEXT_GEN_API_LOG"), "process.env['GEMINI_NEXT_GEN_API_LOG']", this)) !== null && _g2 !== void 0 ? _g2 : defaultLogLevel;
     this.fetchOptions = options.fetchOptions;
-    this.maxRetries = (_h = options.maxRetries) !== null && _h !== void 0 ? _h : 2;
-    this.fetch = (_j = options.fetch) !== null && _j !== void 0 ? _j : getDefaultFetch();
+    this.maxRetries = (_h2 = options.maxRetries) !== null && _h2 !== void 0 ? _h2 : 2;
+    this.fetch = (_j2 = options.fetch) !== null && _j2 !== void 0 ? _j2 : getDefaultFetch();
     this.encoder = FallbackEncoder;
     this._options = options;
     this.apiKey = apiKey;
@@ -38532,9 +39384,9 @@ var BaseGeminiNextGenAPIClient = class _BaseGeminiNextGenAPIClient {
   makeStatusError(status, error, message, headers) {
     return APIError.generate(status, error, message, headers);
   }
-  buildURL(path3, query, defaultBaseURL) {
+  buildURL(path4, query, defaultBaseURL) {
     const baseURL = !this.baseURLOverridden() && defaultBaseURL || this.baseURL;
-    const url = isAbsoluteURL(path3) ? new URL(path3) : new URL(baseURL + (baseURL.endsWith("/") && path3.startsWith("/") ? path3.slice(1) : path3));
+    const url = isAbsoluteURL(path4) ? new URL(path4) : new URL(baseURL + (baseURL.endsWith("/") && path4.startsWith("/") ? path4.slice(1) : path4));
     const defaultQuery = this.defaultQuery();
     const pathQuery = Object.fromEntries(url.searchParams);
     if (!isEmptyObj(defaultQuery) || !isEmptyObj(pathQuery)) {
@@ -38563,33 +39415,33 @@ var BaseGeminiNextGenAPIClient = class _BaseGeminiNextGenAPIClient {
    */
   async prepareRequest(request, { url, options }) {
   }
-  get(path3, opts) {
-    return this.methodRequest("get", path3, opts);
+  get(path4, opts) {
+    return this.methodRequest("get", path4, opts);
   }
-  post(path3, opts) {
-    return this.methodRequest("post", path3, opts);
+  post(path4, opts) {
+    return this.methodRequest("post", path4, opts);
   }
-  patch(path3, opts) {
-    return this.methodRequest("patch", path3, opts);
+  patch(path4, opts) {
+    return this.methodRequest("patch", path4, opts);
   }
-  put(path3, opts) {
-    return this.methodRequest("put", path3, opts);
+  put(path4, opts) {
+    return this.methodRequest("put", path4, opts);
   }
-  delete(path3, opts) {
-    return this.methodRequest("delete", path3, opts);
+  delete(path4, opts) {
+    return this.methodRequest("delete", path4, opts);
   }
-  methodRequest(method, path3, opts) {
+  methodRequest(method, path4, opts) {
     return this.request(Promise.resolve(opts).then((opts2) => {
-      return Object.assign({ method, path: path3 }, opts2);
+      return Object.assign({ method, path: path4 }, opts2);
     }));
   }
   request(options, remainingRetries = null) {
     return new APIPromise(this, this.makeRequest(options, remainingRetries, void 0));
   }
   async makeRequest(optionsInput, retriesRemaining, retryOfRequestLogID) {
-    var _b, _c, _d;
+    var _b2, _c2, _d2;
     const options = await optionsInput;
-    const maxRetries = (_b = options.maxRetries) !== null && _b !== void 0 ? _b : this.maxRetries;
+    const maxRetries = (_b2 = options.maxRetries) !== null && _b2 !== void 0 ? _b2 : this.maxRetries;
     if (retriesRemaining == null) {
       retriesRemaining = maxRetries;
     }
@@ -38608,7 +39460,7 @@ var BaseGeminiNextGenAPIClient = class _BaseGeminiNextGenAPIClient {
       options,
       headers: req.headers
     }));
-    if ((_c = options.signal) === null || _c === void 0 ? void 0 : _c.aborted) {
+    if ((_c2 = options.signal) === null || _c2 === void 0 ? void 0 : _c2.aborted) {
       throw new APIUserAbortError();
     }
     const controller = new AbortController();
@@ -38616,7 +39468,7 @@ var BaseGeminiNextGenAPIClient = class _BaseGeminiNextGenAPIClient {
     const headersTime = Date.now();
     if (response instanceof globalThis.Error) {
       const retryMessage = `retrying, ${retriesRemaining} attempts remaining`;
-      if ((_d = options.signal) === null || _d === void 0 ? void 0 : _d.aborted) {
+      if ((_d2 = options.signal) === null || _d2 === void 0 ? void 0 : _d2.aborted) {
         throw new APIUserAbortError();
       }
       const isTimeout = isAbortError(response) || /timed? ?out/i.test(String(response) + ("cause" in response ? String(response.cause) : ""));
@@ -38685,7 +39537,7 @@ var BaseGeminiNextGenAPIClient = class _BaseGeminiNextGenAPIClient {
     return { response, options, controller, requestLogID, retryOfRequestLogID, startTime };
   }
   async fetchWithTimeout(url, init, ms, controller) {
-    const _b = init || {}, { signal, method } = _b, options = __rest(_b, ["signal", "method"]);
+    const _b2 = init || {}, { signal, method } = _b2, options = __rest(_b2, ["signal", "method"]);
     const abort = this._makeAbort(controller);
     if (signal)
       signal.addEventListener("abort", abort, { once: true });
@@ -38718,7 +39570,7 @@ var BaseGeminiNextGenAPIClient = class _BaseGeminiNextGenAPIClient {
     return false;
   }
   async retryRequest(options, retriesRemaining, requestLogID, responseHeaders) {
-    var _b;
+    var _b2;
     let timeoutMillis;
     const retryAfterMillisHeader = responseHeaders === null || responseHeaders === void 0 ? void 0 : responseHeaders.get("retry-after-ms");
     if (retryAfterMillisHeader) {
@@ -38737,7 +39589,7 @@ var BaseGeminiNextGenAPIClient = class _BaseGeminiNextGenAPIClient {
       }
     }
     if (timeoutMillis === void 0) {
-      const maxRetries = (_b = options.maxRetries) !== null && _b !== void 0 ? _b : this.maxRetries;
+      const maxRetries = (_b2 = options.maxRetries) !== null && _b2 !== void 0 ? _b2 : this.maxRetries;
       timeoutMillis = this.calculateDefaultRetryTimeoutMillis(retriesRemaining, maxRetries);
     }
     await sleep$1(timeoutMillis);
@@ -38752,16 +39604,16 @@ var BaseGeminiNextGenAPIClient = class _BaseGeminiNextGenAPIClient {
     return sleepSeconds * jitter * 1e3;
   }
   async buildRequest(inputOptions, { retryCount = 0 } = {}) {
-    var _b, _c, _d;
+    var _b2, _c2, _d2;
     const options = Object.assign({}, inputOptions);
-    const { method, path: path3, query, defaultBaseURL } = options;
-    const url = this.buildURL(path3, query, defaultBaseURL);
+    const { method, path: path4, query, defaultBaseURL } = options;
+    const url = this.buildURL(path4, query, defaultBaseURL);
     if ("timeout" in options)
       validatePositiveInteger("timeout", options.timeout);
-    options.timeout = (_b = options.timeout) !== null && _b !== void 0 ? _b : this.timeout;
+    options.timeout = (_b2 = options.timeout) !== null && _b2 !== void 0 ? _b2 : this.timeout;
     const { bodyHeaders, body } = this.buildBody({ options });
     const reqHeaders = await this.buildHeaders({ options: inputOptions, method, bodyHeaders, retryCount });
-    const req = Object.assign(Object.assign(Object.assign(Object.assign(Object.assign({ method, headers: reqHeaders }, options.signal && { signal: options.signal }), globalThis.ReadableStream && body instanceof globalThis.ReadableStream && { duplex: "half" }), body && { body }), (_c = this.fetchOptions) !== null && _c !== void 0 ? _c : {}), (_d = options.fetchOptions) !== null && _d !== void 0 ? _d : {});
+    const req = Object.assign(Object.assign(Object.assign(Object.assign(Object.assign({ method, headers: reqHeaders }, options.signal && { signal: options.signal }), globalThis.ReadableStream && body instanceof globalThis.ReadableStream && { duplex: "half" }), body && { body }), (_c2 = this.fetchOptions) !== null && _c2 !== void 0 ? _c2 : {}), (_d2 = options.fetchOptions) !== null && _d2 !== void 0 ? _d2 : {});
     return { req, url, timeout: options.timeout };
   }
   async buildHeaders({ options, method, bodyHeaders, retryCount }) {
@@ -38924,7 +39776,7 @@ var NodeDownloader = class {
   }
 };
 async function downloadFile(params, apiClient) {
-  var _a4, _b, _c;
+  var _a9, _b2, _c2;
   const name = tFileName(params.file);
   if (name !== void 0) {
     return await apiClient.request({
@@ -38933,11 +39785,11 @@ async function downloadFile(params, apiClient) {
       queryParams: {
         "alt": "media"
       },
-      httpOptions: (_a4 = params.config) === null || _a4 === void 0 ? void 0 : _a4.httpOptions,
-      abortSignal: (_b = params.config) === null || _b === void 0 ? void 0 : _b.abortSignal
+      httpOptions: (_a9 = params.config) === null || _a9 === void 0 ? void 0 : _a9.httpOptions,
+      abortSignal: (_b2 = params.config) === null || _b2 === void 0 ? void 0 : _b2.abortSignal
     });
   } else if (isGeneratedVideo(params.file)) {
-    const videoBytes = (_c = params.file.video) === null || _c === void 0 ? void 0 : _c.videoBytes;
+    const videoBytes = (_c2 = params.file.video) === null || _c2 === void 0 ? void 0 : _c2.videoBytes;
     if (typeof videoBytes === "string") {
       return videoBytes;
     } else {
@@ -40065,13 +40917,13 @@ var Tunings = class extends BaseModule {
       return await this.getInternal(params);
     };
     this.tune = async (params) => {
-      var _a4;
+      var _a9;
       if (this.apiClient.isVertexAI()) {
         if (params.baseModel.startsWith("projects/")) {
           const preTunedModel = {
             tunedModelName: params.baseModel
           };
-          if ((_a4 = params.config) === null || _a4 === void 0 ? void 0 : _a4.preTunedModelCheckpointId) {
+          if ((_a9 = params.config) === null || _a9 === void 0 ? void 0 : _a9.preTunedModelCheckpointId) {
             preTunedModel.checkpointId = params.config.preTunedModelCheckpointId;
           }
           const paramsPrivate = Object.assign(Object.assign({}, params), { preTunedModel });
@@ -40099,23 +40951,23 @@ var Tunings = class extends BaseModule {
     };
   }
   async getInternal(params) {
-    var _a4, _b, _c, _d;
+    var _a9, _b2, _c2, _d2;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = getTuningJobParametersToVertex(params);
-      path3 = formatMap("{name}", body["_url"]);
+      path4 = formatMap("{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
-        httpOptions: (_a4 = params.config) === null || _a4 === void 0 ? void 0 : _a4.httpOptions,
-        abortSignal: (_b = params.config) === null || _b === void 0 ? void 0 : _b.abortSignal
+        httpOptions: (_a9 = params.config) === null || _a9 === void 0 ? void 0 : _a9.httpOptions,
+        abortSignal: (_b2 = params.config) === null || _b2 === void 0 ? void 0 : _b2.abortSignal
       }).then((httpResponse) => {
         return httpResponse.json().then((jsonResponse) => {
           const response2 = jsonResponse;
@@ -40131,17 +40983,17 @@ var Tunings = class extends BaseModule {
       });
     } else {
       const body = getTuningJobParametersToMldev(params);
-      path3 = formatMap("{name}", body["_url"]);
+      path4 = formatMap("{name}", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
-        httpOptions: (_c = params.config) === null || _c === void 0 ? void 0 : _c.httpOptions,
-        abortSignal: (_d = params.config) === null || _d === void 0 ? void 0 : _d.abortSignal
+        httpOptions: (_c2 = params.config) === null || _c2 === void 0 ? void 0 : _c2.httpOptions,
+        abortSignal: (_d2 = params.config) === null || _d2 === void 0 ? void 0 : _d2.abortSignal
       }).then((httpResponse) => {
         return httpResponse.json().then((jsonResponse) => {
           const response2 = jsonResponse;
@@ -40158,23 +41010,23 @@ var Tunings = class extends BaseModule {
     }
   }
   async listInternal(params) {
-    var _a4, _b;
+    var _a9, _b2;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = listTuningJobsParametersToVertex(params);
-      path3 = formatMap("tuningJobs", body["_url"]);
+      path4 = formatMap("tuningJobs", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "GET",
-        httpOptions: (_a4 = params.config) === null || _a4 === void 0 ? void 0 : _a4.httpOptions,
-        abortSignal: (_b = params.config) === null || _b === void 0 ? void 0 : _b.abortSignal
+        httpOptions: (_a9 = params.config) === null || _a9 === void 0 ? void 0 : _a9.httpOptions,
+        abortSignal: (_b2 = params.config) === null || _b2 === void 0 ? void 0 : _b2.abortSignal
       }).then((httpResponse) => {
         return httpResponse.json().then((jsonResponse) => {
           const response2 = jsonResponse;
@@ -40206,23 +41058,23 @@ var Tunings = class extends BaseModule {
    * ```
    */
   async cancel(params) {
-    var _a4, _b, _c, _d;
+    var _a9, _b2, _c2, _d2;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = cancelTuningJobParametersToVertex(params);
-      path3 = formatMap("{name}:cancel", body["_url"]);
+      path4 = formatMap("{name}:cancel", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
-        httpOptions: (_a4 = params.config) === null || _a4 === void 0 ? void 0 : _a4.httpOptions,
-        abortSignal: (_b = params.config) === null || _b === void 0 ? void 0 : _b.abortSignal
+        httpOptions: (_a9 = params.config) === null || _a9 === void 0 ? void 0 : _a9.httpOptions,
+        abortSignal: (_b2 = params.config) === null || _b2 === void 0 ? void 0 : _b2.abortSignal
       }).then((httpResponse) => {
         return httpResponse.json().then((jsonResponse) => {
           const response2 = jsonResponse;
@@ -40240,17 +41092,17 @@ var Tunings = class extends BaseModule {
       });
     } else {
       const body = cancelTuningJobParametersToMldev(params);
-      path3 = formatMap("{name}:cancel", body["_url"]);
+      path4 = formatMap("{name}:cancel", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
-        httpOptions: (_c = params.config) === null || _c === void 0 ? void 0 : _c.httpOptions,
-        abortSignal: (_d = params.config) === null || _d === void 0 ? void 0 : _d.abortSignal
+        httpOptions: (_c2 = params.config) === null || _c2 === void 0 ? void 0 : _c2.httpOptions,
+        abortSignal: (_d2 = params.config) === null || _d2 === void 0 ? void 0 : _d2.abortSignal
       }).then((httpResponse) => {
         return httpResponse.json().then((jsonResponse) => {
           const response2 = jsonResponse;
@@ -40269,23 +41121,23 @@ var Tunings = class extends BaseModule {
     }
   }
   async tuneInternal(params) {
-    var _a4, _b;
+    var _a9, _b2;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       const body = createTuningJobParametersPrivateToVertex(params, params);
-      path3 = formatMap("tuningJobs", body["_url"]);
+      path4 = formatMap("tuningJobs", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
-        httpOptions: (_a4 = params.config) === null || _a4 === void 0 ? void 0 : _a4.httpOptions,
-        abortSignal: (_b = params.config) === null || _b === void 0 ? void 0 : _b.abortSignal
+        httpOptions: (_a9 = params.config) === null || _a9 === void 0 ? void 0 : _a9.httpOptions,
+        abortSignal: (_b2 = params.config) === null || _b2 === void 0 ? void 0 : _b2.abortSignal
       }).then((httpResponse) => {
         return httpResponse.json().then((jsonResponse) => {
           const response2 = jsonResponse;
@@ -40304,25 +41156,25 @@ var Tunings = class extends BaseModule {
     }
   }
   async tuneMldevInternal(params) {
-    var _a4, _b;
+    var _a9, _b2;
     let response;
-    let path3 = "";
+    let path4 = "";
     let queryParams = {};
     if (this.apiClient.isVertexAI()) {
       throw new Error("This method is only supported by the Gemini Developer API.");
     } else {
       const body = createTuningJobParametersPrivateToMldev(params);
-      path3 = formatMap("tunedModels", body["_url"]);
+      path4 = formatMap("tunedModels", body["_url"]);
       queryParams = body["_query"];
       delete body["_url"];
       delete body["_query"];
       response = this.apiClient.request({
-        path: path3,
+        path: path4,
         queryParams,
         body: JSON.stringify(body),
         httpMethod: "POST",
-        httpOptions: (_a4 = params.config) === null || _a4 === void 0 ? void 0 : _a4.httpOptions,
-        abortSignal: (_b = params.config) === null || _b === void 0 ? void 0 : _b.abortSignal
+        httpOptions: (_a9 = params.config) === null || _a9 === void 0 ? void 0 : _a9.httpOptions,
+        abortSignal: (_b2 = params.config) === null || _b2 === void 0 ? void 0 : _b2.abortSignal
       }).then((httpResponse) => {
         return httpResponse.json().then((jsonResponse) => {
           const response2 = jsonResponse;
@@ -40345,19 +41197,19 @@ var INITIAL_RETRY_DELAY_MS = 1e3;
 var DELAY_MULTIPLIER = 2;
 var X_GOOG_UPLOAD_STATUS_HEADER_FIELD = "x-goog-upload-status";
 async function uploadBlob(file, uploadUrl, apiClient, httpOptions) {
-  var _a4;
+  var _a9;
   const response = await uploadBlobInternal(file, uploadUrl, apiClient, httpOptions);
   const responseJson = await (response === null || response === void 0 ? void 0 : response.json());
-  if (((_a4 = response === null || response === void 0 ? void 0 : response.headers) === null || _a4 === void 0 ? void 0 : _a4[X_GOOG_UPLOAD_STATUS_HEADER_FIELD]) !== "final") {
+  if (((_a9 = response === null || response === void 0 ? void 0 : response.headers) === null || _a9 === void 0 ? void 0 : _a9[X_GOOG_UPLOAD_STATUS_HEADER_FIELD]) !== "final") {
     throw new Error("Failed to upload file: Upload status is not finalized.");
   }
   return responseJson["file"];
 }
 async function uploadBlobToFileSearchStore(file, uploadUrl, apiClient, httpOptions) {
-  var _a4;
+  var _a9;
   const response = await uploadBlobInternal(file, uploadUrl, apiClient, httpOptions);
   const responseJson = await (response === null || response === void 0 ? void 0 : response.json());
-  if (((_a4 = response === null || response === void 0 ? void 0 : response.headers) === null || _a4 === void 0 ? void 0 : _a4[X_GOOG_UPLOAD_STATUS_HEADER_FIELD]) !== "final") {
+  if (((_a9 = response === null || response === void 0 ? void 0 : response.headers) === null || _a9 === void 0 ? void 0 : _a9[X_GOOG_UPLOAD_STATUS_HEADER_FIELD]) !== "final") {
     throw new Error("Failed to upload file: Upload status is not finalized.");
   }
   const resp = uploadToFileSearchStoreOperationFromMldev(responseJson);
@@ -40366,9 +41218,9 @@ async function uploadBlobToFileSearchStore(file, uploadUrl, apiClient, httpOptio
   return typedResp;
 }
 async function uploadBlobInternal(file, uploadUrl, apiClient, httpOptions) {
-  var _a4, _b, _c;
+  var _a9, _b2, _c2;
   let finalUrl = uploadUrl;
-  const effectiveBaseUrl = (httpOptions === null || httpOptions === void 0 ? void 0 : httpOptions.baseUrl) || ((_a4 = apiClient.clientOptions.httpOptions) === null || _a4 === void 0 ? void 0 : _a4.baseUrl);
+  const effectiveBaseUrl = (httpOptions === null || httpOptions === void 0 ? void 0 : httpOptions.baseUrl) || ((_a9 = apiClient.clientOptions.httpOptions) === null || _a9 === void 0 ? void 0 : _a9.baseUrl);
   if (effectiveBaseUrl) {
     const baseUri = new URL(effectiveBaseUrl);
     const uploadUri = new URL(uploadUrl);
@@ -40398,7 +41250,7 @@ async function uploadBlobInternal(file, uploadUrl, apiClient, httpOptions) {
         httpMethod: "POST",
         httpOptions: Object.assign(Object.assign({}, httpOptions), { apiVersion: "", baseUrl: finalUrl, headers: mergedHeaders })
       });
-      if ((_b = response === null || response === void 0 ? void 0 : response.headers) === null || _b === void 0 ? void 0 : _b[X_GOOG_UPLOAD_STATUS_HEADER_FIELD]) {
+      if ((_b2 = response === null || response === void 0 ? void 0 : response.headers) === null || _b2 === void 0 ? void 0 : _b2[X_GOOG_UPLOAD_STATUS_HEADER_FIELD]) {
         break;
       }
       retryCount++;
@@ -40406,7 +41258,7 @@ async function uploadBlobInternal(file, uploadUrl, apiClient, httpOptions) {
       currentDelayMs = currentDelayMs * DELAY_MULTIPLIER;
     }
     offset += chunkSize;
-    if (((_c = response === null || response === void 0 ? void 0 : response.headers) === null || _c === void 0 ? void 0 : _c[X_GOOG_UPLOAD_STATUS_HEADER_FIELD]) !== "active") {
+    if (((_c2 = response === null || response === void 0 ? void 0 : response.headers) === null || _c2 === void 0 ? void 0 : _c2[X_GOOG_UPLOAD_STATUS_HEADER_FIELD]) !== "active") {
       break;
     }
     if (fileSize <= offset) {
@@ -40535,19 +41387,19 @@ var NodeUploader = class {
     return mimeType;
   }
   async uploadFileFromPath(file, uploadUrl, apiClient, httpOptions) {
-    var _a4;
+    var _a9;
     const response = await this.uploadFileFromPathInternal(file, uploadUrl, apiClient, httpOptions);
     const responseJson = await (response === null || response === void 0 ? void 0 : response.json());
-    if (((_a4 = response === null || response === void 0 ? void 0 : response.headers) === null || _a4 === void 0 ? void 0 : _a4[X_GOOG_UPLOAD_STATUS_HEADER_FIELD]) !== "final") {
+    if (((_a9 = response === null || response === void 0 ? void 0 : response.headers) === null || _a9 === void 0 ? void 0 : _a9[X_GOOG_UPLOAD_STATUS_HEADER_FIELD]) !== "final") {
       throw new Error("Failed to upload file: Upload status is not finalized.");
     }
     return responseJson["file"];
   }
   async uploadFileToFileSearchStoreFromPath(file, uploadUrl, apiClient, httpOptions) {
-    var _a4;
+    var _a9;
     const response = await this.uploadFileFromPathInternal(file, uploadUrl, apiClient, httpOptions);
     const responseJson = await (response === null || response === void 0 ? void 0 : response.json());
-    if (((_a4 = response === null || response === void 0 ? void 0 : response.headers) === null || _a4 === void 0 ? void 0 : _a4[X_GOOG_UPLOAD_STATUS_HEADER_FIELD]) !== "final") {
+    if (((_a9 = response === null || response === void 0 ? void 0 : response.headers) === null || _a9 === void 0 ? void 0 : _a9[X_GOOG_UPLOAD_STATUS_HEADER_FIELD]) !== "final") {
       throw new Error("Failed to upload file: Upload status is not finalized.");
     }
     const resp = uploadToFileSearchStoreOperationFromMldev(responseJson);
@@ -40556,9 +41408,9 @@ var NodeUploader = class {
     return typedResp;
   }
   async uploadFileFromPathInternal(file, uploadUrl, apiClient, httpOptions) {
-    var _a4, _b, _c;
+    var _a9, _b2, _c2;
     let finalUrl = uploadUrl;
-    const effectiveBaseUrl = (httpOptions === null || httpOptions === void 0 ? void 0 : httpOptions.baseUrl) || ((_a4 = apiClient.clientOptions.httpOptions) === null || _a4 === void 0 ? void 0 : _a4.baseUrl);
+    const effectiveBaseUrl = (httpOptions === null || httpOptions === void 0 ? void 0 : httpOptions.baseUrl) || ((_a9 = apiClient.clientOptions.httpOptions) === null || _a9 === void 0 ? void 0 : _a9.baseUrl);
     if (effectiveBaseUrl) {
       const baseUri = new URL(effectiveBaseUrl);
       const uploadUri = new URL(uploadUrl);
@@ -40600,7 +41452,7 @@ var NodeUploader = class {
             httpMethod: "POST",
             httpOptions: Object.assign(Object.assign({}, httpOptions), { apiVersion: "", baseUrl: finalUrl, headers: mergedHeaders })
           });
-          if ((_b = response === null || response === void 0 ? void 0 : response.headers) === null || _b === void 0 ? void 0 : _b[X_GOOG_UPLOAD_STATUS_HEADER_FIELD]) {
+          if ((_b2 = response === null || response === void 0 ? void 0 : response.headers) === null || _b2 === void 0 ? void 0 : _b2[X_GOOG_UPLOAD_STATUS_HEADER_FIELD]) {
             break;
           }
           retryCount++;
@@ -40608,7 +41460,7 @@ var NodeUploader = class {
           currentDelayMs = currentDelayMs * DELAY_MULTIPLIER;
         }
         offset += bytesRead;
-        if (((_c = response === null || response === void 0 ? void 0 : response.headers) === null || _c === void 0 ? void 0 : _c[X_GOOG_UPLOAD_STATUS_HEADER_FIELD]) !== "active") {
+        if (((_c2 = response === null || response === void 0 ? void 0 : response.headers) === null || _c2 === void 0 ? void 0 : _c2[X_GOOG_UPLOAD_STATUS_HEADER_FIELD]) !== "active") {
           break;
         }
         if (fileSize <= offset) {
@@ -40656,12 +41508,12 @@ var NodeFiles = class extends Files {
 };
 var LANGUAGE_LABEL_PREFIX = "gl-node/";
 function resolveCloudFlag(options) {
-  var _a4;
+  var _a9;
   if (options.enterprise !== void 0 || options.vertexai !== void 0) {
     if (options.enterprise !== void 0 && options.vertexai !== void 0 && options.enterprise !== options.vertexai) {
       throw new Error("enterprise and vertexAI flags have conflicting values, please set enterprise value only.");
     }
-    return (_a4 = options.enterprise) !== null && _a4 !== void 0 ? _a4 : options.vertexai;
+    return (_a9 = options.enterprise) !== null && _a9 !== void 0 ? _a9 : options.vertexai;
   }
   const envEnterpriseStr = getEnv("GOOGLE_GENAI_USE_ENTERPRISE");
   const envVertexaiStr = getEnv("GOOGLE_GENAI_USE_VERTEXAI");
@@ -40680,7 +41532,7 @@ function resolveCloudFlag(options) {
 }
 var GoogleGenAI = class {
   getNextGenClient() {
-    var _a4;
+    var _a9;
     const httpOpts = this.httpOptions;
     if (this._nextGenClient === void 0) {
       this._nextGenClient = new GeminiNextGenAPIClient({
@@ -40690,7 +41542,7 @@ var GoogleGenAI = class {
         clientAdapter: this.apiClient,
         defaultHeaders: this.apiClient.getDefaultHeaders(),
         timeout: httpOpts === null || httpOpts === void 0 ? void 0 : httpOpts.timeout,
-        maxRetries: (_a4 = httpOpts === null || httpOpts === void 0 ? void 0 : httpOpts.retryOptions) === null || _a4 === void 0 ? void 0 : _a4.attempts
+        maxRetries: (_a9 = httpOpts === null || httpOpts === void 0 ? void 0 : httpOpts.retryOptions) === null || _a9 === void 0 ? void 0 : _a9.attempts
       });
     }
     if (httpOpts === null || httpOpts === void 0 ? void 0 : httpOpts.extraBody) {
@@ -40722,7 +41574,7 @@ var GoogleGenAI = class {
     return this._agents;
   }
   constructor(options) {
-    var _a4, _b, _c, _d;
+    var _a9, _b2, _c2, _d2;
     if ((options.project || options.location) && options.apiKey) {
       throw new Error("Project/location and API key are mutually exclusive in the client initializer.");
     }
@@ -40730,14 +41582,14 @@ var GoogleGenAI = class {
     const envApiKey = getApiKeyFromEnv();
     const envProject = getEnv("GOOGLE_CLOUD_PROJECT");
     const envLocation = getEnv("GOOGLE_CLOUD_LOCATION");
-    this.apiKey = (_a4 = options.apiKey) !== null && _a4 !== void 0 ? _a4 : envApiKey;
-    this.project = (_b = options.project) !== null && _b !== void 0 ? _b : envProject;
-    this.location = (_c = options.location) !== null && _c !== void 0 ? _c : envLocation;
+    this.apiKey = (_a9 = options.apiKey) !== null && _a9 !== void 0 ? _a9 : envApiKey;
+    this.project = (_b2 = options.project) !== null && _b2 !== void 0 ? _b2 : envProject;
+    this.location = (_c2 = options.location) !== null && _c2 !== void 0 ? _c2 : envLocation;
     if (!this.vertexai && !this.apiKey) {
       console.warn("API key should be set when using the Gemini API.");
     }
     if (this.vertexai) {
-      if ((_d = options.googleAuthOptions) === null || _d === void 0 ? void 0 : _d.credentials) {
+      if ((_d2 = options.googleAuthOptions) === null || _d2 === void 0 ? void 0 : _d2.credentials) {
         console.debug("The user provided Google Cloud credentials will take precedence over the API key from the environment variable.");
         this.apiKey = void 0;
       }
@@ -40795,8 +41647,8 @@ var GoogleGenAI = class {
   }
 };
 function getEnv(env2) {
-  var _a4, _b, _c;
-  return (_c = (_b = (_a4 = process === null || process === void 0 ? void 0 : process.env) === null || _a4 === void 0 ? void 0 : _a4[env2]) === null || _b === void 0 ? void 0 : _b.trim()) !== null && _c !== void 0 ? _c : void 0;
+  var _a9, _b2, _c2;
+  return (_c2 = (_b2 = (_a9 = process === null || process === void 0 ? void 0 : process.env) === null || _a9 === void 0 ? void 0 : _a9[env2]) === null || _b2 === void 0 ? void 0 : _b2.trim()) !== null && _c2 !== void 0 ? _c2 : void 0;
 }
 function stringToBoolean(str2) {
   if (str2 === void 0) {
@@ -40868,13 +41720,13 @@ var searchSchemas = [
     type: "function",
     function: {
       name: "searchCodebase",
-      description: "Semantically search indexed workspace code using embeddings.",
+      description: "Search indexed workspace code using a hybrid of semantic meaning and exact keyword matching. For best results, include specific code identifiers, variable names, or technical terms alongside the semantic intent.",
       parameters: {
         type: "object",
         properties: {
           query: {
             type: "string",
-            description: "Natural language description of the code to find"
+            description: "A concise, keyword-rich search query. Avoid conversational sentences. Example: 'user authentication login auth' rather than 'where is the user login handled?'"
           }
         },
         required: ["query"]
@@ -40926,7 +41778,7 @@ async function executeGrep(query, filePattern = "**/*") {
 async function executeSearchCodebase(query, deps) {
   if (!query.trim()) throw new Error("Search query is emtpy");
   const [queryVector] = await deps.embedProvider.embed(deps.model, [query]);
-  const results = await deps.indexer.search(queryVector, 10);
+  const results = await deps.indexer.search(query, queryVector, 10);
   if (results.length === 0) {
     return {
       message: "No relevant code found"
@@ -41366,7 +42218,7 @@ function maybeObj(x2) {
 function isEmptyObj2(obj) {
   if (!obj)
     return true;
-  for (const _k in obj)
+  for (const _k2 in obj)
     return false;
   return true;
 }
@@ -41485,11 +42337,11 @@ function getBrowserInfo() {
     { key: "safari", pattern: /(?:Version\W+(\d+)\.(\d+)(?:\.(\d+))?)?(?:\W+Mobile\S*)?\W+Safari/ }
   ];
   for (const { key, pattern } of browserPatterns) {
-    const match = pattern.exec(navigator.userAgent);
-    if (match) {
-      const major = match[1] || 0;
-      const minor = match[2] || 0;
-      const patch = match[3] || 0;
+    const match2 = pattern.exec(navigator.userAgent);
+    if (match2) {
+      const major = match2[1] || 0;
+      const minor = match2[2] || 0;
+      const patch = match2[3] || 0;
       return { browser: key, version: `${major}.${minor}.${patch}` };
     }
   }
@@ -41746,7 +42598,7 @@ function is_non_nullish_primitive(v) {
   return typeof v === "string" || typeof v === "number" || typeof v === "boolean" || typeof v === "symbol" || typeof v === "bigint";
 }
 var sentinel = {};
-function inner_stringify(object, prefix, generateArrayPrefix, commaRoundTrip, allowEmptyArrays, strictNullHandling, skipNulls, encodeDotInKeys, encoder, filter, sort, allowDots, serializeDate, format, formatter, encodeValuesOnly, charset, sideChannel) {
+function inner_stringify(object, prefix, generateArrayPrefix, commaRoundTrip, allowEmptyArrays, strictNullHandling, skipNulls, encodeDotInKeys, encoder2, filter2, sort, allowDots, serializeDate, format, formatter, encodeValuesOnly, charset, sideChannel) {
   let obj = object;
   let tmp_sc = sideChannel;
   let step = 0;
@@ -41765,8 +42617,8 @@ function inner_stringify(object, prefix, generateArrayPrefix, commaRoundTrip, al
       step = 0;
     }
   }
-  if (typeof filter === "function") {
-    obj = filter(prefix, obj);
+  if (typeof filter2 === "function") {
+    obj = filter2(prefix, obj);
   } else if (obj instanceof Date) {
     obj = serializeDate?.(obj);
   } else if (generateArrayPrefix === "comma" && isArray2(obj)) {
@@ -41779,19 +42631,19 @@ function inner_stringify(object, prefix, generateArrayPrefix, commaRoundTrip, al
   }
   if (obj === null) {
     if (strictNullHandling) {
-      return encoder && !encodeValuesOnly ? (
+      return encoder2 && !encodeValuesOnly ? (
         // @ts-expect-error
-        encoder(prefix, defaults.encoder, charset, "key", format)
+        encoder2(prefix, defaults.encoder, charset, "key", format)
       ) : prefix;
     }
     obj = "";
   }
   if (is_non_nullish_primitive(obj) || is_buffer(obj)) {
-    if (encoder) {
-      const key_value = encodeValuesOnly ? prefix : encoder(prefix, defaults.encoder, charset, "key", format);
+    if (encoder2) {
+      const key_value = encodeValuesOnly ? prefix : encoder2(prefix, defaults.encoder, charset, "key", format);
       return [
         formatter?.(key_value) + "=" + // @ts-expect-error
-        formatter?.(encoder(obj, defaults.encoder, charset, "value", format))
+        formatter?.(encoder2(obj, defaults.encoder, charset, "value", format))
       ];
     }
     return [formatter?.(prefix) + "=" + formatter?.(String(obj))];
@@ -41802,12 +42654,12 @@ function inner_stringify(object, prefix, generateArrayPrefix, commaRoundTrip, al
   }
   let obj_keys;
   if (generateArrayPrefix === "comma" && isArray2(obj)) {
-    if (encodeValuesOnly && encoder) {
-      obj = maybe_map(obj, encoder);
+    if (encodeValuesOnly && encoder2) {
+      obj = maybe_map(obj, encoder2);
     }
     obj_keys = [{ value: obj.length > 0 ? obj.join(",") || null : void 0 }];
-  } else if (isArray2(filter)) {
-    obj_keys = filter;
+  } else if (isArray2(filter2)) {
+    obj_keys = filter2;
   } else {
     const keys = Object.keys(obj);
     obj_keys = sort ? keys.sort(sort) : keys;
@@ -41841,8 +42693,8 @@ function inner_stringify(object, prefix, generateArrayPrefix, commaRoundTrip, al
       skipNulls,
       encodeDotInKeys,
       // @ts-ignore
-      generateArrayPrefix === "comma" && encodeValuesOnly && isArray2(obj) ? null : encoder,
-      filter,
+      generateArrayPrefix === "comma" && encodeValuesOnly && isArray2(obj) ? null : encoder2,
+      filter2,
       sort,
       allowDots,
       serializeDate,
@@ -41877,9 +42729,9 @@ function normalize_stringify_options(opts = defaults) {
     format = opts.format;
   }
   const formatter = formatters[format];
-  let filter = defaults.filter;
+  let filter2 = defaults.filter;
   if (typeof opts.filter === "function" || isArray2(opts.filter)) {
-    filter = opts.filter;
+    filter2 = opts.filter;
   }
   let arrayFormat;
   if (opts.arrayFormat && opts.arrayFormat in array_prefix_generators) {
@@ -41907,7 +42759,7 @@ function normalize_stringify_options(opts = defaults) {
     encodeDotInKeys: typeof opts.encodeDotInKeys === "boolean" ? opts.encodeDotInKeys : defaults.encodeDotInKeys,
     encoder: typeof opts.encoder === "function" ? opts.encoder : defaults.encoder,
     encodeValuesOnly: typeof opts.encodeValuesOnly === "boolean" ? opts.encodeValuesOnly : defaults.encodeValuesOnly,
-    filter,
+    filter: filter2,
     format,
     formatter,
     serializeDate: typeof opts.serializeDate === "function" ? opts.serializeDate : defaults.serializeDate,
@@ -41921,13 +42773,13 @@ function stringify(object, opts = {}) {
   let obj = object;
   const options = normalize_stringify_options(opts);
   let obj_keys;
-  let filter;
+  let filter2;
   if (typeof options.filter === "function") {
-    filter = options.filter;
-    obj = filter("", obj);
+    filter2 = options.filter;
+    obj = filter2("", obj);
   } else if (isArray2(options.filter)) {
-    filter = options.filter;
-    obj_keys = filter;
+    filter2 = options.filter;
+    obj_keys = filter2;
   }
   const keys = [];
   if (typeof obj !== "object" || obj === null) {
@@ -42002,13 +42854,13 @@ function concatBytes2(buffers) {
 }
 var encodeUTF8_2;
 function encodeUTF82(str2) {
-  let encoder;
-  return (encodeUTF8_2 ?? (encoder = new globalThis.TextEncoder(), encodeUTF8_2 = encoder.encode.bind(encoder)))(str2);
+  let encoder2;
+  return (encodeUTF8_2 ?? (encoder2 = new globalThis.TextEncoder(), encodeUTF8_2 = encoder2.encode.bind(encoder2)))(str2);
 }
 var decodeUTF8_2;
 function decodeUTF82(bytes) {
-  let decoder;
-  return (decodeUTF8_2 ?? (decoder = new globalThis.TextDecoder(), decodeUTF8_2 = decoder.decode.bind(decoder)))(bytes);
+  let decoder2;
+  return (decodeUTF8_2 ?? (decoder2 = new globalThis.TextDecoder(), decodeUTF8_2 = decoder2.decode.bind(decoder2)))(bytes);
 }
 
 // node_modules/openai/internal/decoders/line.mjs
@@ -42936,12 +43788,12 @@ function encodeURIPath2(str2) {
   return str2.replace(/[^A-Za-z0-9\-._~!$&'()*+,;=:@]+/g, encodeURIComponent);
 }
 var EMPTY2 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.create(null));
-var createPathTagFunction2 = (pathEncoder = encodeURIPath2) => function path3(statics, ...params) {
+var createPathTagFunction2 = (pathEncoder = encodeURIPath2) => function path4(statics, ...params) {
   if (statics.length === 1)
     return statics[0];
   let postPath = false;
   const invalidSegments = [];
-  const path4 = statics.reduce((previousValue, currentValue, index) => {
+  const path5 = statics.reduce((previousValue, currentValue, index) => {
     if (/[?#]/.test(currentValue)) {
       postPath = true;
     }
@@ -42958,14 +43810,14 @@ var createPathTagFunction2 = (pathEncoder = encodeURIPath2) => function path3(st
     }
     return previousValue + currentValue + (index === params.length ? "" : encoded);
   }, "");
-  const pathOnly = path4.split(/[?#]/, 1)[0];
+  const pathOnly = path5.split(/[?#]/, 1)[0];
   const invalidSegmentPattern = /(?<=^|\/)(?:\.|%2e){1,2}(?=\/|$)/gi;
-  let match;
-  while ((match = invalidSegmentPattern.exec(pathOnly)) !== null) {
+  let match2;
+  while ((match2 = invalidSegmentPattern.exec(pathOnly)) !== null) {
     invalidSegments.push({
-      start: match.index,
-      length: match[0].length,
-      error: `Value "${match[0]}" can't be safely passed as a path parameter`
+      start: match2.index,
+      length: match2[0].length,
+      error: `Value "${match2[0]}" can't be safely passed as a path parameter`
     });
   }
   invalidSegments.sort((a, b) => a.start - b.start);
@@ -42979,10 +43831,10 @@ var createPathTagFunction2 = (pathEncoder = encodeURIPath2) => function path3(st
     }, "");
     throw new OpenAIError(`Path parameters result in path with invalid segments:
 ${invalidSegments.map((e2) => e2.error).join("\n")}
-${path4}
+${path5}
 ${underline}`);
   }
-  return path4;
+  return path5;
 };
 var path2 = /* @__PURE__ */ createPathTagFunction2(encodeURIPath2);
 
@@ -43696,21 +44548,21 @@ var _parseJSON = (jsonString, allow) => {
   };
   const parseStr = () => {
     const start = index;
-    let escape2 = false;
+    let escape3 = false;
     index++;
-    while (index < length && (jsonString[index] !== '"' || escape2 && jsonString[index - 1] === "\\")) {
-      escape2 = jsonString[index] === "\\" ? !escape2 : false;
+    while (index < length && (jsonString[index] !== '"' || escape3 && jsonString[index - 1] === "\\")) {
+      escape3 = jsonString[index] === "\\" ? !escape3 : false;
       index++;
     }
     if (jsonString.charAt(index) == '"') {
       try {
-        return JSON.parse(jsonString.substring(start, ++index - Number(escape2)));
+        return JSON.parse(jsonString.substring(start, ++index - Number(escape3)));
       } catch (e2) {
         throwMalformedError(String(e2));
       }
     } else if (Allow.STR & allow) {
       try {
-        return JSON.parse(jsonString.substring(start, index - Number(escape2)) + '"');
+        return JSON.parse(jsonString.substring(start, index - Number(escape3)) + '"');
       } catch (e2) {
         return JSON.parse(jsonString.substring(start, jsonString.lastIndexOf("\\")) + '"');
       }
@@ -44051,7 +44903,7 @@ var ChatCompletionStream = class _ChatCompletionStream extends AbstractChatCompl
     }
     return null;
   }, _ChatCompletionStream_accumulateChatCompletion = function _ChatCompletionStream_accumulateChatCompletion2(chunk) {
-    var _a4, _b, _c, _d;
+    var _a9, _b2, _c2, _d2;
     let snapshot = __classPrivateFieldGet(this, _ChatCompletionStream_currentChatCompletionSnapshot, "f");
     const { choices, ...rest } = chunk;
     if (!snapshot) {
@@ -44075,11 +44927,11 @@ var ChatCompletionStream = class _ChatCompletionStream extends AbstractChatCompl
           assertIsEmpty(rest3);
           Object.assign(choice.logprobs, rest3);
           if (content2) {
-            (_a4 = choice.logprobs).content ?? (_a4.content = []);
+            (_a9 = choice.logprobs).content ?? (_a9.content = []);
             choice.logprobs.content.push(...content2);
           }
           if (refusal2) {
-            (_b = choice.logprobs).refusal ?? (_b.refusal = []);
+            (_b2 = choice.logprobs).refusal ?? (_b2.refusal = []);
             choice.logprobs.refusal.push(...refusal2);
           }
         }
@@ -44113,7 +44965,7 @@ var ChatCompletionStream = class _ChatCompletionStream extends AbstractChatCompl
           if (function_call.name)
             choice.message.function_call.name = function_call.name;
           if (function_call.arguments) {
-            (_c = choice.message.function_call).arguments ?? (_c.arguments = "");
+            (_c2 = choice.message.function_call).arguments ?? (_c2.arguments = "");
             choice.message.function_call.arguments += function_call.arguments;
           }
         }
@@ -44128,7 +44980,7 @@ var ChatCompletionStream = class _ChatCompletionStream extends AbstractChatCompl
         if (!choice.message.tool_calls)
           choice.message.tool_calls = [];
         for (const { index: index2, id, type, function: fn, ...rest3 } of tool_calls) {
-          const tool_call = (_d = choice.message.tool_calls)[index2] ?? (_d[index2] = {});
+          const tool_call = (_d2 = choice.message.tool_calls)[index2] ?? (_d2[index2] = {});
           Object.assign(tool_call, rest3);
           if (id)
             tool_call.id = id;
@@ -44294,7 +45146,7 @@ function str(x2) {
 function assertIsEmpty(obj) {
   return;
 }
-function assertNever(_x) {
+function assertNever(_x2) {
 }
 
 // node_modules/openai/lib/ChatCompletionStreamingRunner.mjs
@@ -47742,7 +48594,7 @@ _a2 = AssistantStream, _AssistantStream_addEvent = function _AssistantStream_add
       break;
   }
 };
-function assertNever2(_x) {
+function assertNever2(_x2) {
 }
 
 // node_modules/openai/resources/beta/threads/runs/runs.mjs
@@ -50458,9 +51310,9 @@ var OpenAI = class {
     this.apiKey = token;
     return true;
   }
-  buildURL(path3, query, defaultBaseURL) {
+  buildURL(path4, query, defaultBaseURL) {
     const baseURL = !__classPrivateFieldGet(this, _OpenAI_instances, "m", _OpenAI_baseURLOverridden).call(this) && defaultBaseURL || this.baseURL;
-    const url = isAbsoluteURL2(path3) ? new URL(path3) : new URL(baseURL + (baseURL.endsWith("/") && path3.startsWith("/") ? path3.slice(1) : path3));
+    const url = isAbsoluteURL2(path4) ? new URL(path4) : new URL(baseURL + (baseURL.endsWith("/") && path4.startsWith("/") ? path4.slice(1) : path4));
     const defaultQuery = this.defaultQuery();
     const pathQuery = Object.fromEntries(url.searchParams);
     if (!isEmptyObj2(defaultQuery) || !isEmptyObj2(pathQuery)) {
@@ -50488,24 +51340,24 @@ var OpenAI = class {
    */
   async prepareRequest(request, { url, options }) {
   }
-  get(path3, opts) {
-    return this.methodRequest("get", path3, opts);
+  get(path4, opts) {
+    return this.methodRequest("get", path4, opts);
   }
-  post(path3, opts) {
-    return this.methodRequest("post", path3, opts);
+  post(path4, opts) {
+    return this.methodRequest("post", path4, opts);
   }
-  patch(path3, opts) {
-    return this.methodRequest("patch", path3, opts);
+  patch(path4, opts) {
+    return this.methodRequest("patch", path4, opts);
   }
-  put(path3, opts) {
-    return this.methodRequest("put", path3, opts);
+  put(path4, opts) {
+    return this.methodRequest("put", path4, opts);
   }
-  delete(path3, opts) {
-    return this.methodRequest("delete", path3, opts);
+  delete(path4, opts) {
+    return this.methodRequest("delete", path4, opts);
   }
-  methodRequest(method, path3, opts) {
+  methodRequest(method, path4, opts) {
     return this.request(Promise.resolve(opts).then((opts2) => {
-      return { method, path: path3, ...opts2 };
+      return { method, path: path4, ...opts2 };
     }));
   }
   request(options, remainingRetries = null) {
@@ -50624,8 +51476,8 @@ var OpenAI = class {
     }));
     return { response, options, controller, requestLogID, retryOfRequestLogID, startTime };
   }
-  getAPIList(path3, Page2, opts) {
-    return this.requestAPIList(Page2, opts && "then" in opts ? opts.then((opts2) => ({ method: "get", path: path3, ...opts2 })) : { method: "get", path: path3, ...opts });
+  getAPIList(path4, Page2, opts) {
+    return this.requestAPIList(Page2, opts && "then" in opts ? opts.then((opts2) => ({ method: "get", path: path4, ...opts2 })) : { method: "get", path: path4, ...opts });
   }
   requestAPIList(Page2, options) {
     const request = this.makeRequest(options, null, void 0);
@@ -50719,8 +51571,8 @@ var OpenAI = class {
   }
   async buildRequest(inputOptions, { retryCount = 0 } = {}) {
     const options = { ...inputOptions };
-    const { method, path: path3, query, defaultBaseURL } = options;
-    const url = this.buildURL(path3, query, defaultBaseURL);
+    const { method, path: path4, query, defaultBaseURL } = options;
+    const url = this.buildURL(path4, query, defaultBaseURL);
     if ("timeout" in options)
       validatePositiveInteger2("timeout", options.timeout);
     options.timeout = options.timeout ?? this.timeout;
@@ -50969,15 +51821,10995 @@ var EmbedFactory = class {
 // src/indexing/vectorDB.ts
 var lancedb = __toESM(require("@lancedb/lancedb"));
 var vscode4 = __toESM(require("vscode"));
+
+// node_modules/tslib/tslib.es6.mjs
+function __rest2(s2, e2) {
+  var t2 = {};
+  for (var p in s2) if (Object.prototype.hasOwnProperty.call(s2, p) && e2.indexOf(p) < 0)
+    t2[p] = s2[p];
+  if (s2 != null && typeof Object.getOwnPropertySymbols === "function")
+    for (var i2 = 0, p = Object.getOwnPropertySymbols(s2); i2 < p.length; i2++) {
+      if (e2.indexOf(p[i2]) < 0 && Object.prototype.propertyIsEnumerable.call(s2, p[i2]))
+        t2[p[i2]] = s2[p[i2]];
+    }
+  return t2;
+}
+function __awaiter(thisArg, _arguments, P, generator) {
+  function adopt(value) {
+    return value instanceof P ? value : new P(function(resolve) {
+      resolve(value);
+    });
+  }
+  return new (P || (P = Promise))(function(resolve, reject) {
+    function fulfilled(value) {
+      try {
+        step(generator.next(value));
+      } catch (e2) {
+        reject(e2);
+      }
+    }
+    function rejected(value) {
+      try {
+        step(generator["throw"](value));
+      } catch (e2) {
+        reject(e2);
+      }
+    }
+    function step(result) {
+      result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected);
+    }
+    step((generator = generator.apply(thisArg, _arguments || [])).next());
+  });
+}
+function __values2(o) {
+  var s2 = typeof Symbol === "function" && Symbol.iterator, m2 = s2 && o[s2], i2 = 0;
+  if (m2) return m2.call(o);
+  if (o && typeof o.length === "number") return {
+    next: function() {
+      if (o && i2 >= o.length) o = void 0;
+      return { value: o && o[i2++], done: !o };
+    }
+  };
+  throw new TypeError(s2 ? "Object is not iterable." : "Symbol.iterator is not defined.");
+}
+function __await2(v) {
+  return this instanceof __await2 ? (this.v = v, this) : new __await2(v);
+}
+function __asyncGenerator2(thisArg, _arguments, generator) {
+  if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
+  var g = generator.apply(thisArg, _arguments || []), i2, q = [];
+  return i2 = Object.create((typeof AsyncIterator === "function" ? AsyncIterator : Object).prototype), verb("next"), verb("throw"), verb("return", awaitReturn), i2[Symbol.asyncIterator] = function() {
+    return this;
+  }, i2;
+  function awaitReturn(f3) {
+    return function(v) {
+      return Promise.resolve(v).then(f3, reject);
+    };
+  }
+  function verb(n, f3) {
+    if (g[n]) {
+      i2[n] = function(v) {
+        return new Promise(function(a, b) {
+          q.push([n, v, a, b]) > 1 || resume(n, v);
+        });
+      };
+      if (f3) i2[n] = f3(i2[n]);
+    }
+  }
+  function resume(n, v) {
+    try {
+      step(g[n](v));
+    } catch (e2) {
+      settle(q[0][3], e2);
+    }
+  }
+  function step(r2) {
+    r2.value instanceof __await2 ? Promise.resolve(r2.value.v).then(fulfill, reject) : settle(q[0][2], r2);
+  }
+  function fulfill(value) {
+    resume("next", value);
+  }
+  function reject(value) {
+    resume("throw", value);
+  }
+  function settle(f3, v) {
+    if (f3(v), q.shift(), q.length) resume(q[0][0], q[0][1]);
+  }
+}
+function __asyncDelegator(o) {
+  var i2, p;
+  return i2 = {}, verb("next"), verb("throw", function(e2) {
+    throw e2;
+  }), verb("return"), i2[Symbol.iterator] = function() {
+    return this;
+  }, i2;
+  function verb(n, f3) {
+    i2[n] = o[n] ? function(v) {
+      return (p = !p) ? { value: __await2(o[n](v)), done: false } : f3 ? f3(v) : v;
+    } : f3;
+  }
+}
+function __asyncValues2(o) {
+  if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
+  var m2 = o[Symbol.asyncIterator], i2;
+  return m2 ? m2.call(o) : (o = typeof __values2 === "function" ? __values2(o) : o[Symbol.iterator](), i2 = {}, verb("next"), verb("throw"), verb("return"), i2[Symbol.asyncIterator] = function() {
+    return this;
+  }, i2);
+  function verb(n) {
+    i2[n] = o[n] && function(v) {
+      return new Promise(function(resolve, reject) {
+        v = o[n](v), settle(resolve, reject, v.done, v.value);
+      });
+    };
+  }
+  function settle(resolve, reject, d, v) {
+    Promise.resolve(v).then(function(v2) {
+      resolve({ value: v2, done: d });
+    }, reject);
+  }
+}
+
+// node_modules/apache-arrow/util/buffer.mjs
+var buffer_exports = {};
+__export(buffer_exports, {
+  compareArrayLike: () => compareArrayLike,
+  joinUint8Arrays: () => joinUint8Arrays,
+  memcpy: () => memcpy,
+  rebaseValueOffsets: () => rebaseValueOffsets,
+  toArrayBufferView: () => toArrayBufferView,
+  toArrayBufferViewAsyncIterator: () => toArrayBufferViewAsyncIterator,
+  toArrayBufferViewIterator: () => toArrayBufferViewIterator,
+  toBigInt64Array: () => toBigInt64Array,
+  toBigUint64Array: () => toBigUint64Array,
+  toFloat32Array: () => toFloat32Array2,
+  toFloat32ArrayAsyncIterator: () => toFloat32ArrayAsyncIterator,
+  toFloat32ArrayIterator: () => toFloat32ArrayIterator,
+  toFloat64Array: () => toFloat64Array,
+  toFloat64ArrayAsyncIterator: () => toFloat64ArrayAsyncIterator,
+  toFloat64ArrayIterator: () => toFloat64ArrayIterator,
+  toInt16Array: () => toInt16Array,
+  toInt16ArrayAsyncIterator: () => toInt16ArrayAsyncIterator,
+  toInt16ArrayIterator: () => toInt16ArrayIterator,
+  toInt32Array: () => toInt32Array,
+  toInt32ArrayAsyncIterator: () => toInt32ArrayAsyncIterator,
+  toInt32ArrayIterator: () => toInt32ArrayIterator,
+  toInt8Array: () => toInt8Array,
+  toInt8ArrayAsyncIterator: () => toInt8ArrayAsyncIterator,
+  toInt8ArrayIterator: () => toInt8ArrayIterator,
+  toUint16Array: () => toUint16Array,
+  toUint16ArrayAsyncIterator: () => toUint16ArrayAsyncIterator,
+  toUint16ArrayIterator: () => toUint16ArrayIterator,
+  toUint32Array: () => toUint32Array,
+  toUint32ArrayAsyncIterator: () => toUint32ArrayAsyncIterator,
+  toUint32ArrayIterator: () => toUint32ArrayIterator,
+  toUint8Array: () => toUint8Array,
+  toUint8ArrayAsyncIterator: () => toUint8ArrayAsyncIterator,
+  toUint8ArrayIterator: () => toUint8ArrayIterator,
+  toUint8ClampedArray: () => toUint8ClampedArray,
+  toUint8ClampedArrayAsyncIterator: () => toUint8ClampedArrayAsyncIterator,
+  toUint8ClampedArrayIterator: () => toUint8ClampedArrayIterator
+});
+
+// node_modules/apache-arrow/util/utf8.mjs
+var decoder = new TextDecoder("utf-8");
+var decodeUtf8 = (buffer) => decoder.decode(buffer);
+var encoder = new TextEncoder();
+var encodeUtf8 = (value) => encoder.encode(value);
+
+// node_modules/apache-arrow/util/compat.mjs
+var isNumber = (x2) => typeof x2 === "number";
+var isBoolean = (x2) => typeof x2 === "boolean";
+var isFunction = (x2) => typeof x2 === "function";
+var isObject = (x2) => x2 != null && Object(x2) === x2;
+var isPromise = (x2) => {
+  return isObject(x2) && isFunction(x2.then);
+};
+var isIterable = (x2) => {
+  return isObject(x2) && isFunction(x2[Symbol.iterator]);
+};
+var isAsyncIterable3 = (x2) => {
+  return isObject(x2) && isFunction(x2[Symbol.asyncIterator]);
+};
+var isArrowJSON = (x2) => {
+  return isObject(x2) && isObject(x2["schema"]);
+};
+var isIteratorResult = (x2) => {
+  return isObject(x2) && "done" in x2 && "value" in x2;
+};
+var isFileHandle = (x2) => {
+  return isObject(x2) && isFunction(x2["stat"]) && isNumber(x2["fd"]);
+};
+var isFetchResponse = (x2) => {
+  return isObject(x2) && isReadableDOMStream(x2["body"]);
+};
+var isReadableInterop = (x2) => "_getDOMStream" in x2 && "_getNodeStream" in x2;
+var isWritableDOMStream = (x2) => {
+  return isObject(x2) && isFunction(x2["abort"]) && isFunction(x2["getWriter"]) && !isReadableInterop(x2);
+};
+var isReadableDOMStream = (x2) => {
+  return isObject(x2) && isFunction(x2["cancel"]) && isFunction(x2["getReader"]) && !isReadableInterop(x2);
+};
+var isWritableNodeStream = (x2) => {
+  return isObject(x2) && isFunction(x2["end"]) && isFunction(x2["write"]) && isBoolean(x2["writable"]) && !isReadableInterop(x2);
+};
+var isReadableNodeStream = (x2) => {
+  return isObject(x2) && isFunction(x2["read"]) && isFunction(x2["pipe"]) && isBoolean(x2["readable"]) && !isReadableInterop(x2);
+};
+var isFlatbuffersByteBuffer = (x2) => {
+  return isObject(x2) && isFunction(x2["clear"]) && isFunction(x2["bytes"]) && isFunction(x2["position"]) && isFunction(x2["setPosition"]) && isFunction(x2["capacity"]) && isFunction(x2["getBufferIdentifier"]) && isFunction(x2["createLong"]);
+};
+
+// node_modules/apache-arrow/util/buffer.mjs
+var SharedArrayBuf = typeof SharedArrayBuffer !== "undefined" ? SharedArrayBuffer : ArrayBuffer;
+function collapseContiguousByteRanges(chunks) {
+  const result = chunks[0] ? [chunks[0]] : [];
+  let xOffset, yOffset, xLen, yLen;
+  for (let x2, y, i2 = 0, j = 0, n = chunks.length; ++i2 < n; ) {
+    x2 = result[j];
+    y = chunks[i2];
+    if (!x2 || !y || x2.buffer !== y.buffer || y.byteOffset < x2.byteOffset) {
+      y && (result[++j] = y);
+      continue;
+    }
+    ({ byteOffset: xOffset, byteLength: xLen } = x2);
+    ({ byteOffset: yOffset, byteLength: yLen } = y);
+    if (xOffset + xLen < yOffset || yOffset + yLen < xOffset) {
+      y && (result[++j] = y);
+      continue;
+    }
+    result[j] = new Uint8Array(x2.buffer, xOffset, yOffset - xOffset + yLen);
+  }
+  return result;
+}
+function memcpy(target, source, targetByteOffset = 0, sourceByteLength = source.byteLength) {
+  const targetByteLength = target.byteLength;
+  const dst = new Uint8Array(target.buffer, target.byteOffset, targetByteLength);
+  const src = new Uint8Array(source.buffer, source.byteOffset, Math.min(sourceByteLength, targetByteLength));
+  dst.set(src, targetByteOffset);
+  return target;
+}
+function joinUint8Arrays(chunks, size) {
+  const result = collapseContiguousByteRanges(chunks);
+  const byteLength = result.reduce((x2, b) => x2 + b.byteLength, 0);
+  let source, sliced, buffer;
+  let offset = 0, index = -1;
+  const length = Math.min(size || Number.POSITIVE_INFINITY, byteLength);
+  for (const n = result.length; ++index < n; ) {
+    source = result[index];
+    sliced = source.subarray(0, Math.min(source.length, length - offset));
+    if (length <= offset + sliced.length) {
+      if (sliced.length < source.length) {
+        result[index] = source.subarray(sliced.length);
+      } else if (sliced.length === source.length) {
+        index++;
+      }
+      buffer ? memcpy(buffer, sliced, offset) : buffer = sliced;
+      break;
+    }
+    memcpy(buffer || (buffer = new Uint8Array(length)), sliced, offset);
+    offset += sliced.length;
+  }
+  return [buffer || new Uint8Array(0), result.slice(index), byteLength - (buffer ? buffer.byteLength : 0)];
+}
+function toArrayBufferView(ArrayBufferViewCtor, input) {
+  let value = isIteratorResult(input) ? input.value : input;
+  if (value instanceof ArrayBufferViewCtor) {
+    if (ArrayBufferViewCtor === Uint8Array) {
+      return new ArrayBufferViewCtor(value.buffer, value.byteOffset, value.byteLength);
+    }
+    return value;
+  }
+  if (!value) {
+    return new ArrayBufferViewCtor(0);
+  }
+  if (typeof value === "string") {
+    value = encodeUtf8(value);
+  }
+  if (value instanceof ArrayBuffer) {
+    return new ArrayBufferViewCtor(value);
+  }
+  if (value instanceof SharedArrayBuf) {
+    return new ArrayBufferViewCtor(value);
+  }
+  if (isFlatbuffersByteBuffer(value)) {
+    return toArrayBufferView(ArrayBufferViewCtor, value.bytes());
+  }
+  return !ArrayBuffer.isView(value) ? ArrayBufferViewCtor.from(value) : value.byteLength <= 0 ? new ArrayBufferViewCtor(0) : new ArrayBufferViewCtor(value.buffer, value.byteOffset, value.byteLength / ArrayBufferViewCtor.BYTES_PER_ELEMENT);
+}
+var toInt8Array = (input) => toArrayBufferView(Int8Array, input);
+var toInt16Array = (input) => toArrayBufferView(Int16Array, input);
+var toInt32Array = (input) => toArrayBufferView(Int32Array, input);
+var toBigInt64Array = (input) => toArrayBufferView(BigInt64Array, input);
+var toUint8Array = (input) => toArrayBufferView(Uint8Array, input);
+var toUint16Array = (input) => toArrayBufferView(Uint16Array, input);
+var toUint32Array = (input) => toArrayBufferView(Uint32Array, input);
+var toBigUint64Array = (input) => toArrayBufferView(BigUint64Array, input);
+var toFloat32Array2 = (input) => toArrayBufferView(Float32Array, input);
+var toFloat64Array = (input) => toArrayBufferView(Float64Array, input);
+var toUint8ClampedArray = (input) => toArrayBufferView(Uint8ClampedArray, input);
+var pump2 = (iterator) => {
+  iterator.next();
+  return iterator;
+};
+function* toArrayBufferViewIterator(ArrayCtor, source) {
+  const wrap = function* (x2) {
+    yield x2;
+  };
+  const buffers = typeof source === "string" ? wrap(source) : ArrayBuffer.isView(source) ? wrap(source) : source instanceof ArrayBuffer ? wrap(source) : source instanceof SharedArrayBuf ? wrap(source) : !isIterable(source) ? wrap(source) : source;
+  yield* pump2((function* (it) {
+    let r2 = null;
+    do {
+      r2 = it.next(yield toArrayBufferView(ArrayCtor, r2));
+    } while (!r2.done);
+  })(buffers[Symbol.iterator]()));
+  return new ArrayCtor();
+}
+var toInt8ArrayIterator = (input) => toArrayBufferViewIterator(Int8Array, input);
+var toInt16ArrayIterator = (input) => toArrayBufferViewIterator(Int16Array, input);
+var toInt32ArrayIterator = (input) => toArrayBufferViewIterator(Int32Array, input);
+var toUint8ArrayIterator = (input) => toArrayBufferViewIterator(Uint8Array, input);
+var toUint16ArrayIterator = (input) => toArrayBufferViewIterator(Uint16Array, input);
+var toUint32ArrayIterator = (input) => toArrayBufferViewIterator(Uint32Array, input);
+var toFloat32ArrayIterator = (input) => toArrayBufferViewIterator(Float32Array, input);
+var toFloat64ArrayIterator = (input) => toArrayBufferViewIterator(Float64Array, input);
+var toUint8ClampedArrayIterator = (input) => toArrayBufferViewIterator(Uint8ClampedArray, input);
+function toArrayBufferViewAsyncIterator(ArrayCtor, source) {
+  return __asyncGenerator2(this, arguments, function* toArrayBufferViewAsyncIterator_1() {
+    if (isPromise(source)) {
+      return yield __await2(yield __await2(yield* __asyncDelegator(__asyncValues2(toArrayBufferViewAsyncIterator(ArrayCtor, yield __await2(source))))));
+    }
+    const wrap = function(x2) {
+      return __asyncGenerator2(this, arguments, function* () {
+        yield yield __await2(yield __await2(x2));
+      });
+    };
+    const emit = function(source2) {
+      return __asyncGenerator2(this, arguments, function* () {
+        yield __await2(yield* __asyncDelegator(__asyncValues2(pump2((function* (it) {
+          let r2 = null;
+          do {
+            r2 = it.next(yield r2 === null || r2 === void 0 ? void 0 : r2.value);
+          } while (!r2.done);
+        })(source2[Symbol.iterator]())))));
+      });
+    };
+    const buffers = typeof source === "string" ? wrap(source) : ArrayBuffer.isView(source) ? wrap(source) : source instanceof ArrayBuffer ? wrap(source) : source instanceof SharedArrayBuf ? wrap(source) : isIterable(source) ? emit(source) : !isAsyncIterable3(source) ? wrap(source) : source;
+    yield __await2(
+      // otherwise if AsyncIterable, use it
+      yield* __asyncDelegator(__asyncValues2(pump2((function(it) {
+        return __asyncGenerator2(this, arguments, function* () {
+          let r2 = null;
+          do {
+            r2 = yield __await2(it.next(yield yield __await2(toArrayBufferView(ArrayCtor, r2))));
+          } while (!r2.done);
+        });
+      })(buffers[Symbol.asyncIterator]()))))
+    );
+    return yield __await2(new ArrayCtor());
+  });
+}
+var toInt8ArrayAsyncIterator = (input) => toArrayBufferViewAsyncIterator(Int8Array, input);
+var toInt16ArrayAsyncIterator = (input) => toArrayBufferViewAsyncIterator(Int16Array, input);
+var toInt32ArrayAsyncIterator = (input) => toArrayBufferViewAsyncIterator(Int32Array, input);
+var toUint8ArrayAsyncIterator = (input) => toArrayBufferViewAsyncIterator(Uint8Array, input);
+var toUint16ArrayAsyncIterator = (input) => toArrayBufferViewAsyncIterator(Uint16Array, input);
+var toUint32ArrayAsyncIterator = (input) => toArrayBufferViewAsyncIterator(Uint32Array, input);
+var toFloat32ArrayAsyncIterator = (input) => toArrayBufferViewAsyncIterator(Float32Array, input);
+var toFloat64ArrayAsyncIterator = (input) => toArrayBufferViewAsyncIterator(Float64Array, input);
+var toUint8ClampedArrayAsyncIterator = (input) => toArrayBufferViewAsyncIterator(Uint8ClampedArray, input);
+function rebaseValueOffsets(offset, length, valueOffsets) {
+  if (offset !== 0) {
+    valueOffsets = valueOffsets.slice(0, length);
+    for (let i2 = -1, n = valueOffsets.length; ++i2 < n; ) {
+      valueOffsets[i2] += offset;
+    }
+  }
+  return valueOffsets.subarray(0, length);
+}
+function compareArrayLike(a, b) {
+  let i2 = 0;
+  const n = a.length;
+  if (n !== b.length) {
+    return false;
+  }
+  if (n > 0) {
+    do {
+      if (a[i2] !== b[i2]) {
+        return false;
+      }
+    } while (++i2 < n);
+  }
+  return true;
+}
+
+// node_modules/apache-arrow/io/adapters.mjs
+var adapters_default = {
+  fromIterable(source) {
+    return pump3(fromIterable(source));
+  },
+  fromAsyncIterable(source) {
+    return pump3(fromAsyncIterable(source));
+  },
+  fromDOMStream(source) {
+    return pump3(fromDOMStream(source));
+  },
+  fromNodeStream(stream) {
+    return pump3(fromNodeStream(stream));
+  },
+  // @ts-ignore
+  toDOMStream(source, options) {
+    throw new Error(`"toDOMStream" not available in this environment`);
+  },
+  // @ts-ignore
+  toNodeStream(source, options) {
+    throw new Error(`"toNodeStream" not available in this environment`);
+  }
+};
+var pump3 = (iterator) => {
+  iterator.next();
+  return iterator;
+};
+function* fromIterable(source) {
+  let done, threw = false;
+  let buffers = [], buffer;
+  let cmd, size, bufferLength = 0;
+  function byteRange() {
+    if (cmd === "peek") {
+      return joinUint8Arrays(buffers, size)[0];
+    }
+    [buffer, buffers, bufferLength] = joinUint8Arrays(buffers, size);
+    return buffer;
+  }
+  ({ cmd, size } = (yield /* @__PURE__ */ (() => null)()) || { cmd: "read", size: 0 });
+  const it = toUint8ArrayIterator(source)[Symbol.iterator]();
+  try {
+    do {
+      ({ done, value: buffer } = Number.isNaN(size - bufferLength) ? it.next() : it.next(size - bufferLength));
+      if (!done && buffer.byteLength > 0) {
+        buffers.push(buffer);
+        bufferLength += buffer.byteLength;
+      }
+      if (done || size <= bufferLength) {
+        do {
+          ({ cmd, size } = yield byteRange());
+        } while (size < bufferLength);
+      }
+    } while (!done);
+  } catch (e2) {
+    (threw = true) && typeof it.throw === "function" && it.throw(e2);
+  } finally {
+    threw === false && typeof it.return === "function" && it.return(null);
+  }
+  return null;
+}
+function fromAsyncIterable(source) {
+  return __asyncGenerator2(this, arguments, function* fromAsyncIterable_1() {
+    let done, threw = false;
+    let buffers = [], buffer;
+    let cmd, size, bufferLength = 0;
+    function byteRange() {
+      if (cmd === "peek") {
+        return joinUint8Arrays(buffers, size)[0];
+      }
+      [buffer, buffers, bufferLength] = joinUint8Arrays(buffers, size);
+      return buffer;
+    }
+    ({ cmd, size } = (yield yield __await2(/* @__PURE__ */ (() => null)())) || { cmd: "read", size: 0 });
+    const it = toUint8ArrayAsyncIterator(source)[Symbol.asyncIterator]();
+    try {
+      do {
+        ({ done, value: buffer } = Number.isNaN(size - bufferLength) ? yield __await2(it.next()) : yield __await2(it.next(size - bufferLength)));
+        if (!done && buffer.byteLength > 0) {
+          buffers.push(buffer);
+          bufferLength += buffer.byteLength;
+        }
+        if (done || size <= bufferLength) {
+          do {
+            ({ cmd, size } = yield yield __await2(byteRange()));
+          } while (size < bufferLength);
+        }
+      } while (!done);
+    } catch (e2) {
+      (threw = true) && typeof it.throw === "function" && (yield __await2(it.throw(e2)));
+    } finally {
+      threw === false && typeof it.return === "function" && (yield __await2(it.return(new Uint8Array(0))));
+    }
+    return yield __await2(null);
+  });
+}
+function fromDOMStream(source) {
+  return __asyncGenerator2(this, arguments, function* fromDOMStream_1() {
+    let done = false, threw = false;
+    let buffers = [], buffer;
+    let cmd, size, bufferLength = 0;
+    function byteRange() {
+      if (cmd === "peek") {
+        return joinUint8Arrays(buffers, size)[0];
+      }
+      [buffer, buffers, bufferLength] = joinUint8Arrays(buffers, size);
+      return buffer;
+    }
+    ({ cmd, size } = (yield yield __await2(/* @__PURE__ */ (() => null)())) || { cmd: "read", size: 0 });
+    const it = new AdaptiveByteReader(source);
+    try {
+      do {
+        ({ done, value: buffer } = Number.isNaN(size - bufferLength) ? yield __await2(it["read"]()) : yield __await2(it["read"](size - bufferLength)));
+        if (!done && buffer.byteLength > 0) {
+          buffers.push(toUint8Array(buffer));
+          bufferLength += buffer.byteLength;
+        }
+        if (done || size <= bufferLength) {
+          do {
+            ({ cmd, size } = yield yield __await2(byteRange()));
+          } while (size < bufferLength);
+        }
+      } while (!done);
+    } catch (e2) {
+      (threw = true) && (yield __await2(it["cancel"](e2)));
+    } finally {
+      threw === false ? yield __await2(it["cancel"]()) : source["locked"] && it.releaseLock();
+    }
+    return yield __await2(null);
+  });
+}
+var AdaptiveByteReader = class {
+  constructor(source) {
+    this.source = source;
+    this.reader = null;
+    this.reader = this.source["getReader"]();
+    this.reader["closed"].catch(() => {
+    });
+  }
+  get closed() {
+    return this.reader ? this.reader["closed"].catch(() => {
+    }) : Promise.resolve();
+  }
+  releaseLock() {
+    if (this.reader) {
+      this.reader.releaseLock();
+    }
+    this.reader = null;
+  }
+  cancel(reason) {
+    return __awaiter(this, void 0, void 0, function* () {
+      const { reader, source } = this;
+      reader && (yield reader["cancel"](reason).catch(() => {
+      }));
+      source && (source["locked"] && this.releaseLock());
+    });
+  }
+  read(size) {
+    return __awaiter(this, void 0, void 0, function* () {
+      if (size === 0) {
+        return { done: this.reader == null, value: new Uint8Array(0) };
+      }
+      const result = yield this.reader.read();
+      !result.done && (result.value = toUint8Array(result));
+      return result;
+    });
+  }
+};
+var onEvent = (stream, event) => {
+  const handler = (_) => resolve([event, _]);
+  let resolve;
+  return [event, handler, new Promise((r2) => (resolve = r2) && stream["once"](event, handler))];
+};
+function fromNodeStream(stream) {
+  return __asyncGenerator2(this, arguments, function* fromNodeStream_1() {
+    const events = [];
+    let event = "error";
+    let done = false, err = null;
+    let cmd, size, bufferLength = 0;
+    let buffers = [], buffer;
+    function byteRange() {
+      if (cmd === "peek") {
+        return joinUint8Arrays(buffers, size)[0];
+      }
+      [buffer, buffers, bufferLength] = joinUint8Arrays(buffers, size);
+      return buffer;
+    }
+    ({ cmd, size } = (yield yield __await2(/* @__PURE__ */ (() => null)())) || { cmd: "read", size: 0 });
+    if (stream["isTTY"]) {
+      yield yield __await2(new Uint8Array(0));
+      return yield __await2(null);
+    }
+    try {
+      events[0] = onEvent(stream, "end");
+      events[1] = onEvent(stream, "error");
+      do {
+        events[2] = onEvent(stream, "readable");
+        [event, err] = yield __await2(Promise.race(events.map((x2) => x2[2])));
+        if (event === "error") {
+          break;
+        }
+        if (!(done = event === "end")) {
+          if (!Number.isFinite(size - bufferLength)) {
+            buffer = toUint8Array(stream["read"]());
+          } else {
+            buffer = toUint8Array(stream["read"](size - bufferLength));
+            if (buffer.byteLength < size - bufferLength) {
+              buffer = toUint8Array(stream["read"]());
+            }
+          }
+          if (buffer.byteLength > 0) {
+            buffers.push(buffer);
+            bufferLength += buffer.byteLength;
+          }
+        }
+        if (done || size <= bufferLength) {
+          do {
+            ({ cmd, size } = yield yield __await2(byteRange()));
+          } while (size < bufferLength);
+        }
+      } while (!done);
+    } finally {
+      yield __await2(cleanup(events, event === "error" ? err : null));
+    }
+    return yield __await2(null);
+    function cleanup(events2, err2) {
+      buffer = buffers = null;
+      return new Promise((resolve, reject) => {
+        for (const [evt, fn] of events2) {
+          stream["off"](evt, fn);
+        }
+        try {
+          const destroy = stream["destroy"];
+          destroy && destroy.call(stream, err2);
+          err2 = void 0;
+        } catch (e2) {
+          err2 = e2 || err2;
+        } finally {
+          err2 != null ? reject(err2) : resolve();
+        }
+      });
+    }
+  });
+}
+
+// node_modules/apache-arrow/fb/metadata-version.mjs
+var MetadataVersion;
+(function(MetadataVersion2) {
+  MetadataVersion2[MetadataVersion2["V1"] = 0] = "V1";
+  MetadataVersion2[MetadataVersion2["V2"] = 1] = "V2";
+  MetadataVersion2[MetadataVersion2["V3"] = 2] = "V3";
+  MetadataVersion2[MetadataVersion2["V4"] = 3] = "V4";
+  MetadataVersion2[MetadataVersion2["V5"] = 4] = "V5";
+})(MetadataVersion || (MetadataVersion = {}));
+
+// node_modules/apache-arrow/fb/union-mode.mjs
+var UnionMode;
+(function(UnionMode2) {
+  UnionMode2[UnionMode2["Sparse"] = 0] = "Sparse";
+  UnionMode2[UnionMode2["Dense"] = 1] = "Dense";
+})(UnionMode || (UnionMode = {}));
+
+// node_modules/apache-arrow/fb/precision.mjs
+var Precision;
+(function(Precision2) {
+  Precision2[Precision2["HALF"] = 0] = "HALF";
+  Precision2[Precision2["SINGLE"] = 1] = "SINGLE";
+  Precision2[Precision2["DOUBLE"] = 2] = "DOUBLE";
+})(Precision || (Precision = {}));
+
+// node_modules/apache-arrow/fb/date-unit.mjs
+var DateUnit;
+(function(DateUnit2) {
+  DateUnit2[DateUnit2["DAY"] = 0] = "DAY";
+  DateUnit2[DateUnit2["MILLISECOND"] = 1] = "MILLISECOND";
+})(DateUnit || (DateUnit = {}));
+
+// node_modules/apache-arrow/fb/time-unit.mjs
+var TimeUnit;
+(function(TimeUnit2) {
+  TimeUnit2[TimeUnit2["SECOND"] = 0] = "SECOND";
+  TimeUnit2[TimeUnit2["MILLISECOND"] = 1] = "MILLISECOND";
+  TimeUnit2[TimeUnit2["MICROSECOND"] = 2] = "MICROSECOND";
+  TimeUnit2[TimeUnit2["NANOSECOND"] = 3] = "NANOSECOND";
+})(TimeUnit || (TimeUnit = {}));
+
+// node_modules/apache-arrow/fb/interval-unit.mjs
+var IntervalUnit;
+(function(IntervalUnit2) {
+  IntervalUnit2[IntervalUnit2["YEAR_MONTH"] = 0] = "YEAR_MONTH";
+  IntervalUnit2[IntervalUnit2["DAY_TIME"] = 1] = "DAY_TIME";
+  IntervalUnit2[IntervalUnit2["MONTH_DAY_NANO"] = 2] = "MONTH_DAY_NANO";
+})(IntervalUnit || (IntervalUnit = {}));
+
+// node_modules/apache-arrow/fb/dictionary-batch.mjs
+var flatbuffers3 = __toESM(require_flatbuffers(), 1);
+
+// node_modules/apache-arrow/fb/record-batch.mjs
+var flatbuffers2 = __toESM(require_flatbuffers(), 1);
+
+// node_modules/apache-arrow/fb/body-compression.mjs
+var flatbuffers = __toESM(require_flatbuffers(), 1);
+
+// node_modules/apache-arrow/fb/body-compression-method.mjs
+var BodyCompressionMethod;
+(function(BodyCompressionMethod2) {
+  BodyCompressionMethod2[BodyCompressionMethod2["BUFFER"] = 0] = "BUFFER";
+})(BodyCompressionMethod || (BodyCompressionMethod = {}));
+
+// node_modules/apache-arrow/fb/compression-type.mjs
+var CompressionType;
+(function(CompressionType2) {
+  CompressionType2[CompressionType2["LZ4_FRAME"] = 0] = "LZ4_FRAME";
+  CompressionType2[CompressionType2["ZSTD"] = 1] = "ZSTD";
+})(CompressionType || (CompressionType = {}));
+
+// node_modules/apache-arrow/fb/body-compression.mjs
+var BodyCompression = class _BodyCompression {
+  constructor() {
+    this.bb = null;
+    this.bb_pos = 0;
+  }
+  __init(i2, bb) {
+    this.bb_pos = i2;
+    this.bb = bb;
+    return this;
+  }
+  static getRootAsBodyCompression(bb, obj) {
+    return (obj || new _BodyCompression()).__init(bb.readInt32(bb.position()) + bb.position(), bb);
+  }
+  static getSizePrefixedRootAsBodyCompression(bb, obj) {
+    bb.setPosition(bb.position() + flatbuffers.SIZE_PREFIX_LENGTH);
+    return (obj || new _BodyCompression()).__init(bb.readInt32(bb.position()) + bb.position(), bb);
+  }
+  /**
+   * Compressor library.
+   * For LZ4_FRAME, each compressed buffer must consist of a single frame.
+   */
+  codec() {
+    const offset = this.bb.__offset(this.bb_pos, 4);
+    return offset ? this.bb.readInt8(this.bb_pos + offset) : CompressionType.LZ4_FRAME;
+  }
+  /**
+   * Indicates the way the record batch body was compressed
+   */
+  method() {
+    const offset = this.bb.__offset(this.bb_pos, 6);
+    return offset ? this.bb.readInt8(this.bb_pos + offset) : BodyCompressionMethod.BUFFER;
+  }
+  static startBodyCompression(builder) {
+    builder.startObject(2);
+  }
+  static addCodec(builder, codec) {
+    builder.addFieldInt8(0, codec, CompressionType.LZ4_FRAME);
+  }
+  static addMethod(builder, method) {
+    builder.addFieldInt8(1, method, BodyCompressionMethod.BUFFER);
+  }
+  static endBodyCompression(builder) {
+    const offset = builder.endObject();
+    return offset;
+  }
+  static createBodyCompression(builder, codec, method) {
+    _BodyCompression.startBodyCompression(builder);
+    _BodyCompression.addCodec(builder, codec);
+    _BodyCompression.addMethod(builder, method);
+    return _BodyCompression.endBodyCompression(builder);
+  }
+};
+
+// node_modules/apache-arrow/fb/buffer.mjs
+var Buffer4 = class {
+  constructor() {
+    this.bb = null;
+    this.bb_pos = 0;
+  }
+  __init(i2, bb) {
+    this.bb_pos = i2;
+    this.bb = bb;
+    return this;
+  }
+  /**
+   * The relative offset into the shared memory page where the bytes for this
+   * buffer starts
+   */
+  offset() {
+    return this.bb.readInt64(this.bb_pos);
+  }
+  /**
+   * The absolute length (in bytes) of the memory buffer. The memory is found
+   * from offset (inclusive) to offset + length (non-inclusive). When building
+   * messages using the encapsulated IPC message, padding bytes may be written
+   * after a buffer, but such padding bytes do not need to be accounted for in
+   * the size here.
+   */
+  length() {
+    return this.bb.readInt64(this.bb_pos + 8);
+  }
+  static sizeOf() {
+    return 16;
+  }
+  static createBuffer(builder, offset, length) {
+    builder.prep(8, 16);
+    builder.writeInt64(BigInt(length !== null && length !== void 0 ? length : 0));
+    builder.writeInt64(BigInt(offset !== null && offset !== void 0 ? offset : 0));
+    return builder.offset();
+  }
+};
+
+// node_modules/apache-arrow/fb/field-node.mjs
+var FieldNode = class {
+  constructor() {
+    this.bb = null;
+    this.bb_pos = 0;
+  }
+  __init(i2, bb) {
+    this.bb_pos = i2;
+    this.bb = bb;
+    return this;
+  }
+  /**
+   * The number of value slots in the Arrow array at this level of a nested
+   * tree
+   */
+  length() {
+    return this.bb.readInt64(this.bb_pos);
+  }
+  /**
+   * The number of observed nulls. Fields with null_count == 0 may choose not
+   * to write their physical validity bitmap out as a materialized buffer,
+   * instead setting the length of the bitmap buffer to 0.
+   */
+  nullCount() {
+    return this.bb.readInt64(this.bb_pos + 8);
+  }
+  static sizeOf() {
+    return 16;
+  }
+  static createFieldNode(builder, length, null_count) {
+    builder.prep(8, 16);
+    builder.writeInt64(BigInt(null_count !== null && null_count !== void 0 ? null_count : 0));
+    builder.writeInt64(BigInt(length !== null && length !== void 0 ? length : 0));
+    return builder.offset();
+  }
+};
+
+// node_modules/apache-arrow/fb/record-batch.mjs
+var RecordBatch = class _RecordBatch {
+  constructor() {
+    this.bb = null;
+    this.bb_pos = 0;
+  }
+  __init(i2, bb) {
+    this.bb_pos = i2;
+    this.bb = bb;
+    return this;
+  }
+  static getRootAsRecordBatch(bb, obj) {
+    return (obj || new _RecordBatch()).__init(bb.readInt32(bb.position()) + bb.position(), bb);
+  }
+  static getSizePrefixedRootAsRecordBatch(bb, obj) {
+    bb.setPosition(bb.position() + flatbuffers2.SIZE_PREFIX_LENGTH);
+    return (obj || new _RecordBatch()).__init(bb.readInt32(bb.position()) + bb.position(), bb);
+  }
+  /**
+   * number of records / rows. The arrays in the batch should all have this
+   * length
+   */
+  length() {
+    const offset = this.bb.__offset(this.bb_pos, 4);
+    return offset ? this.bb.readInt64(this.bb_pos + offset) : BigInt("0");
+  }
+  /**
+   * Nodes correspond to the pre-ordered flattened logical schema
+   */
+  nodes(index, obj) {
+    const offset = this.bb.__offset(this.bb_pos, 6);
+    return offset ? (obj || new FieldNode()).__init(this.bb.__vector(this.bb_pos + offset) + index * 16, this.bb) : null;
+  }
+  nodesLength() {
+    const offset = this.bb.__offset(this.bb_pos, 6);
+    return offset ? this.bb.__vector_len(this.bb_pos + offset) : 0;
+  }
+  /**
+   * Buffers correspond to the pre-ordered flattened buffer tree
+   *
+   * The number of buffers appended to this list depends on the schema. For
+   * example, most primitive arrays will have 2 buffers, 1 for the validity
+   * bitmap and 1 for the values. For struct arrays, there will only be a
+   * single buffer for the validity (nulls) bitmap
+   */
+  buffers(index, obj) {
+    const offset = this.bb.__offset(this.bb_pos, 8);
+    return offset ? (obj || new Buffer4()).__init(this.bb.__vector(this.bb_pos + offset) + index * 16, this.bb) : null;
+  }
+  buffersLength() {
+    const offset = this.bb.__offset(this.bb_pos, 8);
+    return offset ? this.bb.__vector_len(this.bb_pos + offset) : 0;
+  }
+  /**
+   * Optional compression of the message body
+   */
+  compression(obj) {
+    const offset = this.bb.__offset(this.bb_pos, 10);
+    return offset ? (obj || new BodyCompression()).__init(this.bb.__indirect(this.bb_pos + offset), this.bb) : null;
+  }
+  static startRecordBatch(builder) {
+    builder.startObject(4);
+  }
+  static addLength(builder, length) {
+    builder.addFieldInt64(0, length, BigInt("0"));
+  }
+  static addNodes(builder, nodesOffset) {
+    builder.addFieldOffset(1, nodesOffset, 0);
+  }
+  static startNodesVector(builder, numElems) {
+    builder.startVector(16, numElems, 8);
+  }
+  static addBuffers(builder, buffersOffset) {
+    builder.addFieldOffset(2, buffersOffset, 0);
+  }
+  static startBuffersVector(builder, numElems) {
+    builder.startVector(16, numElems, 8);
+  }
+  static addCompression(builder, compressionOffset) {
+    builder.addFieldOffset(3, compressionOffset, 0);
+  }
+  static endRecordBatch(builder) {
+    const offset = builder.endObject();
+    return offset;
+  }
+};
+
+// node_modules/apache-arrow/fb/dictionary-batch.mjs
+var DictionaryBatch = class _DictionaryBatch {
+  constructor() {
+    this.bb = null;
+    this.bb_pos = 0;
+  }
+  __init(i2, bb) {
+    this.bb_pos = i2;
+    this.bb = bb;
+    return this;
+  }
+  static getRootAsDictionaryBatch(bb, obj) {
+    return (obj || new _DictionaryBatch()).__init(bb.readInt32(bb.position()) + bb.position(), bb);
+  }
+  static getSizePrefixedRootAsDictionaryBatch(bb, obj) {
+    bb.setPosition(bb.position() + flatbuffers3.SIZE_PREFIX_LENGTH);
+    return (obj || new _DictionaryBatch()).__init(bb.readInt32(bb.position()) + bb.position(), bb);
+  }
+  id() {
+    const offset = this.bb.__offset(this.bb_pos, 4);
+    return offset ? this.bb.readInt64(this.bb_pos + offset) : BigInt("0");
+  }
+  data(obj) {
+    const offset = this.bb.__offset(this.bb_pos, 6);
+    return offset ? (obj || new RecordBatch()).__init(this.bb.__indirect(this.bb_pos + offset), this.bb) : null;
+  }
+  /**
+   * If isDelta is true the values in the dictionary are to be appended to a
+   * dictionary with the indicated id. If isDelta is false this dictionary
+   * should replace the existing dictionary.
+   */
+  isDelta() {
+    const offset = this.bb.__offset(this.bb_pos, 8);
+    return offset ? !!this.bb.readInt8(this.bb_pos + offset) : false;
+  }
+  static startDictionaryBatch(builder) {
+    builder.startObject(3);
+  }
+  static addId(builder, id) {
+    builder.addFieldInt64(0, id, BigInt("0"));
+  }
+  static addData(builder, dataOffset) {
+    builder.addFieldOffset(1, dataOffset, 0);
+  }
+  static addIsDelta(builder, isDelta) {
+    builder.addFieldInt8(2, +isDelta, 0);
+  }
+  static endDictionaryBatch(builder) {
+    const offset = builder.endObject();
+    return offset;
+  }
+};
+
+// node_modules/apache-arrow/fb/schema.mjs
+var flatbuffers27 = __toESM(require_flatbuffers(), 1);
+
+// node_modules/apache-arrow/fb/endianness.mjs
+var Endianness;
+(function(Endianness2) {
+  Endianness2[Endianness2["Little"] = 0] = "Little";
+  Endianness2[Endianness2["Big"] = 1] = "Big";
+})(Endianness || (Endianness = {}));
+
+// node_modules/apache-arrow/fb/field.mjs
+var flatbuffers26 = __toESM(require_flatbuffers(), 1);
+
+// node_modules/apache-arrow/fb/dictionary-encoding.mjs
+var flatbuffers5 = __toESM(require_flatbuffers(), 1);
+
+// node_modules/apache-arrow/fb/dictionary-kind.mjs
+var DictionaryKind;
+(function(DictionaryKind2) {
+  DictionaryKind2[DictionaryKind2["DenseArray"] = 0] = "DenseArray";
+})(DictionaryKind || (DictionaryKind = {}));
+
+// node_modules/apache-arrow/fb/int.mjs
+var flatbuffers4 = __toESM(require_flatbuffers(), 1);
+var Int = class _Int {
+  constructor() {
+    this.bb = null;
+    this.bb_pos = 0;
+  }
+  __init(i2, bb) {
+    this.bb_pos = i2;
+    this.bb = bb;
+    return this;
+  }
+  static getRootAsInt(bb, obj) {
+    return (obj || new _Int()).__init(bb.readInt32(bb.position()) + bb.position(), bb);
+  }
+  static getSizePrefixedRootAsInt(bb, obj) {
+    bb.setPosition(bb.position() + flatbuffers4.SIZE_PREFIX_LENGTH);
+    return (obj || new _Int()).__init(bb.readInt32(bb.position()) + bb.position(), bb);
+  }
+  bitWidth() {
+    const offset = this.bb.__offset(this.bb_pos, 4);
+    return offset ? this.bb.readInt32(this.bb_pos + offset) : 0;
+  }
+  isSigned() {
+    const offset = this.bb.__offset(this.bb_pos, 6);
+    return offset ? !!this.bb.readInt8(this.bb_pos + offset) : false;
+  }
+  static startInt(builder) {
+    builder.startObject(2);
+  }
+  static addBitWidth(builder, bitWidth) {
+    builder.addFieldInt32(0, bitWidth, 0);
+  }
+  static addIsSigned(builder, isSigned) {
+    builder.addFieldInt8(1, +isSigned, 0);
+  }
+  static endInt(builder) {
+    const offset = builder.endObject();
+    return offset;
+  }
+  static createInt(builder, bitWidth, isSigned) {
+    _Int.startInt(builder);
+    _Int.addBitWidth(builder, bitWidth);
+    _Int.addIsSigned(builder, isSigned);
+    return _Int.endInt(builder);
+  }
+};
+
+// node_modules/apache-arrow/fb/dictionary-encoding.mjs
+var DictionaryEncoding = class _DictionaryEncoding {
+  constructor() {
+    this.bb = null;
+    this.bb_pos = 0;
+  }
+  __init(i2, bb) {
+    this.bb_pos = i2;
+    this.bb = bb;
+    return this;
+  }
+  static getRootAsDictionaryEncoding(bb, obj) {
+    return (obj || new _DictionaryEncoding()).__init(bb.readInt32(bb.position()) + bb.position(), bb);
+  }
+  static getSizePrefixedRootAsDictionaryEncoding(bb, obj) {
+    bb.setPosition(bb.position() + flatbuffers5.SIZE_PREFIX_LENGTH);
+    return (obj || new _DictionaryEncoding()).__init(bb.readInt32(bb.position()) + bb.position(), bb);
+  }
+  /**
+   * The known dictionary id in the application where this data is used. In
+   * the file or streaming formats, the dictionary ids are found in the
+   * DictionaryBatch messages
+   */
+  id() {
+    const offset = this.bb.__offset(this.bb_pos, 4);
+    return offset ? this.bb.readInt64(this.bb_pos + offset) : BigInt("0");
+  }
+  /**
+   * The dictionary indices are constrained to be non-negative integers. If
+   * this field is null, the indices must be signed int32. To maximize
+   * cross-language compatibility and performance, implementations are
+   * recommended to prefer signed integer types over unsigned integer types
+   * and to avoid uint64 indices unless they are required by an application.
+   */
+  indexType(obj) {
+    const offset = this.bb.__offset(this.bb_pos, 6);
+    return offset ? (obj || new Int()).__init(this.bb.__indirect(this.bb_pos + offset), this.bb) : null;
+  }
+  /**
+   * By default, dictionaries are not ordered, or the order does not have
+   * semantic meaning. In some statistical, applications, dictionary-encoding
+   * is used to represent ordered categorical data, and we provide a way to
+   * preserve that metadata here
+   */
+  isOrdered() {
+    const offset = this.bb.__offset(this.bb_pos, 8);
+    return offset ? !!this.bb.readInt8(this.bb_pos + offset) : false;
+  }
+  dictionaryKind() {
+    const offset = this.bb.__offset(this.bb_pos, 10);
+    return offset ? this.bb.readInt16(this.bb_pos + offset) : DictionaryKind.DenseArray;
+  }
+  static startDictionaryEncoding(builder) {
+    builder.startObject(4);
+  }
+  static addId(builder, id) {
+    builder.addFieldInt64(0, id, BigInt("0"));
+  }
+  static addIndexType(builder, indexTypeOffset) {
+    builder.addFieldOffset(1, indexTypeOffset, 0);
+  }
+  static addIsOrdered(builder, isOrdered) {
+    builder.addFieldInt8(2, +isOrdered, 0);
+  }
+  static addDictionaryKind(builder, dictionaryKind) {
+    builder.addFieldInt16(3, dictionaryKind, DictionaryKind.DenseArray);
+  }
+  static endDictionaryEncoding(builder) {
+    const offset = builder.endObject();
+    return offset;
+  }
+};
+
+// node_modules/apache-arrow/fb/key-value.mjs
+var flatbuffers6 = __toESM(require_flatbuffers(), 1);
+var KeyValue = class _KeyValue {
+  constructor() {
+    this.bb = null;
+    this.bb_pos = 0;
+  }
+  __init(i2, bb) {
+    this.bb_pos = i2;
+    this.bb = bb;
+    return this;
+  }
+  static getRootAsKeyValue(bb, obj) {
+    return (obj || new _KeyValue()).__init(bb.readInt32(bb.position()) + bb.position(), bb);
+  }
+  static getSizePrefixedRootAsKeyValue(bb, obj) {
+    bb.setPosition(bb.position() + flatbuffers6.SIZE_PREFIX_LENGTH);
+    return (obj || new _KeyValue()).__init(bb.readInt32(bb.position()) + bb.position(), bb);
+  }
+  key(optionalEncoding) {
+    const offset = this.bb.__offset(this.bb_pos, 4);
+    return offset ? this.bb.__string(this.bb_pos + offset, optionalEncoding) : null;
+  }
+  value(optionalEncoding) {
+    const offset = this.bb.__offset(this.bb_pos, 6);
+    return offset ? this.bb.__string(this.bb_pos + offset, optionalEncoding) : null;
+  }
+  static startKeyValue(builder) {
+    builder.startObject(2);
+  }
+  static addKey(builder, keyOffset) {
+    builder.addFieldOffset(0, keyOffset, 0);
+  }
+  static addValue(builder, valueOffset) {
+    builder.addFieldOffset(1, valueOffset, 0);
+  }
+  static endKeyValue(builder) {
+    const offset = builder.endObject();
+    return offset;
+  }
+  static createKeyValue(builder, keyOffset, valueOffset) {
+    _KeyValue.startKeyValue(builder);
+    _KeyValue.addKey(builder, keyOffset);
+    _KeyValue.addValue(builder, valueOffset);
+    return _KeyValue.endKeyValue(builder);
+  }
+};
+
+// node_modules/apache-arrow/fb/binary.mjs
+var flatbuffers7 = __toESM(require_flatbuffers(), 1);
+var Binary = class _Binary {
+  constructor() {
+    this.bb = null;
+    this.bb_pos = 0;
+  }
+  __init(i2, bb) {
+    this.bb_pos = i2;
+    this.bb = bb;
+    return this;
+  }
+  static getRootAsBinary(bb, obj) {
+    return (obj || new _Binary()).__init(bb.readInt32(bb.position()) + bb.position(), bb);
+  }
+  static getSizePrefixedRootAsBinary(bb, obj) {
+    bb.setPosition(bb.position() + flatbuffers7.SIZE_PREFIX_LENGTH);
+    return (obj || new _Binary()).__init(bb.readInt32(bb.position()) + bb.position(), bb);
+  }
+  static startBinary(builder) {
+    builder.startObject(0);
+  }
+  static endBinary(builder) {
+    const offset = builder.endObject();
+    return offset;
+  }
+  static createBinary(builder) {
+    _Binary.startBinary(builder);
+    return _Binary.endBinary(builder);
+  }
+};
+
+// node_modules/apache-arrow/fb/bool.mjs
+var flatbuffers8 = __toESM(require_flatbuffers(), 1);
+var Bool = class _Bool {
+  constructor() {
+    this.bb = null;
+    this.bb_pos = 0;
+  }
+  __init(i2, bb) {
+    this.bb_pos = i2;
+    this.bb = bb;
+    return this;
+  }
+  static getRootAsBool(bb, obj) {
+    return (obj || new _Bool()).__init(bb.readInt32(bb.position()) + bb.position(), bb);
+  }
+  static getSizePrefixedRootAsBool(bb, obj) {
+    bb.setPosition(bb.position() + flatbuffers8.SIZE_PREFIX_LENGTH);
+    return (obj || new _Bool()).__init(bb.readInt32(bb.position()) + bb.position(), bb);
+  }
+  static startBool(builder) {
+    builder.startObject(0);
+  }
+  static endBool(builder) {
+    const offset = builder.endObject();
+    return offset;
+  }
+  static createBool(builder) {
+    _Bool.startBool(builder);
+    return _Bool.endBool(builder);
+  }
+};
+
+// node_modules/apache-arrow/fb/date.mjs
+var flatbuffers9 = __toESM(require_flatbuffers(), 1);
+var Date2 = class _Date {
+  constructor() {
+    this.bb = null;
+    this.bb_pos = 0;
+  }
+  __init(i2, bb) {
+    this.bb_pos = i2;
+    this.bb = bb;
+    return this;
+  }
+  static getRootAsDate(bb, obj) {
+    return (obj || new _Date()).__init(bb.readInt32(bb.position()) + bb.position(), bb);
+  }
+  static getSizePrefixedRootAsDate(bb, obj) {
+    bb.setPosition(bb.position() + flatbuffers9.SIZE_PREFIX_LENGTH);
+    return (obj || new _Date()).__init(bb.readInt32(bb.position()) + bb.position(), bb);
+  }
+  unit() {
+    const offset = this.bb.__offset(this.bb_pos, 4);
+    return offset ? this.bb.readInt16(this.bb_pos + offset) : DateUnit.MILLISECOND;
+  }
+  static startDate(builder) {
+    builder.startObject(1);
+  }
+  static addUnit(builder, unit) {
+    builder.addFieldInt16(0, unit, DateUnit.MILLISECOND);
+  }
+  static endDate(builder) {
+    const offset = builder.endObject();
+    return offset;
+  }
+  static createDate(builder, unit) {
+    _Date.startDate(builder);
+    _Date.addUnit(builder, unit);
+    return _Date.endDate(builder);
+  }
+};
+
+// node_modules/apache-arrow/fb/decimal.mjs
+var flatbuffers10 = __toESM(require_flatbuffers(), 1);
+var Decimal = class _Decimal {
+  constructor() {
+    this.bb = null;
+    this.bb_pos = 0;
+  }
+  __init(i2, bb) {
+    this.bb_pos = i2;
+    this.bb = bb;
+    return this;
+  }
+  static getRootAsDecimal(bb, obj) {
+    return (obj || new _Decimal()).__init(bb.readInt32(bb.position()) + bb.position(), bb);
+  }
+  static getSizePrefixedRootAsDecimal(bb, obj) {
+    bb.setPosition(bb.position() + flatbuffers10.SIZE_PREFIX_LENGTH);
+    return (obj || new _Decimal()).__init(bb.readInt32(bb.position()) + bb.position(), bb);
+  }
+  /**
+   * Total number of decimal digits
+   */
+  precision() {
+    const offset = this.bb.__offset(this.bb_pos, 4);
+    return offset ? this.bb.readInt32(this.bb_pos + offset) : 0;
+  }
+  /**
+   * Number of digits after the decimal point "."
+   */
+  scale() {
+    const offset = this.bb.__offset(this.bb_pos, 6);
+    return offset ? this.bb.readInt32(this.bb_pos + offset) : 0;
+  }
+  /**
+   * Number of bits per value. The only accepted widths are 128 and 256.
+   * We use bitWidth for consistency with Int::bitWidth.
+   */
+  bitWidth() {
+    const offset = this.bb.__offset(this.bb_pos, 8);
+    return offset ? this.bb.readInt32(this.bb_pos + offset) : 128;
+  }
+  static startDecimal(builder) {
+    builder.startObject(3);
+  }
+  static addPrecision(builder, precision) {
+    builder.addFieldInt32(0, precision, 0);
+  }
+  static addScale(builder, scale) {
+    builder.addFieldInt32(1, scale, 0);
+  }
+  static addBitWidth(builder, bitWidth) {
+    builder.addFieldInt32(2, bitWidth, 128);
+  }
+  static endDecimal(builder) {
+    const offset = builder.endObject();
+    return offset;
+  }
+  static createDecimal(builder, precision, scale, bitWidth) {
+    _Decimal.startDecimal(builder);
+    _Decimal.addPrecision(builder, precision);
+    _Decimal.addScale(builder, scale);
+    _Decimal.addBitWidth(builder, bitWidth);
+    return _Decimal.endDecimal(builder);
+  }
+};
+
+// node_modules/apache-arrow/fb/duration.mjs
+var flatbuffers11 = __toESM(require_flatbuffers(), 1);
+var Duration = class _Duration {
+  constructor() {
+    this.bb = null;
+    this.bb_pos = 0;
+  }
+  __init(i2, bb) {
+    this.bb_pos = i2;
+    this.bb = bb;
+    return this;
+  }
+  static getRootAsDuration(bb, obj) {
+    return (obj || new _Duration()).__init(bb.readInt32(bb.position()) + bb.position(), bb);
+  }
+  static getSizePrefixedRootAsDuration(bb, obj) {
+    bb.setPosition(bb.position() + flatbuffers11.SIZE_PREFIX_LENGTH);
+    return (obj || new _Duration()).__init(bb.readInt32(bb.position()) + bb.position(), bb);
+  }
+  unit() {
+    const offset = this.bb.__offset(this.bb_pos, 4);
+    return offset ? this.bb.readInt16(this.bb_pos + offset) : TimeUnit.MILLISECOND;
+  }
+  static startDuration(builder) {
+    builder.startObject(1);
+  }
+  static addUnit(builder, unit) {
+    builder.addFieldInt16(0, unit, TimeUnit.MILLISECOND);
+  }
+  static endDuration(builder) {
+    const offset = builder.endObject();
+    return offset;
+  }
+  static createDuration(builder, unit) {
+    _Duration.startDuration(builder);
+    _Duration.addUnit(builder, unit);
+    return _Duration.endDuration(builder);
+  }
+};
+
+// node_modules/apache-arrow/fb/fixed-size-binary.mjs
+var flatbuffers12 = __toESM(require_flatbuffers(), 1);
+var FixedSizeBinary = class _FixedSizeBinary {
+  constructor() {
+    this.bb = null;
+    this.bb_pos = 0;
+  }
+  __init(i2, bb) {
+    this.bb_pos = i2;
+    this.bb = bb;
+    return this;
+  }
+  static getRootAsFixedSizeBinary(bb, obj) {
+    return (obj || new _FixedSizeBinary()).__init(bb.readInt32(bb.position()) + bb.position(), bb);
+  }
+  static getSizePrefixedRootAsFixedSizeBinary(bb, obj) {
+    bb.setPosition(bb.position() + flatbuffers12.SIZE_PREFIX_LENGTH);
+    return (obj || new _FixedSizeBinary()).__init(bb.readInt32(bb.position()) + bb.position(), bb);
+  }
+  /**
+   * Number of bytes per value
+   */
+  byteWidth() {
+    const offset = this.bb.__offset(this.bb_pos, 4);
+    return offset ? this.bb.readInt32(this.bb_pos + offset) : 0;
+  }
+  static startFixedSizeBinary(builder) {
+    builder.startObject(1);
+  }
+  static addByteWidth(builder, byteWidth) {
+    builder.addFieldInt32(0, byteWidth, 0);
+  }
+  static endFixedSizeBinary(builder) {
+    const offset = builder.endObject();
+    return offset;
+  }
+  static createFixedSizeBinary(builder, byteWidth) {
+    _FixedSizeBinary.startFixedSizeBinary(builder);
+    _FixedSizeBinary.addByteWidth(builder, byteWidth);
+    return _FixedSizeBinary.endFixedSizeBinary(builder);
+  }
+};
+
+// node_modules/apache-arrow/fb/fixed-size-list.mjs
+var flatbuffers13 = __toESM(require_flatbuffers(), 1);
+var FixedSizeList = class _FixedSizeList {
+  constructor() {
+    this.bb = null;
+    this.bb_pos = 0;
+  }
+  __init(i2, bb) {
+    this.bb_pos = i2;
+    this.bb = bb;
+    return this;
+  }
+  static getRootAsFixedSizeList(bb, obj) {
+    return (obj || new _FixedSizeList()).__init(bb.readInt32(bb.position()) + bb.position(), bb);
+  }
+  static getSizePrefixedRootAsFixedSizeList(bb, obj) {
+    bb.setPosition(bb.position() + flatbuffers13.SIZE_PREFIX_LENGTH);
+    return (obj || new _FixedSizeList()).__init(bb.readInt32(bb.position()) + bb.position(), bb);
+  }
+  /**
+   * Number of list items per value
+   */
+  listSize() {
+    const offset = this.bb.__offset(this.bb_pos, 4);
+    return offset ? this.bb.readInt32(this.bb_pos + offset) : 0;
+  }
+  static startFixedSizeList(builder) {
+    builder.startObject(1);
+  }
+  static addListSize(builder, listSize) {
+    builder.addFieldInt32(0, listSize, 0);
+  }
+  static endFixedSizeList(builder) {
+    const offset = builder.endObject();
+    return offset;
+  }
+  static createFixedSizeList(builder, listSize) {
+    _FixedSizeList.startFixedSizeList(builder);
+    _FixedSizeList.addListSize(builder, listSize);
+    return _FixedSizeList.endFixedSizeList(builder);
+  }
+};
+
+// node_modules/apache-arrow/fb/floating-point.mjs
+var flatbuffers14 = __toESM(require_flatbuffers(), 1);
+var FloatingPoint = class _FloatingPoint {
+  constructor() {
+    this.bb = null;
+    this.bb_pos = 0;
+  }
+  __init(i2, bb) {
+    this.bb_pos = i2;
+    this.bb = bb;
+    return this;
+  }
+  static getRootAsFloatingPoint(bb, obj) {
+    return (obj || new _FloatingPoint()).__init(bb.readInt32(bb.position()) + bb.position(), bb);
+  }
+  static getSizePrefixedRootAsFloatingPoint(bb, obj) {
+    bb.setPosition(bb.position() + flatbuffers14.SIZE_PREFIX_LENGTH);
+    return (obj || new _FloatingPoint()).__init(bb.readInt32(bb.position()) + bb.position(), bb);
+  }
+  precision() {
+    const offset = this.bb.__offset(this.bb_pos, 4);
+    return offset ? this.bb.readInt16(this.bb_pos + offset) : Precision.HALF;
+  }
+  static startFloatingPoint(builder) {
+    builder.startObject(1);
+  }
+  static addPrecision(builder, precision) {
+    builder.addFieldInt16(0, precision, Precision.HALF);
+  }
+  static endFloatingPoint(builder) {
+    const offset = builder.endObject();
+    return offset;
+  }
+  static createFloatingPoint(builder, precision) {
+    _FloatingPoint.startFloatingPoint(builder);
+    _FloatingPoint.addPrecision(builder, precision);
+    return _FloatingPoint.endFloatingPoint(builder);
+  }
+};
+
+// node_modules/apache-arrow/fb/interval.mjs
+var flatbuffers15 = __toESM(require_flatbuffers(), 1);
+var Interval = class _Interval {
+  constructor() {
+    this.bb = null;
+    this.bb_pos = 0;
+  }
+  __init(i2, bb) {
+    this.bb_pos = i2;
+    this.bb = bb;
+    return this;
+  }
+  static getRootAsInterval(bb, obj) {
+    return (obj || new _Interval()).__init(bb.readInt32(bb.position()) + bb.position(), bb);
+  }
+  static getSizePrefixedRootAsInterval(bb, obj) {
+    bb.setPosition(bb.position() + flatbuffers15.SIZE_PREFIX_LENGTH);
+    return (obj || new _Interval()).__init(bb.readInt32(bb.position()) + bb.position(), bb);
+  }
+  unit() {
+    const offset = this.bb.__offset(this.bb_pos, 4);
+    return offset ? this.bb.readInt16(this.bb_pos + offset) : IntervalUnit.YEAR_MONTH;
+  }
+  static startInterval(builder) {
+    builder.startObject(1);
+  }
+  static addUnit(builder, unit) {
+    builder.addFieldInt16(0, unit, IntervalUnit.YEAR_MONTH);
+  }
+  static endInterval(builder) {
+    const offset = builder.endObject();
+    return offset;
+  }
+  static createInterval(builder, unit) {
+    _Interval.startInterval(builder);
+    _Interval.addUnit(builder, unit);
+    return _Interval.endInterval(builder);
+  }
+};
+
+// node_modules/apache-arrow/fb/large-binary.mjs
+var flatbuffers16 = __toESM(require_flatbuffers(), 1);
+var LargeBinary = class _LargeBinary {
+  constructor() {
+    this.bb = null;
+    this.bb_pos = 0;
+  }
+  __init(i2, bb) {
+    this.bb_pos = i2;
+    this.bb = bb;
+    return this;
+  }
+  static getRootAsLargeBinary(bb, obj) {
+    return (obj || new _LargeBinary()).__init(bb.readInt32(bb.position()) + bb.position(), bb);
+  }
+  static getSizePrefixedRootAsLargeBinary(bb, obj) {
+    bb.setPosition(bb.position() + flatbuffers16.SIZE_PREFIX_LENGTH);
+    return (obj || new _LargeBinary()).__init(bb.readInt32(bb.position()) + bb.position(), bb);
+  }
+  static startLargeBinary(builder) {
+    builder.startObject(0);
+  }
+  static endLargeBinary(builder) {
+    const offset = builder.endObject();
+    return offset;
+  }
+  static createLargeBinary(builder) {
+    _LargeBinary.startLargeBinary(builder);
+    return _LargeBinary.endLargeBinary(builder);
+  }
+};
+
+// node_modules/apache-arrow/fb/large-utf8.mjs
+var flatbuffers17 = __toESM(require_flatbuffers(), 1);
+var LargeUtf8 = class _LargeUtf8 {
+  constructor() {
+    this.bb = null;
+    this.bb_pos = 0;
+  }
+  __init(i2, bb) {
+    this.bb_pos = i2;
+    this.bb = bb;
+    return this;
+  }
+  static getRootAsLargeUtf8(bb, obj) {
+    return (obj || new _LargeUtf8()).__init(bb.readInt32(bb.position()) + bb.position(), bb);
+  }
+  static getSizePrefixedRootAsLargeUtf8(bb, obj) {
+    bb.setPosition(bb.position() + flatbuffers17.SIZE_PREFIX_LENGTH);
+    return (obj || new _LargeUtf8()).__init(bb.readInt32(bb.position()) + bb.position(), bb);
+  }
+  static startLargeUtf8(builder) {
+    builder.startObject(0);
+  }
+  static endLargeUtf8(builder) {
+    const offset = builder.endObject();
+    return offset;
+  }
+  static createLargeUtf8(builder) {
+    _LargeUtf8.startLargeUtf8(builder);
+    return _LargeUtf8.endLargeUtf8(builder);
+  }
+};
+
+// node_modules/apache-arrow/fb/list.mjs
+var flatbuffers18 = __toESM(require_flatbuffers(), 1);
+var List = class _List {
+  constructor() {
+    this.bb = null;
+    this.bb_pos = 0;
+  }
+  __init(i2, bb) {
+    this.bb_pos = i2;
+    this.bb = bb;
+    return this;
+  }
+  static getRootAsList(bb, obj) {
+    return (obj || new _List()).__init(bb.readInt32(bb.position()) + bb.position(), bb);
+  }
+  static getSizePrefixedRootAsList(bb, obj) {
+    bb.setPosition(bb.position() + flatbuffers18.SIZE_PREFIX_LENGTH);
+    return (obj || new _List()).__init(bb.readInt32(bb.position()) + bb.position(), bb);
+  }
+  static startList(builder) {
+    builder.startObject(0);
+  }
+  static endList(builder) {
+    const offset = builder.endObject();
+    return offset;
+  }
+  static createList(builder) {
+    _List.startList(builder);
+    return _List.endList(builder);
+  }
+};
+
+// node_modules/apache-arrow/fb/map.mjs
+var flatbuffers19 = __toESM(require_flatbuffers(), 1);
+var Map2 = class _Map {
+  constructor() {
+    this.bb = null;
+    this.bb_pos = 0;
+  }
+  __init(i2, bb) {
+    this.bb_pos = i2;
+    this.bb = bb;
+    return this;
+  }
+  static getRootAsMap(bb, obj) {
+    return (obj || new _Map()).__init(bb.readInt32(bb.position()) + bb.position(), bb);
+  }
+  static getSizePrefixedRootAsMap(bb, obj) {
+    bb.setPosition(bb.position() + flatbuffers19.SIZE_PREFIX_LENGTH);
+    return (obj || new _Map()).__init(bb.readInt32(bb.position()) + bb.position(), bb);
+  }
+  /**
+   * Set to true if the keys within each value are sorted
+   */
+  keysSorted() {
+    const offset = this.bb.__offset(this.bb_pos, 4);
+    return offset ? !!this.bb.readInt8(this.bb_pos + offset) : false;
+  }
+  static startMap(builder) {
+    builder.startObject(1);
+  }
+  static addKeysSorted(builder, keysSorted) {
+    builder.addFieldInt8(0, +keysSorted, 0);
+  }
+  static endMap(builder) {
+    const offset = builder.endObject();
+    return offset;
+  }
+  static createMap(builder, keysSorted) {
+    _Map.startMap(builder);
+    _Map.addKeysSorted(builder, keysSorted);
+    return _Map.endMap(builder);
+  }
+};
+
+// node_modules/apache-arrow/fb/null.mjs
+var flatbuffers20 = __toESM(require_flatbuffers(), 1);
+var Null = class _Null {
+  constructor() {
+    this.bb = null;
+    this.bb_pos = 0;
+  }
+  __init(i2, bb) {
+    this.bb_pos = i2;
+    this.bb = bb;
+    return this;
+  }
+  static getRootAsNull(bb, obj) {
+    return (obj || new _Null()).__init(bb.readInt32(bb.position()) + bb.position(), bb);
+  }
+  static getSizePrefixedRootAsNull(bb, obj) {
+    bb.setPosition(bb.position() + flatbuffers20.SIZE_PREFIX_LENGTH);
+    return (obj || new _Null()).__init(bb.readInt32(bb.position()) + bb.position(), bb);
+  }
+  static startNull(builder) {
+    builder.startObject(0);
+  }
+  static endNull(builder) {
+    const offset = builder.endObject();
+    return offset;
+  }
+  static createNull(builder) {
+    _Null.startNull(builder);
+    return _Null.endNull(builder);
+  }
+};
+
+// node_modules/apache-arrow/fb/struct-.mjs
+var flatbuffers21 = __toESM(require_flatbuffers(), 1);
+var Struct_ = class _Struct_ {
+  constructor() {
+    this.bb = null;
+    this.bb_pos = 0;
+  }
+  __init(i2, bb) {
+    this.bb_pos = i2;
+    this.bb = bb;
+    return this;
+  }
+  static getRootAsStruct_(bb, obj) {
+    return (obj || new _Struct_()).__init(bb.readInt32(bb.position()) + bb.position(), bb);
+  }
+  static getSizePrefixedRootAsStruct_(bb, obj) {
+    bb.setPosition(bb.position() + flatbuffers21.SIZE_PREFIX_LENGTH);
+    return (obj || new _Struct_()).__init(bb.readInt32(bb.position()) + bb.position(), bb);
+  }
+  static startStruct_(builder) {
+    builder.startObject(0);
+  }
+  static endStruct_(builder) {
+    const offset = builder.endObject();
+    return offset;
+  }
+  static createStruct_(builder) {
+    _Struct_.startStruct_(builder);
+    return _Struct_.endStruct_(builder);
+  }
+};
+
+// node_modules/apache-arrow/fb/time.mjs
+var flatbuffers22 = __toESM(require_flatbuffers(), 1);
+var Time = class _Time {
+  constructor() {
+    this.bb = null;
+    this.bb_pos = 0;
+  }
+  __init(i2, bb) {
+    this.bb_pos = i2;
+    this.bb = bb;
+    return this;
+  }
+  static getRootAsTime(bb, obj) {
+    return (obj || new _Time()).__init(bb.readInt32(bb.position()) + bb.position(), bb);
+  }
+  static getSizePrefixedRootAsTime(bb, obj) {
+    bb.setPosition(bb.position() + flatbuffers22.SIZE_PREFIX_LENGTH);
+    return (obj || new _Time()).__init(bb.readInt32(bb.position()) + bb.position(), bb);
+  }
+  unit() {
+    const offset = this.bb.__offset(this.bb_pos, 4);
+    return offset ? this.bb.readInt16(this.bb_pos + offset) : TimeUnit.MILLISECOND;
+  }
+  bitWidth() {
+    const offset = this.bb.__offset(this.bb_pos, 6);
+    return offset ? this.bb.readInt32(this.bb_pos + offset) : 32;
+  }
+  static startTime(builder) {
+    builder.startObject(2);
+  }
+  static addUnit(builder, unit) {
+    builder.addFieldInt16(0, unit, TimeUnit.MILLISECOND);
+  }
+  static addBitWidth(builder, bitWidth) {
+    builder.addFieldInt32(1, bitWidth, 32);
+  }
+  static endTime(builder) {
+    const offset = builder.endObject();
+    return offset;
+  }
+  static createTime(builder, unit, bitWidth) {
+    _Time.startTime(builder);
+    _Time.addUnit(builder, unit);
+    _Time.addBitWidth(builder, bitWidth);
+    return _Time.endTime(builder);
+  }
+};
+
+// node_modules/apache-arrow/fb/timestamp.mjs
+var flatbuffers23 = __toESM(require_flatbuffers(), 1);
+var Timestamp = class _Timestamp {
+  constructor() {
+    this.bb = null;
+    this.bb_pos = 0;
+  }
+  __init(i2, bb) {
+    this.bb_pos = i2;
+    this.bb = bb;
+    return this;
+  }
+  static getRootAsTimestamp(bb, obj) {
+    return (obj || new _Timestamp()).__init(bb.readInt32(bb.position()) + bb.position(), bb);
+  }
+  static getSizePrefixedRootAsTimestamp(bb, obj) {
+    bb.setPosition(bb.position() + flatbuffers23.SIZE_PREFIX_LENGTH);
+    return (obj || new _Timestamp()).__init(bb.readInt32(bb.position()) + bb.position(), bb);
+  }
+  unit() {
+    const offset = this.bb.__offset(this.bb_pos, 4);
+    return offset ? this.bb.readInt16(this.bb_pos + offset) : TimeUnit.SECOND;
+  }
+  timezone(optionalEncoding) {
+    const offset = this.bb.__offset(this.bb_pos, 6);
+    return offset ? this.bb.__string(this.bb_pos + offset, optionalEncoding) : null;
+  }
+  static startTimestamp(builder) {
+    builder.startObject(2);
+  }
+  static addUnit(builder, unit) {
+    builder.addFieldInt16(0, unit, TimeUnit.SECOND);
+  }
+  static addTimezone(builder, timezoneOffset) {
+    builder.addFieldOffset(1, timezoneOffset, 0);
+  }
+  static endTimestamp(builder) {
+    const offset = builder.endObject();
+    return offset;
+  }
+  static createTimestamp(builder, unit, timezoneOffset) {
+    _Timestamp.startTimestamp(builder);
+    _Timestamp.addUnit(builder, unit);
+    _Timestamp.addTimezone(builder, timezoneOffset);
+    return _Timestamp.endTimestamp(builder);
+  }
+};
+
+// node_modules/apache-arrow/fb/union.mjs
+var flatbuffers24 = __toESM(require_flatbuffers(), 1);
+var Union = class _Union {
+  constructor() {
+    this.bb = null;
+    this.bb_pos = 0;
+  }
+  __init(i2, bb) {
+    this.bb_pos = i2;
+    this.bb = bb;
+    return this;
+  }
+  static getRootAsUnion(bb, obj) {
+    return (obj || new _Union()).__init(bb.readInt32(bb.position()) + bb.position(), bb);
+  }
+  static getSizePrefixedRootAsUnion(bb, obj) {
+    bb.setPosition(bb.position() + flatbuffers24.SIZE_PREFIX_LENGTH);
+    return (obj || new _Union()).__init(bb.readInt32(bb.position()) + bb.position(), bb);
+  }
+  mode() {
+    const offset = this.bb.__offset(this.bb_pos, 4);
+    return offset ? this.bb.readInt16(this.bb_pos + offset) : UnionMode.Sparse;
+  }
+  typeIds(index) {
+    const offset = this.bb.__offset(this.bb_pos, 6);
+    return offset ? this.bb.readInt32(this.bb.__vector(this.bb_pos + offset) + index * 4) : 0;
+  }
+  typeIdsLength() {
+    const offset = this.bb.__offset(this.bb_pos, 6);
+    return offset ? this.bb.__vector_len(this.bb_pos + offset) : 0;
+  }
+  typeIdsArray() {
+    const offset = this.bb.__offset(this.bb_pos, 6);
+    return offset ? new Int32Array(this.bb.bytes().buffer, this.bb.bytes().byteOffset + this.bb.__vector(this.bb_pos + offset), this.bb.__vector_len(this.bb_pos + offset)) : null;
+  }
+  static startUnion(builder) {
+    builder.startObject(2);
+  }
+  static addMode(builder, mode) {
+    builder.addFieldInt16(0, mode, UnionMode.Sparse);
+  }
+  static addTypeIds(builder, typeIdsOffset) {
+    builder.addFieldOffset(1, typeIdsOffset, 0);
+  }
+  static createTypeIdsVector(builder, data) {
+    builder.startVector(4, data.length, 4);
+    for (let i2 = data.length - 1; i2 >= 0; i2--) {
+      builder.addInt32(data[i2]);
+    }
+    return builder.endVector();
+  }
+  static startTypeIdsVector(builder, numElems) {
+    builder.startVector(4, numElems, 4);
+  }
+  static endUnion(builder) {
+    const offset = builder.endObject();
+    return offset;
+  }
+  static createUnion(builder, mode, typeIdsOffset) {
+    _Union.startUnion(builder);
+    _Union.addMode(builder, mode);
+    _Union.addTypeIds(builder, typeIdsOffset);
+    return _Union.endUnion(builder);
+  }
+};
+
+// node_modules/apache-arrow/fb/utf8.mjs
+var flatbuffers25 = __toESM(require_flatbuffers(), 1);
+var Utf8 = class _Utf8 {
+  constructor() {
+    this.bb = null;
+    this.bb_pos = 0;
+  }
+  __init(i2, bb) {
+    this.bb_pos = i2;
+    this.bb = bb;
+    return this;
+  }
+  static getRootAsUtf8(bb, obj) {
+    return (obj || new _Utf8()).__init(bb.readInt32(bb.position()) + bb.position(), bb);
+  }
+  static getSizePrefixedRootAsUtf8(bb, obj) {
+    bb.setPosition(bb.position() + flatbuffers25.SIZE_PREFIX_LENGTH);
+    return (obj || new _Utf8()).__init(bb.readInt32(bb.position()) + bb.position(), bb);
+  }
+  static startUtf8(builder) {
+    builder.startObject(0);
+  }
+  static endUtf8(builder) {
+    const offset = builder.endObject();
+    return offset;
+  }
+  static createUtf8(builder) {
+    _Utf8.startUtf8(builder);
+    return _Utf8.endUtf8(builder);
+  }
+};
+
+// node_modules/apache-arrow/fb/type.mjs
+var Type2;
+(function(Type4) {
+  Type4[Type4["NONE"] = 0] = "NONE";
+  Type4[Type4["Null"] = 1] = "Null";
+  Type4[Type4["Int"] = 2] = "Int";
+  Type4[Type4["FloatingPoint"] = 3] = "FloatingPoint";
+  Type4[Type4["Binary"] = 4] = "Binary";
+  Type4[Type4["Utf8"] = 5] = "Utf8";
+  Type4[Type4["Bool"] = 6] = "Bool";
+  Type4[Type4["Decimal"] = 7] = "Decimal";
+  Type4[Type4["Date"] = 8] = "Date";
+  Type4[Type4["Time"] = 9] = "Time";
+  Type4[Type4["Timestamp"] = 10] = "Timestamp";
+  Type4[Type4["Interval"] = 11] = "Interval";
+  Type4[Type4["List"] = 12] = "List";
+  Type4[Type4["Struct_"] = 13] = "Struct_";
+  Type4[Type4["Union"] = 14] = "Union";
+  Type4[Type4["FixedSizeBinary"] = 15] = "FixedSizeBinary";
+  Type4[Type4["FixedSizeList"] = 16] = "FixedSizeList";
+  Type4[Type4["Map"] = 17] = "Map";
+  Type4[Type4["Duration"] = 18] = "Duration";
+  Type4[Type4["LargeBinary"] = 19] = "LargeBinary";
+  Type4[Type4["LargeUtf8"] = 20] = "LargeUtf8";
+  Type4[Type4["LargeList"] = 21] = "LargeList";
+  Type4[Type4["RunEndEncoded"] = 22] = "RunEndEncoded";
+})(Type2 || (Type2 = {}));
+
+// node_modules/apache-arrow/fb/field.mjs
+var Field = class _Field {
+  constructor() {
+    this.bb = null;
+    this.bb_pos = 0;
+  }
+  __init(i2, bb) {
+    this.bb_pos = i2;
+    this.bb = bb;
+    return this;
+  }
+  static getRootAsField(bb, obj) {
+    return (obj || new _Field()).__init(bb.readInt32(bb.position()) + bb.position(), bb);
+  }
+  static getSizePrefixedRootAsField(bb, obj) {
+    bb.setPosition(bb.position() + flatbuffers26.SIZE_PREFIX_LENGTH);
+    return (obj || new _Field()).__init(bb.readInt32(bb.position()) + bb.position(), bb);
+  }
+  name(optionalEncoding) {
+    const offset = this.bb.__offset(this.bb_pos, 4);
+    return offset ? this.bb.__string(this.bb_pos + offset, optionalEncoding) : null;
+  }
+  /**
+   * Whether or not this field can contain nulls. Should be true in general.
+   */
+  nullable() {
+    const offset = this.bb.__offset(this.bb_pos, 6);
+    return offset ? !!this.bb.readInt8(this.bb_pos + offset) : false;
+  }
+  typeType() {
+    const offset = this.bb.__offset(this.bb_pos, 8);
+    return offset ? this.bb.readUint8(this.bb_pos + offset) : Type2.NONE;
+  }
+  /**
+   * This is the type of the decoded value if the field is dictionary encoded.
+   */
+  type(obj) {
+    const offset = this.bb.__offset(this.bb_pos, 10);
+    return offset ? this.bb.__union(obj, this.bb_pos + offset) : null;
+  }
+  /**
+   * Present only if the field is dictionary encoded.
+   */
+  dictionary(obj) {
+    const offset = this.bb.__offset(this.bb_pos, 12);
+    return offset ? (obj || new DictionaryEncoding()).__init(this.bb.__indirect(this.bb_pos + offset), this.bb) : null;
+  }
+  /**
+   * children apply only to nested data types like Struct, List and Union. For
+   * primitive types children will have length 0.
+   */
+  children(index, obj) {
+    const offset = this.bb.__offset(this.bb_pos, 14);
+    return offset ? (obj || new _Field()).__init(this.bb.__indirect(this.bb.__vector(this.bb_pos + offset) + index * 4), this.bb) : null;
+  }
+  childrenLength() {
+    const offset = this.bb.__offset(this.bb_pos, 14);
+    return offset ? this.bb.__vector_len(this.bb_pos + offset) : 0;
+  }
+  /**
+   * User-defined metadata
+   */
+  customMetadata(index, obj) {
+    const offset = this.bb.__offset(this.bb_pos, 16);
+    return offset ? (obj || new KeyValue()).__init(this.bb.__indirect(this.bb.__vector(this.bb_pos + offset) + index * 4), this.bb) : null;
+  }
+  customMetadataLength() {
+    const offset = this.bb.__offset(this.bb_pos, 16);
+    return offset ? this.bb.__vector_len(this.bb_pos + offset) : 0;
+  }
+  static startField(builder) {
+    builder.startObject(7);
+  }
+  static addName(builder, nameOffset) {
+    builder.addFieldOffset(0, nameOffset, 0);
+  }
+  static addNullable(builder, nullable) {
+    builder.addFieldInt8(1, +nullable, 0);
+  }
+  static addTypeType(builder, typeType) {
+    builder.addFieldInt8(2, typeType, Type2.NONE);
+  }
+  static addType(builder, typeOffset) {
+    builder.addFieldOffset(3, typeOffset, 0);
+  }
+  static addDictionary(builder, dictionaryOffset) {
+    builder.addFieldOffset(4, dictionaryOffset, 0);
+  }
+  static addChildren(builder, childrenOffset) {
+    builder.addFieldOffset(5, childrenOffset, 0);
+  }
+  static createChildrenVector(builder, data) {
+    builder.startVector(4, data.length, 4);
+    for (let i2 = data.length - 1; i2 >= 0; i2--) {
+      builder.addOffset(data[i2]);
+    }
+    return builder.endVector();
+  }
+  static startChildrenVector(builder, numElems) {
+    builder.startVector(4, numElems, 4);
+  }
+  static addCustomMetadata(builder, customMetadataOffset) {
+    builder.addFieldOffset(6, customMetadataOffset, 0);
+  }
+  static createCustomMetadataVector(builder, data) {
+    builder.startVector(4, data.length, 4);
+    for (let i2 = data.length - 1; i2 >= 0; i2--) {
+      builder.addOffset(data[i2]);
+    }
+    return builder.endVector();
+  }
+  static startCustomMetadataVector(builder, numElems) {
+    builder.startVector(4, numElems, 4);
+  }
+  static endField(builder) {
+    const offset = builder.endObject();
+    return offset;
+  }
+};
+
+// node_modules/apache-arrow/fb/schema.mjs
+var Schema = class _Schema {
+  constructor() {
+    this.bb = null;
+    this.bb_pos = 0;
+  }
+  __init(i2, bb) {
+    this.bb_pos = i2;
+    this.bb = bb;
+    return this;
+  }
+  static getRootAsSchema(bb, obj) {
+    return (obj || new _Schema()).__init(bb.readInt32(bb.position()) + bb.position(), bb);
+  }
+  static getSizePrefixedRootAsSchema(bb, obj) {
+    bb.setPosition(bb.position() + flatbuffers27.SIZE_PREFIX_LENGTH);
+    return (obj || new _Schema()).__init(bb.readInt32(bb.position()) + bb.position(), bb);
+  }
+  /**
+   * endianness of the buffer
+   * it is Little Endian by default
+   * if endianness doesn't match the underlying system then the vectors need to be converted
+   */
+  endianness() {
+    const offset = this.bb.__offset(this.bb_pos, 4);
+    return offset ? this.bb.readInt16(this.bb_pos + offset) : Endianness.Little;
+  }
+  fields(index, obj) {
+    const offset = this.bb.__offset(this.bb_pos, 6);
+    return offset ? (obj || new Field()).__init(this.bb.__indirect(this.bb.__vector(this.bb_pos + offset) + index * 4), this.bb) : null;
+  }
+  fieldsLength() {
+    const offset = this.bb.__offset(this.bb_pos, 6);
+    return offset ? this.bb.__vector_len(this.bb_pos + offset) : 0;
+  }
+  customMetadata(index, obj) {
+    const offset = this.bb.__offset(this.bb_pos, 8);
+    return offset ? (obj || new KeyValue()).__init(this.bb.__indirect(this.bb.__vector(this.bb_pos + offset) + index * 4), this.bb) : null;
+  }
+  customMetadataLength() {
+    const offset = this.bb.__offset(this.bb_pos, 8);
+    return offset ? this.bb.__vector_len(this.bb_pos + offset) : 0;
+  }
+  /**
+   * Features used in the stream/file.
+   */
+  features(index) {
+    const offset = this.bb.__offset(this.bb_pos, 10);
+    return offset ? this.bb.readInt64(this.bb.__vector(this.bb_pos + offset) + index * 8) : BigInt(0);
+  }
+  featuresLength() {
+    const offset = this.bb.__offset(this.bb_pos, 10);
+    return offset ? this.bb.__vector_len(this.bb_pos + offset) : 0;
+  }
+  static startSchema(builder) {
+    builder.startObject(4);
+  }
+  static addEndianness(builder, endianness) {
+    builder.addFieldInt16(0, endianness, Endianness.Little);
+  }
+  static addFields(builder, fieldsOffset) {
+    builder.addFieldOffset(1, fieldsOffset, 0);
+  }
+  static createFieldsVector(builder, data) {
+    builder.startVector(4, data.length, 4);
+    for (let i2 = data.length - 1; i2 >= 0; i2--) {
+      builder.addOffset(data[i2]);
+    }
+    return builder.endVector();
+  }
+  static startFieldsVector(builder, numElems) {
+    builder.startVector(4, numElems, 4);
+  }
+  static addCustomMetadata(builder, customMetadataOffset) {
+    builder.addFieldOffset(2, customMetadataOffset, 0);
+  }
+  static createCustomMetadataVector(builder, data) {
+    builder.startVector(4, data.length, 4);
+    for (let i2 = data.length - 1; i2 >= 0; i2--) {
+      builder.addOffset(data[i2]);
+    }
+    return builder.endVector();
+  }
+  static startCustomMetadataVector(builder, numElems) {
+    builder.startVector(4, numElems, 4);
+  }
+  static addFeatures(builder, featuresOffset) {
+    builder.addFieldOffset(3, featuresOffset, 0);
+  }
+  static createFeaturesVector(builder, data) {
+    builder.startVector(8, data.length, 8);
+    for (let i2 = data.length - 1; i2 >= 0; i2--) {
+      builder.addInt64(data[i2]);
+    }
+    return builder.endVector();
+  }
+  static startFeaturesVector(builder, numElems) {
+    builder.startVector(8, numElems, 8);
+  }
+  static endSchema(builder) {
+    const offset = builder.endObject();
+    return offset;
+  }
+  static finishSchemaBuffer(builder, offset) {
+    builder.finish(offset);
+  }
+  static finishSizePrefixedSchemaBuffer(builder, offset) {
+    builder.finish(offset, void 0, true);
+  }
+  static createSchema(builder, endianness, fieldsOffset, customMetadataOffset, featuresOffset) {
+    _Schema.startSchema(builder);
+    _Schema.addEndianness(builder, endianness);
+    _Schema.addFields(builder, fieldsOffset);
+    _Schema.addCustomMetadata(builder, customMetadataOffset);
+    _Schema.addFeatures(builder, featuresOffset);
+    return _Schema.endSchema(builder);
+  }
+};
+
+// node_modules/apache-arrow/fb/message-header.mjs
+var MessageHeader;
+(function(MessageHeader2) {
+  MessageHeader2[MessageHeader2["NONE"] = 0] = "NONE";
+  MessageHeader2[MessageHeader2["Schema"] = 1] = "Schema";
+  MessageHeader2[MessageHeader2["DictionaryBatch"] = 2] = "DictionaryBatch";
+  MessageHeader2[MessageHeader2["RecordBatch"] = 3] = "RecordBatch";
+  MessageHeader2[MessageHeader2["Tensor"] = 4] = "Tensor";
+  MessageHeader2[MessageHeader2["SparseTensor"] = 5] = "SparseTensor";
+})(MessageHeader || (MessageHeader = {}));
+
+// node_modules/apache-arrow/enum.mjs
+var Type3;
+(function(Type4) {
+  Type4[Type4["NONE"] = 0] = "NONE";
+  Type4[Type4["Null"] = 1] = "Null";
+  Type4[Type4["Int"] = 2] = "Int";
+  Type4[Type4["Float"] = 3] = "Float";
+  Type4[Type4["Binary"] = 4] = "Binary";
+  Type4[Type4["Utf8"] = 5] = "Utf8";
+  Type4[Type4["Bool"] = 6] = "Bool";
+  Type4[Type4["Decimal"] = 7] = "Decimal";
+  Type4[Type4["Date"] = 8] = "Date";
+  Type4[Type4["Time"] = 9] = "Time";
+  Type4[Type4["Timestamp"] = 10] = "Timestamp";
+  Type4[Type4["Interval"] = 11] = "Interval";
+  Type4[Type4["List"] = 12] = "List";
+  Type4[Type4["Struct"] = 13] = "Struct";
+  Type4[Type4["Union"] = 14] = "Union";
+  Type4[Type4["FixedSizeBinary"] = 15] = "FixedSizeBinary";
+  Type4[Type4["FixedSizeList"] = 16] = "FixedSizeList";
+  Type4[Type4["Map"] = 17] = "Map";
+  Type4[Type4["Duration"] = 18] = "Duration";
+  Type4[Type4["LargeBinary"] = 19] = "LargeBinary";
+  Type4[Type4["LargeUtf8"] = 20] = "LargeUtf8";
+  Type4[Type4["Dictionary"] = -1] = "Dictionary";
+  Type4[Type4["Int8"] = -2] = "Int8";
+  Type4[Type4["Int16"] = -3] = "Int16";
+  Type4[Type4["Int32"] = -4] = "Int32";
+  Type4[Type4["Int64"] = -5] = "Int64";
+  Type4[Type4["Uint8"] = -6] = "Uint8";
+  Type4[Type4["Uint16"] = -7] = "Uint16";
+  Type4[Type4["Uint32"] = -8] = "Uint32";
+  Type4[Type4["Uint64"] = -9] = "Uint64";
+  Type4[Type4["Float16"] = -10] = "Float16";
+  Type4[Type4["Float32"] = -11] = "Float32";
+  Type4[Type4["Float64"] = -12] = "Float64";
+  Type4[Type4["DateDay"] = -13] = "DateDay";
+  Type4[Type4["DateMillisecond"] = -14] = "DateMillisecond";
+  Type4[Type4["TimestampSecond"] = -15] = "TimestampSecond";
+  Type4[Type4["TimestampMillisecond"] = -16] = "TimestampMillisecond";
+  Type4[Type4["TimestampMicrosecond"] = -17] = "TimestampMicrosecond";
+  Type4[Type4["TimestampNanosecond"] = -18] = "TimestampNanosecond";
+  Type4[Type4["TimeSecond"] = -19] = "TimeSecond";
+  Type4[Type4["TimeMillisecond"] = -20] = "TimeMillisecond";
+  Type4[Type4["TimeMicrosecond"] = -21] = "TimeMicrosecond";
+  Type4[Type4["TimeNanosecond"] = -22] = "TimeNanosecond";
+  Type4[Type4["DenseUnion"] = -23] = "DenseUnion";
+  Type4[Type4["SparseUnion"] = -24] = "SparseUnion";
+  Type4[Type4["IntervalDayTime"] = -25] = "IntervalDayTime";
+  Type4[Type4["IntervalYearMonth"] = -26] = "IntervalYearMonth";
+  Type4[Type4["DurationSecond"] = -27] = "DurationSecond";
+  Type4[Type4["DurationMillisecond"] = -28] = "DurationMillisecond";
+  Type4[Type4["DurationMicrosecond"] = -29] = "DurationMicrosecond";
+  Type4[Type4["DurationNanosecond"] = -30] = "DurationNanosecond";
+})(Type3 || (Type3 = {}));
+var BufferType;
+(function(BufferType2) {
+  BufferType2[BufferType2["OFFSET"] = 0] = "OFFSET";
+  BufferType2[BufferType2["DATA"] = 1] = "DATA";
+  BufferType2[BufferType2["VALIDITY"] = 2] = "VALIDITY";
+  BufferType2[BufferType2["TYPE"] = 3] = "TYPE";
+})(BufferType || (BufferType = {}));
+
+// node_modules/apache-arrow/util/vector.mjs
+var vector_exports = {};
+__export(vector_exports, {
+  clampRange: () => clampRange,
+  createElementComparator: () => createElementComparator,
+  wrapIndex: () => wrapIndex
+});
+
+// node_modules/apache-arrow/util/pretty.mjs
+var pretty_exports = {};
+__export(pretty_exports, {
+  valueToString: () => valueToString
+});
+var undf = void 0;
+function valueToString(x2) {
+  if (x2 === null) {
+    return "null";
+  }
+  if (x2 === undf) {
+    return "undefined";
+  }
+  switch (typeof x2) {
+    case "number":
+      return `${x2}`;
+    case "bigint":
+      return `${x2}`;
+    case "string":
+      return `"${x2}"`;
+  }
+  if (typeof x2[Symbol.toPrimitive] === "function") {
+    return x2[Symbol.toPrimitive]("string");
+  }
+  if (ArrayBuffer.isView(x2)) {
+    if (x2 instanceof BigInt64Array || x2 instanceof BigUint64Array) {
+      return `[${[...x2].map((x3) => valueToString(x3))}]`;
+    }
+    return `[${x2}]`;
+  }
+  return ArrayBuffer.isView(x2) ? `[${x2}]` : JSON.stringify(x2, (_, y) => typeof y === "bigint" ? `${y}` : y);
+}
+
+// node_modules/apache-arrow/util/bn.mjs
+var bn_exports = {};
+__export(bn_exports, {
+  BN: () => BN,
+  bigNumToBigInt: () => bigNumToBigInt,
+  bigNumToNumber: () => bigNumToNumber,
+  bigNumToString: () => bigNumToString,
+  isArrowBigNumSymbol: () => isArrowBigNumSymbol
+});
+
+// node_modules/apache-arrow/util/bigint.mjs
+function bigIntToNumber(number) {
+  if (typeof number === "bigint" && (number < Number.MIN_SAFE_INTEGER || number > Number.MAX_SAFE_INTEGER)) {
+    throw new TypeError(`${number} is not safe to convert to a number.`);
+  }
+  return Number(number);
+}
+function divideBigInts(number, divisor) {
+  return bigIntToNumber(number / divisor) + bigIntToNumber(number % divisor) / bigIntToNumber(divisor);
+}
+
+// node_modules/apache-arrow/util/bn.mjs
+var isArrowBigNumSymbol = /* @__PURE__ */ Symbol.for("isArrowBigNum");
+function BigNum(x2, ...xs) {
+  if (xs.length === 0) {
+    return Object.setPrototypeOf(toArrayBufferView(this["TypedArray"], x2), this.constructor.prototype);
+  }
+  return Object.setPrototypeOf(new this["TypedArray"](x2, ...xs), this.constructor.prototype);
+}
+BigNum.prototype[isArrowBigNumSymbol] = true;
+BigNum.prototype.toJSON = function() {
+  return `"${bigNumToString(this)}"`;
+};
+BigNum.prototype.valueOf = function(scale) {
+  return bigNumToNumber(this, scale);
+};
+BigNum.prototype.toString = function() {
+  return bigNumToString(this);
+};
+BigNum.prototype[Symbol.toPrimitive] = function(hint = "default") {
+  switch (hint) {
+    case "number":
+      return bigNumToNumber(this);
+    case "string":
+      return bigNumToString(this);
+    case "default":
+      return bigNumToBigInt(this);
+  }
+  return bigNumToString(this);
+};
+function SignedBigNum(...args) {
+  return BigNum.apply(this, args);
+}
+function UnsignedBigNum(...args) {
+  return BigNum.apply(this, args);
+}
+function DecimalBigNum(...args) {
+  return BigNum.apply(this, args);
+}
+Object.setPrototypeOf(SignedBigNum.prototype, Object.create(Int32Array.prototype));
+Object.setPrototypeOf(UnsignedBigNum.prototype, Object.create(Uint32Array.prototype));
+Object.setPrototypeOf(DecimalBigNum.prototype, Object.create(Uint32Array.prototype));
+Object.assign(SignedBigNum.prototype, BigNum.prototype, { "constructor": SignedBigNum, "signed": true, "TypedArray": Int32Array, "BigIntArray": BigInt64Array });
+Object.assign(UnsignedBigNum.prototype, BigNum.prototype, { "constructor": UnsignedBigNum, "signed": false, "TypedArray": Uint32Array, "BigIntArray": BigUint64Array });
+Object.assign(DecimalBigNum.prototype, BigNum.prototype, { "constructor": DecimalBigNum, "signed": true, "TypedArray": Uint32Array, "BigIntArray": BigUint64Array });
+var TWO_TO_THE_64 = BigInt(4294967296) * BigInt(4294967296);
+var TWO_TO_THE_64_MINUS_1 = TWO_TO_THE_64 - BigInt(1);
+function bigNumToNumber(bn, scale) {
+  const { buffer, byteOffset, byteLength, "signed": signed } = bn;
+  const words = new BigUint64Array(buffer, byteOffset, byteLength / 8);
+  const negative = signed && words.at(-1) & BigInt(1) << BigInt(63);
+  let number = BigInt(0);
+  let i2 = 0;
+  if (negative) {
+    for (const word of words) {
+      number |= (word ^ TWO_TO_THE_64_MINUS_1) * (BigInt(1) << BigInt(64 * i2++));
+    }
+    number *= BigInt(-1);
+    number -= BigInt(1);
+  } else {
+    for (const word of words) {
+      number |= word * (BigInt(1) << BigInt(64 * i2++));
+    }
+  }
+  if (typeof scale === "number") {
+    const denominator = BigInt(Math.pow(10, scale));
+    const quotient = number / denominator;
+    const remainder = number % denominator;
+    return bigIntToNumber(quotient) + bigIntToNumber(remainder) / bigIntToNumber(denominator);
+  }
+  return bigIntToNumber(number);
+}
+function bigNumToString(a) {
+  if (a.byteLength === 8) {
+    const bigIntArray = new a["BigIntArray"](a.buffer, a.byteOffset, 1);
+    return `${bigIntArray[0]}`;
+  }
+  if (!a["signed"]) {
+    return unsignedBigNumToString(a);
+  }
+  let array = new Uint16Array(a.buffer, a.byteOffset, a.byteLength / 2);
+  const highOrderWord = new Int16Array([array.at(-1)])[0];
+  if (highOrderWord >= 0) {
+    return unsignedBigNumToString(a);
+  }
+  array = array.slice();
+  let carry = 1;
+  for (let i2 = 0; i2 < array.length; i2++) {
+    const elem = array[i2];
+    const updated = ~elem + carry;
+    array[i2] = updated;
+    carry &= elem === 0 ? 1 : 0;
+  }
+  const negated = unsignedBigNumToString(array);
+  return `-${negated}`;
+}
+function bigNumToBigInt(a) {
+  if (a.byteLength === 8) {
+    const bigIntArray = new a["BigIntArray"](a.buffer, a.byteOffset, 1);
+    return bigIntArray[0];
+  } else {
+    return bigNumToString(a);
+  }
+}
+function unsignedBigNumToString(a) {
+  let digits = "";
+  const base64 = new Uint32Array(2);
+  let base32 = new Uint16Array(a.buffer, a.byteOffset, a.byteLength / 2);
+  const checks = new Uint32Array((base32 = new Uint16Array(base32).reverse()).buffer);
+  let i2 = -1;
+  const n = base32.length - 1;
+  do {
+    for (base64[0] = base32[i2 = 0]; i2 < n; ) {
+      base32[i2++] = base64[1] = base64[0] / 10;
+      base64[0] = (base64[0] - base64[1] * 10 << 16) + base32[i2];
+    }
+    base32[i2] = base64[1] = base64[0] / 10;
+    base64[0] = base64[0] - base64[1] * 10;
+    digits = `${base64[0]}${digits}`;
+  } while (checks[0] || checks[1] || checks[2] || checks[3]);
+  return digits !== null && digits !== void 0 ? digits : `0`;
+}
+var BN = class _BN {
+  /** @nocollapse */
+  static new(num, isSigned) {
+    switch (isSigned) {
+      case true:
+        return new SignedBigNum(num);
+      case false:
+        return new UnsignedBigNum(num);
+    }
+    switch (num.constructor) {
+      case Int8Array:
+      case Int16Array:
+      case Int32Array:
+      case BigInt64Array:
+        return new SignedBigNum(num);
+    }
+    if (num.byteLength === 16) {
+      return new DecimalBigNum(num);
+    }
+    return new UnsignedBigNum(num);
+  }
+  /** @nocollapse */
+  static signed(num) {
+    return new SignedBigNum(num);
+  }
+  /** @nocollapse */
+  static unsigned(num) {
+    return new UnsignedBigNum(num);
+  }
+  /** @nocollapse */
+  static decimal(num) {
+    return new DecimalBigNum(num);
+  }
+  constructor(num, isSigned) {
+    return _BN.new(num, isSigned);
+  }
+};
+
+// node_modules/apache-arrow/type.mjs
+var _a4;
+var _b;
+var _c;
+var _d;
+var _e;
+var _f;
+var _g;
+var _h;
+var _j;
+var _k;
+var _l;
+var _m;
+var _o;
+var _p;
+var _q;
+var _r;
+var _s;
+var _t;
+var _u;
+var _v;
+var _w;
+var _x;
+var DataType = class _DataType {
+  /** @nocollapse */
+  static isNull(x2) {
+    return (x2 === null || x2 === void 0 ? void 0 : x2.typeId) === Type3.Null;
+  }
+  /** @nocollapse */
+  static isInt(x2) {
+    return (x2 === null || x2 === void 0 ? void 0 : x2.typeId) === Type3.Int;
+  }
+  /** @nocollapse */
+  static isFloat(x2) {
+    return (x2 === null || x2 === void 0 ? void 0 : x2.typeId) === Type3.Float;
+  }
+  /** @nocollapse */
+  static isBinary(x2) {
+    return (x2 === null || x2 === void 0 ? void 0 : x2.typeId) === Type3.Binary;
+  }
+  /** @nocollapse */
+  static isLargeBinary(x2) {
+    return (x2 === null || x2 === void 0 ? void 0 : x2.typeId) === Type3.LargeBinary;
+  }
+  /** @nocollapse */
+  static isUtf8(x2) {
+    return (x2 === null || x2 === void 0 ? void 0 : x2.typeId) === Type3.Utf8;
+  }
+  /** @nocollapse */
+  static isLargeUtf8(x2) {
+    return (x2 === null || x2 === void 0 ? void 0 : x2.typeId) === Type3.LargeUtf8;
+  }
+  /** @nocollapse */
+  static isBool(x2) {
+    return (x2 === null || x2 === void 0 ? void 0 : x2.typeId) === Type3.Bool;
+  }
+  /** @nocollapse */
+  static isDecimal(x2) {
+    return (x2 === null || x2 === void 0 ? void 0 : x2.typeId) === Type3.Decimal;
+  }
+  /** @nocollapse */
+  static isDate(x2) {
+    return (x2 === null || x2 === void 0 ? void 0 : x2.typeId) === Type3.Date;
+  }
+  /** @nocollapse */
+  static isTime(x2) {
+    return (x2 === null || x2 === void 0 ? void 0 : x2.typeId) === Type3.Time;
+  }
+  /** @nocollapse */
+  static isTimestamp(x2) {
+    return (x2 === null || x2 === void 0 ? void 0 : x2.typeId) === Type3.Timestamp;
+  }
+  /** @nocollapse */
+  static isInterval(x2) {
+    return (x2 === null || x2 === void 0 ? void 0 : x2.typeId) === Type3.Interval;
+  }
+  /** @nocollapse */
+  static isDuration(x2) {
+    return (x2 === null || x2 === void 0 ? void 0 : x2.typeId) === Type3.Duration;
+  }
+  /** @nocollapse */
+  static isList(x2) {
+    return (x2 === null || x2 === void 0 ? void 0 : x2.typeId) === Type3.List;
+  }
+  /** @nocollapse */
+  static isStruct(x2) {
+    return (x2 === null || x2 === void 0 ? void 0 : x2.typeId) === Type3.Struct;
+  }
+  /** @nocollapse */
+  static isUnion(x2) {
+    return (x2 === null || x2 === void 0 ? void 0 : x2.typeId) === Type3.Union;
+  }
+  /** @nocollapse */
+  static isFixedSizeBinary(x2) {
+    return (x2 === null || x2 === void 0 ? void 0 : x2.typeId) === Type3.FixedSizeBinary;
+  }
+  /** @nocollapse */
+  static isFixedSizeList(x2) {
+    return (x2 === null || x2 === void 0 ? void 0 : x2.typeId) === Type3.FixedSizeList;
+  }
+  /** @nocollapse */
+  static isMap(x2) {
+    return (x2 === null || x2 === void 0 ? void 0 : x2.typeId) === Type3.Map;
+  }
+  /** @nocollapse */
+  static isDictionary(x2) {
+    return (x2 === null || x2 === void 0 ? void 0 : x2.typeId) === Type3.Dictionary;
+  }
+  /** @nocollapse */
+  static isDenseUnion(x2) {
+    return _DataType.isUnion(x2) && x2.mode === UnionMode.Dense;
+  }
+  /** @nocollapse */
+  static isSparseUnion(x2) {
+    return _DataType.isUnion(x2) && x2.mode === UnionMode.Sparse;
+  }
+  constructor(typeId) {
+    this.typeId = typeId;
+  }
+};
+_a4 = Symbol.toStringTag;
+DataType[_a4] = ((proto) => {
+  proto.children = null;
+  proto.ArrayType = Array;
+  proto.OffsetArrayType = Int32Array;
+  return proto[Symbol.toStringTag] = "DataType";
+})(DataType.prototype);
+var Null2 = class extends DataType {
+  constructor() {
+    super(Type3.Null);
+  }
+  toString() {
+    return `Null`;
+  }
+};
+_b = Symbol.toStringTag;
+Null2[_b] = ((proto) => proto[Symbol.toStringTag] = "Null")(Null2.prototype);
+var Int_ = class extends DataType {
+  constructor(isSigned, bitWidth) {
+    super(Type3.Int);
+    this.isSigned = isSigned;
+    this.bitWidth = bitWidth;
+  }
+  get ArrayType() {
+    switch (this.bitWidth) {
+      case 8:
+        return this.isSigned ? Int8Array : Uint8Array;
+      case 16:
+        return this.isSigned ? Int16Array : Uint16Array;
+      case 32:
+        return this.isSigned ? Int32Array : Uint32Array;
+      case 64:
+        return this.isSigned ? BigInt64Array : BigUint64Array;
+    }
+    throw new Error(`Unrecognized ${this[Symbol.toStringTag]} type`);
+  }
+  toString() {
+    return `${this.isSigned ? `I` : `Ui`}nt${this.bitWidth}`;
+  }
+};
+_c = Symbol.toStringTag;
+Int_[_c] = ((proto) => {
+  proto.isSigned = null;
+  proto.bitWidth = null;
+  return proto[Symbol.toStringTag] = "Int";
+})(Int_.prototype);
+var Int8 = class extends Int_ {
+  constructor() {
+    super(true, 8);
+  }
+  get ArrayType() {
+    return Int8Array;
+  }
+};
+var Int16 = class extends Int_ {
+  constructor() {
+    super(true, 16);
+  }
+  get ArrayType() {
+    return Int16Array;
+  }
+};
+var Int32 = class extends Int_ {
+  constructor() {
+    super(true, 32);
+  }
+  get ArrayType() {
+    return Int32Array;
+  }
+};
+var Int64 = class extends Int_ {
+  constructor() {
+    super(true, 64);
+  }
+  get ArrayType() {
+    return BigInt64Array;
+  }
+};
+var Uint8 = class extends Int_ {
+  constructor() {
+    super(false, 8);
+  }
+  get ArrayType() {
+    return Uint8Array;
+  }
+};
+var Uint16 = class extends Int_ {
+  constructor() {
+    super(false, 16);
+  }
+  get ArrayType() {
+    return Uint16Array;
+  }
+};
+var Uint32 = class extends Int_ {
+  constructor() {
+    super(false, 32);
+  }
+  get ArrayType() {
+    return Uint32Array;
+  }
+};
+var Uint64 = class extends Int_ {
+  constructor() {
+    super(false, 64);
+  }
+  get ArrayType() {
+    return BigUint64Array;
+  }
+};
+Object.defineProperty(Int8.prototype, "ArrayType", { value: Int8Array });
+Object.defineProperty(Int16.prototype, "ArrayType", { value: Int16Array });
+Object.defineProperty(Int32.prototype, "ArrayType", { value: Int32Array });
+Object.defineProperty(Int64.prototype, "ArrayType", { value: BigInt64Array });
+Object.defineProperty(Uint8.prototype, "ArrayType", { value: Uint8Array });
+Object.defineProperty(Uint16.prototype, "ArrayType", { value: Uint16Array });
+Object.defineProperty(Uint32.prototype, "ArrayType", { value: Uint32Array });
+Object.defineProperty(Uint64.prototype, "ArrayType", { value: BigUint64Array });
+var Float = class extends DataType {
+  constructor(precision) {
+    super(Type3.Float);
+    this.precision = precision;
+  }
+  get ArrayType() {
+    switch (this.precision) {
+      case Precision.HALF:
+        return Uint16Array;
+      case Precision.SINGLE:
+        return Float32Array;
+      case Precision.DOUBLE:
+        return Float64Array;
+    }
+    throw new Error(`Unrecognized ${this[Symbol.toStringTag]} type`);
+  }
+  toString() {
+    return `Float${this.precision << 5 || 16}`;
+  }
+};
+_d = Symbol.toStringTag;
+Float[_d] = ((proto) => {
+  proto.precision = null;
+  return proto[Symbol.toStringTag] = "Float";
+})(Float.prototype);
+var Float16 = class extends Float {
+  constructor() {
+    super(Precision.HALF);
+  }
+};
+var Float32 = class extends Float {
+  constructor() {
+    super(Precision.SINGLE);
+  }
+};
+var Float64 = class extends Float {
+  constructor() {
+    super(Precision.DOUBLE);
+  }
+};
+Object.defineProperty(Float16.prototype, "ArrayType", { value: Uint16Array });
+Object.defineProperty(Float32.prototype, "ArrayType", { value: Float32Array });
+Object.defineProperty(Float64.prototype, "ArrayType", { value: Float64Array });
+var Binary2 = class extends DataType {
+  constructor() {
+    super(Type3.Binary);
+  }
+  toString() {
+    return `Binary`;
+  }
+};
+_e = Symbol.toStringTag;
+Binary2[_e] = ((proto) => {
+  proto.ArrayType = Uint8Array;
+  return proto[Symbol.toStringTag] = "Binary";
+})(Binary2.prototype);
+var LargeBinary2 = class extends DataType {
+  constructor() {
+    super(Type3.LargeBinary);
+  }
+  toString() {
+    return `LargeBinary`;
+  }
+};
+_f = Symbol.toStringTag;
+LargeBinary2[_f] = ((proto) => {
+  proto.ArrayType = Uint8Array;
+  proto.OffsetArrayType = BigInt64Array;
+  return proto[Symbol.toStringTag] = "LargeBinary";
+})(LargeBinary2.prototype);
+var Utf82 = class extends DataType {
+  constructor() {
+    super(Type3.Utf8);
+  }
+  toString() {
+    return `Utf8`;
+  }
+};
+_g = Symbol.toStringTag;
+Utf82[_g] = ((proto) => {
+  proto.ArrayType = Uint8Array;
+  return proto[Symbol.toStringTag] = "Utf8";
+})(Utf82.prototype);
+var LargeUtf82 = class extends DataType {
+  constructor() {
+    super(Type3.LargeUtf8);
+  }
+  toString() {
+    return `LargeUtf8`;
+  }
+};
+_h = Symbol.toStringTag;
+LargeUtf82[_h] = ((proto) => {
+  proto.ArrayType = Uint8Array;
+  proto.OffsetArrayType = BigInt64Array;
+  return proto[Symbol.toStringTag] = "LargeUtf8";
+})(LargeUtf82.prototype);
+var Bool2 = class extends DataType {
+  constructor() {
+    super(Type3.Bool);
+  }
+  toString() {
+    return `Bool`;
+  }
+};
+_j = Symbol.toStringTag;
+Bool2[_j] = ((proto) => {
+  proto.ArrayType = Uint8Array;
+  return proto[Symbol.toStringTag] = "Bool";
+})(Bool2.prototype);
+var Decimal2 = class extends DataType {
+  constructor(scale, precision, bitWidth = 128) {
+    super(Type3.Decimal);
+    this.scale = scale;
+    this.precision = precision;
+    this.bitWidth = bitWidth;
+  }
+  toString() {
+    return `Decimal[${this.precision}e${this.scale > 0 ? `+` : ``}${this.scale}]`;
+  }
+};
+_k = Symbol.toStringTag;
+Decimal2[_k] = ((proto) => {
+  proto.scale = null;
+  proto.precision = null;
+  proto.ArrayType = Uint32Array;
+  return proto[Symbol.toStringTag] = "Decimal";
+})(Decimal2.prototype);
+var Date_ = class extends DataType {
+  constructor(unit) {
+    super(Type3.Date);
+    this.unit = unit;
+  }
+  toString() {
+    return `Date${(this.unit + 1) * 32}<${DateUnit[this.unit]}>`;
+  }
+  get ArrayType() {
+    return this.unit === DateUnit.DAY ? Int32Array : BigInt64Array;
+  }
+};
+_l = Symbol.toStringTag;
+Date_[_l] = ((proto) => {
+  proto.unit = null;
+  return proto[Symbol.toStringTag] = "Date";
+})(Date_.prototype);
+var Time_ = class extends DataType {
+  constructor(unit, bitWidth) {
+    super(Type3.Time);
+    this.unit = unit;
+    this.bitWidth = bitWidth;
+  }
+  toString() {
+    return `Time${this.bitWidth}<${TimeUnit[this.unit]}>`;
+  }
+  get ArrayType() {
+    switch (this.bitWidth) {
+      case 32:
+        return Int32Array;
+      case 64:
+        return BigInt64Array;
+    }
+    throw new Error(`Unrecognized ${this[Symbol.toStringTag]} type`);
+  }
+};
+_m = Symbol.toStringTag;
+Time_[_m] = ((proto) => {
+  proto.unit = null;
+  proto.bitWidth = null;
+  return proto[Symbol.toStringTag] = "Time";
+})(Time_.prototype);
+var Timestamp_ = class extends DataType {
+  constructor(unit, timezone) {
+    super(Type3.Timestamp);
+    this.unit = unit;
+    this.timezone = timezone;
+  }
+  toString() {
+    return `Timestamp<${TimeUnit[this.unit]}${this.timezone ? `, ${this.timezone}` : ``}>`;
+  }
+};
+_o = Symbol.toStringTag;
+Timestamp_[_o] = ((proto) => {
+  proto.unit = null;
+  proto.timezone = null;
+  proto.ArrayType = BigInt64Array;
+  return proto[Symbol.toStringTag] = "Timestamp";
+})(Timestamp_.prototype);
+var Interval_ = class extends DataType {
+  constructor(unit) {
+    super(Type3.Interval);
+    this.unit = unit;
+  }
+  toString() {
+    return `Interval<${IntervalUnit[this.unit]}>`;
+  }
+};
+_p = Symbol.toStringTag;
+Interval_[_p] = ((proto) => {
+  proto.unit = null;
+  proto.ArrayType = Int32Array;
+  return proto[Symbol.toStringTag] = "Interval";
+})(Interval_.prototype);
+var Duration2 = class extends DataType {
+  constructor(unit) {
+    super(Type3.Duration);
+    this.unit = unit;
+  }
+  toString() {
+    return `Duration<${TimeUnit[this.unit]}>`;
+  }
+};
+_q = Symbol.toStringTag;
+Duration2[_q] = ((proto) => {
+  proto.unit = null;
+  proto.ArrayType = BigInt64Array;
+  return proto[Symbol.toStringTag] = "Duration";
+})(Duration2.prototype);
+var List2 = class extends DataType {
+  constructor(child) {
+    super(Type3.List);
+    this.children = [child];
+  }
+  toString() {
+    return `List<${this.valueType}>`;
+  }
+  get valueType() {
+    return this.children[0].type;
+  }
+  get valueField() {
+    return this.children[0];
+  }
+  get ArrayType() {
+    return this.valueType.ArrayType;
+  }
+};
+_r = Symbol.toStringTag;
+List2[_r] = ((proto) => {
+  proto.children = null;
+  return proto[Symbol.toStringTag] = "List";
+})(List2.prototype);
+var Struct = class extends DataType {
+  constructor(children) {
+    super(Type3.Struct);
+    this.children = children;
+  }
+  toString() {
+    return `Struct<{${this.children.map((f3) => `${f3.name}:${f3.type}`).join(`, `)}}>`;
+  }
+};
+_s = Symbol.toStringTag;
+Struct[_s] = ((proto) => {
+  proto.children = null;
+  return proto[Symbol.toStringTag] = "Struct";
+})(Struct.prototype);
+var Union_ = class extends DataType {
+  constructor(mode, typeIds, children) {
+    super(Type3.Union);
+    this.mode = mode;
+    this.children = children;
+    this.typeIds = typeIds = Int32Array.from(typeIds);
+    this.typeIdToChildIndex = typeIds.reduce((typeIdToChildIndex, typeId, idx) => (typeIdToChildIndex[typeId] = idx) && typeIdToChildIndex || typeIdToChildIndex, /* @__PURE__ */ Object.create(null));
+  }
+  toString() {
+    return `${this[Symbol.toStringTag]}<${this.children.map((x2) => `${x2.type}`).join(` | `)}>`;
+  }
+};
+_t = Symbol.toStringTag;
+Union_[_t] = ((proto) => {
+  proto.mode = null;
+  proto.typeIds = null;
+  proto.children = null;
+  proto.typeIdToChildIndex = null;
+  proto.ArrayType = Int8Array;
+  return proto[Symbol.toStringTag] = "Union";
+})(Union_.prototype);
+var FixedSizeBinary2 = class extends DataType {
+  constructor(byteWidth) {
+    super(Type3.FixedSizeBinary);
+    this.byteWidth = byteWidth;
+  }
+  toString() {
+    return `FixedSizeBinary[${this.byteWidth}]`;
+  }
+};
+_u = Symbol.toStringTag;
+FixedSizeBinary2[_u] = ((proto) => {
+  proto.byteWidth = null;
+  proto.ArrayType = Uint8Array;
+  return proto[Symbol.toStringTag] = "FixedSizeBinary";
+})(FixedSizeBinary2.prototype);
+var FixedSizeList2 = class extends DataType {
+  constructor(listSize, child) {
+    super(Type3.FixedSizeList);
+    this.listSize = listSize;
+    this.children = [child];
+  }
+  get valueType() {
+    return this.children[0].type;
+  }
+  get valueField() {
+    return this.children[0];
+  }
+  get ArrayType() {
+    return this.valueType.ArrayType;
+  }
+  toString() {
+    return `FixedSizeList[${this.listSize}]<${this.valueType}>`;
+  }
+};
+_v = Symbol.toStringTag;
+FixedSizeList2[_v] = ((proto) => {
+  proto.children = null;
+  proto.listSize = null;
+  return proto[Symbol.toStringTag] = "FixedSizeList";
+})(FixedSizeList2.prototype);
+var Map_ = class extends DataType {
+  constructor(entries, keysSorted = false) {
+    var _y, _z, _0;
+    super(Type3.Map);
+    this.children = [entries];
+    this.keysSorted = keysSorted;
+    if (entries) {
+      entries["name"] = "entries";
+      if ((_y = entries === null || entries === void 0 ? void 0 : entries.type) === null || _y === void 0 ? void 0 : _y.children) {
+        const key = (_z = entries === null || entries === void 0 ? void 0 : entries.type) === null || _z === void 0 ? void 0 : _z.children[0];
+        if (key) {
+          key["name"] = "key";
+        }
+        const val = (_0 = entries === null || entries === void 0 ? void 0 : entries.type) === null || _0 === void 0 ? void 0 : _0.children[1];
+        if (val) {
+          val["name"] = "value";
+        }
+      }
+    }
+  }
+  get keyType() {
+    return this.children[0].type.children[0].type;
+  }
+  get valueType() {
+    return this.children[0].type.children[1].type;
+  }
+  get childType() {
+    return this.children[0].type;
+  }
+  toString() {
+    return `Map<{${this.children[0].type.children.map((f3) => `${f3.name}:${f3.type}`).join(`, `)}}>`;
+  }
+};
+_w = Symbol.toStringTag;
+Map_[_w] = ((proto) => {
+  proto.children = null;
+  proto.keysSorted = null;
+  return proto[Symbol.toStringTag] = "Map_";
+})(Map_.prototype);
+var getId = /* @__PURE__ */ ((atomicDictionaryId) => () => ++atomicDictionaryId)(-1);
+var Dictionary = class extends DataType {
+  constructor(dictionary, indices, id, isOrdered) {
+    super(Type3.Dictionary);
+    this.indices = indices;
+    this.dictionary = dictionary;
+    this.isOrdered = isOrdered || false;
+    this.id = id == null ? getId() : bigIntToNumber(id);
+  }
+  get children() {
+    return this.dictionary.children;
+  }
+  get valueType() {
+    return this.dictionary;
+  }
+  get ArrayType() {
+    return this.dictionary.ArrayType;
+  }
+  toString() {
+    return `Dictionary<${this.indices}, ${this.dictionary}>`;
+  }
+};
+_x = Symbol.toStringTag;
+Dictionary[_x] = ((proto) => {
+  proto.id = null;
+  proto.indices = null;
+  proto.isOrdered = null;
+  proto.dictionary = null;
+  return proto[Symbol.toStringTag] = "Dictionary";
+})(Dictionary.prototype);
+function strideForType(type) {
+  const t2 = type;
+  switch (type.typeId) {
+    case Type3.Decimal:
+      return type.bitWidth / 32;
+    case Type3.Interval:
+      return 1 + t2.unit;
+    // case Type.Int: return 1 + +((t as Int_).bitWidth > 32);
+    // case Type.Time: return 1 + +((t as Time_).bitWidth > 32);
+    case Type3.FixedSizeList:
+      return t2.listSize;
+    case Type3.FixedSizeBinary:
+      return t2.byteWidth;
+    default:
+      return 1;
+  }
+}
+
+// node_modules/apache-arrow/visitor.mjs
+var Visitor = class {
+  visitMany(nodes, ...args) {
+    return nodes.map((node, i2) => this.visit(node, ...args.map((x2) => x2[i2])));
+  }
+  visit(...args) {
+    return this.getVisitFn(args[0], false).apply(this, args);
+  }
+  getVisitFn(node, throwIfNotFound = true) {
+    return getVisitFn(this, node, throwIfNotFound);
+  }
+  getVisitFnByTypeId(typeId, throwIfNotFound = true) {
+    return getVisitFnByTypeId(this, typeId, throwIfNotFound);
+  }
+  visitNull(_node, ..._args) {
+    return null;
+  }
+  visitBool(_node, ..._args) {
+    return null;
+  }
+  visitInt(_node, ..._args) {
+    return null;
+  }
+  visitFloat(_node, ..._args) {
+    return null;
+  }
+  visitUtf8(_node, ..._args) {
+    return null;
+  }
+  visitLargeUtf8(_node, ..._args) {
+    return null;
+  }
+  visitBinary(_node, ..._args) {
+    return null;
+  }
+  visitLargeBinary(_node, ..._args) {
+    return null;
+  }
+  visitFixedSizeBinary(_node, ..._args) {
+    return null;
+  }
+  visitDate(_node, ..._args) {
+    return null;
+  }
+  visitTimestamp(_node, ..._args) {
+    return null;
+  }
+  visitTime(_node, ..._args) {
+    return null;
+  }
+  visitDecimal(_node, ..._args) {
+    return null;
+  }
+  visitList(_node, ..._args) {
+    return null;
+  }
+  visitStruct(_node, ..._args) {
+    return null;
+  }
+  visitUnion(_node, ..._args) {
+    return null;
+  }
+  visitDictionary(_node, ..._args) {
+    return null;
+  }
+  visitInterval(_node, ..._args) {
+    return null;
+  }
+  visitDuration(_node, ..._args) {
+    return null;
+  }
+  visitFixedSizeList(_node, ..._args) {
+    return null;
+  }
+  visitMap(_node, ..._args) {
+    return null;
+  }
+};
+function getVisitFn(visitor, node, throwIfNotFound = true) {
+  if (typeof node === "number") {
+    return getVisitFnByTypeId(visitor, node, throwIfNotFound);
+  }
+  if (typeof node === "string" && node in Type3) {
+    return getVisitFnByTypeId(visitor, Type3[node], throwIfNotFound);
+  }
+  if (node && node instanceof DataType) {
+    return getVisitFnByTypeId(visitor, inferDType(node), throwIfNotFound);
+  }
+  if ((node === null || node === void 0 ? void 0 : node.type) && node.type instanceof DataType) {
+    return getVisitFnByTypeId(visitor, inferDType(node.type), throwIfNotFound);
+  }
+  return getVisitFnByTypeId(visitor, Type3.NONE, throwIfNotFound);
+}
+function getVisitFnByTypeId(visitor, dtype, throwIfNotFound = true) {
+  let fn = null;
+  switch (dtype) {
+    case Type3.Null:
+      fn = visitor.visitNull;
+      break;
+    case Type3.Bool:
+      fn = visitor.visitBool;
+      break;
+    case Type3.Int:
+      fn = visitor.visitInt;
+      break;
+    case Type3.Int8:
+      fn = visitor.visitInt8 || visitor.visitInt;
+      break;
+    case Type3.Int16:
+      fn = visitor.visitInt16 || visitor.visitInt;
+      break;
+    case Type3.Int32:
+      fn = visitor.visitInt32 || visitor.visitInt;
+      break;
+    case Type3.Int64:
+      fn = visitor.visitInt64 || visitor.visitInt;
+      break;
+    case Type3.Uint8:
+      fn = visitor.visitUint8 || visitor.visitInt;
+      break;
+    case Type3.Uint16:
+      fn = visitor.visitUint16 || visitor.visitInt;
+      break;
+    case Type3.Uint32:
+      fn = visitor.visitUint32 || visitor.visitInt;
+      break;
+    case Type3.Uint64:
+      fn = visitor.visitUint64 || visitor.visitInt;
+      break;
+    case Type3.Float:
+      fn = visitor.visitFloat;
+      break;
+    case Type3.Float16:
+      fn = visitor.visitFloat16 || visitor.visitFloat;
+      break;
+    case Type3.Float32:
+      fn = visitor.visitFloat32 || visitor.visitFloat;
+      break;
+    case Type3.Float64:
+      fn = visitor.visitFloat64 || visitor.visitFloat;
+      break;
+    case Type3.Utf8:
+      fn = visitor.visitUtf8;
+      break;
+    case Type3.LargeUtf8:
+      fn = visitor.visitLargeUtf8;
+      break;
+    case Type3.Binary:
+      fn = visitor.visitBinary;
+      break;
+    case Type3.LargeBinary:
+      fn = visitor.visitLargeBinary;
+      break;
+    case Type3.FixedSizeBinary:
+      fn = visitor.visitFixedSizeBinary;
+      break;
+    case Type3.Date:
+      fn = visitor.visitDate;
+      break;
+    case Type3.DateDay:
+      fn = visitor.visitDateDay || visitor.visitDate;
+      break;
+    case Type3.DateMillisecond:
+      fn = visitor.visitDateMillisecond || visitor.visitDate;
+      break;
+    case Type3.Timestamp:
+      fn = visitor.visitTimestamp;
+      break;
+    case Type3.TimestampSecond:
+      fn = visitor.visitTimestampSecond || visitor.visitTimestamp;
+      break;
+    case Type3.TimestampMillisecond:
+      fn = visitor.visitTimestampMillisecond || visitor.visitTimestamp;
+      break;
+    case Type3.TimestampMicrosecond:
+      fn = visitor.visitTimestampMicrosecond || visitor.visitTimestamp;
+      break;
+    case Type3.TimestampNanosecond:
+      fn = visitor.visitTimestampNanosecond || visitor.visitTimestamp;
+      break;
+    case Type3.Time:
+      fn = visitor.visitTime;
+      break;
+    case Type3.TimeSecond:
+      fn = visitor.visitTimeSecond || visitor.visitTime;
+      break;
+    case Type3.TimeMillisecond:
+      fn = visitor.visitTimeMillisecond || visitor.visitTime;
+      break;
+    case Type3.TimeMicrosecond:
+      fn = visitor.visitTimeMicrosecond || visitor.visitTime;
+      break;
+    case Type3.TimeNanosecond:
+      fn = visitor.visitTimeNanosecond || visitor.visitTime;
+      break;
+    case Type3.Decimal:
+      fn = visitor.visitDecimal;
+      break;
+    case Type3.List:
+      fn = visitor.visitList;
+      break;
+    case Type3.Struct:
+      fn = visitor.visitStruct;
+      break;
+    case Type3.Union:
+      fn = visitor.visitUnion;
+      break;
+    case Type3.DenseUnion:
+      fn = visitor.visitDenseUnion || visitor.visitUnion;
+      break;
+    case Type3.SparseUnion:
+      fn = visitor.visitSparseUnion || visitor.visitUnion;
+      break;
+    case Type3.Dictionary:
+      fn = visitor.visitDictionary;
+      break;
+    case Type3.Interval:
+      fn = visitor.visitInterval;
+      break;
+    case Type3.IntervalDayTime:
+      fn = visitor.visitIntervalDayTime || visitor.visitInterval;
+      break;
+    case Type3.IntervalYearMonth:
+      fn = visitor.visitIntervalYearMonth || visitor.visitInterval;
+      break;
+    case Type3.Duration:
+      fn = visitor.visitDuration;
+      break;
+    case Type3.DurationSecond:
+      fn = visitor.visitDurationSecond || visitor.visitDuration;
+      break;
+    case Type3.DurationMillisecond:
+      fn = visitor.visitDurationMillisecond || visitor.visitDuration;
+      break;
+    case Type3.DurationMicrosecond:
+      fn = visitor.visitDurationMicrosecond || visitor.visitDuration;
+      break;
+    case Type3.DurationNanosecond:
+      fn = visitor.visitDurationNanosecond || visitor.visitDuration;
+      break;
+    case Type3.FixedSizeList:
+      fn = visitor.visitFixedSizeList;
+      break;
+    case Type3.Map:
+      fn = visitor.visitMap;
+      break;
+  }
+  if (typeof fn === "function")
+    return fn;
+  if (!throwIfNotFound)
+    return () => null;
+  throw new Error(`Unrecognized type '${Type3[dtype]}'`);
+}
+function inferDType(type) {
+  switch (type.typeId) {
+    case Type3.Null:
+      return Type3.Null;
+    case Type3.Int: {
+      const { bitWidth, isSigned } = type;
+      switch (bitWidth) {
+        case 8:
+          return isSigned ? Type3.Int8 : Type3.Uint8;
+        case 16:
+          return isSigned ? Type3.Int16 : Type3.Uint16;
+        case 32:
+          return isSigned ? Type3.Int32 : Type3.Uint32;
+        case 64:
+          return isSigned ? Type3.Int64 : Type3.Uint64;
+      }
+      return Type3.Int;
+    }
+    case Type3.Float:
+      switch (type.precision) {
+        case Precision.HALF:
+          return Type3.Float16;
+        case Precision.SINGLE:
+          return Type3.Float32;
+        case Precision.DOUBLE:
+          return Type3.Float64;
+      }
+      return Type3.Float;
+    case Type3.Binary:
+      return Type3.Binary;
+    case Type3.LargeBinary:
+      return Type3.LargeBinary;
+    case Type3.Utf8:
+      return Type3.Utf8;
+    case Type3.LargeUtf8:
+      return Type3.LargeUtf8;
+    case Type3.Bool:
+      return Type3.Bool;
+    case Type3.Decimal:
+      return Type3.Decimal;
+    case Type3.Time:
+      switch (type.unit) {
+        case TimeUnit.SECOND:
+          return Type3.TimeSecond;
+        case TimeUnit.MILLISECOND:
+          return Type3.TimeMillisecond;
+        case TimeUnit.MICROSECOND:
+          return Type3.TimeMicrosecond;
+        case TimeUnit.NANOSECOND:
+          return Type3.TimeNanosecond;
+      }
+      return Type3.Time;
+    case Type3.Timestamp:
+      switch (type.unit) {
+        case TimeUnit.SECOND:
+          return Type3.TimestampSecond;
+        case TimeUnit.MILLISECOND:
+          return Type3.TimestampMillisecond;
+        case TimeUnit.MICROSECOND:
+          return Type3.TimestampMicrosecond;
+        case TimeUnit.NANOSECOND:
+          return Type3.TimestampNanosecond;
+      }
+      return Type3.Timestamp;
+    case Type3.Date:
+      switch (type.unit) {
+        case DateUnit.DAY:
+          return Type3.DateDay;
+        case DateUnit.MILLISECOND:
+          return Type3.DateMillisecond;
+      }
+      return Type3.Date;
+    case Type3.Interval:
+      switch (type.unit) {
+        case IntervalUnit.DAY_TIME:
+          return Type3.IntervalDayTime;
+        case IntervalUnit.YEAR_MONTH:
+          return Type3.IntervalYearMonth;
+      }
+      return Type3.Interval;
+    case Type3.Duration:
+      switch (type.unit) {
+        case TimeUnit.SECOND:
+          return Type3.DurationSecond;
+        case TimeUnit.MILLISECOND:
+          return Type3.DurationMillisecond;
+        case TimeUnit.MICROSECOND:
+          return Type3.DurationMicrosecond;
+        case TimeUnit.NANOSECOND:
+          return Type3.DurationNanosecond;
+      }
+      return Type3.Duration;
+    case Type3.Map:
+      return Type3.Map;
+    case Type3.List:
+      return Type3.List;
+    case Type3.Struct:
+      return Type3.Struct;
+    case Type3.Union:
+      switch (type.mode) {
+        case UnionMode.Dense:
+          return Type3.DenseUnion;
+        case UnionMode.Sparse:
+          return Type3.SparseUnion;
+      }
+      return Type3.Union;
+    case Type3.FixedSizeBinary:
+      return Type3.FixedSizeBinary;
+    case Type3.FixedSizeList:
+      return Type3.FixedSizeList;
+    case Type3.Dictionary:
+      return Type3.Dictionary;
+  }
+  throw new Error(`Unrecognized type '${Type3[type.typeId]}'`);
+}
+Visitor.prototype.visitInt8 = null;
+Visitor.prototype.visitInt16 = null;
+Visitor.prototype.visitInt32 = null;
+Visitor.prototype.visitInt64 = null;
+Visitor.prototype.visitUint8 = null;
+Visitor.prototype.visitUint16 = null;
+Visitor.prototype.visitUint32 = null;
+Visitor.prototype.visitUint64 = null;
+Visitor.prototype.visitFloat16 = null;
+Visitor.prototype.visitFloat32 = null;
+Visitor.prototype.visitFloat64 = null;
+Visitor.prototype.visitDateDay = null;
+Visitor.prototype.visitDateMillisecond = null;
+Visitor.prototype.visitTimestampSecond = null;
+Visitor.prototype.visitTimestampMillisecond = null;
+Visitor.prototype.visitTimestampMicrosecond = null;
+Visitor.prototype.visitTimestampNanosecond = null;
+Visitor.prototype.visitTimeSecond = null;
+Visitor.prototype.visitTimeMillisecond = null;
+Visitor.prototype.visitTimeMicrosecond = null;
+Visitor.prototype.visitTimeNanosecond = null;
+Visitor.prototype.visitDenseUnion = null;
+Visitor.prototype.visitSparseUnion = null;
+Visitor.prototype.visitIntervalDayTime = null;
+Visitor.prototype.visitIntervalYearMonth = null;
+Visitor.prototype.visitDuration = null;
+Visitor.prototype.visitDurationSecond = null;
+Visitor.prototype.visitDurationMillisecond = null;
+Visitor.prototype.visitDurationMicrosecond = null;
+Visitor.prototype.visitDurationNanosecond = null;
+
+// node_modules/apache-arrow/util/math.mjs
+var math_exports = {};
+__export(math_exports, {
+  float64ToUint16: () => float64ToUint16,
+  uint16ToFloat64: () => uint16ToFloat64
+});
+var f64 = new Float64Array(1);
+var u32 = new Uint32Array(f64.buffer);
+function uint16ToFloat64(h2) {
+  const expo = (h2 & 31744) >> 10;
+  const sigf = (h2 & 1023) / 1024;
+  const sign = Math.pow(-1, (h2 & 32768) >> 15);
+  switch (expo) {
+    case 31:
+      return sign * (sigf ? Number.NaN : 1 / 0);
+    case 0:
+      return sign * (sigf ? 6103515625e-14 * sigf : 0);
+  }
+  return sign * Math.pow(2, expo - 15) * (1 + sigf);
+}
+function float64ToUint16(d) {
+  if (d !== d) {
+    return 32256;
+  }
+  f64[0] = d;
+  const sign = (u32[1] & 2147483648) >> 16 & 65535;
+  let expo = u32[1] & 2146435072, sigf = 0;
+  if (expo >= 1089470464) {
+    if (u32[0] > 0) {
+      expo = 31744;
+    } else {
+      expo = (expo & 2080374784) >> 16;
+      sigf = (u32[1] & 1048575) >> 10;
+    }
+  } else if (expo <= 1056964608) {
+    sigf = 1048576 + (u32[1] & 1048575);
+    sigf = 1048576 + (sigf << (expo >> 20) - 998) >> 21;
+    expo = 0;
+  } else {
+    expo = expo - 1056964608 >> 10;
+    sigf = (u32[1] & 1048575) + 512 >> 10;
+  }
+  return sign | expo | sigf & 65535;
+}
+
+// node_modules/apache-arrow/visitor/set.mjs
+var SetVisitor = class extends Visitor {
+};
+function wrapSet(fn) {
+  return (data, _1, _2) => {
+    if (data.setValid(_1, _2 != null)) {
+      return fn(data, _1, _2);
+    }
+  };
+}
+var setEpochMsToDays = (data, index, epochMs) => {
+  data[index] = Math.floor(epochMs / 864e5);
+};
+var setVariableWidthBytes = (values, valueOffsets, index, value) => {
+  if (index + 1 < valueOffsets.length) {
+    const x2 = bigIntToNumber(valueOffsets[index]);
+    const y = bigIntToNumber(valueOffsets[index + 1]);
+    values.set(value.subarray(0, y - x2), x2);
+  }
+};
+var setBool = ({ offset, values }, index, val) => {
+  const idx = offset + index;
+  val ? values[idx >> 3] |= 1 << idx % 8 : values[idx >> 3] &= ~(1 << idx % 8);
+};
+var setInt = ({ values }, index, value) => {
+  values[index] = value;
+};
+var setFloat = ({ values }, index, value) => {
+  values[index] = value;
+};
+var setFloat16 = ({ values }, index, value) => {
+  values[index] = float64ToUint16(value);
+};
+var setAnyFloat = (data, index, value) => {
+  switch (data.type.precision) {
+    case Precision.HALF:
+      return setFloat16(data, index, value);
+    case Precision.SINGLE:
+    case Precision.DOUBLE:
+      return setFloat(data, index, value);
+  }
+};
+var setDateDay = ({ values }, index, value) => {
+  setEpochMsToDays(values, index, value.valueOf());
+};
+var setDateMillisecond = ({ values }, index, value) => {
+  values[index] = BigInt(value);
+};
+var setFixedSizeBinary = ({ stride, values }, index, value) => {
+  values.set(value.subarray(0, stride), stride * index);
+};
+var setBinary = ({ values, valueOffsets }, index, value) => setVariableWidthBytes(values, valueOffsets, index, value);
+var setUtf8 = ({ values, valueOffsets }, index, value) => setVariableWidthBytes(values, valueOffsets, index, encodeUtf8(value));
+var setDate = (data, index, value) => {
+  data.type.unit === DateUnit.DAY ? setDateDay(data, index, value) : setDateMillisecond(data, index, value);
+};
+var setTimestampSecond = ({ values }, index, value) => {
+  values[index] = BigInt(value / 1e3);
+};
+var setTimestampMillisecond = ({ values }, index, value) => {
+  values[index] = BigInt(value);
+};
+var setTimestampMicrosecond = ({ values }, index, value) => {
+  values[index] = BigInt(value * 1e3);
+};
+var setTimestampNanosecond = ({ values }, index, value) => {
+  values[index] = BigInt(value * 1e6);
+};
+var setTimestamp = (data, index, value) => {
+  switch (data.type.unit) {
+    case TimeUnit.SECOND:
+      return setTimestampSecond(data, index, value);
+    case TimeUnit.MILLISECOND:
+      return setTimestampMillisecond(data, index, value);
+    case TimeUnit.MICROSECOND:
+      return setTimestampMicrosecond(data, index, value);
+    case TimeUnit.NANOSECOND:
+      return setTimestampNanosecond(data, index, value);
+  }
+};
+var setTimeSecond = ({ values }, index, value) => {
+  values[index] = value;
+};
+var setTimeMillisecond = ({ values }, index, value) => {
+  values[index] = value;
+};
+var setTimeMicrosecond = ({ values }, index, value) => {
+  values[index] = value;
+};
+var setTimeNanosecond = ({ values }, index, value) => {
+  values[index] = value;
+};
+var setTime = (data, index, value) => {
+  switch (data.type.unit) {
+    case TimeUnit.SECOND:
+      return setTimeSecond(data, index, value);
+    case TimeUnit.MILLISECOND:
+      return setTimeMillisecond(data, index, value);
+    case TimeUnit.MICROSECOND:
+      return setTimeMicrosecond(data, index, value);
+    case TimeUnit.NANOSECOND:
+      return setTimeNanosecond(data, index, value);
+  }
+};
+var setDecimal = ({ values, stride }, index, value) => {
+  values.set(value.subarray(0, stride), stride * index);
+};
+var setList = (data, index, value) => {
+  const values = data.children[0];
+  const valueOffsets = data.valueOffsets;
+  const set = instance.getVisitFn(values);
+  if (Array.isArray(value)) {
+    for (let idx = -1, itr = valueOffsets[index], end = valueOffsets[index + 1]; itr < end; ) {
+      set(values, itr++, value[++idx]);
+    }
+  } else {
+    for (let idx = -1, itr = valueOffsets[index], end = valueOffsets[index + 1]; itr < end; ) {
+      set(values, itr++, value.get(++idx));
+    }
+  }
+};
+var setMap = (data, index, value) => {
+  const values = data.children[0];
+  const { valueOffsets } = data;
+  const set = instance.getVisitFn(values);
+  let { [index]: idx, [index + 1]: end } = valueOffsets;
+  const entries = value instanceof Map ? value.entries() : Object.entries(value);
+  for (const val of entries) {
+    set(values, idx, val);
+    if (++idx >= end)
+      break;
+  }
+};
+var _setStructArrayValue = (o, v) => (set, c, _, i2) => c && set(c, o, v[i2]);
+var _setStructVectorValue = (o, v) => (set, c, _, i2) => c && set(c, o, v.get(i2));
+var _setStructMapValue = (o, v) => (set, c, f3, _) => c && set(c, o, v.get(f3.name));
+var _setStructObjectValue = (o, v) => (set, c, f3, _) => c && set(c, o, v[f3.name]);
+var setStruct = (data, index, value) => {
+  const childSetters = data.type.children.map((f3) => instance.getVisitFn(f3.type));
+  const set = value instanceof Map ? _setStructMapValue(index, value) : value instanceof Vector ? _setStructVectorValue(index, value) : Array.isArray(value) ? _setStructArrayValue(index, value) : _setStructObjectValue(index, value);
+  data.type.children.forEach((f3, i2) => set(childSetters[i2], data.children[i2], f3, i2));
+};
+var setUnion = (data, index, value) => {
+  data.type.mode === UnionMode.Dense ? setDenseUnion(data, index, value) : setSparseUnion(data, index, value);
+};
+var setDenseUnion = (data, index, value) => {
+  const childIndex = data.type.typeIdToChildIndex[data.typeIds[index]];
+  const child = data.children[childIndex];
+  instance.visit(child, data.valueOffsets[index], value);
+};
+var setSparseUnion = (data, index, value) => {
+  const childIndex = data.type.typeIdToChildIndex[data.typeIds[index]];
+  const child = data.children[childIndex];
+  instance.visit(child, index, value);
+};
+var setDictionary = (data, index, value) => {
+  var _a9;
+  (_a9 = data.dictionary) === null || _a9 === void 0 ? void 0 : _a9.set(data.values[index], value);
+};
+var setIntervalValue = (data, index, value) => {
+  data.type.unit === IntervalUnit.DAY_TIME ? setIntervalDayTime(data, index, value) : setIntervalYearMonth(data, index, value);
+};
+var setIntervalDayTime = ({ values }, index, value) => {
+  values.set(value.subarray(0, 2), 2 * index);
+};
+var setIntervalYearMonth = ({ values }, index, value) => {
+  values[index] = value[0] * 12 + value[1] % 12;
+};
+var setDurationSecond = ({ values }, index, value) => {
+  values[index] = value;
+};
+var setDurationMillisecond = ({ values }, index, value) => {
+  values[index] = value;
+};
+var setDurationMicrosecond = ({ values }, index, value) => {
+  values[index] = value;
+};
+var setDurationNanosecond = ({ values }, index, value) => {
+  values[index] = value;
+};
+var setDuration = (data, index, value) => {
+  switch (data.type.unit) {
+    case TimeUnit.SECOND:
+      return setDurationSecond(data, index, value);
+    case TimeUnit.MILLISECOND:
+      return setDurationMillisecond(data, index, value);
+    case TimeUnit.MICROSECOND:
+      return setDurationMicrosecond(data, index, value);
+    case TimeUnit.NANOSECOND:
+      return setDurationNanosecond(data, index, value);
+  }
+};
+var setFixedSizeList = (data, index, value) => {
+  const { stride } = data;
+  const child = data.children[0];
+  const set = instance.getVisitFn(child);
+  if (Array.isArray(value)) {
+    for (let idx = -1, offset = index * stride; ++idx < stride; ) {
+      set(child, offset + idx, value[idx]);
+    }
+  } else {
+    for (let idx = -1, offset = index * stride; ++idx < stride; ) {
+      set(child, offset + idx, value.get(idx));
+    }
+  }
+};
+SetVisitor.prototype.visitBool = wrapSet(setBool);
+SetVisitor.prototype.visitInt = wrapSet(setInt);
+SetVisitor.prototype.visitInt8 = wrapSet(setInt);
+SetVisitor.prototype.visitInt16 = wrapSet(setInt);
+SetVisitor.prototype.visitInt32 = wrapSet(setInt);
+SetVisitor.prototype.visitInt64 = wrapSet(setInt);
+SetVisitor.prototype.visitUint8 = wrapSet(setInt);
+SetVisitor.prototype.visitUint16 = wrapSet(setInt);
+SetVisitor.prototype.visitUint32 = wrapSet(setInt);
+SetVisitor.prototype.visitUint64 = wrapSet(setInt);
+SetVisitor.prototype.visitFloat = wrapSet(setAnyFloat);
+SetVisitor.prototype.visitFloat16 = wrapSet(setFloat16);
+SetVisitor.prototype.visitFloat32 = wrapSet(setFloat);
+SetVisitor.prototype.visitFloat64 = wrapSet(setFloat);
+SetVisitor.prototype.visitUtf8 = wrapSet(setUtf8);
+SetVisitor.prototype.visitLargeUtf8 = wrapSet(setUtf8);
+SetVisitor.prototype.visitBinary = wrapSet(setBinary);
+SetVisitor.prototype.visitLargeBinary = wrapSet(setBinary);
+SetVisitor.prototype.visitFixedSizeBinary = wrapSet(setFixedSizeBinary);
+SetVisitor.prototype.visitDate = wrapSet(setDate);
+SetVisitor.prototype.visitDateDay = wrapSet(setDateDay);
+SetVisitor.prototype.visitDateMillisecond = wrapSet(setDateMillisecond);
+SetVisitor.prototype.visitTimestamp = wrapSet(setTimestamp);
+SetVisitor.prototype.visitTimestampSecond = wrapSet(setTimestampSecond);
+SetVisitor.prototype.visitTimestampMillisecond = wrapSet(setTimestampMillisecond);
+SetVisitor.prototype.visitTimestampMicrosecond = wrapSet(setTimestampMicrosecond);
+SetVisitor.prototype.visitTimestampNanosecond = wrapSet(setTimestampNanosecond);
+SetVisitor.prototype.visitTime = wrapSet(setTime);
+SetVisitor.prototype.visitTimeSecond = wrapSet(setTimeSecond);
+SetVisitor.prototype.visitTimeMillisecond = wrapSet(setTimeMillisecond);
+SetVisitor.prototype.visitTimeMicrosecond = wrapSet(setTimeMicrosecond);
+SetVisitor.prototype.visitTimeNanosecond = wrapSet(setTimeNanosecond);
+SetVisitor.prototype.visitDecimal = wrapSet(setDecimal);
+SetVisitor.prototype.visitList = wrapSet(setList);
+SetVisitor.prototype.visitStruct = wrapSet(setStruct);
+SetVisitor.prototype.visitUnion = wrapSet(setUnion);
+SetVisitor.prototype.visitDenseUnion = wrapSet(setDenseUnion);
+SetVisitor.prototype.visitSparseUnion = wrapSet(setSparseUnion);
+SetVisitor.prototype.visitDictionary = wrapSet(setDictionary);
+SetVisitor.prototype.visitInterval = wrapSet(setIntervalValue);
+SetVisitor.prototype.visitIntervalDayTime = wrapSet(setIntervalDayTime);
+SetVisitor.prototype.visitIntervalYearMonth = wrapSet(setIntervalYearMonth);
+SetVisitor.prototype.visitDuration = wrapSet(setDuration);
+SetVisitor.prototype.visitDurationSecond = wrapSet(setDurationSecond);
+SetVisitor.prototype.visitDurationMillisecond = wrapSet(setDurationMillisecond);
+SetVisitor.prototype.visitDurationMicrosecond = wrapSet(setDurationMicrosecond);
+SetVisitor.prototype.visitDurationNanosecond = wrapSet(setDurationNanosecond);
+SetVisitor.prototype.visitFixedSizeList = wrapSet(setFixedSizeList);
+SetVisitor.prototype.visitMap = wrapSet(setMap);
+var instance = new SetVisitor();
+
+// node_modules/apache-arrow/row/struct.mjs
+var kParent = /* @__PURE__ */ Symbol.for("parent");
+var kRowIndex = /* @__PURE__ */ Symbol.for("rowIndex");
+var StructRow = class {
+  constructor(parent, rowIndex) {
+    this[kParent] = parent;
+    this[kRowIndex] = rowIndex;
+    return new Proxy(this, structRowProxyHandler);
+  }
+  toArray() {
+    return Object.values(this.toJSON());
+  }
+  toJSON() {
+    const i2 = this[kRowIndex];
+    const parent = this[kParent];
+    const keys = parent.type.children;
+    const json = {};
+    for (let j = -1, n = keys.length; ++j < n; ) {
+      json[keys[j].name] = instance2.visit(parent.children[j], i2);
+    }
+    return json;
+  }
+  toString() {
+    return `{${[...this].map(([key, val]) => `${valueToString(key)}: ${valueToString(val)}`).join(", ")}}`;
+  }
+  [/* @__PURE__ */ Symbol.for("nodejs.util.inspect.custom")]() {
+    return this.toString();
+  }
+  [Symbol.iterator]() {
+    return new StructRowIterator(this[kParent], this[kRowIndex]);
+  }
+};
+var StructRowIterator = class {
+  constructor(data, rowIndex) {
+    this.childIndex = 0;
+    this.children = data.children;
+    this.rowIndex = rowIndex;
+    this.childFields = data.type.children;
+    this.numChildren = this.childFields.length;
+  }
+  [Symbol.iterator]() {
+    return this;
+  }
+  next() {
+    const i2 = this.childIndex;
+    if (i2 < this.numChildren) {
+      this.childIndex = i2 + 1;
+      return {
+        done: false,
+        value: [
+          this.childFields[i2].name,
+          instance2.visit(this.children[i2], this.rowIndex)
+        ]
+      };
+    }
+    return { done: true, value: null };
+  }
+};
+Object.defineProperties(StructRow.prototype, {
+  [Symbol.toStringTag]: { enumerable: false, configurable: false, value: "Row" },
+  [kParent]: { writable: true, enumerable: false, configurable: false, value: null },
+  [kRowIndex]: { writable: true, enumerable: false, configurable: false, value: -1 }
+});
+var StructRowProxyHandler = class {
+  isExtensible() {
+    return false;
+  }
+  deleteProperty() {
+    return false;
+  }
+  preventExtensions() {
+    return true;
+  }
+  ownKeys(row) {
+    return row[kParent].type.children.map((f3) => f3.name);
+  }
+  has(row, key) {
+    return row[kParent].type.children.some((f3) => f3.name === key);
+  }
+  getOwnPropertyDescriptor(row, key) {
+    if (row[kParent].type.children.some((f3) => f3.name === key)) {
+      return { writable: true, enumerable: true, configurable: true };
+    }
+    return;
+  }
+  get(row, key) {
+    if (Reflect.has(row, key)) {
+      return row[key];
+    }
+    const idx = row[kParent].type.children.findIndex((f3) => f3.name === key);
+    if (idx !== -1) {
+      const val = instance2.visit(row[kParent].children[idx], row[kRowIndex]);
+      Reflect.set(row, key, val);
+      return val;
+    }
+  }
+  set(row, key, val) {
+    const idx = row[kParent].type.children.findIndex((f3) => f3.name === key);
+    if (idx !== -1) {
+      instance.visit(row[kParent].children[idx], row[kRowIndex], val);
+      return Reflect.set(row, key, val);
+    } else if (Reflect.has(row, key) || typeof key === "symbol") {
+      return Reflect.set(row, key, val);
+    }
+    return false;
+  }
+};
+var structRowProxyHandler = new StructRowProxyHandler();
+
+// node_modules/apache-arrow/visitor/get.mjs
+var GetVisitor = class extends Visitor {
+};
+function wrapGet(fn) {
+  return (data, _1) => data.getValid(_1) ? fn(data, _1) : null;
+}
+var epochDaysToMs = (data, index) => 864e5 * data[index];
+var getNull = (_data, _index) => null;
+var getVariableWidthBytes = (values, valueOffsets, index) => {
+  if (index + 1 >= valueOffsets.length) {
+    return null;
+  }
+  const x2 = bigIntToNumber(valueOffsets[index]);
+  const y = bigIntToNumber(valueOffsets[index + 1]);
+  return values.subarray(x2, y);
+};
+var getBool = ({ offset, values }, index) => {
+  const idx = offset + index;
+  const byte = values[idx >> 3];
+  return (byte & 1 << idx % 8) !== 0;
+};
+var getDateDay = ({ values }, index) => epochDaysToMs(values, index);
+var getDateMillisecond = ({ values }, index) => bigIntToNumber(values[index]);
+var getNumeric = ({ stride, values }, index) => values[stride * index];
+var getFloat16 = ({ stride, values }, index) => uint16ToFloat64(values[stride * index]);
+var getBigInts = ({ values }, index) => values[index];
+var getFixedSizeBinary = ({ stride, values }, index) => values.subarray(stride * index, stride * (index + 1));
+var getBinary = ({ values, valueOffsets }, index) => getVariableWidthBytes(values, valueOffsets, index);
+var getUtf8 = ({ values, valueOffsets }, index) => {
+  const bytes = getVariableWidthBytes(values, valueOffsets, index);
+  return bytes !== null ? decodeUtf8(bytes) : null;
+};
+var getInt = ({ values }, index) => values[index];
+var getFloat = ({ type, values }, index) => type.precision !== Precision.HALF ? values[index] : uint16ToFloat64(values[index]);
+var getDate = (data, index) => data.type.unit === DateUnit.DAY ? getDateDay(data, index) : getDateMillisecond(data, index);
+var getTimestampSecond = ({ values }, index) => 1e3 * bigIntToNumber(values[index]);
+var getTimestampMillisecond = ({ values }, index) => bigIntToNumber(values[index]);
+var getTimestampMicrosecond = ({ values }, index) => divideBigInts(values[index], BigInt(1e3));
+var getTimestampNanosecond = ({ values }, index) => divideBigInts(values[index], BigInt(1e6));
+var getTimestamp = (data, index) => {
+  switch (data.type.unit) {
+    case TimeUnit.SECOND:
+      return getTimestampSecond(data, index);
+    case TimeUnit.MILLISECOND:
+      return getTimestampMillisecond(data, index);
+    case TimeUnit.MICROSECOND:
+      return getTimestampMicrosecond(data, index);
+    case TimeUnit.NANOSECOND:
+      return getTimestampNanosecond(data, index);
+  }
+};
+var getTimeSecond = ({ values }, index) => values[index];
+var getTimeMillisecond = ({ values }, index) => values[index];
+var getTimeMicrosecond = ({ values }, index) => values[index];
+var getTimeNanosecond = ({ values }, index) => values[index];
+var getTime = (data, index) => {
+  switch (data.type.unit) {
+    case TimeUnit.SECOND:
+      return getTimeSecond(data, index);
+    case TimeUnit.MILLISECOND:
+      return getTimeMillisecond(data, index);
+    case TimeUnit.MICROSECOND:
+      return getTimeMicrosecond(data, index);
+    case TimeUnit.NANOSECOND:
+      return getTimeNanosecond(data, index);
+  }
+};
+var getDecimal = ({ values, stride }, index) => BN.decimal(values.subarray(stride * index, stride * (index + 1)));
+var getList = (data, index) => {
+  const { valueOffsets, stride, children } = data;
+  const { [index * stride]: begin, [index * stride + 1]: end } = valueOffsets;
+  const child = children[0];
+  const slice = child.slice(begin, end - begin);
+  return new Vector([slice]);
+};
+var getMap = (data, index) => {
+  const { valueOffsets, children } = data;
+  const { [index]: begin, [index + 1]: end } = valueOffsets;
+  const child = children[0];
+  return new MapRow(child.slice(begin, end - begin));
+};
+var getStruct = (data, index) => {
+  return new StructRow(data, index);
+};
+var getUnion = (data, index) => {
+  return data.type.mode === UnionMode.Dense ? getDenseUnion(data, index) : getSparseUnion(data, index);
+};
+var getDenseUnion = (data, index) => {
+  const childIndex = data.type.typeIdToChildIndex[data.typeIds[index]];
+  const child = data.children[childIndex];
+  return instance2.visit(child, data.valueOffsets[index]);
+};
+var getSparseUnion = (data, index) => {
+  const childIndex = data.type.typeIdToChildIndex[data.typeIds[index]];
+  const child = data.children[childIndex];
+  return instance2.visit(child, index);
+};
+var getDictionary = (data, index) => {
+  var _a9;
+  return (_a9 = data.dictionary) === null || _a9 === void 0 ? void 0 : _a9.get(data.values[index]);
+};
+var getInterval = (data, index) => data.type.unit === IntervalUnit.DAY_TIME ? getIntervalDayTime(data, index) : getIntervalYearMonth(data, index);
+var getIntervalDayTime = ({ values }, index) => values.subarray(2 * index, 2 * (index + 1));
+var getIntervalYearMonth = ({ values }, index) => {
+  const interval = values[index];
+  const int32s = new Int32Array(2);
+  int32s[0] = Math.trunc(interval / 12);
+  int32s[1] = Math.trunc(interval % 12);
+  return int32s;
+};
+var getDurationSecond = ({ values }, index) => values[index];
+var getDurationMillisecond = ({ values }, index) => values[index];
+var getDurationMicrosecond = ({ values }, index) => values[index];
+var getDurationNanosecond = ({ values }, index) => values[index];
+var getDuration = (data, index) => {
+  switch (data.type.unit) {
+    case TimeUnit.SECOND:
+      return getDurationSecond(data, index);
+    case TimeUnit.MILLISECOND:
+      return getDurationMillisecond(data, index);
+    case TimeUnit.MICROSECOND:
+      return getDurationMicrosecond(data, index);
+    case TimeUnit.NANOSECOND:
+      return getDurationNanosecond(data, index);
+  }
+};
+var getFixedSizeList = (data, index) => {
+  const { stride, children } = data;
+  const child = children[0];
+  const slice = child.slice(index * stride, stride);
+  return new Vector([slice]);
+};
+GetVisitor.prototype.visitNull = wrapGet(getNull);
+GetVisitor.prototype.visitBool = wrapGet(getBool);
+GetVisitor.prototype.visitInt = wrapGet(getInt);
+GetVisitor.prototype.visitInt8 = wrapGet(getNumeric);
+GetVisitor.prototype.visitInt16 = wrapGet(getNumeric);
+GetVisitor.prototype.visitInt32 = wrapGet(getNumeric);
+GetVisitor.prototype.visitInt64 = wrapGet(getBigInts);
+GetVisitor.prototype.visitUint8 = wrapGet(getNumeric);
+GetVisitor.prototype.visitUint16 = wrapGet(getNumeric);
+GetVisitor.prototype.visitUint32 = wrapGet(getNumeric);
+GetVisitor.prototype.visitUint64 = wrapGet(getBigInts);
+GetVisitor.prototype.visitFloat = wrapGet(getFloat);
+GetVisitor.prototype.visitFloat16 = wrapGet(getFloat16);
+GetVisitor.prototype.visitFloat32 = wrapGet(getNumeric);
+GetVisitor.prototype.visitFloat64 = wrapGet(getNumeric);
+GetVisitor.prototype.visitUtf8 = wrapGet(getUtf8);
+GetVisitor.prototype.visitLargeUtf8 = wrapGet(getUtf8);
+GetVisitor.prototype.visitBinary = wrapGet(getBinary);
+GetVisitor.prototype.visitLargeBinary = wrapGet(getBinary);
+GetVisitor.prototype.visitFixedSizeBinary = wrapGet(getFixedSizeBinary);
+GetVisitor.prototype.visitDate = wrapGet(getDate);
+GetVisitor.prototype.visitDateDay = wrapGet(getDateDay);
+GetVisitor.prototype.visitDateMillisecond = wrapGet(getDateMillisecond);
+GetVisitor.prototype.visitTimestamp = wrapGet(getTimestamp);
+GetVisitor.prototype.visitTimestampSecond = wrapGet(getTimestampSecond);
+GetVisitor.prototype.visitTimestampMillisecond = wrapGet(getTimestampMillisecond);
+GetVisitor.prototype.visitTimestampMicrosecond = wrapGet(getTimestampMicrosecond);
+GetVisitor.prototype.visitTimestampNanosecond = wrapGet(getTimestampNanosecond);
+GetVisitor.prototype.visitTime = wrapGet(getTime);
+GetVisitor.prototype.visitTimeSecond = wrapGet(getTimeSecond);
+GetVisitor.prototype.visitTimeMillisecond = wrapGet(getTimeMillisecond);
+GetVisitor.prototype.visitTimeMicrosecond = wrapGet(getTimeMicrosecond);
+GetVisitor.prototype.visitTimeNanosecond = wrapGet(getTimeNanosecond);
+GetVisitor.prototype.visitDecimal = wrapGet(getDecimal);
+GetVisitor.prototype.visitList = wrapGet(getList);
+GetVisitor.prototype.visitStruct = wrapGet(getStruct);
+GetVisitor.prototype.visitUnion = wrapGet(getUnion);
+GetVisitor.prototype.visitDenseUnion = wrapGet(getDenseUnion);
+GetVisitor.prototype.visitSparseUnion = wrapGet(getSparseUnion);
+GetVisitor.prototype.visitDictionary = wrapGet(getDictionary);
+GetVisitor.prototype.visitInterval = wrapGet(getInterval);
+GetVisitor.prototype.visitIntervalDayTime = wrapGet(getIntervalDayTime);
+GetVisitor.prototype.visitIntervalYearMonth = wrapGet(getIntervalYearMonth);
+GetVisitor.prototype.visitDuration = wrapGet(getDuration);
+GetVisitor.prototype.visitDurationSecond = wrapGet(getDurationSecond);
+GetVisitor.prototype.visitDurationMillisecond = wrapGet(getDurationMillisecond);
+GetVisitor.prototype.visitDurationMicrosecond = wrapGet(getDurationMicrosecond);
+GetVisitor.prototype.visitDurationNanosecond = wrapGet(getDurationNanosecond);
+GetVisitor.prototype.visitFixedSizeList = wrapGet(getFixedSizeList);
+GetVisitor.prototype.visitMap = wrapGet(getMap);
+var instance2 = new GetVisitor();
+
+// node_modules/apache-arrow/row/map.mjs
+var kKeys = /* @__PURE__ */ Symbol.for("keys");
+var kVals = /* @__PURE__ */ Symbol.for("vals");
+var kKeysAsStrings = /* @__PURE__ */ Symbol.for("kKeysAsStrings");
+var _kKeysAsStrings = /* @__PURE__ */ Symbol.for("_kKeysAsStrings");
+var MapRow = class {
+  constructor(slice) {
+    this[kKeys] = new Vector([slice.children[0]]).memoize();
+    this[kVals] = slice.children[1];
+    return new Proxy(this, new MapRowProxyHandler());
+  }
+  /** @ignore */
+  get [kKeysAsStrings]() {
+    return this[_kKeysAsStrings] || (this[_kKeysAsStrings] = Array.from(this[kKeys].toArray(), String));
+  }
+  [Symbol.iterator]() {
+    return new MapRowIterator(this[kKeys], this[kVals]);
+  }
+  get size() {
+    return this[kKeys].length;
+  }
+  toArray() {
+    return Object.values(this.toJSON());
+  }
+  toJSON() {
+    const keys = this[kKeys];
+    const vals = this[kVals];
+    const json = {};
+    for (let i2 = -1, n = keys.length; ++i2 < n; ) {
+      json[keys.get(i2)] = instance2.visit(vals, i2);
+    }
+    return json;
+  }
+  toString() {
+    return `{${[...this].map(([key, val]) => `${valueToString(key)}: ${valueToString(val)}`).join(", ")}}`;
+  }
+  [/* @__PURE__ */ Symbol.for("nodejs.util.inspect.custom")]() {
+    return this.toString();
+  }
+};
+var MapRowIterator = class {
+  constructor(keys, vals) {
+    this.keys = keys;
+    this.vals = vals;
+    this.keyIndex = 0;
+    this.numKeys = keys.length;
+  }
+  [Symbol.iterator]() {
+    return this;
+  }
+  next() {
+    const i2 = this.keyIndex;
+    if (i2 === this.numKeys) {
+      return { done: true, value: null };
+    }
+    this.keyIndex++;
+    return {
+      done: false,
+      value: [
+        this.keys.get(i2),
+        instance2.visit(this.vals, i2)
+      ]
+    };
+  }
+};
+var MapRowProxyHandler = class {
+  isExtensible() {
+    return false;
+  }
+  deleteProperty() {
+    return false;
+  }
+  preventExtensions() {
+    return true;
+  }
+  ownKeys(row) {
+    return row[kKeysAsStrings];
+  }
+  has(row, key) {
+    return row[kKeysAsStrings].includes(key);
+  }
+  getOwnPropertyDescriptor(row, key) {
+    const idx = row[kKeysAsStrings].indexOf(key);
+    if (idx !== -1) {
+      return { writable: true, enumerable: true, configurable: true };
+    }
+    return;
+  }
+  get(row, key) {
+    if (Reflect.has(row, key)) {
+      return row[key];
+    }
+    const idx = row[kKeysAsStrings].indexOf(key);
+    if (idx !== -1) {
+      const val = instance2.visit(Reflect.get(row, kVals), idx);
+      Reflect.set(row, key, val);
+      return val;
+    }
+  }
+  set(row, key, val) {
+    const idx = row[kKeysAsStrings].indexOf(key);
+    if (idx !== -1) {
+      instance.visit(Reflect.get(row, kVals), idx, val);
+      return Reflect.set(row, key, val);
+    } else if (Reflect.has(row, key)) {
+      return Reflect.set(row, key, val);
+    }
+    return false;
+  }
+};
+Object.defineProperties(MapRow.prototype, {
+  [Symbol.toStringTag]: { enumerable: false, configurable: false, value: "Row" },
+  [kKeys]: { writable: true, enumerable: false, configurable: false, value: null },
+  [kVals]: { writable: true, enumerable: false, configurable: false, value: null },
+  [_kKeysAsStrings]: { writable: true, enumerable: false, configurable: false, value: null }
+});
+
+// node_modules/apache-arrow/util/vector.mjs
+var tmp;
+function clampRange(source, begin, end, then) {
+  const { length: len = 0 } = source;
+  let lhs = typeof begin !== "number" ? 0 : begin;
+  let rhs = typeof end !== "number" ? len : end;
+  lhs < 0 && (lhs = (lhs % len + len) % len);
+  rhs < 0 && (rhs = (rhs % len + len) % len);
+  rhs < lhs && (tmp = lhs, lhs = rhs, rhs = tmp);
+  rhs > len && (rhs = len);
+  return then ? then(source, lhs, rhs) : [lhs, rhs];
+}
+var wrapIndex = (index, len) => index < 0 ? len + index : index;
+var isNaNFast = (value) => value !== value;
+function createElementComparator(search) {
+  const typeofSearch = typeof search;
+  if (typeofSearch !== "object" || search === null) {
+    if (isNaNFast(search)) {
+      return isNaNFast;
+    }
+    return (value) => value === search;
+  }
+  if (search instanceof Date) {
+    const valueOfSearch = search.valueOf();
+    return (value) => value instanceof Date ? value.valueOf() === valueOfSearch : false;
+  }
+  if (ArrayBuffer.isView(search)) {
+    return (value) => value ? compareArrayLike(search, value) : false;
+  }
+  if (search instanceof Map) {
+    return createMapComparator(search);
+  }
+  if (Array.isArray(search)) {
+    return createArrayLikeComparator(search);
+  }
+  if (search instanceof Vector) {
+    return createVectorComparator(search);
+  }
+  return createObjectComparator(search, true);
+}
+function createArrayLikeComparator(lhs) {
+  const comparators = [];
+  for (let i2 = -1, n = lhs.length; ++i2 < n; ) {
+    comparators[i2] = createElementComparator(lhs[i2]);
+  }
+  return createSubElementsComparator(comparators);
+}
+function createMapComparator(lhs) {
+  let i2 = -1;
+  const comparators = [];
+  for (const v of lhs.values())
+    comparators[++i2] = createElementComparator(v);
+  return createSubElementsComparator(comparators);
+}
+function createVectorComparator(lhs) {
+  const comparators = [];
+  for (let i2 = -1, n = lhs.length; ++i2 < n; ) {
+    comparators[i2] = createElementComparator(lhs.get(i2));
+  }
+  return createSubElementsComparator(comparators);
+}
+function createObjectComparator(lhs, allowEmpty = false) {
+  const keys = Object.keys(lhs);
+  if (!allowEmpty && keys.length === 0) {
+    return () => false;
+  }
+  const comparators = [];
+  for (let i2 = -1, n = keys.length; ++i2 < n; ) {
+    comparators[i2] = createElementComparator(lhs[keys[i2]]);
+  }
+  return createSubElementsComparator(comparators, keys);
+}
+function createSubElementsComparator(comparators, keys) {
+  return (rhs) => {
+    if (!rhs || typeof rhs !== "object") {
+      return false;
+    }
+    switch (rhs.constructor) {
+      case Array:
+        return compareArray(comparators, rhs);
+      case Map:
+        return compareObject(comparators, rhs, rhs.keys());
+      case MapRow:
+      case StructRow:
+      case Object:
+      case void 0:
+        return compareObject(comparators, rhs, keys || Object.keys(rhs));
+    }
+    return rhs instanceof Vector ? compareVector(comparators, rhs) : false;
+  };
+}
+function compareArray(comparators, arr) {
+  const n = comparators.length;
+  if (arr.length !== n) {
+    return false;
+  }
+  for (let i2 = -1; ++i2 < n; ) {
+    if (!comparators[i2](arr[i2])) {
+      return false;
+    }
+  }
+  return true;
+}
+function compareVector(comparators, vec) {
+  const n = comparators.length;
+  if (vec.length !== n) {
+    return false;
+  }
+  for (let i2 = -1; ++i2 < n; ) {
+    if (!comparators[i2](vec.get(i2))) {
+      return false;
+    }
+  }
+  return true;
+}
+function compareObject(comparators, obj, keys) {
+  const lKeyItr = keys[Symbol.iterator]();
+  const rKeyItr = obj instanceof Map ? obj.keys() : Object.keys(obj)[Symbol.iterator]();
+  const rValItr = obj instanceof Map ? obj.values() : Object.values(obj)[Symbol.iterator]();
+  let i2 = 0;
+  const n = comparators.length;
+  let rVal = rValItr.next();
+  let lKey = lKeyItr.next();
+  let rKey = rKeyItr.next();
+  for (; i2 < n && !lKey.done && !rKey.done && !rVal.done; ++i2, lKey = lKeyItr.next(), rKey = rKeyItr.next(), rVal = rValItr.next()) {
+    if (lKey.value !== rKey.value || !comparators[i2](rVal.value)) {
+      break;
+    }
+  }
+  if (i2 === n && lKey.done && rKey.done && rVal.done) {
+    return true;
+  }
+  lKeyItr.return && lKeyItr.return();
+  rKeyItr.return && rKeyItr.return();
+  rValItr.return && rValItr.return();
+  return false;
+}
+
+// node_modules/apache-arrow/util/bit.mjs
+var bit_exports = {};
+__export(bit_exports, {
+  BitIterator: () => BitIterator,
+  getBit: () => getBit,
+  getBool: () => getBool2,
+  packBools: () => packBools,
+  popcnt_array: () => popcnt_array,
+  popcnt_bit_range: () => popcnt_bit_range,
+  popcnt_uint32: () => popcnt_uint32,
+  setBool: () => setBool2,
+  truncateBitmap: () => truncateBitmap
+});
+function getBool2(_data, _index, byte, bit) {
+  return (byte & 1 << bit) !== 0;
+}
+function getBit(_data, _index, byte, bit) {
+  return (byte & 1 << bit) >> bit;
+}
+function setBool2(bytes, index, value) {
+  return value ? !!(bytes[index >> 3] |= 1 << index % 8) || true : !(bytes[index >> 3] &= ~(1 << index % 8)) && false;
+}
+function truncateBitmap(offset, length, bitmap) {
+  const alignedSize = bitmap.byteLength + 7 & ~7;
+  if (offset > 0 || bitmap.byteLength < alignedSize) {
+    const bytes = new Uint8Array(alignedSize);
+    bytes.set(offset % 8 === 0 ? bitmap.subarray(offset >> 3) : (
+      // Otherwise iterate each bit from the offset and return a new one
+      packBools(new BitIterator(bitmap, offset, length, null, getBool2)).subarray(0, alignedSize)
+    ));
+    return bytes;
+  }
+  return bitmap;
+}
+function packBools(values) {
+  const xs = [];
+  let i2 = 0, bit = 0, byte = 0;
+  for (const value of values) {
+    value && (byte |= 1 << bit);
+    if (++bit === 8) {
+      xs[i2++] = byte;
+      byte = bit = 0;
+    }
+  }
+  if (i2 === 0 || bit > 0) {
+    xs[i2++] = byte;
+  }
+  const b = new Uint8Array(xs.length + 7 & ~7);
+  b.set(xs);
+  return b;
+}
+var BitIterator = class {
+  constructor(bytes, begin, length, context, get) {
+    this.bytes = bytes;
+    this.length = length;
+    this.context = context;
+    this.get = get;
+    this.bit = begin % 8;
+    this.byteIndex = begin >> 3;
+    this.byte = bytes[this.byteIndex++];
+    this.index = 0;
+  }
+  next() {
+    if (this.index < this.length) {
+      if (this.bit === 8) {
+        this.bit = 0;
+        this.byte = this.bytes[this.byteIndex++];
+      }
+      return {
+        value: this.get(this.context, this.index++, this.byte, this.bit++)
+      };
+    }
+    return { done: true, value: null };
+  }
+  [Symbol.iterator]() {
+    return this;
+  }
+};
+function popcnt_bit_range(data, lhs, rhs) {
+  if (rhs - lhs <= 0) {
+    return 0;
+  }
+  if (rhs - lhs < 8) {
+    let sum = 0;
+    for (const bit of new BitIterator(data, lhs, rhs - lhs, data, getBit)) {
+      sum += bit;
+    }
+    return sum;
+  }
+  const rhsInside = rhs >> 3 << 3;
+  const lhsInside = lhs + (lhs % 8 === 0 ? 0 : 8 - lhs % 8);
+  return (
+    // Get the popcnt of bits between the left hand side, and the next highest multiple of 8
+    popcnt_bit_range(data, lhs, lhsInside) + // Get the popcnt of bits between the right hand side, and the next lowest multiple of 8
+    popcnt_bit_range(data, rhsInside, rhs) + // Get the popcnt of all bits between the left and right hand sides' multiples of 8
+    popcnt_array(data, lhsInside >> 3, rhsInside - lhsInside >> 3)
+  );
+}
+function popcnt_array(arr, byteOffset, byteLength) {
+  let cnt = 0, pos = Math.trunc(byteOffset);
+  const view = new DataView(arr.buffer, arr.byteOffset, arr.byteLength);
+  const len = byteLength === void 0 ? arr.byteLength : pos + byteLength;
+  while (len - pos >= 4) {
+    cnt += popcnt_uint32(view.getUint32(pos));
+    pos += 4;
+  }
+  while (len - pos >= 2) {
+    cnt += popcnt_uint32(view.getUint16(pos));
+    pos += 2;
+  }
+  while (len - pos >= 1) {
+    cnt += popcnt_uint32(view.getUint8(pos));
+    pos += 1;
+  }
+  return cnt;
+}
+function popcnt_uint32(uint32) {
+  let i2 = Math.trunc(uint32);
+  i2 = i2 - (i2 >>> 1 & 1431655765);
+  i2 = (i2 & 858993459) + (i2 >>> 2 & 858993459);
+  return (i2 + (i2 >>> 4) & 252645135) * 16843009 >>> 24;
+}
+
+// node_modules/apache-arrow/data.mjs
+var kUnknownNullCount = -1;
+var Data = class _Data {
+  get typeId() {
+    return this.type.typeId;
+  }
+  get ArrayType() {
+    return this.type.ArrayType;
+  }
+  get buffers() {
+    return [this.valueOffsets, this.values, this.nullBitmap, this.typeIds];
+  }
+  get nullable() {
+    if (this._nullCount !== 0) {
+      const { type } = this;
+      if (DataType.isSparseUnion(type)) {
+        return this.children.some((child) => child.nullable);
+      } else if (DataType.isDenseUnion(type)) {
+        return this.children.some((child) => child.nullable);
+      }
+      return this.nullBitmap && this.nullBitmap.byteLength > 0;
+    }
+    return true;
+  }
+  get byteLength() {
+    let byteLength = 0;
+    const { valueOffsets, values, nullBitmap, typeIds } = this;
+    valueOffsets && (byteLength += valueOffsets.byteLength);
+    values && (byteLength += values.byteLength);
+    nullBitmap && (byteLength += nullBitmap.byteLength);
+    typeIds && (byteLength += typeIds.byteLength);
+    return this.children.reduce((byteLength2, child) => byteLength2 + child.byteLength, byteLength);
+  }
+  get nullCount() {
+    if (DataType.isUnion(this.type)) {
+      return this.children.reduce((nullCount2, child) => nullCount2 + child.nullCount, 0);
+    }
+    let nullCount = this._nullCount;
+    let nullBitmap;
+    if (nullCount <= kUnknownNullCount && (nullBitmap = this.nullBitmap)) {
+      this._nullCount = nullCount = nullBitmap.length === 0 ? (
+        // no null bitmap, so all values are valid
+        0
+      ) : this.length - popcnt_bit_range(nullBitmap, this.offset, this.offset + this.length);
+    }
+    return nullCount;
+  }
+  constructor(type, offset, length, nullCount, buffers, children = [], dictionary) {
+    this.type = type;
+    this.children = children;
+    this.dictionary = dictionary;
+    this.offset = Math.floor(Math.max(offset || 0, 0));
+    this.length = Math.floor(Math.max(length || 0, 0));
+    this._nullCount = Math.floor(Math.max(nullCount || 0, -1));
+    let buffer;
+    if (buffers instanceof _Data) {
+      this.stride = buffers.stride;
+      this.values = buffers.values;
+      this.typeIds = buffers.typeIds;
+      this.nullBitmap = buffers.nullBitmap;
+      this.valueOffsets = buffers.valueOffsets;
+    } else {
+      this.stride = strideForType(type);
+      if (buffers) {
+        (buffer = buffers[0]) && (this.valueOffsets = buffer);
+        (buffer = buffers[1]) && (this.values = buffer);
+        (buffer = buffers[2]) && (this.nullBitmap = buffer);
+        (buffer = buffers[3]) && (this.typeIds = buffer);
+      }
+    }
+  }
+  getValid(index) {
+    const { type } = this;
+    if (DataType.isUnion(type)) {
+      const union = type;
+      const child = this.children[union.typeIdToChildIndex[this.typeIds[index]]];
+      const indexInChild = union.mode === UnionMode.Dense ? this.valueOffsets[index] : index;
+      return child.getValid(indexInChild);
+    }
+    if (this.nullable && this.nullCount > 0) {
+      const pos = this.offset + index;
+      const val = this.nullBitmap[pos >> 3];
+      return (val & 1 << pos % 8) !== 0;
+    }
+    return true;
+  }
+  setValid(index, value) {
+    let prev;
+    const { type } = this;
+    if (DataType.isUnion(type)) {
+      const union = type;
+      const child = this.children[union.typeIdToChildIndex[this.typeIds[index]]];
+      const indexInChild = union.mode === UnionMode.Dense ? this.valueOffsets[index] : index;
+      prev = child.getValid(indexInChild);
+      child.setValid(indexInChild, value);
+    } else {
+      let { nullBitmap } = this;
+      const { offset, length } = this;
+      const idx = offset + index;
+      const mask = 1 << idx % 8;
+      const byteOffset = idx >> 3;
+      if (!nullBitmap || nullBitmap.byteLength <= byteOffset) {
+        nullBitmap = new Uint8Array((offset + length + 63 & ~63) >> 3).fill(255);
+        if (this.nullCount > 0) {
+          nullBitmap.set(truncateBitmap(offset, length, this.nullBitmap), 0);
+          Object.assign(this, { nullBitmap });
+        } else {
+          Object.assign(this, { nullBitmap, _nullCount: 0 });
+        }
+      }
+      const byte = nullBitmap[byteOffset];
+      prev = (byte & mask) !== 0;
+      nullBitmap[byteOffset] = value ? byte | mask : byte & ~mask;
+    }
+    if (prev !== !!value) {
+      this._nullCount = this.nullCount + (value ? -1 : 1);
+    }
+    return value;
+  }
+  clone(type = this.type, offset = this.offset, length = this.length, nullCount = this._nullCount, buffers = this, children = this.children) {
+    return new _Data(type, offset, length, nullCount, buffers, children, this.dictionary);
+  }
+  slice(offset, length) {
+    const { stride, typeId, children } = this;
+    const nullCount = +(this._nullCount === 0) - 1;
+    const childStride = typeId === 16 ? stride : 1;
+    const buffers = this._sliceBuffers(offset, length, stride, typeId);
+    return this.clone(
+      this.type,
+      this.offset + offset,
+      length,
+      nullCount,
+      buffers,
+      // Don't slice children if we have value offsets (the variable-width types)
+      children.length === 0 || this.valueOffsets ? children : this._sliceChildren(children, childStride * offset, childStride * length)
+    );
+  }
+  _changeLengthAndBackfillNullBitmap(newLength) {
+    if (this.typeId === Type3.Null) {
+      return this.clone(this.type, 0, newLength, 0);
+    }
+    const { length, nullCount } = this;
+    const bitmap = new Uint8Array((newLength + 63 & ~63) >> 3).fill(255, 0, length >> 3);
+    bitmap[length >> 3] = (1 << length - (length & ~7)) - 1;
+    if (nullCount > 0) {
+      bitmap.set(truncateBitmap(this.offset, length, this.nullBitmap), 0);
+    }
+    const buffers = this.buffers;
+    buffers[BufferType.VALIDITY] = bitmap;
+    return this.clone(this.type, 0, newLength, nullCount + (newLength - length), buffers);
+  }
+  _sliceBuffers(offset, length, stride, typeId) {
+    let arr;
+    const { buffers } = this;
+    (arr = buffers[BufferType.TYPE]) && (buffers[BufferType.TYPE] = arr.subarray(offset, offset + length));
+    (arr = buffers[BufferType.OFFSET]) && (buffers[BufferType.OFFSET] = arr.subarray(offset, offset + length + 1)) || // Otherwise if no offsets, slice the data buffer. Don't slice the data vector for Booleans, since the offset goes by bits not bytes
+    (arr = buffers[BufferType.DATA]) && (buffers[BufferType.DATA] = typeId === 6 ? arr : arr.subarray(stride * offset, stride * (offset + length)));
+    return buffers;
+  }
+  _sliceChildren(children, offset, length) {
+    return children.map((child) => child.slice(offset, length));
+  }
+};
+Data.prototype.children = Object.freeze([]);
+var MakeDataVisitor = class _MakeDataVisitor extends Visitor {
+  visit(props) {
+    return this.getVisitFn(props["type"]).call(this, props);
+  }
+  visitNull(props) {
+    const { ["type"]: type, ["offset"]: offset = 0, ["length"]: length = 0 } = props;
+    return new Data(type, offset, length, length);
+  }
+  visitBool(props) {
+    const { ["type"]: type, ["offset"]: offset = 0 } = props;
+    const nullBitmap = toUint8Array(props["nullBitmap"]);
+    const data = toArrayBufferView(type.ArrayType, props["data"]);
+    const { ["length"]: length = data.length >> 3, ["nullCount"]: nullCount = props["nullBitmap"] ? -1 : 0 } = props;
+    return new Data(type, offset, length, nullCount, [void 0, data, nullBitmap]);
+  }
+  visitInt(props) {
+    const { ["type"]: type, ["offset"]: offset = 0 } = props;
+    const nullBitmap = toUint8Array(props["nullBitmap"]);
+    const data = toArrayBufferView(type.ArrayType, props["data"]);
+    const { ["length"]: length = data.length, ["nullCount"]: nullCount = props["nullBitmap"] ? -1 : 0 } = props;
+    return new Data(type, offset, length, nullCount, [void 0, data, nullBitmap]);
+  }
+  visitFloat(props) {
+    const { ["type"]: type, ["offset"]: offset = 0 } = props;
+    const nullBitmap = toUint8Array(props["nullBitmap"]);
+    const data = toArrayBufferView(type.ArrayType, props["data"]);
+    const { ["length"]: length = data.length, ["nullCount"]: nullCount = props["nullBitmap"] ? -1 : 0 } = props;
+    return new Data(type, offset, length, nullCount, [void 0, data, nullBitmap]);
+  }
+  visitUtf8(props) {
+    const { ["type"]: type, ["offset"]: offset = 0 } = props;
+    const data = toUint8Array(props["data"]);
+    const nullBitmap = toUint8Array(props["nullBitmap"]);
+    const valueOffsets = toInt32Array(props["valueOffsets"]);
+    const { ["length"]: length = valueOffsets.length - 1, ["nullCount"]: nullCount = props["nullBitmap"] ? -1 : 0 } = props;
+    return new Data(type, offset, length, nullCount, [valueOffsets, data, nullBitmap]);
+  }
+  visitLargeUtf8(props) {
+    const { ["type"]: type, ["offset"]: offset = 0 } = props;
+    const data = toUint8Array(props["data"]);
+    const nullBitmap = toUint8Array(props["nullBitmap"]);
+    const valueOffsets = toBigInt64Array(props["valueOffsets"]);
+    const { ["length"]: length = valueOffsets.length - 1, ["nullCount"]: nullCount = props["nullBitmap"] ? -1 : 0 } = props;
+    return new Data(type, offset, length, nullCount, [valueOffsets, data, nullBitmap]);
+  }
+  visitBinary(props) {
+    const { ["type"]: type, ["offset"]: offset = 0 } = props;
+    const data = toUint8Array(props["data"]);
+    const nullBitmap = toUint8Array(props["nullBitmap"]);
+    const valueOffsets = toInt32Array(props["valueOffsets"]);
+    const { ["length"]: length = valueOffsets.length - 1, ["nullCount"]: nullCount = props["nullBitmap"] ? -1 : 0 } = props;
+    return new Data(type, offset, length, nullCount, [valueOffsets, data, nullBitmap]);
+  }
+  visitLargeBinary(props) {
+    const { ["type"]: type, ["offset"]: offset = 0 } = props;
+    const data = toUint8Array(props["data"]);
+    const nullBitmap = toUint8Array(props["nullBitmap"]);
+    const valueOffsets = toBigInt64Array(props["valueOffsets"]);
+    const { ["length"]: length = valueOffsets.length - 1, ["nullCount"]: nullCount = props["nullBitmap"] ? -1 : 0 } = props;
+    return new Data(type, offset, length, nullCount, [valueOffsets, data, nullBitmap]);
+  }
+  visitFixedSizeBinary(props) {
+    const { ["type"]: type, ["offset"]: offset = 0 } = props;
+    const nullBitmap = toUint8Array(props["nullBitmap"]);
+    const data = toArrayBufferView(type.ArrayType, props["data"]);
+    const { ["length"]: length = data.length / strideForType(type), ["nullCount"]: nullCount = props["nullBitmap"] ? -1 : 0 } = props;
+    return new Data(type, offset, length, nullCount, [void 0, data, nullBitmap]);
+  }
+  visitDate(props) {
+    const { ["type"]: type, ["offset"]: offset = 0 } = props;
+    const nullBitmap = toUint8Array(props["nullBitmap"]);
+    const data = toArrayBufferView(type.ArrayType, props["data"]);
+    const { ["length"]: length = data.length / strideForType(type), ["nullCount"]: nullCount = props["nullBitmap"] ? -1 : 0 } = props;
+    return new Data(type, offset, length, nullCount, [void 0, data, nullBitmap]);
+  }
+  visitTimestamp(props) {
+    const { ["type"]: type, ["offset"]: offset = 0 } = props;
+    const nullBitmap = toUint8Array(props["nullBitmap"]);
+    const data = toArrayBufferView(type.ArrayType, props["data"]);
+    const { ["length"]: length = data.length / strideForType(type), ["nullCount"]: nullCount = props["nullBitmap"] ? -1 : 0 } = props;
+    return new Data(type, offset, length, nullCount, [void 0, data, nullBitmap]);
+  }
+  visitTime(props) {
+    const { ["type"]: type, ["offset"]: offset = 0 } = props;
+    const nullBitmap = toUint8Array(props["nullBitmap"]);
+    const data = toArrayBufferView(type.ArrayType, props["data"]);
+    const { ["length"]: length = data.length / strideForType(type), ["nullCount"]: nullCount = props["nullBitmap"] ? -1 : 0 } = props;
+    return new Data(type, offset, length, nullCount, [void 0, data, nullBitmap]);
+  }
+  visitDecimal(props) {
+    const { ["type"]: type, ["offset"]: offset = 0 } = props;
+    const nullBitmap = toUint8Array(props["nullBitmap"]);
+    const data = toArrayBufferView(type.ArrayType, props["data"]);
+    const { ["length"]: length = data.length / strideForType(type), ["nullCount"]: nullCount = props["nullBitmap"] ? -1 : 0 } = props;
+    return new Data(type, offset, length, nullCount, [void 0, data, nullBitmap]);
+  }
+  visitList(props) {
+    const { ["type"]: type, ["offset"]: offset = 0, ["child"]: child } = props;
+    const nullBitmap = toUint8Array(props["nullBitmap"]);
+    const valueOffsets = toInt32Array(props["valueOffsets"]);
+    const { ["length"]: length = valueOffsets.length - 1, ["nullCount"]: nullCount = props["nullBitmap"] ? -1 : 0 } = props;
+    return new Data(type, offset, length, nullCount, [valueOffsets, void 0, nullBitmap], [child]);
+  }
+  visitStruct(props) {
+    const { ["type"]: type, ["offset"]: offset = 0, ["children"]: children = [] } = props;
+    const nullBitmap = toUint8Array(props["nullBitmap"]);
+    const { length = children.reduce((len, { length: length2 }) => Math.max(len, length2), 0), nullCount = props["nullBitmap"] ? -1 : 0 } = props;
+    return new Data(type, offset, length, nullCount, [void 0, void 0, nullBitmap], children);
+  }
+  visitUnion(props) {
+    const { ["type"]: type, ["offset"]: offset = 0, ["children"]: children = [] } = props;
+    const typeIds = toArrayBufferView(type.ArrayType, props["typeIds"]);
+    const { ["length"]: length = typeIds.length, ["nullCount"]: nullCount = -1 } = props;
+    if (DataType.isSparseUnion(type)) {
+      return new Data(type, offset, length, nullCount, [void 0, void 0, void 0, typeIds], children);
+    }
+    const valueOffsets = toInt32Array(props["valueOffsets"]);
+    return new Data(type, offset, length, nullCount, [valueOffsets, void 0, void 0, typeIds], children);
+  }
+  visitDictionary(props) {
+    const { ["type"]: type, ["offset"]: offset = 0 } = props;
+    const nullBitmap = toUint8Array(props["nullBitmap"]);
+    const data = toArrayBufferView(type.indices.ArrayType, props["data"]);
+    const { ["dictionary"]: dictionary = new Vector([new _MakeDataVisitor().visit({ type: type.dictionary })]) } = props;
+    const { ["length"]: length = data.length, ["nullCount"]: nullCount = props["nullBitmap"] ? -1 : 0 } = props;
+    return new Data(type, offset, length, nullCount, [void 0, data, nullBitmap], [], dictionary);
+  }
+  visitInterval(props) {
+    const { ["type"]: type, ["offset"]: offset = 0 } = props;
+    const nullBitmap = toUint8Array(props["nullBitmap"]);
+    const data = toArrayBufferView(type.ArrayType, props["data"]);
+    const { ["length"]: length = data.length / strideForType(type), ["nullCount"]: nullCount = props["nullBitmap"] ? -1 : 0 } = props;
+    return new Data(type, offset, length, nullCount, [void 0, data, nullBitmap]);
+  }
+  visitDuration(props) {
+    const { ["type"]: type, ["offset"]: offset = 0 } = props;
+    const nullBitmap = toUint8Array(props["nullBitmap"]);
+    const data = toArrayBufferView(type.ArrayType, props["data"]);
+    const { ["length"]: length = data.length, ["nullCount"]: nullCount = props["nullBitmap"] ? -1 : 0 } = props;
+    return new Data(type, offset, length, nullCount, [void 0, data, nullBitmap]);
+  }
+  visitFixedSizeList(props) {
+    const { ["type"]: type, ["offset"]: offset = 0, ["child"]: child = new _MakeDataVisitor().visit({ type: type.valueType }) } = props;
+    const nullBitmap = toUint8Array(props["nullBitmap"]);
+    const { ["length"]: length = child.length / strideForType(type), ["nullCount"]: nullCount = props["nullBitmap"] ? -1 : 0 } = props;
+    return new Data(type, offset, length, nullCount, [void 0, void 0, nullBitmap], [child]);
+  }
+  visitMap(props) {
+    const { ["type"]: type, ["offset"]: offset = 0, ["child"]: child = new _MakeDataVisitor().visit({ type: type.childType }) } = props;
+    const nullBitmap = toUint8Array(props["nullBitmap"]);
+    const valueOffsets = toInt32Array(props["valueOffsets"]);
+    const { ["length"]: length = valueOffsets.length - 1, ["nullCount"]: nullCount = props["nullBitmap"] ? -1 : 0 } = props;
+    return new Data(type, offset, length, nullCount, [valueOffsets, void 0, nullBitmap], [child]);
+  }
+};
+var makeDataVisitor = new MakeDataVisitor();
+function makeData(props) {
+  return makeDataVisitor.visit(props);
+}
+
+// node_modules/apache-arrow/util/chunk.mjs
+var ChunkedIterator = class {
+  constructor(numChunks = 0, getChunkIterator) {
+    this.numChunks = numChunks;
+    this.getChunkIterator = getChunkIterator;
+    this.chunkIndex = 0;
+    this.chunkIterator = this.getChunkIterator(0);
+  }
+  next() {
+    while (this.chunkIndex < this.numChunks) {
+      const next = this.chunkIterator.next();
+      if (!next.done) {
+        return next;
+      }
+      if (++this.chunkIndex < this.numChunks) {
+        this.chunkIterator = this.getChunkIterator(this.chunkIndex);
+      }
+    }
+    return { done: true, value: null };
+  }
+  [Symbol.iterator]() {
+    return this;
+  }
+};
+function computeChunkNullable(chunks) {
+  return chunks.some((chunk) => chunk.nullable);
+}
+function computeChunkNullCounts(chunks) {
+  return chunks.reduce((nullCount, chunk) => nullCount + chunk.nullCount, 0);
+}
+function computeChunkOffsets(chunks) {
+  return chunks.reduce((offsets, chunk, index) => {
+    offsets[index + 1] = offsets[index] + chunk.length;
+    return offsets;
+  }, new Uint32Array(chunks.length + 1));
+}
+function sliceChunks(chunks, offsets, begin, end) {
+  const slices = [];
+  for (let i2 = -1, n = chunks.length; ++i2 < n; ) {
+    const chunk = chunks[i2];
+    const offset = offsets[i2];
+    const { length } = chunk;
+    if (offset >= end) {
+      break;
+    }
+    if (begin >= offset + length) {
+      continue;
+    }
+    if (offset >= begin && offset + length <= end) {
+      slices.push(chunk);
+      continue;
+    }
+    const from = Math.max(0, begin - offset);
+    const to = Math.min(end - offset, length);
+    slices.push(chunk.slice(from, to - from));
+  }
+  if (slices.length === 0) {
+    slices.push(chunks[0].slice(0, 0));
+  }
+  return slices;
+}
+function binarySearch(chunks, offsets, idx, fn) {
+  let lhs = 0, mid = 0, rhs = offsets.length - 1;
+  do {
+    if (lhs >= rhs - 1) {
+      return idx < offsets[rhs] ? fn(chunks, lhs, idx - offsets[lhs]) : null;
+    }
+    mid = lhs + Math.trunc((rhs - lhs) * 0.5);
+    idx < offsets[mid] ? rhs = mid : lhs = mid;
+  } while (lhs < rhs);
+}
+function isChunkedValid(data, index) {
+  return data.getValid(index);
+}
+function wrapChunkedCall1(fn) {
+  function chunkedFn(chunks, i2, j) {
+    return fn(chunks[i2], j);
+  }
+  return function(index) {
+    const data = this.data;
+    return binarySearch(data, this._offsets, index, chunkedFn);
+  };
+}
+function wrapChunkedCall2(fn) {
+  let _2;
+  function chunkedFn(chunks, i2, j) {
+    return fn(chunks[i2], j, _2);
+  }
+  return function(index, value) {
+    const data = this.data;
+    _2 = value;
+    const result = binarySearch(data, this._offsets, index, chunkedFn);
+    _2 = void 0;
+    return result;
+  };
+}
+function wrapChunkedIndexOf(indexOf) {
+  let _1;
+  function chunkedIndexOf(data, chunkIndex, fromIndex) {
+    let begin = fromIndex, index = 0, total = 0;
+    for (let i2 = chunkIndex - 1, n = data.length; ++i2 < n; ) {
+      const chunk = data[i2];
+      if (~(index = indexOf(chunk, _1, begin))) {
+        return total + index;
+      }
+      begin = 0;
+      total += chunk.length;
+    }
+    return -1;
+  }
+  return function(element, offset) {
+    _1 = element;
+    const data = this.data;
+    const result = typeof offset !== "number" ? chunkedIndexOf(data, 0, 0) : binarySearch(data, this._offsets, offset, chunkedIndexOf);
+    _1 = void 0;
+    return result;
+  };
+}
+
+// node_modules/apache-arrow/visitor/indexof.mjs
+var IndexOfVisitor = class extends Visitor {
+};
+function nullIndexOf(data, searchElement) {
+  return searchElement === null && data.length > 0 ? 0 : -1;
+}
+function indexOfNull(data, fromIndex) {
+  const { nullBitmap } = data;
+  if (!nullBitmap || data.nullCount <= 0) {
+    return -1;
+  }
+  let i2 = 0;
+  for (const isValid of new BitIterator(nullBitmap, data.offset + (fromIndex || 0), data.length, nullBitmap, getBool2)) {
+    if (!isValid) {
+      return i2;
+    }
+    ++i2;
+  }
+  return -1;
+}
+function indexOfValue(data, searchElement, fromIndex) {
+  if (searchElement === void 0) {
+    return -1;
+  }
+  if (searchElement === null) {
+    switch (data.typeId) {
+      // Unions don't have a nullBitmap of its own, so compare the `searchElement` to `get()`.
+      case Type3.Union:
+        break;
+      // Dictionaries do have a nullBitmap, but their dictionary could also have null elements.
+      case Type3.Dictionary:
+        break;
+      // All other types can iterate the null bitmap
+      default:
+        return indexOfNull(data, fromIndex);
+    }
+  }
+  const get = instance2.getVisitFn(data);
+  const compare = createElementComparator(searchElement);
+  for (let i2 = (fromIndex || 0) - 1, n = data.length; ++i2 < n; ) {
+    if (compare(get(data, i2))) {
+      return i2;
+    }
+  }
+  return -1;
+}
+function indexOfUnion(data, searchElement, fromIndex) {
+  const get = instance2.getVisitFn(data);
+  const compare = createElementComparator(searchElement);
+  for (let i2 = (fromIndex || 0) - 1, n = data.length; ++i2 < n; ) {
+    if (compare(get(data, i2))) {
+      return i2;
+    }
+  }
+  return -1;
+}
+IndexOfVisitor.prototype.visitNull = nullIndexOf;
+IndexOfVisitor.prototype.visitBool = indexOfValue;
+IndexOfVisitor.prototype.visitInt = indexOfValue;
+IndexOfVisitor.prototype.visitInt8 = indexOfValue;
+IndexOfVisitor.prototype.visitInt16 = indexOfValue;
+IndexOfVisitor.prototype.visitInt32 = indexOfValue;
+IndexOfVisitor.prototype.visitInt64 = indexOfValue;
+IndexOfVisitor.prototype.visitUint8 = indexOfValue;
+IndexOfVisitor.prototype.visitUint16 = indexOfValue;
+IndexOfVisitor.prototype.visitUint32 = indexOfValue;
+IndexOfVisitor.prototype.visitUint64 = indexOfValue;
+IndexOfVisitor.prototype.visitFloat = indexOfValue;
+IndexOfVisitor.prototype.visitFloat16 = indexOfValue;
+IndexOfVisitor.prototype.visitFloat32 = indexOfValue;
+IndexOfVisitor.prototype.visitFloat64 = indexOfValue;
+IndexOfVisitor.prototype.visitUtf8 = indexOfValue;
+IndexOfVisitor.prototype.visitLargeUtf8 = indexOfValue;
+IndexOfVisitor.prototype.visitBinary = indexOfValue;
+IndexOfVisitor.prototype.visitLargeBinary = indexOfValue;
+IndexOfVisitor.prototype.visitFixedSizeBinary = indexOfValue;
+IndexOfVisitor.prototype.visitDate = indexOfValue;
+IndexOfVisitor.prototype.visitDateDay = indexOfValue;
+IndexOfVisitor.prototype.visitDateMillisecond = indexOfValue;
+IndexOfVisitor.prototype.visitTimestamp = indexOfValue;
+IndexOfVisitor.prototype.visitTimestampSecond = indexOfValue;
+IndexOfVisitor.prototype.visitTimestampMillisecond = indexOfValue;
+IndexOfVisitor.prototype.visitTimestampMicrosecond = indexOfValue;
+IndexOfVisitor.prototype.visitTimestampNanosecond = indexOfValue;
+IndexOfVisitor.prototype.visitTime = indexOfValue;
+IndexOfVisitor.prototype.visitTimeSecond = indexOfValue;
+IndexOfVisitor.prototype.visitTimeMillisecond = indexOfValue;
+IndexOfVisitor.prototype.visitTimeMicrosecond = indexOfValue;
+IndexOfVisitor.prototype.visitTimeNanosecond = indexOfValue;
+IndexOfVisitor.prototype.visitDecimal = indexOfValue;
+IndexOfVisitor.prototype.visitList = indexOfValue;
+IndexOfVisitor.prototype.visitStruct = indexOfValue;
+IndexOfVisitor.prototype.visitUnion = indexOfValue;
+IndexOfVisitor.prototype.visitDenseUnion = indexOfUnion;
+IndexOfVisitor.prototype.visitSparseUnion = indexOfUnion;
+IndexOfVisitor.prototype.visitDictionary = indexOfValue;
+IndexOfVisitor.prototype.visitInterval = indexOfValue;
+IndexOfVisitor.prototype.visitIntervalDayTime = indexOfValue;
+IndexOfVisitor.prototype.visitIntervalYearMonth = indexOfValue;
+IndexOfVisitor.prototype.visitDuration = indexOfValue;
+IndexOfVisitor.prototype.visitDurationSecond = indexOfValue;
+IndexOfVisitor.prototype.visitDurationMillisecond = indexOfValue;
+IndexOfVisitor.prototype.visitDurationMicrosecond = indexOfValue;
+IndexOfVisitor.prototype.visitDurationNanosecond = indexOfValue;
+IndexOfVisitor.prototype.visitFixedSizeList = indexOfValue;
+IndexOfVisitor.prototype.visitMap = indexOfValue;
+var instance3 = new IndexOfVisitor();
+
+// node_modules/apache-arrow/visitor/iterator.mjs
+var IteratorVisitor = class extends Visitor {
+};
+function vectorIterator(vector) {
+  const { type } = vector;
+  if (vector.nullCount === 0 && vector.stride === 1 && // Don't defer to native iterator for timestamps since Numbers are expected
+  // (DataType.isTimestamp(type)) && type.unit === TimeUnit.MILLISECOND ||
+  (DataType.isInt(type) && type.bitWidth !== 64 || DataType.isTime(type) && type.bitWidth !== 64 || DataType.isFloat(type) && type.precision !== Precision.HALF)) {
+    return new ChunkedIterator(vector.data.length, (chunkIndex) => {
+      const data = vector.data[chunkIndex];
+      return data.values.subarray(0, data.length)[Symbol.iterator]();
+    });
+  }
+  let offset = 0;
+  return new ChunkedIterator(vector.data.length, (chunkIndex) => {
+    const data = vector.data[chunkIndex];
+    const length = data.length;
+    const inner = vector.slice(offset, offset + length);
+    offset += length;
+    return new VectorIterator(inner);
+  });
+}
+var VectorIterator = class {
+  constructor(vector) {
+    this.vector = vector;
+    this.index = 0;
+  }
+  next() {
+    if (this.index < this.vector.length) {
+      return {
+        value: this.vector.get(this.index++)
+      };
+    }
+    return { done: true, value: null };
+  }
+  [Symbol.iterator]() {
+    return this;
+  }
+};
+IteratorVisitor.prototype.visitNull = vectorIterator;
+IteratorVisitor.prototype.visitBool = vectorIterator;
+IteratorVisitor.prototype.visitInt = vectorIterator;
+IteratorVisitor.prototype.visitInt8 = vectorIterator;
+IteratorVisitor.prototype.visitInt16 = vectorIterator;
+IteratorVisitor.prototype.visitInt32 = vectorIterator;
+IteratorVisitor.prototype.visitInt64 = vectorIterator;
+IteratorVisitor.prototype.visitUint8 = vectorIterator;
+IteratorVisitor.prototype.visitUint16 = vectorIterator;
+IteratorVisitor.prototype.visitUint32 = vectorIterator;
+IteratorVisitor.prototype.visitUint64 = vectorIterator;
+IteratorVisitor.prototype.visitFloat = vectorIterator;
+IteratorVisitor.prototype.visitFloat16 = vectorIterator;
+IteratorVisitor.prototype.visitFloat32 = vectorIterator;
+IteratorVisitor.prototype.visitFloat64 = vectorIterator;
+IteratorVisitor.prototype.visitUtf8 = vectorIterator;
+IteratorVisitor.prototype.visitLargeUtf8 = vectorIterator;
+IteratorVisitor.prototype.visitBinary = vectorIterator;
+IteratorVisitor.prototype.visitLargeBinary = vectorIterator;
+IteratorVisitor.prototype.visitFixedSizeBinary = vectorIterator;
+IteratorVisitor.prototype.visitDate = vectorIterator;
+IteratorVisitor.prototype.visitDateDay = vectorIterator;
+IteratorVisitor.prototype.visitDateMillisecond = vectorIterator;
+IteratorVisitor.prototype.visitTimestamp = vectorIterator;
+IteratorVisitor.prototype.visitTimestampSecond = vectorIterator;
+IteratorVisitor.prototype.visitTimestampMillisecond = vectorIterator;
+IteratorVisitor.prototype.visitTimestampMicrosecond = vectorIterator;
+IteratorVisitor.prototype.visitTimestampNanosecond = vectorIterator;
+IteratorVisitor.prototype.visitTime = vectorIterator;
+IteratorVisitor.prototype.visitTimeSecond = vectorIterator;
+IteratorVisitor.prototype.visitTimeMillisecond = vectorIterator;
+IteratorVisitor.prototype.visitTimeMicrosecond = vectorIterator;
+IteratorVisitor.prototype.visitTimeNanosecond = vectorIterator;
+IteratorVisitor.prototype.visitDecimal = vectorIterator;
+IteratorVisitor.prototype.visitList = vectorIterator;
+IteratorVisitor.prototype.visitStruct = vectorIterator;
+IteratorVisitor.prototype.visitUnion = vectorIterator;
+IteratorVisitor.prototype.visitDenseUnion = vectorIterator;
+IteratorVisitor.prototype.visitSparseUnion = vectorIterator;
+IteratorVisitor.prototype.visitDictionary = vectorIterator;
+IteratorVisitor.prototype.visitInterval = vectorIterator;
+IteratorVisitor.prototype.visitIntervalDayTime = vectorIterator;
+IteratorVisitor.prototype.visitIntervalYearMonth = vectorIterator;
+IteratorVisitor.prototype.visitDuration = vectorIterator;
+IteratorVisitor.prototype.visitDurationSecond = vectorIterator;
+IteratorVisitor.prototype.visitDurationMillisecond = vectorIterator;
+IteratorVisitor.prototype.visitDurationMicrosecond = vectorIterator;
+IteratorVisitor.prototype.visitDurationNanosecond = vectorIterator;
+IteratorVisitor.prototype.visitFixedSizeList = vectorIterator;
+IteratorVisitor.prototype.visitMap = vectorIterator;
+var instance4 = new IteratorVisitor();
+
+// node_modules/apache-arrow/vector.mjs
+var _a5;
+var visitorsByTypeId = {};
+var vectorPrototypesByTypeId = {};
+var Vector = class _Vector {
+  constructor(input) {
+    var _b2, _c2, _d2;
+    const data = input[0] instanceof _Vector ? input.flatMap((x2) => x2.data) : input;
+    if (data.length === 0 || data.some((x2) => !(x2 instanceof Data))) {
+      throw new TypeError("Vector constructor expects an Array of Data instances.");
+    }
+    const type = (_b2 = data[0]) === null || _b2 === void 0 ? void 0 : _b2.type;
+    switch (data.length) {
+      case 0:
+        this._offsets = [0];
+        break;
+      case 1: {
+        const { get, set, indexOf } = visitorsByTypeId[type.typeId];
+        const unchunkedData = data[0];
+        this.isValid = (index) => isChunkedValid(unchunkedData, index);
+        this.get = (index) => get(unchunkedData, index);
+        this.set = (index, value) => set(unchunkedData, index, value);
+        this.indexOf = (index) => indexOf(unchunkedData, index);
+        this._offsets = [0, unchunkedData.length];
+        break;
+      }
+      default:
+        Object.setPrototypeOf(this, vectorPrototypesByTypeId[type.typeId]);
+        this._offsets = computeChunkOffsets(data);
+        break;
+    }
+    this.data = data;
+    this.type = type;
+    this.stride = strideForType(type);
+    this.numChildren = (_d2 = (_c2 = type.children) === null || _c2 === void 0 ? void 0 : _c2.length) !== null && _d2 !== void 0 ? _d2 : 0;
+    this.length = this._offsets.at(-1);
+  }
+  /**
+   * The aggregate size (in bytes) of this Vector's buffers and/or child Vectors.
+   */
+  get byteLength() {
+    return this.data.reduce((byteLength, data) => byteLength + data.byteLength, 0);
+  }
+  /**
+   * Whether this Vector's elements can contain null values.
+   */
+  get nullable() {
+    return computeChunkNullable(this.data);
+  }
+  /**
+   * The number of null elements in this Vector.
+   */
+  get nullCount() {
+    return computeChunkNullCounts(this.data);
+  }
+  /**
+   * The Array or TypedArray constructor used for the JS representation
+   *  of the element's values in {@link Vector.prototype.toArray `toArray()`}.
+   */
+  get ArrayType() {
+    return this.type.ArrayType;
+  }
+  /**
+   * The name that should be printed when the Vector is logged in a message.
+   */
+  get [Symbol.toStringTag]() {
+    return `${this.VectorName}<${this.type[Symbol.toStringTag]}>`;
+  }
+  /**
+   * The name of this Vector.
+   */
+  get VectorName() {
+    return `${Type3[this.type.typeId]}Vector`;
+  }
+  /**
+   * Check whether an element is null.
+   * @param index The index at which to read the validity bitmap.
+   */
+  // @ts-ignore
+  isValid(index) {
+    return false;
+  }
+  /**
+   * Get an element value by position.
+   * @param index The index of the element to read.
+   */
+  // @ts-ignore
+  get(index) {
+    return null;
+  }
+  /**
+   * Get an element value by position.
+   * @param index The index of the element to read. A negative index will count back from the last element.
+   */
+  at(index) {
+    return this.get(wrapIndex(index, this.length));
+  }
+  /**
+   * Set an element value by position.
+   * @param index The index of the element to write.
+   * @param value The value to set.
+   */
+  // @ts-ignore
+  set(index, value) {
+    return;
+  }
+  /**
+   * Retrieve the index of the first occurrence of a value in an Vector.
+   * @param element The value to locate in the Vector.
+   * @param offset The index at which to begin the search. If offset is omitted, the search starts at index 0.
+   */
+  // @ts-ignore
+  indexOf(element, offset) {
+    return -1;
+  }
+  includes(element, offset) {
+    return this.indexOf(element, offset) > -1;
+  }
+  /**
+   * Iterator for the Vector's elements.
+   */
+  [Symbol.iterator]() {
+    return instance4.visit(this);
+  }
+  /**
+   * Combines two or more Vectors of the same type.
+   * @param others Additional Vectors to add to the end of this Vector.
+   */
+  concat(...others) {
+    return new _Vector(this.data.concat(others.flatMap((x2) => x2.data).flat(Number.POSITIVE_INFINITY)));
+  }
+  /**
+   * Return a zero-copy sub-section of this Vector.
+   * @param start The beginning of the specified portion of the Vector.
+   * @param end The end of the specified portion of the Vector. This is exclusive of the element at the index 'end'.
+   */
+  slice(begin, end) {
+    return new _Vector(clampRange(this, begin, end, ({ data, _offsets }, begin2, end2) => sliceChunks(data, _offsets, begin2, end2)));
+  }
+  toJSON() {
+    return [...this];
+  }
+  /**
+   * Return a JavaScript Array or TypedArray of the Vector's elements.
+   *
+   * @note If this Vector contains a single Data chunk and the Vector's type is a
+   *  primitive numeric type corresponding to one of the JavaScript TypedArrays, this
+   *  method returns a zero-copy slice of the underlying TypedArray values. If there's
+   *  more than one chunk, the resulting TypedArray will be a copy of the data from each
+   *  chunk's underlying TypedArray values.
+   *
+   * @returns An Array or TypedArray of the Vector's elements, based on the Vector's DataType.
+   */
+  toArray() {
+    const { type, data, length, stride, ArrayType } = this;
+    switch (type.typeId) {
+      case Type3.Int:
+      case Type3.Float:
+      case Type3.Decimal:
+      case Type3.Time:
+      case Type3.Timestamp:
+        switch (data.length) {
+          case 0:
+            return new ArrayType();
+          case 1:
+            return data[0].values.subarray(0, length * stride);
+          default:
+            return data.reduce((memo, { values, length: chunk_length }) => {
+              memo.array.set(values.subarray(0, chunk_length * stride), memo.offset);
+              memo.offset += chunk_length * stride;
+              return memo;
+            }, { array: new ArrayType(length * stride), offset: 0 }).array;
+        }
+    }
+    return [...this];
+  }
+  /**
+   * Returns a string representation of the Vector.
+   *
+   * @returns A string representation of the Vector.
+   */
+  toString() {
+    return `[${[...this].join(",")}]`;
+  }
+  /**
+   * Returns a child Vector by name, or null if this Vector has no child with the given name.
+   * @param name The name of the child to retrieve.
+   */
+  getChild(name) {
+    var _b2;
+    return this.getChildAt((_b2 = this.type.children) === null || _b2 === void 0 ? void 0 : _b2.findIndex((f3) => f3.name === name));
+  }
+  /**
+   * Returns a child Vector by index, or null if this Vector has no child at the supplied index.
+   * @param index The index of the child to retrieve.
+   */
+  getChildAt(index) {
+    if (index > -1 && index < this.numChildren) {
+      return new _Vector(this.data.map(({ children }) => children[index]));
+    }
+    return null;
+  }
+  get isMemoized() {
+    if (DataType.isDictionary(this.type)) {
+      return this.data[0].dictionary.isMemoized;
+    }
+    return false;
+  }
+  /**
+   * Adds memoization to the Vector's {@link get} method. For dictionary
+   * vectors, this method return a vector that memoizes only the dictionary
+   * values.
+   *
+   * Memoization is very useful when decoding a value is expensive such as
+   * Utf8. The memoization creates a cache of the size of the Vector and
+   * therefore increases memory usage.
+   *
+   * @returns A new vector that memoizes calls to {@link get}.
+   */
+  memoize() {
+    if (DataType.isDictionary(this.type)) {
+      const dictionary = new MemoizedVector(this.data[0].dictionary);
+      const newData = this.data.map((data) => {
+        const cloned = data.clone();
+        cloned.dictionary = dictionary;
+        return cloned;
+      });
+      return new _Vector(newData);
+    }
+    return new MemoizedVector(this);
+  }
+  /**
+   * Returns a vector without memoization of the {@link get} method. If this
+   * vector is not memoized, this method returns this vector.
+   *
+   * @returns A new vector without memoization.
+   */
+  unmemoize() {
+    if (DataType.isDictionary(this.type) && this.isMemoized) {
+      const dictionary = this.data[0].dictionary.unmemoize();
+      const newData = this.data.map((data) => {
+        const newData2 = data.clone();
+        newData2.dictionary = dictionary;
+        return newData2;
+      });
+      return new _Vector(newData);
+    }
+    return this;
+  }
+};
+_a5 = Symbol.toStringTag;
+Vector[_a5] = ((proto) => {
+  proto.type = DataType.prototype;
+  proto.data = [];
+  proto.length = 0;
+  proto.stride = 1;
+  proto.numChildren = 0;
+  proto._offsets = new Uint32Array([0]);
+  proto[Symbol.isConcatSpreadable] = true;
+  const typeIds = Object.keys(Type3).map((T) => Type3[T]).filter((T) => typeof T === "number" && T !== Type3.NONE);
+  for (const typeId of typeIds) {
+    const get = instance2.getVisitFnByTypeId(typeId);
+    const set = instance.getVisitFnByTypeId(typeId);
+    const indexOf = instance3.getVisitFnByTypeId(typeId);
+    visitorsByTypeId[typeId] = { get, set, indexOf };
+    vectorPrototypesByTypeId[typeId] = Object.create(proto, {
+      ["isValid"]: { value: wrapChunkedCall1(isChunkedValid) },
+      ["get"]: { value: wrapChunkedCall1(instance2.getVisitFnByTypeId(typeId)) },
+      ["set"]: { value: wrapChunkedCall2(instance.getVisitFnByTypeId(typeId)) },
+      ["indexOf"]: { value: wrapChunkedIndexOf(instance3.getVisitFnByTypeId(typeId)) }
+    });
+  }
+  return "Vector";
+})(Vector.prototype);
+var MemoizedVector = class _MemoizedVector extends Vector {
+  constructor(vector) {
+    super(vector.data);
+    const get = this.get;
+    const set = this.set;
+    const slice = this.slice;
+    const cache = new Array(this.length);
+    Object.defineProperty(this, "get", {
+      value(index) {
+        const cachedValue = cache[index];
+        if (cachedValue !== void 0) {
+          return cachedValue;
+        }
+        const value = get.call(this, index);
+        cache[index] = value;
+        return value;
+      }
+    });
+    Object.defineProperty(this, "set", {
+      value(index, value) {
+        set.call(this, index, value);
+        cache[index] = value;
+      }
+    });
+    Object.defineProperty(this, "slice", {
+      value: (begin, end) => new _MemoizedVector(slice.call(this, begin, end))
+    });
+    Object.defineProperty(this, "isMemoized", { value: true });
+    Object.defineProperty(this, "unmemoize", {
+      value: () => new Vector(this.data)
+    });
+    Object.defineProperty(this, "memoize", {
+      value: () => this
+    });
+  }
+};
+
+// node_modules/apache-arrow/builder/valid.mjs
+function createIsValidFunction(nullValues) {
+  if (!nullValues || nullValues.length <= 0) {
+    return function isValid(value) {
+      return true;
+    };
+  }
+  let fnBody = "";
+  const noNaNs = nullValues.filter((x2) => x2 === x2);
+  if (noNaNs.length > 0) {
+    fnBody = `
+    switch (x) {${noNaNs.map((x2) => `
+        case ${valueToCase(x2)}:`).join("")}
+            return false;
+    }`;
+  }
+  if (nullValues.length !== noNaNs.length) {
+    fnBody = `if (x !== x) return false;
+${fnBody}`;
+  }
+  return new Function(`x`, `${fnBody}
+return true;`);
+}
+function valueToCase(x2) {
+  if (typeof x2 !== "bigint") {
+    return valueToString(x2);
+  }
+  return `${valueToString(x2)}n`;
+}
+
+// node_modules/apache-arrow/builder/buffer.mjs
+function roundLengthUpToNearest64Bytes(len, BPE) {
+  const bytesMinus1 = Math.ceil(len) * BPE - 1;
+  return (bytesMinus1 - bytesMinus1 % 64 + 64 || 64) / BPE;
+}
+function resizeArray(arr, len = 0) {
+  return arr.length >= len ? arr.subarray(0, len) : memcpy(new arr.constructor(len), arr, 0);
+}
+var BufferBuilder = class {
+  constructor(bufferType, initialSize = 0, stride = 1) {
+    this.length = Math.ceil(initialSize / stride);
+    this.buffer = new bufferType(this.length);
+    this.stride = stride;
+    this.BYTES_PER_ELEMENT = bufferType.BYTES_PER_ELEMENT;
+    this.ArrayType = bufferType;
+  }
+  get byteLength() {
+    return Math.ceil(this.length * this.stride) * this.BYTES_PER_ELEMENT;
+  }
+  get reservedLength() {
+    return this.buffer.length / this.stride;
+  }
+  get reservedByteLength() {
+    return this.buffer.byteLength;
+  }
+  // @ts-ignore
+  set(index, value) {
+    return this;
+  }
+  append(value) {
+    return this.set(this.length, value);
+  }
+  reserve(extra) {
+    if (extra > 0) {
+      this.length += extra;
+      const stride = this.stride;
+      const length = this.length * stride;
+      const reserved = this.buffer.length;
+      if (length >= reserved) {
+        this._resize(reserved === 0 ? roundLengthUpToNearest64Bytes(length * 1, this.BYTES_PER_ELEMENT) : roundLengthUpToNearest64Bytes(length * 2, this.BYTES_PER_ELEMENT));
+      }
+    }
+    return this;
+  }
+  flush(length = this.length) {
+    length = roundLengthUpToNearest64Bytes(length * this.stride, this.BYTES_PER_ELEMENT);
+    const array = resizeArray(this.buffer, length);
+    this.clear();
+    return array;
+  }
+  clear() {
+    this.length = 0;
+    this.buffer = new this.ArrayType();
+    return this;
+  }
+  _resize(newLength) {
+    return this.buffer = resizeArray(this.buffer, newLength);
+  }
+};
+var DataBufferBuilder = class extends BufferBuilder {
+  last() {
+    return this.get(this.length - 1);
+  }
+  get(index) {
+    return this.buffer[index];
+  }
+  set(index, value) {
+    this.reserve(index - this.length + 1);
+    this.buffer[index * this.stride] = value;
+    return this;
+  }
+};
+var BitmapBufferBuilder = class extends DataBufferBuilder {
+  constructor() {
+    super(Uint8Array, 0, 1 / 8);
+    this.numValid = 0;
+  }
+  get numInvalid() {
+    return this.length - this.numValid;
+  }
+  get(idx) {
+    return this.buffer[idx >> 3] >> idx % 8 & 1;
+  }
+  set(idx, val) {
+    const { buffer } = this.reserve(idx - this.length + 1);
+    const byte = idx >> 3, bit = idx % 8, cur = buffer[byte] >> bit & 1;
+    val ? cur === 0 && (buffer[byte] |= 1 << bit, ++this.numValid) : cur === 1 && (buffer[byte] &= ~(1 << bit), --this.numValid);
+    return this;
+  }
+  clear() {
+    this.numValid = 0;
+    return super.clear();
+  }
+};
+var OffsetsBufferBuilder = class extends DataBufferBuilder {
+  constructor(type) {
+    super(type.OffsetArrayType, 1, 1);
+  }
+  append(value) {
+    return this.set(this.length - 1, value);
+  }
+  set(index, value) {
+    const offset = this.length - 1;
+    const buffer = this.reserve(index - offset + 1).buffer;
+    if (offset < index++ && offset >= 0) {
+      buffer.fill(buffer[offset], offset, index);
+    }
+    buffer[index] = buffer[index - 1] + value;
+    return this;
+  }
+  flush(length = this.length - 1) {
+    if (length > this.length) {
+      this.set(length - 1, this.BYTES_PER_ELEMENT > 4 ? BigInt(0) : 0);
+    }
+    return super.flush(length + 1);
+  }
+};
+
+// node_modules/apache-arrow/builder.mjs
+var Builder = class {
+  /** @nocollapse */
+  // @ts-ignore
+  static throughNode(options) {
+    throw new Error(`"throughNode" not available in this environment`);
+  }
+  /** @nocollapse */
+  // @ts-ignore
+  static throughDOM(options) {
+    throw new Error(`"throughDOM" not available in this environment`);
+  }
+  /**
+   * Construct a builder with the given Arrow DataType with optional null values,
+   * which will be interpreted as "null" when set or appended to the `Builder`.
+   * @param {{ type: T, nullValues?: any[] }} options A `BuilderOptions` object used to create this `Builder`.
+   */
+  constructor({ "type": type, "nullValues": nulls }) {
+    this.length = 0;
+    this.finished = false;
+    this.type = type;
+    this.children = [];
+    this.nullValues = nulls;
+    this.stride = strideForType(type);
+    this._nulls = new BitmapBufferBuilder();
+    if (nulls && nulls.length > 0) {
+      this._isValid = createIsValidFunction(nulls);
+    }
+  }
+  /**
+   * Flush the `Builder` and return a `Vector<T>`.
+   * @returns {Vector<T>} A `Vector<T>` of the flushed values.
+   */
+  toVector() {
+    return new Vector([this.flush()]);
+  }
+  get ArrayType() {
+    return this.type.ArrayType;
+  }
+  get nullCount() {
+    return this._nulls.numInvalid;
+  }
+  get numChildren() {
+    return this.children.length;
+  }
+  /**
+   * @returns The aggregate length (in bytes) of the values that have been written.
+   */
+  get byteLength() {
+    let size = 0;
+    const { _offsets, _values, _nulls, _typeIds, children } = this;
+    _offsets && (size += _offsets.byteLength);
+    _values && (size += _values.byteLength);
+    _nulls && (size += _nulls.byteLength);
+    _typeIds && (size += _typeIds.byteLength);
+    return children.reduce((size2, child) => size2 + child.byteLength, size);
+  }
+  /**
+   * @returns The aggregate number of rows that have been reserved to write new values.
+   */
+  get reservedLength() {
+    return this._nulls.reservedLength;
+  }
+  /**
+   * @returns The aggregate length (in bytes) that has been reserved to write new values.
+   */
+  get reservedByteLength() {
+    let size = 0;
+    this._offsets && (size += this._offsets.reservedByteLength);
+    this._values && (size += this._values.reservedByteLength);
+    this._nulls && (size += this._nulls.reservedByteLength);
+    this._typeIds && (size += this._typeIds.reservedByteLength);
+    return this.children.reduce((size2, child) => size2 + child.reservedByteLength, size);
+  }
+  get valueOffsets() {
+    return this._offsets ? this._offsets.buffer : null;
+  }
+  get values() {
+    return this._values ? this._values.buffer : null;
+  }
+  get nullBitmap() {
+    return this._nulls ? this._nulls.buffer : null;
+  }
+  get typeIds() {
+    return this._typeIds ? this._typeIds.buffer : null;
+  }
+  /**
+   * Appends a value (or null) to this `Builder`.
+   * This is equivalent to `builder.set(builder.length, value)`.
+   * @param {T['TValue'] | TNull } value The value to append.
+   */
+  append(value) {
+    return this.set(this.length, value);
+  }
+  /**
+   * Validates whether a value is valid (true), or null (false)
+   * @param {T['TValue'] | TNull } value The value to compare against null the value representations
+   */
+  isValid(value) {
+    return this._isValid(value);
+  }
+  /**
+   * Write a value (or null-value sentinel) at the supplied index.
+   * If the value matches one of the null-value representations, a 1-bit is
+   * written to the null `BitmapBufferBuilder`. Otherwise, a 0 is written to
+   * the null `BitmapBufferBuilder`, and the value is passed to
+   * `Builder.prototype.setValue()`.
+   * @param {number} index The index of the value to write.
+   * @param {T['TValue'] | TNull } value The value to write at the supplied index.
+   * @returns {this} The updated `Builder` instance.
+   */
+  set(index, value) {
+    if (this.setValid(index, this.isValid(value))) {
+      this.setValue(index, value);
+    }
+    return this;
+  }
+  /**
+   * Write a value to the underlying buffers at the supplied index, bypassing
+   * the null-value check. This is a low-level method that
+   * @param {number} index
+   * @param {T['TValue'] | TNull } value
+   */
+  setValue(index, value) {
+    this._setValue(this, index, value);
+  }
+  setValid(index, valid) {
+    this.length = this._nulls.set(index, +valid).length;
+    return valid;
+  }
+  // @ts-ignore
+  addChild(child, name = `${this.numChildren}`) {
+    throw new Error(`Cannot append children to non-nested type "${this.type}"`);
+  }
+  /**
+   * Retrieve the child `Builder` at the supplied `index`, or null if no child
+   * exists at that index.
+   * @param {number} index The index of the child `Builder` to retrieve.
+   * @returns {Builder | null} The child Builder at the supplied index or null.
+   */
+  getChildAt(index) {
+    return this.children[index] || null;
+  }
+  /**
+   * Commit all the values that have been written to their underlying
+   * ArrayBuffers, including any child Builders if applicable, and reset
+   * the internal `Builder` state.
+   * @returns A `Data<T>` of the buffers and children representing the values written.
+   */
+  flush() {
+    let data;
+    let typeIds;
+    let nullBitmap;
+    let valueOffsets;
+    const { type, length, nullCount, _typeIds, _offsets, _values, _nulls } = this;
+    if (typeIds = _typeIds === null || _typeIds === void 0 ? void 0 : _typeIds.flush(length)) {
+      valueOffsets = _offsets === null || _offsets === void 0 ? void 0 : _offsets.flush(length);
+    } else if (valueOffsets = _offsets === null || _offsets === void 0 ? void 0 : _offsets.flush(length)) {
+      data = _values === null || _values === void 0 ? void 0 : _values.flush(_offsets.last());
+    } else {
+      data = _values === null || _values === void 0 ? void 0 : _values.flush(length);
+    }
+    if (nullCount > 0) {
+      nullBitmap = _nulls === null || _nulls === void 0 ? void 0 : _nulls.flush(length);
+    }
+    const children = this.children.map((child) => child.flush());
+    this.clear();
+    return makeData({
+      type,
+      length,
+      nullCount,
+      children,
+      "child": children[0],
+      data,
+      typeIds,
+      nullBitmap,
+      valueOffsets
+    });
+  }
+  /**
+   * Finalize this `Builder`, and child builders if applicable.
+   * @returns {this} The finalized `Builder` instance.
+   */
+  finish() {
+    this.finished = true;
+    for (const child of this.children)
+      child.finish();
+    return this;
+  }
+  /**
+   * Clear this Builder's internal state, including child Builders if applicable, and reset the length to 0.
+   * @returns {this} The cleared `Builder` instance.
+   */
+  clear() {
+    var _a9, _b2, _c2, _d2;
+    this.length = 0;
+    (_a9 = this._nulls) === null || _a9 === void 0 ? void 0 : _a9.clear();
+    (_b2 = this._values) === null || _b2 === void 0 ? void 0 : _b2.clear();
+    (_c2 = this._offsets) === null || _c2 === void 0 ? void 0 : _c2.clear();
+    (_d2 = this._typeIds) === null || _d2 === void 0 ? void 0 : _d2.clear();
+    for (const child of this.children)
+      child.clear();
+    return this;
+  }
+};
+Builder.prototype.length = 1;
+Builder.prototype.stride = 1;
+Builder.prototype.children = null;
+Builder.prototype.finished = false;
+Builder.prototype.nullValues = null;
+Builder.prototype._isValid = () => true;
+var FixedWidthBuilder = class extends Builder {
+  constructor(opts) {
+    super(opts);
+    this._values = new DataBufferBuilder(this.ArrayType, 0, this.stride);
+  }
+  setValue(index, value) {
+    const values = this._values;
+    values.reserve(index - values.length + 1);
+    return super.setValue(index, value);
+  }
+};
+var VariableWidthBuilder = class extends Builder {
+  constructor(opts) {
+    super(opts);
+    this._pendingLength = 0;
+    this._offsets = new OffsetsBufferBuilder(opts.type);
+  }
+  setValue(index, value) {
+    const pending = this._pending || (this._pending = /* @__PURE__ */ new Map());
+    const current = pending.get(index);
+    current && (this._pendingLength -= current.length);
+    this._pendingLength += value instanceof MapRow ? value[kKeys].length : value.length;
+    pending.set(index, value);
+  }
+  setValid(index, isValid) {
+    if (!super.setValid(index, isValid)) {
+      (this._pending || (this._pending = /* @__PURE__ */ new Map())).set(index, void 0);
+      return false;
+    }
+    return true;
+  }
+  clear() {
+    this._pendingLength = 0;
+    this._pending = void 0;
+    return super.clear();
+  }
+  flush() {
+    this._flush();
+    return super.flush();
+  }
+  finish() {
+    this._flush();
+    return super.finish();
+  }
+  _flush() {
+    const pending = this._pending;
+    const pendingLength = this._pendingLength;
+    this._pendingLength = 0;
+    this._pending = void 0;
+    if (pending && pending.size > 0) {
+      this._flushPending(pending, pendingLength);
+    }
+    return this;
+  }
+};
+
+// node_modules/apache-arrow/fb/block.mjs
+var Block = class {
+  constructor() {
+    this.bb = null;
+    this.bb_pos = 0;
+  }
+  __init(i2, bb) {
+    this.bb_pos = i2;
+    this.bb = bb;
+    return this;
+  }
+  /**
+   * Index to the start of the RecordBlock (note this is past the Message header)
+   */
+  offset() {
+    return this.bb.readInt64(this.bb_pos);
+  }
+  /**
+   * Length of the metadata
+   */
+  metaDataLength() {
+    return this.bb.readInt32(this.bb_pos + 8);
+  }
+  /**
+   * Length of the data (this is aligned so there can be a gap between this and
+   * the metadata).
+   */
+  bodyLength() {
+    return this.bb.readInt64(this.bb_pos + 16);
+  }
+  static sizeOf() {
+    return 24;
+  }
+  static createBlock(builder, offset, metaDataLength, bodyLength) {
+    builder.prep(8, 24);
+    builder.writeInt64(BigInt(bodyLength !== null && bodyLength !== void 0 ? bodyLength : 0));
+    builder.pad(4);
+    builder.writeInt32(metaDataLength);
+    builder.writeInt64(BigInt(offset !== null && offset !== void 0 ? offset : 0));
+    return builder.offset();
+  }
+};
+
+// node_modules/apache-arrow/fb/footer.mjs
+var flatbuffers28 = __toESM(require_flatbuffers(), 1);
+var Footer = class _Footer {
+  constructor() {
+    this.bb = null;
+    this.bb_pos = 0;
+  }
+  __init(i2, bb) {
+    this.bb_pos = i2;
+    this.bb = bb;
+    return this;
+  }
+  static getRootAsFooter(bb, obj) {
+    return (obj || new _Footer()).__init(bb.readInt32(bb.position()) + bb.position(), bb);
+  }
+  static getSizePrefixedRootAsFooter(bb, obj) {
+    bb.setPosition(bb.position() + flatbuffers28.SIZE_PREFIX_LENGTH);
+    return (obj || new _Footer()).__init(bb.readInt32(bb.position()) + bb.position(), bb);
+  }
+  version() {
+    const offset = this.bb.__offset(this.bb_pos, 4);
+    return offset ? this.bb.readInt16(this.bb_pos + offset) : MetadataVersion.V1;
+  }
+  schema(obj) {
+    const offset = this.bb.__offset(this.bb_pos, 6);
+    return offset ? (obj || new Schema()).__init(this.bb.__indirect(this.bb_pos + offset), this.bb) : null;
+  }
+  dictionaries(index, obj) {
+    const offset = this.bb.__offset(this.bb_pos, 8);
+    return offset ? (obj || new Block()).__init(this.bb.__vector(this.bb_pos + offset) + index * 24, this.bb) : null;
+  }
+  dictionariesLength() {
+    const offset = this.bb.__offset(this.bb_pos, 8);
+    return offset ? this.bb.__vector_len(this.bb_pos + offset) : 0;
+  }
+  recordBatches(index, obj) {
+    const offset = this.bb.__offset(this.bb_pos, 10);
+    return offset ? (obj || new Block()).__init(this.bb.__vector(this.bb_pos + offset) + index * 24, this.bb) : null;
+  }
+  recordBatchesLength() {
+    const offset = this.bb.__offset(this.bb_pos, 10);
+    return offset ? this.bb.__vector_len(this.bb_pos + offset) : 0;
+  }
+  /**
+   * User-defined metadata
+   */
+  customMetadata(index, obj) {
+    const offset = this.bb.__offset(this.bb_pos, 12);
+    return offset ? (obj || new KeyValue()).__init(this.bb.__indirect(this.bb.__vector(this.bb_pos + offset) + index * 4), this.bb) : null;
+  }
+  customMetadataLength() {
+    const offset = this.bb.__offset(this.bb_pos, 12);
+    return offset ? this.bb.__vector_len(this.bb_pos + offset) : 0;
+  }
+  static startFooter(builder) {
+    builder.startObject(5);
+  }
+  static addVersion(builder, version) {
+    builder.addFieldInt16(0, version, MetadataVersion.V1);
+  }
+  static addSchema(builder, schemaOffset) {
+    builder.addFieldOffset(1, schemaOffset, 0);
+  }
+  static addDictionaries(builder, dictionariesOffset) {
+    builder.addFieldOffset(2, dictionariesOffset, 0);
+  }
+  static startDictionariesVector(builder, numElems) {
+    builder.startVector(24, numElems, 8);
+  }
+  static addRecordBatches(builder, recordBatchesOffset) {
+    builder.addFieldOffset(3, recordBatchesOffset, 0);
+  }
+  static startRecordBatchesVector(builder, numElems) {
+    builder.startVector(24, numElems, 8);
+  }
+  static addCustomMetadata(builder, customMetadataOffset) {
+    builder.addFieldOffset(4, customMetadataOffset, 0);
+  }
+  static createCustomMetadataVector(builder, data) {
+    builder.startVector(4, data.length, 4);
+    for (let i2 = data.length - 1; i2 >= 0; i2--) {
+      builder.addOffset(data[i2]);
+    }
+    return builder.endVector();
+  }
+  static startCustomMetadataVector(builder, numElems) {
+    builder.startVector(4, numElems, 4);
+  }
+  static endFooter(builder) {
+    const offset = builder.endObject();
+    return offset;
+  }
+  static finishFooterBuffer(builder, offset) {
+    builder.finish(offset);
+  }
+  static finishSizePrefixedFooterBuffer(builder, offset) {
+    builder.finish(offset, void 0, true);
+  }
+};
+
+// node_modules/apache-arrow/ipc/metadata/file.mjs
+var flatbuffers29 = __toESM(require_flatbuffers(), 1);
+
+// node_modules/apache-arrow/schema.mjs
+var Schema2 = class _Schema {
+  constructor(fields = [], metadata, dictionaries, metadataVersion = MetadataVersion.V5) {
+    this.fields = fields || [];
+    this.metadata = metadata || /* @__PURE__ */ new Map();
+    if (!dictionaries) {
+      dictionaries = generateDictionaryMap(this.fields);
+    }
+    this.dictionaries = dictionaries;
+    this.metadataVersion = metadataVersion;
+  }
+  get [Symbol.toStringTag]() {
+    return "Schema";
+  }
+  get names() {
+    return this.fields.map((f3) => f3.name);
+  }
+  toString() {
+    return `Schema<{ ${this.fields.map((f3, i2) => `${i2}: ${f3}`).join(", ")} }>`;
+  }
+  /**
+   * Construct a new Schema containing only specified fields.
+   *
+   * @param fieldNames Names of fields to keep.
+   * @returns A new Schema of fields matching the specified names.
+   */
+  select(fieldNames) {
+    const names = new Set(fieldNames);
+    const fields = this.fields.filter((f3) => names.has(f3.name));
+    return new _Schema(fields, this.metadata);
+  }
+  /**
+   * Construct a new Schema containing only fields at the specified indices.
+   *
+   * @param fieldIndices Indices of fields to keep.
+   * @returns A new Schema of fields at the specified indices.
+   */
+  selectAt(fieldIndices) {
+    const fields = fieldIndices.map((i2) => this.fields[i2]).filter(Boolean);
+    return new _Schema(fields, this.metadata);
+  }
+  assign(...args) {
+    const other = args[0] instanceof _Schema ? args[0] : Array.isArray(args[0]) ? new _Schema(args[0]) : new _Schema(args);
+    const curFields = [...this.fields];
+    const metadata = mergeMaps(mergeMaps(/* @__PURE__ */ new Map(), this.metadata), other.metadata);
+    const newFields = other.fields.filter((f22) => {
+      const i2 = curFields.findIndex((f3) => f3.name === f22.name);
+      return ~i2 ? (curFields[i2] = f22.clone({
+        metadata: mergeMaps(mergeMaps(/* @__PURE__ */ new Map(), curFields[i2].metadata), f22.metadata)
+      })) && false : true;
+    });
+    const newDictionaries = generateDictionaryMap(newFields, /* @__PURE__ */ new Map());
+    return new _Schema([...curFields, ...newFields], metadata, new Map([...this.dictionaries, ...newDictionaries]));
+  }
+};
+Schema2.prototype.fields = null;
+Schema2.prototype.metadata = null;
+Schema2.prototype.dictionaries = null;
+var Field2 = class _Field {
+  /** @nocollapse */
+  static new(...args) {
+    let [name, type, nullable, metadata] = args;
+    if (args[0] && typeof args[0] === "object") {
+      ({ name } = args[0]);
+      type === void 0 && (type = args[0].type);
+      nullable === void 0 && (nullable = args[0].nullable);
+      metadata === void 0 && (metadata = args[0].metadata);
+    }
+    return new _Field(`${name}`, type, nullable, metadata);
+  }
+  constructor(name, type, nullable = false, metadata) {
+    this.name = name;
+    this.type = type;
+    this.nullable = nullable;
+    this.metadata = metadata || /* @__PURE__ */ new Map();
+  }
+  get typeId() {
+    return this.type.typeId;
+  }
+  get [Symbol.toStringTag]() {
+    return "Field";
+  }
+  toString() {
+    return `${this.name}: ${this.type}`;
+  }
+  clone(...args) {
+    let [name, type, nullable, metadata] = args;
+    !args[0] || typeof args[0] !== "object" ? [name = this.name, type = this.type, nullable = this.nullable, metadata = this.metadata] = args : { name = this.name, type = this.type, nullable = this.nullable, metadata = this.metadata } = args[0];
+    return _Field.new(name, type, nullable, metadata);
+  }
+};
+Field2.prototype.type = null;
+Field2.prototype.name = null;
+Field2.prototype.nullable = null;
+Field2.prototype.metadata = null;
+function mergeMaps(m1, m2) {
+  return new Map([...m1 || /* @__PURE__ */ new Map(), ...m2 || /* @__PURE__ */ new Map()]);
+}
+function generateDictionaryMap(fields, dictionaries = /* @__PURE__ */ new Map()) {
+  for (let i2 = -1, n = fields.length; ++i2 < n; ) {
+    const field = fields[i2];
+    const type = field.type;
+    if (DataType.isDictionary(type)) {
+      if (!dictionaries.has(type.id)) {
+        dictionaries.set(type.id, type.dictionary);
+      } else if (dictionaries.get(type.id) !== type.dictionary) {
+        throw new Error(`Cannot create Schema containing two different dictionaries with the same Id`);
+      }
+    }
+    if (type.children && type.children.length > 0) {
+      generateDictionaryMap(type.children, dictionaries);
+    }
+  }
+  return dictionaries;
+}
+
+// node_modules/apache-arrow/ipc/metadata/file.mjs
+var Builder3 = flatbuffers29.Builder;
+var ByteBuffer2 = flatbuffers29.ByteBuffer;
+var Footer_ = class {
+  /** @nocollapse */
+  static decode(buf) {
+    buf = new ByteBuffer2(toUint8Array(buf));
+    const footer = Footer.getRootAsFooter(buf);
+    const schema = Schema2.decode(footer.schema(), /* @__PURE__ */ new Map(), footer.version());
+    return new OffHeapFooter(schema, footer);
+  }
+  /** @nocollapse */
+  static encode(footer) {
+    const b = new Builder3();
+    const schemaOffset = Schema2.encode(b, footer.schema);
+    Footer.startRecordBatchesVector(b, footer.numRecordBatches);
+    for (const rb of [...footer.recordBatches()].slice().reverse()) {
+      FileBlock.encode(b, rb);
+    }
+    const recordBatchesOffset = b.endVector();
+    Footer.startDictionariesVector(b, footer.numDictionaries);
+    for (const db of [...footer.dictionaryBatches()].slice().reverse()) {
+      FileBlock.encode(b, db);
+    }
+    const dictionaryBatchesOffset = b.endVector();
+    Footer.startFooter(b);
+    Footer.addSchema(b, schemaOffset);
+    Footer.addVersion(b, MetadataVersion.V5);
+    Footer.addRecordBatches(b, recordBatchesOffset);
+    Footer.addDictionaries(b, dictionaryBatchesOffset);
+    Footer.finishFooterBuffer(b, Footer.endFooter(b));
+    return b.asUint8Array();
+  }
+  get numRecordBatches() {
+    return this._recordBatches.length;
+  }
+  get numDictionaries() {
+    return this._dictionaryBatches.length;
+  }
+  constructor(schema, version = MetadataVersion.V5, recordBatches, dictionaryBatches) {
+    this.schema = schema;
+    this.version = version;
+    recordBatches && (this._recordBatches = recordBatches);
+    dictionaryBatches && (this._dictionaryBatches = dictionaryBatches);
+  }
+  *recordBatches() {
+    for (let block, i2 = -1, n = this.numRecordBatches; ++i2 < n; ) {
+      if (block = this.getRecordBatch(i2)) {
+        yield block;
+      }
+    }
+  }
+  *dictionaryBatches() {
+    for (let block, i2 = -1, n = this.numDictionaries; ++i2 < n; ) {
+      if (block = this.getDictionaryBatch(i2)) {
+        yield block;
+      }
+    }
+  }
+  getRecordBatch(index) {
+    return index >= 0 && index < this.numRecordBatches && this._recordBatches[index] || null;
+  }
+  getDictionaryBatch(index) {
+    return index >= 0 && index < this.numDictionaries && this._dictionaryBatches[index] || null;
+  }
+};
+var OffHeapFooter = class extends Footer_ {
+  get numRecordBatches() {
+    return this._footer.recordBatchesLength();
+  }
+  get numDictionaries() {
+    return this._footer.dictionariesLength();
+  }
+  constructor(schema, _footer) {
+    super(schema, _footer.version());
+    this._footer = _footer;
+  }
+  getRecordBatch(index) {
+    if (index >= 0 && index < this.numRecordBatches) {
+      const fileBlock = this._footer.recordBatches(index);
+      if (fileBlock) {
+        return FileBlock.decode(fileBlock);
+      }
+    }
+    return null;
+  }
+  getDictionaryBatch(index) {
+    if (index >= 0 && index < this.numDictionaries) {
+      const fileBlock = this._footer.dictionaries(index);
+      if (fileBlock) {
+        return FileBlock.decode(fileBlock);
+      }
+    }
+    return null;
+  }
+};
+var FileBlock = class _FileBlock {
+  /** @nocollapse */
+  static decode(block) {
+    return new _FileBlock(block.metaDataLength(), block.bodyLength(), block.offset());
+  }
+  /** @nocollapse */
+  static encode(b, fileBlock) {
+    const { metaDataLength } = fileBlock;
+    const offset = BigInt(fileBlock.offset);
+    const bodyLength = BigInt(fileBlock.bodyLength);
+    return Block.createBlock(b, offset, metaDataLength, bodyLength);
+  }
+  constructor(metaDataLength, bodyLength, offset) {
+    this.metaDataLength = metaDataLength;
+    this.offset = bigIntToNumber(offset);
+    this.bodyLength = bigIntToNumber(bodyLength);
+  }
+};
+
+// node_modules/apache-arrow/io/interfaces.mjs
+var ITERATOR_DONE = Object.freeze({ done: true, value: void 0 });
+var ArrowJSON = class {
+  constructor(_json) {
+    this._json = _json;
+  }
+  get schema() {
+    return this._json["schema"];
+  }
+  get batches() {
+    return this._json["batches"] || [];
+  }
+  get dictionaries() {
+    return this._json["dictionaries"] || [];
+  }
+};
+var ReadableInterop = class {
+  tee() {
+    return this._getDOMStream().tee();
+  }
+  pipe(writable, options) {
+    return this._getNodeStream().pipe(writable, options);
+  }
+  pipeTo(writable, options) {
+    return this._getDOMStream().pipeTo(writable, options);
+  }
+  pipeThrough(duplex, options) {
+    return this._getDOMStream().pipeThrough(duplex, options);
+  }
+  _getDOMStream() {
+    return this._DOMStream || (this._DOMStream = this.toDOMStream());
+  }
+  _getNodeStream() {
+    return this._nodeStream || (this._nodeStream = this.toNodeStream());
+  }
+};
+var AsyncQueue = class extends ReadableInterop {
+  constructor() {
+    super();
+    this._values = [];
+    this.resolvers = [];
+    this._closedPromise = new Promise((r2) => this._closedPromiseResolve = r2);
+  }
+  get closed() {
+    return this._closedPromise;
+  }
+  cancel(reason) {
+    return __awaiter(this, void 0, void 0, function* () {
+      yield this.return(reason);
+    });
+  }
+  write(value) {
+    if (this._ensureOpen()) {
+      this.resolvers.length <= 0 ? this._values.push(value) : this.resolvers.shift().resolve({ done: false, value });
+    }
+  }
+  abort(value) {
+    if (this._closedPromiseResolve) {
+      this.resolvers.length <= 0 ? this._error = { error: value } : this.resolvers.shift().reject({ done: true, value });
+    }
+  }
+  close() {
+    if (this._closedPromiseResolve) {
+      const { resolvers } = this;
+      while (resolvers.length > 0) {
+        resolvers.shift().resolve(ITERATOR_DONE);
+      }
+      this._closedPromiseResolve();
+      this._closedPromiseResolve = void 0;
+    }
+  }
+  [Symbol.asyncIterator]() {
+    return this;
+  }
+  toDOMStream(options) {
+    return adapters_default.toDOMStream(this._closedPromiseResolve || this._error ? this : this._values, options);
+  }
+  toNodeStream(options) {
+    return adapters_default.toNodeStream(this._closedPromiseResolve || this._error ? this : this._values, options);
+  }
+  throw(_) {
+    return __awaiter(this, void 0, void 0, function* () {
+      yield this.abort(_);
+      return ITERATOR_DONE;
+    });
+  }
+  return(_) {
+    return __awaiter(this, void 0, void 0, function* () {
+      yield this.close();
+      return ITERATOR_DONE;
+    });
+  }
+  read(size) {
+    return __awaiter(this, void 0, void 0, function* () {
+      return (yield this.next(size, "read")).value;
+    });
+  }
+  peek(size) {
+    return __awaiter(this, void 0, void 0, function* () {
+      return (yield this.next(size, "peek")).value;
+    });
+  }
+  next(..._args) {
+    if (this._values.length > 0) {
+      return Promise.resolve({ done: false, value: this._values.shift() });
+    } else if (this._error) {
+      return Promise.reject({ done: true, value: this._error.error });
+    } else if (!this._closedPromiseResolve) {
+      return Promise.resolve(ITERATOR_DONE);
+    } else {
+      return new Promise((resolve, reject) => {
+        this.resolvers.push({ resolve, reject });
+      });
+    }
+  }
+  _ensureOpen() {
+    if (this._closedPromiseResolve) {
+      return true;
+    }
+    throw new Error(`AsyncQueue is closed`);
+  }
+};
+
+// node_modules/apache-arrow/io/stream.mjs
+var AsyncByteQueue = class extends AsyncQueue {
+  write(value) {
+    if ((value = toUint8Array(value)).byteLength > 0) {
+      return super.write(value);
+    }
+  }
+  toString(sync = false) {
+    return sync ? decodeUtf8(this.toUint8Array(true)) : this.toUint8Array(false).then(decodeUtf8);
+  }
+  toUint8Array(sync = false) {
+    return sync ? joinUint8Arrays(this._values)[0] : (() => __awaiter(this, void 0, void 0, function* () {
+      var _a9, e_1, _b2, _c2;
+      const buffers = [];
+      let byteLength = 0;
+      try {
+        for (var _d2 = true, _e2 = __asyncValues2(this), _f2; _f2 = yield _e2.next(), _a9 = _f2.done, !_a9; _d2 = true) {
+          _c2 = _f2.value;
+          _d2 = false;
+          const chunk = _c2;
+          buffers.push(chunk);
+          byteLength += chunk.byteLength;
+        }
+      } catch (e_1_1) {
+        e_1 = { error: e_1_1 };
+      } finally {
+        try {
+          if (!_d2 && !_a9 && (_b2 = _e2.return)) yield _b2.call(_e2);
+        } finally {
+          if (e_1) throw e_1.error;
+        }
+      }
+      return joinUint8Arrays(buffers, byteLength)[0];
+    }))();
+  }
+};
+var ByteStream = class {
+  constructor(source) {
+    if (source) {
+      this.source = new ByteStreamSource(adapters_default.fromIterable(source));
+    }
+  }
+  [Symbol.iterator]() {
+    return this;
+  }
+  next(value) {
+    return this.source.next(value);
+  }
+  throw(value) {
+    return this.source.throw(value);
+  }
+  return(value) {
+    return this.source.return(value);
+  }
+  peek(size) {
+    return this.source.peek(size);
+  }
+  read(size) {
+    return this.source.read(size);
+  }
+};
+var AsyncByteStream = class _AsyncByteStream {
+  constructor(source) {
+    if (source instanceof _AsyncByteStream) {
+      this.source = source.source;
+    } else if (source instanceof AsyncByteQueue) {
+      this.source = new AsyncByteStreamSource(adapters_default.fromAsyncIterable(source));
+    } else if (isReadableNodeStream(source)) {
+      this.source = new AsyncByteStreamSource(adapters_default.fromNodeStream(source));
+    } else if (isReadableDOMStream(source)) {
+      this.source = new AsyncByteStreamSource(adapters_default.fromDOMStream(source));
+    } else if (isFetchResponse(source)) {
+      this.source = new AsyncByteStreamSource(adapters_default.fromDOMStream(source.body));
+    } else if (isIterable(source)) {
+      this.source = new AsyncByteStreamSource(adapters_default.fromIterable(source));
+    } else if (isPromise(source)) {
+      this.source = new AsyncByteStreamSource(adapters_default.fromAsyncIterable(source));
+    } else if (isAsyncIterable3(source)) {
+      this.source = new AsyncByteStreamSource(adapters_default.fromAsyncIterable(source));
+    }
+  }
+  [Symbol.asyncIterator]() {
+    return this;
+  }
+  next(value) {
+    return this.source.next(value);
+  }
+  throw(value) {
+    return this.source.throw(value);
+  }
+  return(value) {
+    return this.source.return(value);
+  }
+  get closed() {
+    return this.source.closed;
+  }
+  cancel(reason) {
+    return this.source.cancel(reason);
+  }
+  peek(size) {
+    return this.source.peek(size);
+  }
+  read(size) {
+    return this.source.read(size);
+  }
+};
+var ByteStreamSource = class {
+  constructor(source) {
+    this.source = source;
+  }
+  cancel(reason) {
+    this.return(reason);
+  }
+  peek(size) {
+    return this.next(size, "peek").value;
+  }
+  read(size) {
+    return this.next(size, "read").value;
+  }
+  next(size, cmd = "read") {
+    return this.source.next({ cmd, size });
+  }
+  throw(value) {
+    return Object.create(this.source.throw && this.source.throw(value) || ITERATOR_DONE);
+  }
+  return(value) {
+    return Object.create(this.source.return && this.source.return(value) || ITERATOR_DONE);
+  }
+};
+var AsyncByteStreamSource = class {
+  constructor(source) {
+    this.source = source;
+    this._closedPromise = new Promise((r2) => this._closedPromiseResolve = r2);
+  }
+  cancel(reason) {
+    return __awaiter(this, void 0, void 0, function* () {
+      yield this.return(reason);
+    });
+  }
+  get closed() {
+    return this._closedPromise;
+  }
+  read(size) {
+    return __awaiter(this, void 0, void 0, function* () {
+      return (yield this.next(size, "read")).value;
+    });
+  }
+  peek(size) {
+    return __awaiter(this, void 0, void 0, function* () {
+      return (yield this.next(size, "peek")).value;
+    });
+  }
+  next(size_1) {
+    return __awaiter(this, arguments, void 0, function* (size, cmd = "read") {
+      return yield this.source.next({ cmd, size });
+    });
+  }
+  throw(value) {
+    return __awaiter(this, void 0, void 0, function* () {
+      const result = this.source.throw && (yield this.source.throw(value)) || ITERATOR_DONE;
+      this._closedPromiseResolve && this._closedPromiseResolve();
+      this._closedPromiseResolve = void 0;
+      return Object.create(result);
+    });
+  }
+  return(value) {
+    return __awaiter(this, void 0, void 0, function* () {
+      const result = this.source.return && (yield this.source.return(value)) || ITERATOR_DONE;
+      this._closedPromiseResolve && this._closedPromiseResolve();
+      this._closedPromiseResolve = void 0;
+      return Object.create(result);
+    });
+  }
+};
+
+// node_modules/apache-arrow/io/file.mjs
+var RandomAccessFile = class extends ByteStream {
+  constructor(buffer, byteLength) {
+    super();
+    this.position = 0;
+    this.buffer = toUint8Array(buffer);
+    this.size = byteLength === void 0 ? this.buffer.byteLength : byteLength;
+  }
+  readInt32(position) {
+    const { buffer, byteOffset } = this.readAt(position, 4);
+    return new DataView(buffer, byteOffset).getInt32(0, true);
+  }
+  seek(position) {
+    this.position = Math.min(position, this.size);
+    return position < this.size;
+  }
+  read(nBytes) {
+    const { buffer, size, position } = this;
+    if (buffer && position < size) {
+      if (typeof nBytes !== "number") {
+        nBytes = Number.POSITIVE_INFINITY;
+      }
+      this.position = Math.min(size, position + Math.min(size - position, nBytes));
+      return buffer.subarray(position, this.position);
+    }
+    return null;
+  }
+  readAt(position, nBytes) {
+    const buf = this.buffer;
+    const end = Math.min(this.size, position + nBytes);
+    return buf ? buf.subarray(position, end) : new Uint8Array(nBytes);
+  }
+  close() {
+    this.buffer && (this.buffer = null);
+  }
+  throw(value) {
+    this.close();
+    return { done: true, value };
+  }
+  return(value) {
+    this.close();
+    return { done: true, value };
+  }
+};
+var AsyncRandomAccessFile = class extends AsyncByteStream {
+  constructor(file, byteLength) {
+    super();
+    this.position = 0;
+    this._handle = file;
+    if (typeof byteLength === "number") {
+      this.size = byteLength;
+    } else {
+      this._pending = (() => __awaiter(this, void 0, void 0, function* () {
+        this.size = (yield file.stat()).size;
+        delete this._pending;
+      }))();
+    }
+  }
+  readInt32(position) {
+    return __awaiter(this, void 0, void 0, function* () {
+      const { buffer, byteOffset } = yield this.readAt(position, 4);
+      return new DataView(buffer, byteOffset).getInt32(0, true);
+    });
+  }
+  seek(position) {
+    return __awaiter(this, void 0, void 0, function* () {
+      this._pending && (yield this._pending);
+      this.position = Math.min(position, this.size);
+      return position < this.size;
+    });
+  }
+  read(nBytes) {
+    return __awaiter(this, void 0, void 0, function* () {
+      this._pending && (yield this._pending);
+      const { _handle: file, size, position } = this;
+      if (file && position < size) {
+        if (typeof nBytes !== "number") {
+          nBytes = Number.POSITIVE_INFINITY;
+        }
+        let pos = position, offset = 0, bytesRead = 0;
+        const end = Math.min(size, pos + Math.min(size - pos, nBytes));
+        const buffer = new Uint8Array(Math.max(0, (this.position = end) - pos));
+        while ((pos += bytesRead) < end && (offset += bytesRead) < buffer.byteLength) {
+          ({ bytesRead } = yield file.read(buffer, offset, buffer.byteLength - offset, pos));
+        }
+        return buffer;
+      }
+      return null;
+    });
+  }
+  readAt(position, nBytes) {
+    return __awaiter(this, void 0, void 0, function* () {
+      this._pending && (yield this._pending);
+      const { _handle: file, size } = this;
+      if (file && position + nBytes < size) {
+        const end = Math.min(size, position + nBytes);
+        const buffer = new Uint8Array(end - position);
+        return (yield file.read(buffer, 0, nBytes, position)).buffer;
+      }
+      return new Uint8Array(nBytes);
+    });
+  }
+  close() {
+    return __awaiter(this, void 0, void 0, function* () {
+      const f3 = this._handle;
+      this._handle = null;
+      f3 && (yield f3.close());
+    });
+  }
+  throw(value) {
+    return __awaiter(this, void 0, void 0, function* () {
+      yield this.close();
+      return { done: true, value };
+    });
+  }
+  return(value) {
+    return __awaiter(this, void 0, void 0, function* () {
+      yield this.close();
+      return { done: true, value };
+    });
+  }
+};
+
+// node_modules/apache-arrow/util/int.mjs
+var int_exports = {};
+__export(int_exports, {
+  BaseInt64: () => BaseInt64,
+  Int128: () => Int128,
+  Int64: () => Int642,
+  Uint64: () => Uint642
+});
+var carryBit16 = 1 << 16;
+function intAsHex(value) {
+  if (value < 0) {
+    value = 4294967295 + value + 1;
+  }
+  return `0x${value.toString(16)}`;
+}
+var kInt32DecimalDigits = 8;
+var kPowersOfTen = [
+  1,
+  10,
+  100,
+  1e3,
+  1e4,
+  1e5,
+  1e6,
+  1e7,
+  1e8
+];
+var BaseInt64 = class {
+  constructor(buffer) {
+    this.buffer = buffer;
+  }
+  high() {
+    return this.buffer[1];
+  }
+  low() {
+    return this.buffer[0];
+  }
+  _times(other) {
+    const L = new Uint32Array([
+      this.buffer[1] >>> 16,
+      this.buffer[1] & 65535,
+      this.buffer[0] >>> 16,
+      this.buffer[0] & 65535
+    ]);
+    const R = new Uint32Array([
+      other.buffer[1] >>> 16,
+      other.buffer[1] & 65535,
+      other.buffer[0] >>> 16,
+      other.buffer[0] & 65535
+    ]);
+    let product = L[3] * R[3];
+    this.buffer[0] = product & 65535;
+    let sum = product >>> 16;
+    product = L[2] * R[3];
+    sum += product;
+    product = L[3] * R[2] >>> 0;
+    sum += product;
+    this.buffer[0] += sum << 16;
+    this.buffer[1] = sum >>> 0 < product ? carryBit16 : 0;
+    this.buffer[1] += sum >>> 16;
+    this.buffer[1] += L[1] * R[3] + L[2] * R[2] + L[3] * R[1];
+    this.buffer[1] += L[0] * R[3] + L[1] * R[2] + L[2] * R[1] + L[3] * R[0] << 16;
+    return this;
+  }
+  _plus(other) {
+    const sum = this.buffer[0] + other.buffer[0] >>> 0;
+    this.buffer[1] += other.buffer[1];
+    if (sum < this.buffer[0] >>> 0) {
+      ++this.buffer[1];
+    }
+    this.buffer[0] = sum;
+  }
+  lessThan(other) {
+    return this.buffer[1] < other.buffer[1] || this.buffer[1] === other.buffer[1] && this.buffer[0] < other.buffer[0];
+  }
+  equals(other) {
+    return this.buffer[1] === other.buffer[1] && this.buffer[0] == other.buffer[0];
+  }
+  greaterThan(other) {
+    return other.lessThan(this);
+  }
+  hex() {
+    return `${intAsHex(this.buffer[1])} ${intAsHex(this.buffer[0])}`;
+  }
+};
+var Uint642 = class _Uint64 extends BaseInt64 {
+  times(other) {
+    this._times(other);
+    return this;
+  }
+  plus(other) {
+    this._plus(other);
+    return this;
+  }
+  /** @nocollapse */
+  static from(val, out_buffer = new Uint32Array(2)) {
+    return _Uint64.fromString(typeof val === "string" ? val : val.toString(), out_buffer);
+  }
+  /** @nocollapse */
+  static fromNumber(num, out_buffer = new Uint32Array(2)) {
+    return _Uint64.fromString(num.toString(), out_buffer);
+  }
+  /** @nocollapse */
+  static fromString(str2, out_buffer = new Uint32Array(2)) {
+    const length = str2.length;
+    const out = new _Uint64(out_buffer);
+    for (let posn = 0; posn < length; ) {
+      const group = kInt32DecimalDigits < length - posn ? kInt32DecimalDigits : length - posn;
+      const chunk = new _Uint64(new Uint32Array([Number.parseInt(str2.slice(posn, posn + group), 10), 0]));
+      const multiple = new _Uint64(new Uint32Array([kPowersOfTen[group], 0]));
+      out.times(multiple);
+      out.plus(chunk);
+      posn += group;
+    }
+    return out;
+  }
+  /** @nocollapse */
+  static convertArray(values) {
+    const data = new Uint32Array(values.length * 2);
+    for (let i2 = -1, n = values.length; ++i2 < n; ) {
+      _Uint64.from(values[i2], new Uint32Array(data.buffer, data.byteOffset + 2 * i2 * 4, 2));
+    }
+    return data;
+  }
+  /** @nocollapse */
+  static multiply(left, right) {
+    const rtrn = new _Uint64(new Uint32Array(left.buffer));
+    return rtrn.times(right);
+  }
+  /** @nocollapse */
+  static add(left, right) {
+    const rtrn = new _Uint64(new Uint32Array(left.buffer));
+    return rtrn.plus(right);
+  }
+};
+var Int642 = class _Int64 extends BaseInt64 {
+  negate() {
+    this.buffer[0] = ~this.buffer[0] + 1;
+    this.buffer[1] = ~this.buffer[1];
+    if (this.buffer[0] == 0) {
+      ++this.buffer[1];
+    }
+    return this;
+  }
+  times(other) {
+    this._times(other);
+    return this;
+  }
+  plus(other) {
+    this._plus(other);
+    return this;
+  }
+  lessThan(other) {
+    const this_high = this.buffer[1] << 0;
+    const other_high = other.buffer[1] << 0;
+    return this_high < other_high || this_high === other_high && this.buffer[0] < other.buffer[0];
+  }
+  /** @nocollapse */
+  static from(val, out_buffer = new Uint32Array(2)) {
+    return _Int64.fromString(typeof val === "string" ? val : val.toString(), out_buffer);
+  }
+  /** @nocollapse */
+  static fromNumber(num, out_buffer = new Uint32Array(2)) {
+    return _Int64.fromString(num.toString(), out_buffer);
+  }
+  /** @nocollapse */
+  static fromString(str2, out_buffer = new Uint32Array(2)) {
+    const negate = str2.startsWith("-");
+    const length = str2.length;
+    const out = new _Int64(out_buffer);
+    for (let posn = negate ? 1 : 0; posn < length; ) {
+      const group = kInt32DecimalDigits < length - posn ? kInt32DecimalDigits : length - posn;
+      const chunk = new _Int64(new Uint32Array([Number.parseInt(str2.slice(posn, posn + group), 10), 0]));
+      const multiple = new _Int64(new Uint32Array([kPowersOfTen[group], 0]));
+      out.times(multiple);
+      out.plus(chunk);
+      posn += group;
+    }
+    return negate ? out.negate() : out;
+  }
+  /** @nocollapse */
+  static convertArray(values) {
+    const data = new Uint32Array(values.length * 2);
+    for (let i2 = -1, n = values.length; ++i2 < n; ) {
+      _Int64.from(values[i2], new Uint32Array(data.buffer, data.byteOffset + 2 * i2 * 4, 2));
+    }
+    return data;
+  }
+  /** @nocollapse */
+  static multiply(left, right) {
+    const rtrn = new _Int64(new Uint32Array(left.buffer));
+    return rtrn.times(right);
+  }
+  /** @nocollapse */
+  static add(left, right) {
+    const rtrn = new _Int64(new Uint32Array(left.buffer));
+    return rtrn.plus(right);
+  }
+};
+var Int128 = class _Int128 {
+  constructor(buffer) {
+    this.buffer = buffer;
+  }
+  high() {
+    return new Int642(new Uint32Array(this.buffer.buffer, this.buffer.byteOffset + 8, 2));
+  }
+  low() {
+    return new Int642(new Uint32Array(this.buffer.buffer, this.buffer.byteOffset, 2));
+  }
+  negate() {
+    this.buffer[0] = ~this.buffer[0] + 1;
+    this.buffer[1] = ~this.buffer[1];
+    this.buffer[2] = ~this.buffer[2];
+    this.buffer[3] = ~this.buffer[3];
+    if (this.buffer[0] == 0) {
+      ++this.buffer[1];
+    }
+    if (this.buffer[1] == 0) {
+      ++this.buffer[2];
+    }
+    if (this.buffer[2] == 0) {
+      ++this.buffer[3];
+    }
+    return this;
+  }
+  times(other) {
+    const L0 = new Uint642(new Uint32Array([this.buffer[3], 0]));
+    const L1 = new Uint642(new Uint32Array([this.buffer[2], 0]));
+    const L2 = new Uint642(new Uint32Array([this.buffer[1], 0]));
+    const L3 = new Uint642(new Uint32Array([this.buffer[0], 0]));
+    const R0 = new Uint642(new Uint32Array([other.buffer[3], 0]));
+    const R1 = new Uint642(new Uint32Array([other.buffer[2], 0]));
+    const R2 = new Uint642(new Uint32Array([other.buffer[1], 0]));
+    const R3 = new Uint642(new Uint32Array([other.buffer[0], 0]));
+    let product = Uint642.multiply(L3, R3);
+    this.buffer[0] = product.low();
+    const sum = new Uint642(new Uint32Array([product.high(), 0]));
+    product = Uint642.multiply(L2, R3);
+    sum.plus(product);
+    product = Uint642.multiply(L3, R2);
+    sum.plus(product);
+    this.buffer[1] = sum.low();
+    this.buffer[3] = sum.lessThan(product) ? 1 : 0;
+    this.buffer[2] = sum.high();
+    const high = new Uint642(new Uint32Array(this.buffer.buffer, this.buffer.byteOffset + 8, 2));
+    high.plus(Uint642.multiply(L1, R3)).plus(Uint642.multiply(L2, R2)).plus(Uint642.multiply(L3, R1));
+    this.buffer[3] += Uint642.multiply(L0, R3).plus(Uint642.multiply(L1, R2)).plus(Uint642.multiply(L2, R1)).plus(Uint642.multiply(L3, R0)).low();
+    return this;
+  }
+  plus(other) {
+    const sums = new Uint32Array(4);
+    sums[3] = this.buffer[3] + other.buffer[3] >>> 0;
+    sums[2] = this.buffer[2] + other.buffer[2] >>> 0;
+    sums[1] = this.buffer[1] + other.buffer[1] >>> 0;
+    sums[0] = this.buffer[0] + other.buffer[0] >>> 0;
+    if (sums[0] < this.buffer[0] >>> 0) {
+      ++sums[1];
+    }
+    if (sums[1] < this.buffer[1] >>> 0) {
+      ++sums[2];
+    }
+    if (sums[2] < this.buffer[2] >>> 0) {
+      ++sums[3];
+    }
+    this.buffer[3] = sums[3];
+    this.buffer[2] = sums[2];
+    this.buffer[1] = sums[1];
+    this.buffer[0] = sums[0];
+    return this;
+  }
+  hex() {
+    return `${intAsHex(this.buffer[3])} ${intAsHex(this.buffer[2])} ${intAsHex(this.buffer[1])} ${intAsHex(this.buffer[0])}`;
+  }
+  /** @nocollapse */
+  static multiply(left, right) {
+    const rtrn = new _Int128(new Uint32Array(left.buffer));
+    return rtrn.times(right);
+  }
+  /** @nocollapse */
+  static add(left, right) {
+    const rtrn = new _Int128(new Uint32Array(left.buffer));
+    return rtrn.plus(right);
+  }
+  /** @nocollapse */
+  static from(val, out_buffer = new Uint32Array(4)) {
+    return _Int128.fromString(typeof val === "string" ? val : val.toString(), out_buffer);
+  }
+  /** @nocollapse */
+  static fromNumber(num, out_buffer = new Uint32Array(4)) {
+    return _Int128.fromString(num.toString(), out_buffer);
+  }
+  /** @nocollapse */
+  static fromString(str2, out_buffer = new Uint32Array(4)) {
+    const negate = str2.startsWith("-");
+    const length = str2.length;
+    const out = new _Int128(out_buffer);
+    for (let posn = negate ? 1 : 0; posn < length; ) {
+      const group = kInt32DecimalDigits < length - posn ? kInt32DecimalDigits : length - posn;
+      const chunk = new _Int128(new Uint32Array([Number.parseInt(str2.slice(posn, posn + group), 10), 0, 0, 0]));
+      const multiple = new _Int128(new Uint32Array([kPowersOfTen[group], 0, 0, 0]));
+      out.times(multiple);
+      out.plus(chunk);
+      posn += group;
+    }
+    return negate ? out.negate() : out;
+  }
+  /** @nocollapse */
+  static convertArray(values) {
+    const data = new Uint32Array(values.length * 4);
+    for (let i2 = -1, n = values.length; ++i2 < n; ) {
+      _Int128.from(values[i2], new Uint32Array(data.buffer, data.byteOffset + 4 * 4 * i2, 4));
+    }
+    return data;
+  }
+};
+
+// node_modules/apache-arrow/visitor/vectorloader.mjs
+var VectorLoader = class extends Visitor {
+  constructor(bytes, nodes, buffers, dictionaries, metadataVersion = MetadataVersion.V5) {
+    super();
+    this.nodesIndex = -1;
+    this.buffersIndex = -1;
+    this.bytes = bytes;
+    this.nodes = nodes;
+    this.buffers = buffers;
+    this.dictionaries = dictionaries;
+    this.metadataVersion = metadataVersion;
+  }
+  visit(node) {
+    return super.visit(node instanceof Field2 ? node.type : node);
+  }
+  visitNull(type, { length } = this.nextFieldNode()) {
+    return makeData({ type, length });
+  }
+  visitBool(type, { length, nullCount } = this.nextFieldNode()) {
+    return makeData({ type, length, nullCount, nullBitmap: this.readNullBitmap(type, nullCount), data: this.readData(type) });
+  }
+  visitInt(type, { length, nullCount } = this.nextFieldNode()) {
+    return makeData({ type, length, nullCount, nullBitmap: this.readNullBitmap(type, nullCount), data: this.readData(type) });
+  }
+  visitFloat(type, { length, nullCount } = this.nextFieldNode()) {
+    return makeData({ type, length, nullCount, nullBitmap: this.readNullBitmap(type, nullCount), data: this.readData(type) });
+  }
+  visitUtf8(type, { length, nullCount } = this.nextFieldNode()) {
+    return makeData({ type, length, nullCount, nullBitmap: this.readNullBitmap(type, nullCount), valueOffsets: this.readOffsets(type), data: this.readData(type) });
+  }
+  visitLargeUtf8(type, { length, nullCount } = this.nextFieldNode()) {
+    return makeData({ type, length, nullCount, nullBitmap: this.readNullBitmap(type, nullCount), valueOffsets: this.readOffsets(type), data: this.readData(type) });
+  }
+  visitBinary(type, { length, nullCount } = this.nextFieldNode()) {
+    return makeData({ type, length, nullCount, nullBitmap: this.readNullBitmap(type, nullCount), valueOffsets: this.readOffsets(type), data: this.readData(type) });
+  }
+  visitLargeBinary(type, { length, nullCount } = this.nextFieldNode()) {
+    return makeData({ type, length, nullCount, nullBitmap: this.readNullBitmap(type, nullCount), valueOffsets: this.readOffsets(type), data: this.readData(type) });
+  }
+  visitFixedSizeBinary(type, { length, nullCount } = this.nextFieldNode()) {
+    return makeData({ type, length, nullCount, nullBitmap: this.readNullBitmap(type, nullCount), data: this.readData(type) });
+  }
+  visitDate(type, { length, nullCount } = this.nextFieldNode()) {
+    return makeData({ type, length, nullCount, nullBitmap: this.readNullBitmap(type, nullCount), data: this.readData(type) });
+  }
+  visitTimestamp(type, { length, nullCount } = this.nextFieldNode()) {
+    return makeData({ type, length, nullCount, nullBitmap: this.readNullBitmap(type, nullCount), data: this.readData(type) });
+  }
+  visitTime(type, { length, nullCount } = this.nextFieldNode()) {
+    return makeData({ type, length, nullCount, nullBitmap: this.readNullBitmap(type, nullCount), data: this.readData(type) });
+  }
+  visitDecimal(type, { length, nullCount } = this.nextFieldNode()) {
+    return makeData({ type, length, nullCount, nullBitmap: this.readNullBitmap(type, nullCount), data: this.readData(type) });
+  }
+  visitList(type, { length, nullCount } = this.nextFieldNode()) {
+    return makeData({ type, length, nullCount, nullBitmap: this.readNullBitmap(type, nullCount), valueOffsets: this.readOffsets(type), "child": this.visit(type.children[0]) });
+  }
+  visitStruct(type, { length, nullCount } = this.nextFieldNode()) {
+    return makeData({ type, length, nullCount, nullBitmap: this.readNullBitmap(type, nullCount), children: this.visitMany(type.children) });
+  }
+  visitUnion(type, { length, nullCount } = this.nextFieldNode()) {
+    if (this.metadataVersion < MetadataVersion.V5) {
+      this.readNullBitmap(type, nullCount);
+    }
+    return type.mode === UnionMode.Sparse ? this.visitSparseUnion(type, { length, nullCount }) : this.visitDenseUnion(type, { length, nullCount });
+  }
+  visitDenseUnion(type, { length, nullCount } = this.nextFieldNode()) {
+    return makeData({ type, length, nullCount, typeIds: this.readTypeIds(type), valueOffsets: this.readOffsets(type), children: this.visitMany(type.children) });
+  }
+  visitSparseUnion(type, { length, nullCount } = this.nextFieldNode()) {
+    return makeData({ type, length, nullCount, typeIds: this.readTypeIds(type), children: this.visitMany(type.children) });
+  }
+  visitDictionary(type, { length, nullCount } = this.nextFieldNode()) {
+    return makeData({ type, length, nullCount, nullBitmap: this.readNullBitmap(type, nullCount), data: this.readData(type.indices), dictionary: this.readDictionary(type) });
+  }
+  visitInterval(type, { length, nullCount } = this.nextFieldNode()) {
+    return makeData({ type, length, nullCount, nullBitmap: this.readNullBitmap(type, nullCount), data: this.readData(type) });
+  }
+  visitDuration(type, { length, nullCount } = this.nextFieldNode()) {
+    return makeData({ type, length, nullCount, nullBitmap: this.readNullBitmap(type, nullCount), data: this.readData(type) });
+  }
+  visitFixedSizeList(type, { length, nullCount } = this.nextFieldNode()) {
+    return makeData({ type, length, nullCount, nullBitmap: this.readNullBitmap(type, nullCount), "child": this.visit(type.children[0]) });
+  }
+  visitMap(type, { length, nullCount } = this.nextFieldNode()) {
+    return makeData({ type, length, nullCount, nullBitmap: this.readNullBitmap(type, nullCount), valueOffsets: this.readOffsets(type), "child": this.visit(type.children[0]) });
+  }
+  nextFieldNode() {
+    return this.nodes[++this.nodesIndex];
+  }
+  nextBufferRange() {
+    return this.buffers[++this.buffersIndex];
+  }
+  readNullBitmap(type, nullCount, buffer = this.nextBufferRange()) {
+    return nullCount > 0 && this.readData(type, buffer) || new Uint8Array(0);
+  }
+  readOffsets(type, buffer) {
+    return this.readData(type, buffer);
+  }
+  readTypeIds(type, buffer) {
+    return this.readData(type, buffer);
+  }
+  readData(_type, { length, offset } = this.nextBufferRange()) {
+    return this.bytes.subarray(offset, offset + length);
+  }
+  readDictionary(type) {
+    return this.dictionaries.get(type.id);
+  }
+};
+var JSONVectorLoader = class extends VectorLoader {
+  constructor(sources, nodes, buffers, dictionaries, metadataVersion) {
+    super(new Uint8Array(0), nodes, buffers, dictionaries, metadataVersion);
+    this.sources = sources;
+  }
+  readNullBitmap(_type, nullCount, { offset } = this.nextBufferRange()) {
+    return nullCount <= 0 ? new Uint8Array(0) : packBools(this.sources[offset]);
+  }
+  readOffsets(_type, { offset } = this.nextBufferRange()) {
+    return toArrayBufferView(Uint8Array, toArrayBufferView(_type.OffsetArrayType, this.sources[offset]));
+  }
+  readTypeIds(type, { offset } = this.nextBufferRange()) {
+    return toArrayBufferView(Uint8Array, toArrayBufferView(type.ArrayType, this.sources[offset]));
+  }
+  readData(type, { offset } = this.nextBufferRange()) {
+    const { sources } = this;
+    if (DataType.isTimestamp(type)) {
+      return toArrayBufferView(Uint8Array, Int642.convertArray(sources[offset]));
+    } else if ((DataType.isInt(type) || DataType.isTime(type)) && type.bitWidth === 64 || DataType.isDuration(type)) {
+      return toArrayBufferView(Uint8Array, Int642.convertArray(sources[offset]));
+    } else if (DataType.isDate(type) && type.unit === DateUnit.MILLISECOND) {
+      return toArrayBufferView(Uint8Array, Int642.convertArray(sources[offset]));
+    } else if (DataType.isDecimal(type)) {
+      return toArrayBufferView(Uint8Array, Int128.convertArray(sources[offset]));
+    } else if (DataType.isBinary(type) || DataType.isLargeBinary(type) || DataType.isFixedSizeBinary(type)) {
+      return binaryDataFromJSON(sources[offset]);
+    } else if (DataType.isBool(type)) {
+      return packBools(sources[offset]);
+    } else if (DataType.isUtf8(type) || DataType.isLargeUtf8(type)) {
+      return encodeUtf8(sources[offset].join(""));
+    }
+    return toArrayBufferView(Uint8Array, toArrayBufferView(type.ArrayType, sources[offset].map((x2) => +x2)));
+  }
+};
+function binaryDataFromJSON(values) {
+  const joined = values.join("");
+  const data = new Uint8Array(joined.length / 2);
+  for (let i2 = 0; i2 < joined.length; i2 += 2) {
+    data[i2 >> 1] = Number.parseInt(joined.slice(i2, i2 + 2), 16);
+  }
+  return data;
+}
+
+// node_modules/apache-arrow/builder/binary.mjs
+var BinaryBuilder = class extends VariableWidthBuilder {
+  constructor(opts) {
+    super(opts);
+    this._values = new BufferBuilder(Uint8Array);
+  }
+  get byteLength() {
+    let size = this._pendingLength + this.length * 4;
+    this._offsets && (size += this._offsets.byteLength);
+    this._values && (size += this._values.byteLength);
+    this._nulls && (size += this._nulls.byteLength);
+    return size;
+  }
+  setValue(index, value) {
+    return super.setValue(index, toUint8Array(value));
+  }
+  _flushPending(pending, pendingLength) {
+    const offsets = this._offsets;
+    const data = this._values.reserve(pendingLength).buffer;
+    let offset = 0;
+    for (const [index, value] of pending) {
+      if (value === void 0) {
+        offsets.set(index, 0);
+      } else {
+        const length = value.length;
+        data.set(value, offset);
+        offsets.set(index, length);
+        offset += length;
+      }
+    }
+  }
+};
+
+// node_modules/apache-arrow/builder/largebinary.mjs
+var LargeBinaryBuilder = class extends VariableWidthBuilder {
+  constructor(opts) {
+    super(opts);
+    this._values = new BufferBuilder(Uint8Array);
+  }
+  get byteLength() {
+    let size = this._pendingLength + this.length * 4;
+    this._offsets && (size += this._offsets.byteLength);
+    this._values && (size += this._values.byteLength);
+    this._nulls && (size += this._nulls.byteLength);
+    return size;
+  }
+  setValue(index, value) {
+    return super.setValue(index, toUint8Array(value));
+  }
+  _flushPending(pending, pendingLength) {
+    const offsets = this._offsets;
+    const data = this._values.reserve(pendingLength).buffer;
+    let offset = 0;
+    for (const [index, value] of pending) {
+      if (value === void 0) {
+        offsets.set(index, BigInt(0));
+      } else {
+        const length = value.length;
+        data.set(value, offset);
+        offsets.set(index, BigInt(length));
+        offset += length;
+      }
+    }
+  }
+};
+
+// node_modules/apache-arrow/builder/bool.mjs
+var BoolBuilder = class extends Builder {
+  constructor(options) {
+    super(options);
+    this._values = new BitmapBufferBuilder();
+  }
+  setValue(index, value) {
+    this._values.set(index, +value);
+  }
+};
+
+// node_modules/apache-arrow/builder/date.mjs
+var DateBuilder = class extends FixedWidthBuilder {
+};
+DateBuilder.prototype._setValue = setDate;
+var DateDayBuilder = class extends DateBuilder {
+};
+DateDayBuilder.prototype._setValue = setDateDay;
+var DateMillisecondBuilder = class extends DateBuilder {
+};
+DateMillisecondBuilder.prototype._setValue = setDateMillisecond;
+
+// node_modules/apache-arrow/builder/decimal.mjs
+var DecimalBuilder = class extends FixedWidthBuilder {
+};
+DecimalBuilder.prototype._setValue = setDecimal;
+
+// node_modules/apache-arrow/builder/dictionary.mjs
+var DictionaryBuilder = class extends Builder {
+  constructor({ "type": type, "nullValues": nulls, "dictionaryHashFunction": hashFn }) {
+    super({ type: new Dictionary(type.dictionary, type.indices, type.id, type.isOrdered) });
+    this._nulls = null;
+    this._dictionaryOffset = 0;
+    this._keysToIndices = /* @__PURE__ */ Object.create(null);
+    this.indices = makeBuilder({ "type": this.type.indices, "nullValues": nulls });
+    this.dictionary = makeBuilder({ "type": this.type.dictionary, "nullValues": null });
+    if (typeof hashFn === "function") {
+      this.valueToKey = hashFn;
+    }
+  }
+  get values() {
+    return this.indices.values;
+  }
+  get nullCount() {
+    return this.indices.nullCount;
+  }
+  get nullBitmap() {
+    return this.indices.nullBitmap;
+  }
+  get byteLength() {
+    return this.indices.byteLength + this.dictionary.byteLength;
+  }
+  get reservedLength() {
+    return this.indices.reservedLength + this.dictionary.reservedLength;
+  }
+  get reservedByteLength() {
+    return this.indices.reservedByteLength + this.dictionary.reservedByteLength;
+  }
+  isValid(value) {
+    return this.indices.isValid(value);
+  }
+  setValid(index, valid) {
+    const indices = this.indices;
+    valid = indices.setValid(index, valid);
+    this.length = indices.length;
+    return valid;
+  }
+  setValue(index, value) {
+    const keysToIndices = this._keysToIndices;
+    const key = this.valueToKey(value);
+    let idx = keysToIndices[key];
+    if (idx === void 0) {
+      keysToIndices[key] = idx = this._dictionaryOffset + this.dictionary.append(value).length - 1;
+    }
+    return this.indices.setValue(index, idx);
+  }
+  flush() {
+    const type = this.type;
+    const prev = this._dictionary;
+    const curr = this.dictionary.toVector();
+    const data = this.indices.flush().clone(type);
+    data.dictionary = prev ? prev.concat(curr) : curr;
+    this.finished || (this._dictionaryOffset += curr.length);
+    this._dictionary = data.dictionary;
+    this.clear();
+    return data;
+  }
+  finish() {
+    this.indices.finish();
+    this.dictionary.finish();
+    this._dictionaryOffset = 0;
+    this._keysToIndices = /* @__PURE__ */ Object.create(null);
+    return super.finish();
+  }
+  clear() {
+    this.indices.clear();
+    this.dictionary.clear();
+    return super.clear();
+  }
+  valueToKey(val) {
+    return typeof val === "string" ? val : `${val}`;
+  }
+};
+
+// node_modules/apache-arrow/builder/fixedsizebinary.mjs
+var FixedSizeBinaryBuilder = class extends FixedWidthBuilder {
+};
+FixedSizeBinaryBuilder.prototype._setValue = setFixedSizeBinary;
+
+// node_modules/apache-arrow/builder/fixedsizelist.mjs
+var FixedSizeListBuilder = class extends Builder {
+  setValue(index, value) {
+    const [child] = this.children;
+    const start = index * this.stride;
+    for (let i2 = -1, n = value.length; ++i2 < n; ) {
+      child.set(start + i2, value[i2]);
+    }
+  }
+  addChild(child, name = "0") {
+    if (this.numChildren > 0) {
+      throw new Error("FixedSizeListBuilder can only have one child.");
+    }
+    const childIndex = this.children.push(child);
+    this.type = new FixedSizeList2(this.type.listSize, new Field2(name, child.type, true));
+    return childIndex;
+  }
+};
+
+// node_modules/apache-arrow/builder/float.mjs
+var FloatBuilder = class extends FixedWidthBuilder {
+  setValue(index, value) {
+    this._values.set(index, value);
+  }
+};
+var Float16Builder = class extends FloatBuilder {
+  setValue(index, value) {
+    super.setValue(index, float64ToUint16(value));
+  }
+};
+var Float32Builder = class extends FloatBuilder {
+};
+var Float64Builder = class extends FloatBuilder {
+};
+
+// node_modules/apache-arrow/builder/interval.mjs
+var IntervalBuilder = class extends FixedWidthBuilder {
+};
+IntervalBuilder.prototype._setValue = setIntervalValue;
+var IntervalDayTimeBuilder = class extends IntervalBuilder {
+};
+IntervalDayTimeBuilder.prototype._setValue = setIntervalDayTime;
+var IntervalYearMonthBuilder = class extends IntervalBuilder {
+};
+IntervalYearMonthBuilder.prototype._setValue = setIntervalYearMonth;
+
+// node_modules/apache-arrow/builder/duration.mjs
+var DurationBuilder = class extends FixedWidthBuilder {
+};
+DurationBuilder.prototype._setValue = setDuration;
+var DurationSecondBuilder = class extends DurationBuilder {
+};
+DurationSecondBuilder.prototype._setValue = setDurationSecond;
+var DurationMillisecondBuilder = class extends DurationBuilder {
+};
+DurationMillisecondBuilder.prototype._setValue = setDurationMillisecond;
+var DurationMicrosecondBuilder = class extends DurationBuilder {
+};
+DurationMicrosecondBuilder.prototype._setValue = setDurationMicrosecond;
+var DurationNanosecondBuilder = class extends DurationBuilder {
+};
+DurationNanosecondBuilder.prototype._setValue = setDurationNanosecond;
+
+// node_modules/apache-arrow/builder/int.mjs
+var IntBuilder = class extends FixedWidthBuilder {
+  setValue(index, value) {
+    this._values.set(index, value);
+  }
+};
+var Int8Builder = class extends IntBuilder {
+};
+var Int16Builder = class extends IntBuilder {
+};
+var Int32Builder = class extends IntBuilder {
+};
+var Int64Builder = class extends IntBuilder {
+};
+var Uint8Builder = class extends IntBuilder {
+};
+var Uint16Builder = class extends IntBuilder {
+};
+var Uint32Builder = class extends IntBuilder {
+};
+var Uint64Builder = class extends IntBuilder {
+};
+
+// node_modules/apache-arrow/builder/list.mjs
+var ListBuilder = class extends VariableWidthBuilder {
+  constructor(opts) {
+    super(opts);
+    this._offsets = new OffsetsBufferBuilder(opts.type);
+  }
+  addChild(child, name = "0") {
+    if (this.numChildren > 0) {
+      throw new Error("ListBuilder can only have one child.");
+    }
+    this.children[this.numChildren] = child;
+    this.type = new List2(new Field2(name, child.type, true));
+    return this.numChildren - 1;
+  }
+  _flushPending(pending) {
+    const offsets = this._offsets;
+    const [child] = this.children;
+    for (const [index, value] of pending) {
+      if (typeof value === "undefined") {
+        offsets.set(index, 0);
+      } else {
+        const v = value;
+        const n = v.length;
+        const start = offsets.set(index, n).buffer[index];
+        for (let i2 = -1; ++i2 < n; ) {
+          child.set(start + i2, v[i2]);
+        }
+      }
+    }
+  }
+};
+
+// node_modules/apache-arrow/builder/map.mjs
+var MapBuilder = class extends VariableWidthBuilder {
+  set(index, value) {
+    return super.set(index, value);
+  }
+  setValue(index, value) {
+    const row = value instanceof Map ? value : new Map(Object.entries(value));
+    const pending = this._pending || (this._pending = /* @__PURE__ */ new Map());
+    const current = pending.get(index);
+    current && (this._pendingLength -= current.size);
+    this._pendingLength += row.size;
+    pending.set(index, row);
+  }
+  addChild(child, name = `${this.numChildren}`) {
+    if (this.numChildren > 0) {
+      throw new Error("ListBuilder can only have one child.");
+    }
+    this.children[this.numChildren] = child;
+    this.type = new Map_(new Field2(name, child.type, true), this.type.keysSorted);
+    return this.numChildren - 1;
+  }
+  _flushPending(pending) {
+    const offsets = this._offsets;
+    const [child] = this.children;
+    for (const [index, value] of pending) {
+      if (value === void 0) {
+        offsets.set(index, 0);
+      } else {
+        let { [index]: idx, [index + 1]: end } = offsets.set(index, value.size).buffer;
+        for (const val of value.entries()) {
+          child.set(idx, val);
+          if (++idx >= end)
+            break;
+        }
+      }
+    }
+  }
+};
+
+// node_modules/apache-arrow/builder/null.mjs
+var NullBuilder = class extends Builder {
+  // @ts-ignore
+  setValue(index, value) {
+  }
+  setValid(index, valid) {
+    this.length = Math.max(index + 1, this.length);
+    return valid;
+  }
+};
+
+// node_modules/apache-arrow/builder/struct.mjs
+var StructBuilder = class extends Builder {
+  setValue(index, value) {
+    const { children, type } = this;
+    switch (Array.isArray(value) || value.constructor) {
+      case true:
+        return type.children.forEach((_, i2) => children[i2].set(index, value[i2]));
+      case Map:
+        return type.children.forEach((f3, i2) => children[i2].set(index, value.get(f3.name)));
+      default:
+        return type.children.forEach((f3, i2) => children[i2].set(index, value[f3.name]));
+    }
+  }
+  /** @inheritdoc */
+  setValid(index, valid) {
+    if (!super.setValid(index, valid)) {
+      this.children.forEach((child) => child.setValid(index, valid));
+    }
+    return valid;
+  }
+  addChild(child, name = `${this.numChildren}`) {
+    const childIndex = this.children.push(child);
+    this.type = new Struct([...this.type.children, new Field2(name, child.type, true)]);
+    return childIndex;
+  }
+};
+
+// node_modules/apache-arrow/builder/timestamp.mjs
+var TimestampBuilder = class extends FixedWidthBuilder {
+};
+TimestampBuilder.prototype._setValue = setTimestamp;
+var TimestampSecondBuilder = class extends TimestampBuilder {
+};
+TimestampSecondBuilder.prototype._setValue = setTimestampSecond;
+var TimestampMillisecondBuilder = class extends TimestampBuilder {
+};
+TimestampMillisecondBuilder.prototype._setValue = setTimestampMillisecond;
+var TimestampMicrosecondBuilder = class extends TimestampBuilder {
+};
+TimestampMicrosecondBuilder.prototype._setValue = setTimestampMicrosecond;
+var TimestampNanosecondBuilder = class extends TimestampBuilder {
+};
+TimestampNanosecondBuilder.prototype._setValue = setTimestampNanosecond;
+
+// node_modules/apache-arrow/builder/time.mjs
+var TimeBuilder = class extends FixedWidthBuilder {
+};
+TimeBuilder.prototype._setValue = setTime;
+var TimeSecondBuilder = class extends TimeBuilder {
+};
+TimeSecondBuilder.prototype._setValue = setTimeSecond;
+var TimeMillisecondBuilder = class extends TimeBuilder {
+};
+TimeMillisecondBuilder.prototype._setValue = setTimeMillisecond;
+var TimeMicrosecondBuilder = class extends TimeBuilder {
+};
+TimeMicrosecondBuilder.prototype._setValue = setTimeMicrosecond;
+var TimeNanosecondBuilder = class extends TimeBuilder {
+};
+TimeNanosecondBuilder.prototype._setValue = setTimeNanosecond;
+
+// node_modules/apache-arrow/builder/union.mjs
+var UnionBuilder = class extends Builder {
+  constructor(options) {
+    super(options);
+    this._typeIds = new DataBufferBuilder(Int8Array, 0, 1);
+    if (typeof options["valueToChildTypeId"] === "function") {
+      this._valueToChildTypeId = options["valueToChildTypeId"];
+    }
+  }
+  get typeIdToChildIndex() {
+    return this.type.typeIdToChildIndex;
+  }
+  append(value, childTypeId) {
+    return this.set(this.length, value, childTypeId);
+  }
+  set(index, value, childTypeId) {
+    if (childTypeId === void 0) {
+      childTypeId = this._valueToChildTypeId(this, value, index);
+    }
+    this.setValue(index, value, childTypeId);
+    return this;
+  }
+  setValue(index, value, childTypeId) {
+    this._typeIds.set(index, childTypeId);
+    const childIndex = this.type.typeIdToChildIndex[childTypeId];
+    const child = this.children[childIndex];
+    child === null || child === void 0 ? void 0 : child.set(index, value);
+  }
+  addChild(child, name = `${this.children.length}`) {
+    const childTypeId = this.children.push(child);
+    const { type: { children, mode, typeIds } } = this;
+    const fields = [...children, new Field2(name, child.type)];
+    this.type = new Union_(mode, [...typeIds, childTypeId], fields);
+    return childTypeId;
+  }
+  /** @ignore */
+  // @ts-ignore
+  _valueToChildTypeId(builder, value, offset) {
+    throw new Error(`Cannot map UnionBuilder value to child typeId. Pass the \`childTypeId\` as the second argument to unionBuilder.append(), or supply a \`valueToChildTypeId\` function as part of the UnionBuilder constructor options.`);
+  }
+};
+var SparseUnionBuilder = class extends UnionBuilder {
+};
+var DenseUnionBuilder = class extends UnionBuilder {
+  constructor(options) {
+    super(options);
+    this._offsets = new DataBufferBuilder(Int32Array);
+  }
+  /** @ignore */
+  setValue(index, value, childTypeId) {
+    const id = this._typeIds.set(index, childTypeId).buffer[index];
+    const child = this.getChildAt(this.type.typeIdToChildIndex[id]);
+    const denseIndex = this._offsets.set(index, child.length).buffer[index];
+    child === null || child === void 0 ? void 0 : child.set(denseIndex, value);
+  }
+};
+
+// node_modules/apache-arrow/builder/utf8.mjs
+var Utf8Builder = class extends VariableWidthBuilder {
+  constructor(opts) {
+    super(opts);
+    this._values = new BufferBuilder(Uint8Array);
+  }
+  get byteLength() {
+    let size = this._pendingLength + this.length * 4;
+    this._offsets && (size += this._offsets.byteLength);
+    this._values && (size += this._values.byteLength);
+    this._nulls && (size += this._nulls.byteLength);
+    return size;
+  }
+  setValue(index, value) {
+    return super.setValue(index, encodeUtf8(value));
+  }
+  // @ts-ignore
+  _flushPending(pending, pendingLength) {
+  }
+};
+Utf8Builder.prototype._flushPending = BinaryBuilder.prototype._flushPending;
+
+// node_modules/apache-arrow/builder/largeutf8.mjs
+var LargeUtf8Builder = class extends VariableWidthBuilder {
+  constructor(opts) {
+    super(opts);
+    this._values = new BufferBuilder(Uint8Array);
+  }
+  get byteLength() {
+    let size = this._pendingLength + this.length * 4;
+    this._offsets && (size += this._offsets.byteLength);
+    this._values && (size += this._values.byteLength);
+    this._nulls && (size += this._nulls.byteLength);
+    return size;
+  }
+  setValue(index, value) {
+    return super.setValue(index, encodeUtf8(value));
+  }
+  // @ts-ignore
+  _flushPending(pending, pendingLength) {
+  }
+};
+LargeUtf8Builder.prototype._flushPending = LargeBinaryBuilder.prototype._flushPending;
+
+// node_modules/apache-arrow/visitor/builderctor.mjs
+var GetBuilderCtor = class extends Visitor {
+  visitNull() {
+    return NullBuilder;
+  }
+  visitBool() {
+    return BoolBuilder;
+  }
+  visitInt() {
+    return IntBuilder;
+  }
+  visitInt8() {
+    return Int8Builder;
+  }
+  visitInt16() {
+    return Int16Builder;
+  }
+  visitInt32() {
+    return Int32Builder;
+  }
+  visitInt64() {
+    return Int64Builder;
+  }
+  visitUint8() {
+    return Uint8Builder;
+  }
+  visitUint16() {
+    return Uint16Builder;
+  }
+  visitUint32() {
+    return Uint32Builder;
+  }
+  visitUint64() {
+    return Uint64Builder;
+  }
+  visitFloat() {
+    return FloatBuilder;
+  }
+  visitFloat16() {
+    return Float16Builder;
+  }
+  visitFloat32() {
+    return Float32Builder;
+  }
+  visitFloat64() {
+    return Float64Builder;
+  }
+  visitUtf8() {
+    return Utf8Builder;
+  }
+  visitLargeUtf8() {
+    return LargeUtf8Builder;
+  }
+  visitBinary() {
+    return BinaryBuilder;
+  }
+  visitLargeBinary() {
+    return LargeBinaryBuilder;
+  }
+  visitFixedSizeBinary() {
+    return FixedSizeBinaryBuilder;
+  }
+  visitDate() {
+    return DateBuilder;
+  }
+  visitDateDay() {
+    return DateDayBuilder;
+  }
+  visitDateMillisecond() {
+    return DateMillisecondBuilder;
+  }
+  visitTimestamp() {
+    return TimestampBuilder;
+  }
+  visitTimestampSecond() {
+    return TimestampSecondBuilder;
+  }
+  visitTimestampMillisecond() {
+    return TimestampMillisecondBuilder;
+  }
+  visitTimestampMicrosecond() {
+    return TimestampMicrosecondBuilder;
+  }
+  visitTimestampNanosecond() {
+    return TimestampNanosecondBuilder;
+  }
+  visitTime() {
+    return TimeBuilder;
+  }
+  visitTimeSecond() {
+    return TimeSecondBuilder;
+  }
+  visitTimeMillisecond() {
+    return TimeMillisecondBuilder;
+  }
+  visitTimeMicrosecond() {
+    return TimeMicrosecondBuilder;
+  }
+  visitTimeNanosecond() {
+    return TimeNanosecondBuilder;
+  }
+  visitDecimal() {
+    return DecimalBuilder;
+  }
+  visitList() {
+    return ListBuilder;
+  }
+  visitStruct() {
+    return StructBuilder;
+  }
+  visitUnion() {
+    return UnionBuilder;
+  }
+  visitDenseUnion() {
+    return DenseUnionBuilder;
+  }
+  visitSparseUnion() {
+    return SparseUnionBuilder;
+  }
+  visitDictionary() {
+    return DictionaryBuilder;
+  }
+  visitInterval() {
+    return IntervalBuilder;
+  }
+  visitIntervalDayTime() {
+    return IntervalDayTimeBuilder;
+  }
+  visitIntervalYearMonth() {
+    return IntervalYearMonthBuilder;
+  }
+  visitDuration() {
+    return DurationBuilder;
+  }
+  visitDurationSecond() {
+    return DurationSecondBuilder;
+  }
+  visitDurationMillisecond() {
+    return DurationMillisecondBuilder;
+  }
+  visitDurationMicrosecond() {
+    return DurationMicrosecondBuilder;
+  }
+  visitDurationNanosecond() {
+    return DurationNanosecondBuilder;
+  }
+  visitFixedSizeList() {
+    return FixedSizeListBuilder;
+  }
+  visitMap() {
+    return MapBuilder;
+  }
+};
+var instance5 = new GetBuilderCtor();
+
+// node_modules/apache-arrow/visitor/typecomparator.mjs
+var TypeComparator = class extends Visitor {
+  compareSchemas(schema, other) {
+    return schema === other || other instanceof schema.constructor && this.compareManyFields(schema.fields, other.fields);
+  }
+  compareManyFields(fields, others) {
+    return fields === others || Array.isArray(fields) && Array.isArray(others) && fields.length === others.length && fields.every((f3, i2) => this.compareFields(f3, others[i2]));
+  }
+  compareFields(field, other) {
+    return field === other || other instanceof field.constructor && field.name === other.name && field.nullable === other.nullable && this.visit(field.type, other.type);
+  }
+};
+function compareConstructor(type, other) {
+  return other instanceof type.constructor;
+}
+function compareAny(type, other) {
+  return type === other || compareConstructor(type, other);
+}
+function compareInt(type, other) {
+  return type === other || compareConstructor(type, other) && type.bitWidth === other.bitWidth && type.isSigned === other.isSigned;
+}
+function compareFloat(type, other) {
+  return type === other || compareConstructor(type, other) && type.precision === other.precision;
+}
+function compareFixedSizeBinary(type, other) {
+  return type === other || compareConstructor(type, other) && type.byteWidth === other.byteWidth;
+}
+function compareDate(type, other) {
+  return type === other || compareConstructor(type, other) && type.unit === other.unit;
+}
+function compareTimestamp(type, other) {
+  return type === other || compareConstructor(type, other) && type.unit === other.unit && type.timezone === other.timezone;
+}
+function compareTime(type, other) {
+  return type === other || compareConstructor(type, other) && type.unit === other.unit && type.bitWidth === other.bitWidth;
+}
+function compareList(type, other) {
+  return type === other || compareConstructor(type, other) && type.children.length === other.children.length && instance6.compareManyFields(type.children, other.children);
+}
+function compareStruct(type, other) {
+  return type === other || compareConstructor(type, other) && type.children.length === other.children.length && instance6.compareManyFields(type.children, other.children);
+}
+function compareUnion(type, other) {
+  return type === other || compareConstructor(type, other) && type.mode === other.mode && type.typeIds.every((x2, i2) => x2 === other.typeIds[i2]) && instance6.compareManyFields(type.children, other.children);
+}
+function compareDictionary(type, other) {
+  return type === other || compareConstructor(type, other) && type.id === other.id && type.isOrdered === other.isOrdered && instance6.visit(type.indices, other.indices) && instance6.visit(type.dictionary, other.dictionary);
+}
+function compareInterval(type, other) {
+  return type === other || compareConstructor(type, other) && type.unit === other.unit;
+}
+function compareDuration(type, other) {
+  return type === other || compareConstructor(type, other) && type.unit === other.unit;
+}
+function compareFixedSizeList(type, other) {
+  return type === other || compareConstructor(type, other) && type.listSize === other.listSize && type.children.length === other.children.length && instance6.compareManyFields(type.children, other.children);
+}
+function compareMap(type, other) {
+  return type === other || compareConstructor(type, other) && type.keysSorted === other.keysSorted && type.children.length === other.children.length && instance6.compareManyFields(type.children, other.children);
+}
+TypeComparator.prototype.visitNull = compareAny;
+TypeComparator.prototype.visitBool = compareAny;
+TypeComparator.prototype.visitInt = compareInt;
+TypeComparator.prototype.visitInt8 = compareInt;
+TypeComparator.prototype.visitInt16 = compareInt;
+TypeComparator.prototype.visitInt32 = compareInt;
+TypeComparator.prototype.visitInt64 = compareInt;
+TypeComparator.prototype.visitUint8 = compareInt;
+TypeComparator.prototype.visitUint16 = compareInt;
+TypeComparator.prototype.visitUint32 = compareInt;
+TypeComparator.prototype.visitUint64 = compareInt;
+TypeComparator.prototype.visitFloat = compareFloat;
+TypeComparator.prototype.visitFloat16 = compareFloat;
+TypeComparator.prototype.visitFloat32 = compareFloat;
+TypeComparator.prototype.visitFloat64 = compareFloat;
+TypeComparator.prototype.visitUtf8 = compareAny;
+TypeComparator.prototype.visitLargeUtf8 = compareAny;
+TypeComparator.prototype.visitBinary = compareAny;
+TypeComparator.prototype.visitLargeBinary = compareAny;
+TypeComparator.prototype.visitFixedSizeBinary = compareFixedSizeBinary;
+TypeComparator.prototype.visitDate = compareDate;
+TypeComparator.prototype.visitDateDay = compareDate;
+TypeComparator.prototype.visitDateMillisecond = compareDate;
+TypeComparator.prototype.visitTimestamp = compareTimestamp;
+TypeComparator.prototype.visitTimestampSecond = compareTimestamp;
+TypeComparator.prototype.visitTimestampMillisecond = compareTimestamp;
+TypeComparator.prototype.visitTimestampMicrosecond = compareTimestamp;
+TypeComparator.prototype.visitTimestampNanosecond = compareTimestamp;
+TypeComparator.prototype.visitTime = compareTime;
+TypeComparator.prototype.visitTimeSecond = compareTime;
+TypeComparator.prototype.visitTimeMillisecond = compareTime;
+TypeComparator.prototype.visitTimeMicrosecond = compareTime;
+TypeComparator.prototype.visitTimeNanosecond = compareTime;
+TypeComparator.prototype.visitDecimal = compareAny;
+TypeComparator.prototype.visitList = compareList;
+TypeComparator.prototype.visitStruct = compareStruct;
+TypeComparator.prototype.visitUnion = compareUnion;
+TypeComparator.prototype.visitDenseUnion = compareUnion;
+TypeComparator.prototype.visitSparseUnion = compareUnion;
+TypeComparator.prototype.visitDictionary = compareDictionary;
+TypeComparator.prototype.visitInterval = compareInterval;
+TypeComparator.prototype.visitIntervalDayTime = compareInterval;
+TypeComparator.prototype.visitIntervalYearMonth = compareInterval;
+TypeComparator.prototype.visitDuration = compareDuration;
+TypeComparator.prototype.visitDurationSecond = compareDuration;
+TypeComparator.prototype.visitDurationMillisecond = compareDuration;
+TypeComparator.prototype.visitDurationMicrosecond = compareDuration;
+TypeComparator.prototype.visitDurationNanosecond = compareDuration;
+TypeComparator.prototype.visitFixedSizeList = compareFixedSizeList;
+TypeComparator.prototype.visitMap = compareMap;
+var instance6 = new TypeComparator();
+function compareSchemas(schema, other) {
+  return instance6.compareSchemas(schema, other);
+}
+function compareFields(field, other) {
+  return instance6.compareFields(field, other);
+}
+function compareTypes(type, other) {
+  return instance6.visit(type, other);
+}
+
+// node_modules/apache-arrow/factories.mjs
+function makeBuilder(options) {
+  const type = options.type;
+  const builder = new (instance5.getVisitFn(type)())(options);
+  if (type.children && type.children.length > 0) {
+    const children = options["children"] || [];
+    const defaultOptions = { "nullValues": options["nullValues"] };
+    const getChildOptions = Array.isArray(children) ? ((_, i2) => children[i2] || defaultOptions) : (({ name }) => children[name] || defaultOptions);
+    for (const [index, field] of type.children.entries()) {
+      const { type: type2 } = field;
+      const opts = getChildOptions(field, index);
+      builder.children.push(makeBuilder(Object.assign(Object.assign({}, opts), { type: type2 })));
+    }
+  }
+  return builder;
+}
+
+// node_modules/apache-arrow/util/recordbatch.mjs
+function distributeVectorsIntoRecordBatches(schema, vecs) {
+  return uniformlyDistributeChunksAcrossRecordBatches(schema, vecs.map((v) => v.data.concat()));
+}
+function uniformlyDistributeChunksAcrossRecordBatches(schema, cols) {
+  const fields = [...schema.fields];
+  const batches = [];
+  const memo = { numBatches: cols.reduce((n, c) => Math.max(n, c.length), 0) };
+  let numBatches = 0, batchLength = 0;
+  let i2 = -1;
+  const numColumns = cols.length;
+  let child, children = [];
+  while (memo.numBatches-- > 0) {
+    for (batchLength = Number.POSITIVE_INFINITY, i2 = -1; ++i2 < numColumns; ) {
+      children[i2] = child = cols[i2].shift();
+      batchLength = Math.min(batchLength, child ? child.length : batchLength);
+    }
+    if (Number.isFinite(batchLength)) {
+      children = distributeChildren(fields, batchLength, children, cols, memo);
+      if (batchLength > 0) {
+        batches[numBatches++] = makeData({
+          type: new Struct(fields),
+          length: batchLength,
+          nullCount: 0,
+          children: children.slice()
+        });
+      }
+    }
+  }
+  return [
+    schema = schema.assign(fields),
+    batches.map((data) => new RecordBatch2(schema, data))
+  ];
+}
+function distributeChildren(fields, batchLength, children, columns, memo) {
+  var _a9;
+  const nullBitmapSize = (batchLength + 63 & ~63) >> 3;
+  for (let i2 = -1, n = columns.length; ++i2 < n; ) {
+    const child = children[i2];
+    const length = child === null || child === void 0 ? void 0 : child.length;
+    if (length >= batchLength) {
+      if (length === batchLength) {
+        children[i2] = child;
+      } else {
+        children[i2] = child.slice(0, batchLength);
+        memo.numBatches = Math.max(memo.numBatches, columns[i2].unshift(child.slice(batchLength, length - batchLength)));
+      }
+    } else {
+      const field = fields[i2];
+      fields[i2] = field.clone({ nullable: true });
+      children[i2] = (_a9 = child === null || child === void 0 ? void 0 : child._changeLengthAndBackfillNullBitmap(batchLength)) !== null && _a9 !== void 0 ? _a9 : makeData({
+        type: field.type,
+        length: batchLength,
+        nullCount: batchLength,
+        nullBitmap: new Uint8Array(nullBitmapSize)
+      });
+    }
+  }
+  return children;
+}
+
+// node_modules/apache-arrow/table.mjs
+var _a6;
+var Table = class _Table {
+  constructor(...args) {
+    var _b2, _c2;
+    if (args.length === 0) {
+      this.batches = [];
+      this.schema = new Schema2([]);
+      this._offsets = [0];
+      return this;
+    }
+    let schema;
+    let offsets;
+    if (args[0] instanceof Schema2) {
+      schema = args.shift();
+    }
+    if (args.at(-1) instanceof Uint32Array) {
+      offsets = args.pop();
+    }
+    const unwrap = (x2) => {
+      if (x2) {
+        if (x2 instanceof RecordBatch2) {
+          return [x2];
+        } else if (x2 instanceof _Table) {
+          return x2.batches;
+        } else if (x2 instanceof Data) {
+          if (x2.type instanceof Struct) {
+            return [new RecordBatch2(new Schema2(x2.type.children), x2)];
+          }
+        } else if (Array.isArray(x2)) {
+          return x2.flatMap((v) => unwrap(v));
+        } else if (typeof x2[Symbol.iterator] === "function") {
+          return [...x2].flatMap((v) => unwrap(v));
+        } else if (typeof x2 === "object") {
+          const keys = Object.keys(x2);
+          const vecs = keys.map((k) => new Vector([x2[k]]));
+          const batchSchema = schema !== null && schema !== void 0 ? schema : new Schema2(keys.map((k, i2) => new Field2(String(k), vecs[i2].type, vecs[i2].nullable)));
+          const [, batches2] = distributeVectorsIntoRecordBatches(batchSchema, vecs);
+          return batches2.length === 0 ? [new RecordBatch2(x2)] : batches2;
+        }
+      }
+      return [];
+    };
+    const batches = args.flatMap((v) => unwrap(v));
+    schema = (_c2 = schema !== null && schema !== void 0 ? schema : (_b2 = batches[0]) === null || _b2 === void 0 ? void 0 : _b2.schema) !== null && _c2 !== void 0 ? _c2 : new Schema2([]);
+    if (!(schema instanceof Schema2)) {
+      throw new TypeError("Table constructor expects a [Schema, RecordBatch[]] pair.");
+    }
+    for (const batch of batches) {
+      if (!(batch instanceof RecordBatch2)) {
+        throw new TypeError("Table constructor expects a [Schema, RecordBatch[]] pair.");
+      }
+      if (!compareSchemas(schema, batch.schema)) {
+        throw new TypeError("Table and inner RecordBatch schemas must be equivalent.");
+      }
+    }
+    this.schema = schema;
+    this.batches = batches;
+    this._offsets = offsets !== null && offsets !== void 0 ? offsets : computeChunkOffsets(this.data);
+  }
+  /**
+   * The contiguous {@link RecordBatch `RecordBatch`} chunks of the Table rows.
+   */
+  get data() {
+    return this.batches.map(({ data }) => data);
+  }
+  /**
+   * The number of columns in this Table.
+   */
+  get numCols() {
+    return this.schema.fields.length;
+  }
+  /**
+   * The number of rows in this Table.
+   */
+  get numRows() {
+    return this.data.reduce((numRows, data) => numRows + data.length, 0);
+  }
+  /**
+   * The number of null rows in this Table.
+   */
+  get nullCount() {
+    if (this._nullCount === -1) {
+      this._nullCount = computeChunkNullCounts(this.data);
+    }
+    return this._nullCount;
+  }
+  /**
+   * Check whether an element is null.
+   *
+   * @param index The index at which to read the validity bitmap.
+   */
+  // @ts-ignore
+  isValid(index) {
+    return false;
+  }
+  /**
+   * Get an element value by position.
+   *
+   * @param index The index of the element to read.
+   */
+  // @ts-ignore
+  get(index) {
+    return null;
+  }
+  /**
+    * Get an element value by position.
+    * @param index The index of the element to read. A negative index will count back from the last element.
+    */
+  // @ts-ignore
+  at(index) {
+    return this.get(wrapIndex(index, this.numRows));
+  }
+  /**
+   * Set an element value by position.
+   *
+   * @param index The index of the element to write.
+   * @param value The value to set.
+   */
+  // @ts-ignore
+  set(index, value) {
+    return;
+  }
+  /**
+   * Retrieve the index of the first occurrence of a value in an Vector.
+   *
+   * @param element The value to locate in the Vector.
+   * @param offset The index at which to begin the search. If offset is omitted, the search starts at index 0.
+   */
+  // @ts-ignore
+  indexOf(element, offset) {
+    return -1;
+  }
+  /**
+   * Iterator for rows in this Table.
+   */
+  [Symbol.iterator]() {
+    if (this.batches.length > 0) {
+      return instance4.visit(new Vector(this.data));
+    }
+    return new Array(0)[Symbol.iterator]();
+  }
+  /**
+   * Return a JavaScript Array of the Table rows.
+   *
+   * @returns An Array of Table rows.
+   */
+  toArray() {
+    return [...this];
+  }
+  /**
+   * Returns a string representation of the Table rows.
+   *
+   * @returns A string representation of the Table rows.
+   */
+  toString() {
+    return `[
+  ${this.toArray().join(",\n  ")}
+]`;
+  }
+  /**
+   * Combines two or more Tables of the same schema.
+   *
+   * @param others Additional Tables to add to the end of this Tables.
+   */
+  concat(...others) {
+    const schema = this.schema;
+    const data = this.data.concat(others.flatMap(({ data: data2 }) => data2));
+    return new _Table(schema, data.map((data2) => new RecordBatch2(schema, data2)));
+  }
+  /**
+   * Return a zero-copy sub-section of this Table.
+   *
+   * @param begin The beginning of the specified portion of the Table.
+   * @param end The end of the specified portion of the Table. This is exclusive of the element at the index 'end'.
+   */
+  slice(begin, end) {
+    const schema = this.schema;
+    [begin, end] = clampRange({ length: this.numRows }, begin, end);
+    const data = sliceChunks(this.data, this._offsets, begin, end);
+    return new _Table(schema, data.map((chunk) => new RecordBatch2(schema, chunk)));
+  }
+  /**
+   * Returns a child Vector by name, or null if this Vector has no child with the given name.
+   *
+   * @param name The name of the child to retrieve.
+   */
+  getChild(name) {
+    return this.getChildAt(this.schema.fields.findIndex((f3) => f3.name === name));
+  }
+  /**
+   * Returns a child Vector by index, or null if this Vector has no child at the supplied index.
+   *
+   * @param index The index of the child to retrieve.
+   */
+  getChildAt(index) {
+    if (index > -1 && index < this.schema.fields.length) {
+      const data = this.data.map((data2) => data2.children[index]);
+      if (data.length === 0) {
+        const { type } = this.schema.fields[index];
+        const empty = makeData({ type, length: 0, nullCount: 0 });
+        data.push(empty._changeLengthAndBackfillNullBitmap(this.numRows));
+      }
+      return new Vector(data);
+    }
+    return null;
+  }
+  /**
+   * Sets a child Vector by name.
+   *
+   * @param name The name of the child to overwrite.
+   * @returns A new Table with the supplied child for the specified name.
+   */
+  setChild(name, child) {
+    var _b2;
+    return this.setChildAt((_b2 = this.schema.fields) === null || _b2 === void 0 ? void 0 : _b2.findIndex((f3) => f3.name === name), child);
+  }
+  setChildAt(index, child) {
+    let schema = this.schema;
+    let batches = [...this.batches];
+    if (index > -1 && index < this.numCols) {
+      if (!child) {
+        child = new Vector([makeData({ type: new Null2(), length: this.numRows })]);
+      }
+      const fields = schema.fields.slice();
+      const field = fields[index].clone({ type: child.type });
+      const children = this.schema.fields.map((_, i2) => this.getChildAt(i2));
+      [fields[index], children[index]] = [field, child];
+      [schema, batches] = distributeVectorsIntoRecordBatches(schema, children);
+    }
+    return new _Table(schema, batches);
+  }
+  /**
+   * Construct a new Table containing only specified columns.
+   *
+   * @param columnNames Names of columns to keep.
+   * @returns A new Table of columns matching the specified names.
+   */
+  select(columnNames) {
+    const nameToIndex = this.schema.fields.reduce((m2, f3, i2) => m2.set(f3.name, i2), /* @__PURE__ */ new Map());
+    return this.selectAt(columnNames.map((columnName) => nameToIndex.get(columnName)).filter((x2) => x2 > -1));
+  }
+  /**
+   * Construct a new Table containing only columns at the specified indices.
+   *
+   * @param columnIndices Indices of columns to keep.
+   * @returns A new Table of columns at the specified indices.
+   */
+  selectAt(columnIndices) {
+    const schema = this.schema.selectAt(columnIndices);
+    const data = this.batches.map((batch) => batch.selectAt(columnIndices));
+    return new _Table(schema, data);
+  }
+  assign(other) {
+    const fields = this.schema.fields;
+    const [indices, oldToNew] = other.schema.fields.reduce((memo, f22, newIdx) => {
+      const [indices2, oldToNew2] = memo;
+      const i2 = fields.findIndex((f3) => f3.name === f22.name);
+      ~i2 ? oldToNew2[i2] = newIdx : indices2.push(newIdx);
+      return memo;
+    }, [[], []]);
+    const schema = this.schema.assign(other.schema);
+    const columns = [
+      ...fields.map((_, i2) => [i2, oldToNew[i2]]).map(([i2, j]) => j === void 0 ? this.getChildAt(i2) : other.getChildAt(j)),
+      ...indices.map((i2) => other.getChildAt(i2))
+    ].filter(Boolean);
+    return new _Table(...distributeVectorsIntoRecordBatches(schema, columns));
+  }
+};
+_a6 = Symbol.toStringTag;
+Table[_a6] = ((proto) => {
+  proto.schema = null;
+  proto.batches = [];
+  proto._offsets = new Uint32Array([0]);
+  proto._nullCount = -1;
+  proto[Symbol.isConcatSpreadable] = true;
+  proto["isValid"] = wrapChunkedCall1(isChunkedValid);
+  proto["get"] = wrapChunkedCall1(instance2.getVisitFn(Type3.Struct));
+  proto["set"] = wrapChunkedCall2(instance.getVisitFn(Type3.Struct));
+  proto["indexOf"] = wrapChunkedIndexOf(instance3.getVisitFn(Type3.Struct));
+  return "Table";
+})(Table.prototype);
+
+// node_modules/apache-arrow/recordbatch.mjs
+var _a7;
+var RecordBatch2 = class _RecordBatch {
+  constructor(...args) {
+    switch (args.length) {
+      case 2: {
+        [this.schema] = args;
+        if (!(this.schema instanceof Schema2)) {
+          throw new TypeError("RecordBatch constructor expects a [Schema, Data] pair.");
+        }
+        [
+          ,
+          this.data = makeData({
+            nullCount: 0,
+            type: new Struct(this.schema.fields),
+            children: this.schema.fields.map((f3) => makeData({ type: f3.type, nullCount: 0 }))
+          })
+        ] = args;
+        if (!(this.data instanceof Data)) {
+          throw new TypeError("RecordBatch constructor expects a [Schema, Data] pair.");
+        }
+        [this.schema, this.data] = ensureSameLengthData(this.schema, this.data.children);
+        break;
+      }
+      case 1: {
+        const [obj] = args;
+        const { fields, children, length } = Object.keys(obj).reduce((memo, name, i2) => {
+          memo.children[i2] = obj[name];
+          memo.length = Math.max(memo.length, obj[name].length);
+          memo.fields[i2] = Field2.new({ name, type: obj[name].type, nullable: true });
+          return memo;
+        }, {
+          length: 0,
+          fields: new Array(),
+          children: new Array()
+        });
+        const schema = new Schema2(fields);
+        const data = makeData({ type: new Struct(fields), length, children, nullCount: 0 });
+        [this.schema, this.data] = ensureSameLengthData(schema, data.children, length);
+        break;
+      }
+      default:
+        throw new TypeError("RecordBatch constructor expects an Object mapping names to child Data, or a [Schema, Data] pair.");
+    }
+  }
+  get dictionaries() {
+    return this._dictionaries || (this._dictionaries = collectDictionaries(this.schema.fields, this.data.children));
+  }
+  /**
+   * The number of columns in this RecordBatch.
+   */
+  get numCols() {
+    return this.schema.fields.length;
+  }
+  /**
+   * The number of rows in this RecordBatch.
+   */
+  get numRows() {
+    return this.data.length;
+  }
+  /**
+   * The number of null rows in this RecordBatch.
+   */
+  get nullCount() {
+    return this.data.nullCount;
+  }
+  /**
+   * Check whether an row is null.
+   * @param index The index at which to read the validity bitmap.
+   */
+  isValid(index) {
+    return this.data.getValid(index);
+  }
+  /**
+   * Get a row by position.
+   * @param index The index of the row to read.
+   */
+  get(index) {
+    return instance2.visit(this.data, index);
+  }
+  /**
+    * Get a row value by position.
+    * @param index The index of the row to read. A negative index will count back from the last row.
+    */
+  at(index) {
+    return this.get(wrapIndex(index, this.numRows));
+  }
+  /**
+   * Set a row by position.
+   * @param index The index of the row to write.
+   * @param value The value to set.
+   */
+  set(index, value) {
+    return instance.visit(this.data, index, value);
+  }
+  /**
+   * Retrieve the index of the first occurrence of a row in an RecordBatch.
+   * @param element The row to locate in the RecordBatch.
+   * @param offset The index at which to begin the search. If offset is omitted, the search starts at index 0.
+   */
+  indexOf(element, offset) {
+    return instance3.visit(this.data, element, offset);
+  }
+  /**
+   * Iterator for rows in this RecordBatch.
+   */
+  [Symbol.iterator]() {
+    return instance4.visit(new Vector([this.data]));
+  }
+  /**
+   * Return a JavaScript Array of the RecordBatch rows.
+   * @returns An Array of RecordBatch rows.
+   */
+  toArray() {
+    return [...this];
+  }
+  /**
+   * Combines two or more RecordBatch of the same schema.
+   * @param others Additional RecordBatch to add to the end of this RecordBatch.
+   */
+  concat(...others) {
+    return new Table(this.schema, [this, ...others]);
+  }
+  /**
+   * Return a zero-copy sub-section of this RecordBatch.
+   * @param start The beginning of the specified portion of the RecordBatch.
+   * @param end The end of the specified portion of the RecordBatch. This is exclusive of the row at the index 'end'.
+   */
+  slice(begin, end) {
+    const [slice] = new Vector([this.data]).slice(begin, end).data;
+    return new _RecordBatch(this.schema, slice);
+  }
+  /**
+   * Returns a child Vector by name, or null if this Vector has no child with the given name.
+   * @param name The name of the child to retrieve.
+   */
+  getChild(name) {
+    var _b2;
+    return this.getChildAt((_b2 = this.schema.fields) === null || _b2 === void 0 ? void 0 : _b2.findIndex((f3) => f3.name === name));
+  }
+  /**
+   * Returns a child Vector by index, or null if this Vector has no child at the supplied index.
+   * @param index The index of the child to retrieve.
+   */
+  getChildAt(index) {
+    if (index > -1 && index < this.schema.fields.length) {
+      return new Vector([this.data.children[index]]);
+    }
+    return null;
+  }
+  /**
+   * Sets a child Vector by name.
+   * @param name The name of the child to overwrite.
+   * @returns A new RecordBatch with the new child for the specified name.
+   */
+  setChild(name, child) {
+    var _b2;
+    return this.setChildAt((_b2 = this.schema.fields) === null || _b2 === void 0 ? void 0 : _b2.findIndex((f3) => f3.name === name), child);
+  }
+  setChildAt(index, child) {
+    let schema = this.schema;
+    let data = this.data;
+    if (index > -1 && index < this.numCols) {
+      if (!child) {
+        child = new Vector([makeData({ type: new Null2(), length: this.numRows })]);
+      }
+      const fields = schema.fields.slice();
+      const children = data.children.slice();
+      const field = fields[index].clone({ type: child.type });
+      [fields[index], children[index]] = [field, child.data[0]];
+      schema = new Schema2(fields, new Map(this.schema.metadata));
+      data = makeData({ type: new Struct(fields), children });
+    }
+    return new _RecordBatch(schema, data);
+  }
+  /**
+   * Construct a new RecordBatch containing only specified columns.
+   *
+   * @param columnNames Names of columns to keep.
+   * @returns A new RecordBatch of columns matching the specified names.
+   */
+  select(columnNames) {
+    const schema = this.schema.select(columnNames);
+    const type = new Struct(schema.fields);
+    const children = [];
+    for (const name of columnNames) {
+      const index = this.schema.fields.findIndex((f3) => f3.name === name);
+      if (~index) {
+        children[index] = this.data.children[index];
+      }
+    }
+    return new _RecordBatch(schema, makeData({ type, length: this.numRows, children }));
+  }
+  /**
+   * Construct a new RecordBatch containing only columns at the specified indices.
+   *
+   * @param columnIndices Indices of columns to keep.
+   * @returns A new RecordBatch of columns matching at the specified indices.
+   */
+  selectAt(columnIndices) {
+    const schema = this.schema.selectAt(columnIndices);
+    const children = columnIndices.map((i2) => this.data.children[i2]).filter(Boolean);
+    const subset = makeData({ type: new Struct(schema.fields), length: this.numRows, children });
+    return new _RecordBatch(schema, subset);
+  }
+};
+_a7 = Symbol.toStringTag;
+RecordBatch2[_a7] = ((proto) => {
+  proto._nullCount = -1;
+  proto[Symbol.isConcatSpreadable] = true;
+  return "RecordBatch";
+})(RecordBatch2.prototype);
+function ensureSameLengthData(schema, chunks, maxLength = chunks.reduce((max, col) => Math.max(max, col.length), 0)) {
+  var _b2;
+  const fields = [...schema.fields];
+  const children = [...chunks];
+  const nullBitmapSize = (maxLength + 63 & ~63) >> 3;
+  for (const [idx, field] of schema.fields.entries()) {
+    const chunk = chunks[idx];
+    if (!chunk || chunk.length !== maxLength) {
+      fields[idx] = field.clone({ nullable: true });
+      children[idx] = (_b2 = chunk === null || chunk === void 0 ? void 0 : chunk._changeLengthAndBackfillNullBitmap(maxLength)) !== null && _b2 !== void 0 ? _b2 : makeData({
+        type: field.type,
+        length: maxLength,
+        nullCount: maxLength,
+        nullBitmap: new Uint8Array(nullBitmapSize)
+      });
+    }
+  }
+  return [
+    schema.assign(fields),
+    makeData({ type: new Struct(fields), length: maxLength, children })
+  ];
+}
+function collectDictionaries(fields, children, dictionaries = /* @__PURE__ */ new Map()) {
+  var _b2, _c2;
+  if (((_b2 = fields === null || fields === void 0 ? void 0 : fields.length) !== null && _b2 !== void 0 ? _b2 : 0) > 0 && (fields === null || fields === void 0 ? void 0 : fields.length) === (children === null || children === void 0 ? void 0 : children.length)) {
+    for (let i2 = -1, n = fields.length; ++i2 < n; ) {
+      const { type } = fields[i2];
+      const data = children[i2];
+      for (const next of [data, ...((_c2 = data === null || data === void 0 ? void 0 : data.dictionary) === null || _c2 === void 0 ? void 0 : _c2.data) || []]) {
+        collectDictionaries(type.children, next === null || next === void 0 ? void 0 : next.children, dictionaries);
+      }
+      if (DataType.isDictionary(type)) {
+        const { id } = type;
+        if (!dictionaries.has(id)) {
+          if (data === null || data === void 0 ? void 0 : data.dictionary) {
+            dictionaries.set(id, data.dictionary);
+          }
+        } else if (dictionaries.get(id) !== data.dictionary) {
+          throw new Error(`Cannot create Schema containing two different dictionaries with the same Id`);
+        }
+      }
+    }
+  }
+  return dictionaries;
+}
+var _InternalEmptyPlaceholderRecordBatch = class extends RecordBatch2 {
+  constructor(schema) {
+    const children = schema.fields.map((f3) => makeData({ type: f3.type }));
+    const data = makeData({ type: new Struct(schema.fields), nullCount: 0, children });
+    super(schema, data);
+  }
+};
+
+// node_modules/apache-arrow/ipc/message.mjs
+var import_flatbuffers = __toESM(require_flatbuffers(), 1);
+
+// node_modules/apache-arrow/ipc/metadata/message.mjs
+var flatbuffers31 = __toESM(require_flatbuffers(), 1);
+
+// node_modules/apache-arrow/fb/message.mjs
+var flatbuffers30 = __toESM(require_flatbuffers(), 1);
+var Message = class _Message {
+  constructor() {
+    this.bb = null;
+    this.bb_pos = 0;
+  }
+  __init(i2, bb) {
+    this.bb_pos = i2;
+    this.bb = bb;
+    return this;
+  }
+  static getRootAsMessage(bb, obj) {
+    return (obj || new _Message()).__init(bb.readInt32(bb.position()) + bb.position(), bb);
+  }
+  static getSizePrefixedRootAsMessage(bb, obj) {
+    bb.setPosition(bb.position() + flatbuffers30.SIZE_PREFIX_LENGTH);
+    return (obj || new _Message()).__init(bb.readInt32(bb.position()) + bb.position(), bb);
+  }
+  version() {
+    const offset = this.bb.__offset(this.bb_pos, 4);
+    return offset ? this.bb.readInt16(this.bb_pos + offset) : MetadataVersion.V1;
+  }
+  headerType() {
+    const offset = this.bb.__offset(this.bb_pos, 6);
+    return offset ? this.bb.readUint8(this.bb_pos + offset) : MessageHeader.NONE;
+  }
+  header(obj) {
+    const offset = this.bb.__offset(this.bb_pos, 8);
+    return offset ? this.bb.__union(obj, this.bb_pos + offset) : null;
+  }
+  bodyLength() {
+    const offset = this.bb.__offset(this.bb_pos, 10);
+    return offset ? this.bb.readInt64(this.bb_pos + offset) : BigInt("0");
+  }
+  customMetadata(index, obj) {
+    const offset = this.bb.__offset(this.bb_pos, 12);
+    return offset ? (obj || new KeyValue()).__init(this.bb.__indirect(this.bb.__vector(this.bb_pos + offset) + index * 4), this.bb) : null;
+  }
+  customMetadataLength() {
+    const offset = this.bb.__offset(this.bb_pos, 12);
+    return offset ? this.bb.__vector_len(this.bb_pos + offset) : 0;
+  }
+  static startMessage(builder) {
+    builder.startObject(5);
+  }
+  static addVersion(builder, version) {
+    builder.addFieldInt16(0, version, MetadataVersion.V1);
+  }
+  static addHeaderType(builder, headerType) {
+    builder.addFieldInt8(1, headerType, MessageHeader.NONE);
+  }
+  static addHeader(builder, headerOffset) {
+    builder.addFieldOffset(2, headerOffset, 0);
+  }
+  static addBodyLength(builder, bodyLength) {
+    builder.addFieldInt64(3, bodyLength, BigInt("0"));
+  }
+  static addCustomMetadata(builder, customMetadataOffset) {
+    builder.addFieldOffset(4, customMetadataOffset, 0);
+  }
+  static createCustomMetadataVector(builder, data) {
+    builder.startVector(4, data.length, 4);
+    for (let i2 = data.length - 1; i2 >= 0; i2--) {
+      builder.addOffset(data[i2]);
+    }
+    return builder.endVector();
+  }
+  static startCustomMetadataVector(builder, numElems) {
+    builder.startVector(4, numElems, 4);
+  }
+  static endMessage(builder) {
+    const offset = builder.endObject();
+    return offset;
+  }
+  static finishMessageBuffer(builder, offset) {
+    builder.finish(offset);
+  }
+  static finishSizePrefixedMessageBuffer(builder, offset) {
+    builder.finish(offset, void 0, true);
+  }
+  static createMessage(builder, version, headerType, headerOffset, bodyLength, customMetadataOffset) {
+    _Message.startMessage(builder);
+    _Message.addVersion(builder, version);
+    _Message.addHeaderType(builder, headerType);
+    _Message.addHeader(builder, headerOffset);
+    _Message.addBodyLength(builder, bodyLength);
+    _Message.addCustomMetadata(builder, customMetadataOffset);
+    return _Message.endMessage(builder);
+  }
+};
+
+// node_modules/apache-arrow/visitor/typeassembler.mjs
+var TypeAssembler = class extends Visitor {
+  visit(node, builder) {
+    return node == null || builder == null ? void 0 : super.visit(node, builder);
+  }
+  visitNull(_node, b) {
+    Null.startNull(b);
+    return Null.endNull(b);
+  }
+  visitInt(node, b) {
+    Int.startInt(b);
+    Int.addBitWidth(b, node.bitWidth);
+    Int.addIsSigned(b, node.isSigned);
+    return Int.endInt(b);
+  }
+  visitFloat(node, b) {
+    FloatingPoint.startFloatingPoint(b);
+    FloatingPoint.addPrecision(b, node.precision);
+    return FloatingPoint.endFloatingPoint(b);
+  }
+  visitBinary(_node, b) {
+    Binary.startBinary(b);
+    return Binary.endBinary(b);
+  }
+  visitLargeBinary(_node, b) {
+    LargeBinary.startLargeBinary(b);
+    return LargeBinary.endLargeBinary(b);
+  }
+  visitBool(_node, b) {
+    Bool.startBool(b);
+    return Bool.endBool(b);
+  }
+  visitUtf8(_node, b) {
+    Utf8.startUtf8(b);
+    return Utf8.endUtf8(b);
+  }
+  visitLargeUtf8(_node, b) {
+    LargeUtf8.startLargeUtf8(b);
+    return LargeUtf8.endLargeUtf8(b);
+  }
+  visitDecimal(node, b) {
+    Decimal.startDecimal(b);
+    Decimal.addScale(b, node.scale);
+    Decimal.addPrecision(b, node.precision);
+    Decimal.addBitWidth(b, node.bitWidth);
+    return Decimal.endDecimal(b);
+  }
+  visitDate(node, b) {
+    Date2.startDate(b);
+    Date2.addUnit(b, node.unit);
+    return Date2.endDate(b);
+  }
+  visitTime(node, b) {
+    Time.startTime(b);
+    Time.addUnit(b, node.unit);
+    Time.addBitWidth(b, node.bitWidth);
+    return Time.endTime(b);
+  }
+  visitTimestamp(node, b) {
+    const timezone = node.timezone && b.createString(node.timezone) || void 0;
+    Timestamp.startTimestamp(b);
+    Timestamp.addUnit(b, node.unit);
+    if (timezone !== void 0) {
+      Timestamp.addTimezone(b, timezone);
+    }
+    return Timestamp.endTimestamp(b);
+  }
+  visitInterval(node, b) {
+    Interval.startInterval(b);
+    Interval.addUnit(b, node.unit);
+    return Interval.endInterval(b);
+  }
+  visitDuration(node, b) {
+    Duration.startDuration(b);
+    Duration.addUnit(b, node.unit);
+    return Duration.endDuration(b);
+  }
+  visitList(_node, b) {
+    List.startList(b);
+    return List.endList(b);
+  }
+  visitStruct(_node, b) {
+    Struct_.startStruct_(b);
+    return Struct_.endStruct_(b);
+  }
+  visitUnion(node, b) {
+    Union.startTypeIdsVector(b, node.typeIds.length);
+    const typeIds = Union.createTypeIdsVector(b, node.typeIds);
+    Union.startUnion(b);
+    Union.addMode(b, node.mode);
+    Union.addTypeIds(b, typeIds);
+    return Union.endUnion(b);
+  }
+  visitDictionary(node, b) {
+    const indexType = this.visit(node.indices, b);
+    DictionaryEncoding.startDictionaryEncoding(b);
+    DictionaryEncoding.addId(b, BigInt(node.id));
+    DictionaryEncoding.addIsOrdered(b, node.isOrdered);
+    if (indexType !== void 0) {
+      DictionaryEncoding.addIndexType(b, indexType);
+    }
+    return DictionaryEncoding.endDictionaryEncoding(b);
+  }
+  visitFixedSizeBinary(node, b) {
+    FixedSizeBinary.startFixedSizeBinary(b);
+    FixedSizeBinary.addByteWidth(b, node.byteWidth);
+    return FixedSizeBinary.endFixedSizeBinary(b);
+  }
+  visitFixedSizeList(node, b) {
+    FixedSizeList.startFixedSizeList(b);
+    FixedSizeList.addListSize(b, node.listSize);
+    return FixedSizeList.endFixedSizeList(b);
+  }
+  visitMap(node, b) {
+    Map2.startMap(b);
+    Map2.addKeysSorted(b, node.keysSorted);
+    return Map2.endMap(b);
+  }
+};
+var instance7 = new TypeAssembler();
+
+// node_modules/apache-arrow/ipc/metadata/json.mjs
+function schemaFromJSON(_schema, dictionaries = /* @__PURE__ */ new Map()) {
+  return new Schema2(schemaFieldsFromJSON(_schema, dictionaries), customMetadataFromJSON(_schema["metadata"]), dictionaries);
+}
+function recordBatchFromJSON(b) {
+  return new RecordBatch3(b["count"], fieldNodesFromJSON(b["columns"]), buffersFromJSON(b["columns"]));
+}
+function dictionaryBatchFromJSON(b) {
+  return new DictionaryBatch2(recordBatchFromJSON(b["data"]), b["id"], b["isDelta"]);
+}
+function schemaFieldsFromJSON(_schema, dictionaries) {
+  return (_schema["fields"] || []).filter(Boolean).map((f3) => Field2.fromJSON(f3, dictionaries));
+}
+function fieldChildrenFromJSON(_field, dictionaries) {
+  return (_field["children"] || []).filter(Boolean).map((f3) => Field2.fromJSON(f3, dictionaries));
+}
+function fieldNodesFromJSON(xs) {
+  return (xs || []).reduce((fieldNodes, column) => [
+    ...fieldNodes,
+    new FieldNode2(column["count"], nullCountFromJSON(column["VALIDITY"])),
+    ...fieldNodesFromJSON(column["children"])
+  ], []);
+}
+function buffersFromJSON(xs, buffers = []) {
+  for (let i2 = -1, n = (xs || []).length; ++i2 < n; ) {
+    const column = xs[i2];
+    column["VALIDITY"] && buffers.push(new BufferRegion(buffers.length, column["VALIDITY"].length));
+    column["TYPE_ID"] && buffers.push(new BufferRegion(buffers.length, column["TYPE_ID"].length));
+    column["OFFSET"] && buffers.push(new BufferRegion(buffers.length, column["OFFSET"].length));
+    column["DATA"] && buffers.push(new BufferRegion(buffers.length, column["DATA"].length));
+    buffers = buffersFromJSON(column["children"], buffers);
+  }
+  return buffers;
+}
+function nullCountFromJSON(validity) {
+  return (validity || []).reduce((sum, val) => sum + +(val === 0), 0);
+}
+function fieldFromJSON(_field, dictionaries) {
+  let id;
+  let keys;
+  let field;
+  let dictMeta;
+  let type;
+  let dictType;
+  if (!dictionaries || !(dictMeta = _field["dictionary"])) {
+    type = typeFromJSON(_field, fieldChildrenFromJSON(_field, dictionaries));
+    field = new Field2(_field["name"], type, _field["nullable"], customMetadataFromJSON(_field["metadata"]));
+  } else if (!dictionaries.has(id = dictMeta["id"])) {
+    keys = (keys = dictMeta["indexType"]) ? indexTypeFromJSON(keys) : new Int32();
+    dictionaries.set(id, type = typeFromJSON(_field, fieldChildrenFromJSON(_field, dictionaries)));
+    dictType = new Dictionary(type, keys, id, dictMeta["isOrdered"]);
+    field = new Field2(_field["name"], dictType, _field["nullable"], customMetadataFromJSON(_field["metadata"]));
+  } else {
+    keys = (keys = dictMeta["indexType"]) ? indexTypeFromJSON(keys) : new Int32();
+    dictType = new Dictionary(dictionaries.get(id), keys, id, dictMeta["isOrdered"]);
+    field = new Field2(_field["name"], dictType, _field["nullable"], customMetadataFromJSON(_field["metadata"]));
+  }
+  return field || null;
+}
+function customMetadataFromJSON(metadata = []) {
+  return new Map(metadata.map(({ key, value }) => [key, value]));
+}
+function indexTypeFromJSON(_type) {
+  return new Int_(_type["isSigned"], _type["bitWidth"]);
+}
+function typeFromJSON(f3, children) {
+  const typeId = f3["type"]["name"];
+  switch (typeId) {
+    case "NONE":
+      return new Null2();
+    case "null":
+      return new Null2();
+    case "binary":
+      return new Binary2();
+    case "largebinary":
+      return new LargeBinary2();
+    case "utf8":
+      return new Utf82();
+    case "largeutf8":
+      return new LargeUtf82();
+    case "bool":
+      return new Bool2();
+    case "list":
+      return new List2((children || [])[0]);
+    case "struct":
+      return new Struct(children || []);
+    case "struct_":
+      return new Struct(children || []);
+  }
+  switch (typeId) {
+    case "int": {
+      const t2 = f3["type"];
+      return new Int_(t2["isSigned"], t2["bitWidth"]);
+    }
+    case "floatingpoint": {
+      const t2 = f3["type"];
+      return new Float(Precision[t2["precision"]]);
+    }
+    case "decimal": {
+      const t2 = f3["type"];
+      return new Decimal2(t2["scale"], t2["precision"], t2["bitWidth"]);
+    }
+    case "date": {
+      const t2 = f3["type"];
+      return new Date_(DateUnit[t2["unit"]]);
+    }
+    case "time": {
+      const t2 = f3["type"];
+      return new Time_(TimeUnit[t2["unit"]], t2["bitWidth"]);
+    }
+    case "timestamp": {
+      const t2 = f3["type"];
+      return new Timestamp_(TimeUnit[t2["unit"]], t2["timezone"]);
+    }
+    case "interval": {
+      const t2 = f3["type"];
+      return new Interval_(IntervalUnit[t2["unit"]]);
+    }
+    case "duration": {
+      const t2 = f3["type"];
+      return new Duration2(TimeUnit[t2["unit"]]);
+    }
+    case "union": {
+      const t2 = f3["type"];
+      const [m2, ...ms] = (t2["mode"] + "").toLowerCase();
+      const mode = m2.toUpperCase() + ms.join("");
+      return new Union_(UnionMode[mode], t2["typeIds"] || [], children || []);
+    }
+    case "fixedsizebinary": {
+      const t2 = f3["type"];
+      return new FixedSizeBinary2(t2["byteWidth"]);
+    }
+    case "fixedsizelist": {
+      const t2 = f3["type"];
+      return new FixedSizeList2(t2["listSize"], (children || [])[0]);
+    }
+    case "map": {
+      const t2 = f3["type"];
+      return new Map_((children || [])[0], t2["keysSorted"]);
+    }
+  }
+  throw new Error(`Unrecognized type: "${typeId}"`);
+}
+
+// node_modules/apache-arrow/ipc/metadata/message.mjs
+var Builder5 = flatbuffers31.Builder;
+var ByteBuffer4 = flatbuffers31.ByteBuffer;
+var Message2 = class _Message {
+  /** @nocollapse */
+  static fromJSON(msg, headerType) {
+    const message = new _Message(0, MetadataVersion.V5, headerType);
+    message._createHeader = messageHeaderFromJSON(msg, headerType);
+    return message;
+  }
+  /** @nocollapse */
+  static decode(buf) {
+    buf = new ByteBuffer4(toUint8Array(buf));
+    const _message = Message.getRootAsMessage(buf);
+    const bodyLength = _message.bodyLength();
+    const version = _message.version();
+    const headerType = _message.headerType();
+    const message = new _Message(bodyLength, version, headerType);
+    message._createHeader = decodeMessageHeader(_message, headerType);
+    return message;
+  }
+  /** @nocollapse */
+  static encode(message) {
+    const b = new Builder5();
+    let headerOffset = -1;
+    if (message.isSchema()) {
+      headerOffset = Schema2.encode(b, message.header());
+    } else if (message.isRecordBatch()) {
+      headerOffset = RecordBatch3.encode(b, message.header());
+    } else if (message.isDictionaryBatch()) {
+      headerOffset = DictionaryBatch2.encode(b, message.header());
+    }
+    Message.startMessage(b);
+    Message.addVersion(b, MetadataVersion.V5);
+    Message.addHeader(b, headerOffset);
+    Message.addHeaderType(b, message.headerType);
+    Message.addBodyLength(b, BigInt(message.bodyLength));
+    Message.finishMessageBuffer(b, Message.endMessage(b));
+    return b.asUint8Array();
+  }
+  /** @nocollapse */
+  static from(header, bodyLength = 0) {
+    if (header instanceof Schema2) {
+      return new _Message(0, MetadataVersion.V5, MessageHeader.Schema, header);
+    }
+    if (header instanceof RecordBatch3) {
+      return new _Message(bodyLength, MetadataVersion.V5, MessageHeader.RecordBatch, header);
+    }
+    if (header instanceof DictionaryBatch2) {
+      return new _Message(bodyLength, MetadataVersion.V5, MessageHeader.DictionaryBatch, header);
+    }
+    throw new Error(`Unrecognized Message header: ${header}`);
+  }
+  get type() {
+    return this.headerType;
+  }
+  get version() {
+    return this._version;
+  }
+  get headerType() {
+    return this._headerType;
+  }
+  get bodyLength() {
+    return this._bodyLength;
+  }
+  header() {
+    return this._createHeader();
+  }
+  isSchema() {
+    return this.headerType === MessageHeader.Schema;
+  }
+  isRecordBatch() {
+    return this.headerType === MessageHeader.RecordBatch;
+  }
+  isDictionaryBatch() {
+    return this.headerType === MessageHeader.DictionaryBatch;
+  }
+  constructor(bodyLength, version, headerType, header) {
+    this._version = version;
+    this._headerType = headerType;
+    this.body = new Uint8Array(0);
+    header && (this._createHeader = () => header);
+    this._bodyLength = bigIntToNumber(bodyLength);
+  }
+};
+var RecordBatch3 = class {
+  get nodes() {
+    return this._nodes;
+  }
+  get length() {
+    return this._length;
+  }
+  get buffers() {
+    return this._buffers;
+  }
+  constructor(length, nodes, buffers) {
+    this._nodes = nodes;
+    this._buffers = buffers;
+    this._length = bigIntToNumber(length);
+  }
+};
+var DictionaryBatch2 = class {
+  get id() {
+    return this._id;
+  }
+  get data() {
+    return this._data;
+  }
+  get isDelta() {
+    return this._isDelta;
+  }
+  get length() {
+    return this.data.length;
+  }
+  get nodes() {
+    return this.data.nodes;
+  }
+  get buffers() {
+    return this.data.buffers;
+  }
+  constructor(data, id, isDelta = false) {
+    this._data = data;
+    this._isDelta = isDelta;
+    this._id = bigIntToNumber(id);
+  }
+};
+var BufferRegion = class {
+  constructor(offset, length) {
+    this.offset = bigIntToNumber(offset);
+    this.length = bigIntToNumber(length);
+  }
+};
+var FieldNode2 = class {
+  constructor(length, nullCount) {
+    this.length = bigIntToNumber(length);
+    this.nullCount = bigIntToNumber(nullCount);
+  }
+};
+function messageHeaderFromJSON(message, type) {
+  return (() => {
+    switch (type) {
+      case MessageHeader.Schema:
+        return Schema2.fromJSON(message);
+      case MessageHeader.RecordBatch:
+        return RecordBatch3.fromJSON(message);
+      case MessageHeader.DictionaryBatch:
+        return DictionaryBatch2.fromJSON(message);
+    }
+    throw new Error(`Unrecognized Message type: { name: ${MessageHeader[type]}, type: ${type} }`);
+  });
+}
+function decodeMessageHeader(message, type) {
+  return (() => {
+    switch (type) {
+      case MessageHeader.Schema:
+        return Schema2.decode(message.header(new Schema()), /* @__PURE__ */ new Map(), message.version());
+      case MessageHeader.RecordBatch:
+        return RecordBatch3.decode(message.header(new RecordBatch()), message.version());
+      case MessageHeader.DictionaryBatch:
+        return DictionaryBatch2.decode(message.header(new DictionaryBatch()), message.version());
+    }
+    throw new Error(`Unrecognized Message type: { name: ${MessageHeader[type]}, type: ${type} }`);
+  });
+}
+Field2["encode"] = encodeField;
+Field2["decode"] = decodeField;
+Field2["fromJSON"] = fieldFromJSON;
+Schema2["encode"] = encodeSchema;
+Schema2["decode"] = decodeSchema;
+Schema2["fromJSON"] = schemaFromJSON;
+RecordBatch3["encode"] = encodeRecordBatch;
+RecordBatch3["decode"] = decodeRecordBatch;
+RecordBatch3["fromJSON"] = recordBatchFromJSON;
+DictionaryBatch2["encode"] = encodeDictionaryBatch;
+DictionaryBatch2["decode"] = decodeDictionaryBatch;
+DictionaryBatch2["fromJSON"] = dictionaryBatchFromJSON;
+FieldNode2["encode"] = encodeFieldNode;
+FieldNode2["decode"] = decodeFieldNode;
+BufferRegion["encode"] = encodeBufferRegion;
+BufferRegion["decode"] = decodeBufferRegion;
+function decodeSchema(_schema, dictionaries = /* @__PURE__ */ new Map(), version = MetadataVersion.V5) {
+  const fields = decodeSchemaFields(_schema, dictionaries);
+  return new Schema2(fields, decodeCustomMetadata(_schema), dictionaries, version);
+}
+function decodeRecordBatch(batch, version = MetadataVersion.V5) {
+  if (batch.compression() !== null) {
+    throw new Error("Record batch compression not implemented");
+  }
+  return new RecordBatch3(batch.length(), decodeFieldNodes(batch), decodeBuffers(batch, version));
+}
+function decodeDictionaryBatch(batch, version = MetadataVersion.V5) {
+  return new DictionaryBatch2(RecordBatch3.decode(batch.data(), version), batch.id(), batch.isDelta());
+}
+function decodeBufferRegion(b) {
+  return new BufferRegion(b.offset(), b.length());
+}
+function decodeFieldNode(f3) {
+  return new FieldNode2(f3.length(), f3.nullCount());
+}
+function decodeFieldNodes(batch) {
+  const nodes = [];
+  for (let f3, i2 = -1, j = -1, n = batch.nodesLength(); ++i2 < n; ) {
+    if (f3 = batch.nodes(i2)) {
+      nodes[++j] = FieldNode2.decode(f3);
+    }
+  }
+  return nodes;
+}
+function decodeBuffers(batch, version) {
+  const bufferRegions = [];
+  for (let b, i2 = -1, j = -1, n = batch.buffersLength(); ++i2 < n; ) {
+    if (b = batch.buffers(i2)) {
+      if (version < MetadataVersion.V4) {
+        b.bb_pos += 8 * (i2 + 1);
+      }
+      bufferRegions[++j] = BufferRegion.decode(b);
+    }
+  }
+  return bufferRegions;
+}
+function decodeSchemaFields(schema, dictionaries) {
+  const fields = [];
+  for (let f3, i2 = -1, j = -1, n = schema.fieldsLength(); ++i2 < n; ) {
+    if (f3 = schema.fields(i2)) {
+      fields[++j] = Field2.decode(f3, dictionaries);
+    }
+  }
+  return fields;
+}
+function decodeFieldChildren(field, dictionaries) {
+  const children = [];
+  for (let f3, i2 = -1, j = -1, n = field.childrenLength(); ++i2 < n; ) {
+    if (f3 = field.children(i2)) {
+      children[++j] = Field2.decode(f3, dictionaries);
+    }
+  }
+  return children;
+}
+function decodeField(f3, dictionaries) {
+  let id;
+  let field;
+  let type;
+  let keys;
+  let dictType;
+  let dictMeta;
+  if (!dictionaries || !(dictMeta = f3.dictionary())) {
+    type = decodeFieldType(f3, decodeFieldChildren(f3, dictionaries));
+    field = new Field2(f3.name(), type, f3.nullable(), decodeCustomMetadata(f3));
+  } else if (!dictionaries.has(id = bigIntToNumber(dictMeta.id()))) {
+    keys = (keys = dictMeta.indexType()) ? decodeIndexType(keys) : new Int32();
+    dictionaries.set(id, type = decodeFieldType(f3, decodeFieldChildren(f3, dictionaries)));
+    dictType = new Dictionary(type, keys, id, dictMeta.isOrdered());
+    field = new Field2(f3.name(), dictType, f3.nullable(), decodeCustomMetadata(f3));
+  } else {
+    keys = (keys = dictMeta.indexType()) ? decodeIndexType(keys) : new Int32();
+    dictType = new Dictionary(dictionaries.get(id), keys, id, dictMeta.isOrdered());
+    field = new Field2(f3.name(), dictType, f3.nullable(), decodeCustomMetadata(f3));
+  }
+  return field || null;
+}
+function decodeCustomMetadata(parent) {
+  const data = /* @__PURE__ */ new Map();
+  if (parent) {
+    for (let entry, key, i2 = -1, n = Math.trunc(parent.customMetadataLength()); ++i2 < n; ) {
+      if ((entry = parent.customMetadata(i2)) && (key = entry.key()) != null) {
+        data.set(key, entry.value());
+      }
+    }
+  }
+  return data;
+}
+function decodeIndexType(_type) {
+  return new Int_(_type.isSigned(), _type.bitWidth());
+}
+function decodeFieldType(f3, children) {
+  const typeId = f3.typeType();
+  switch (typeId) {
+    case Type2["NONE"]:
+      return new Null2();
+    case Type2["Null"]:
+      return new Null2();
+    case Type2["Binary"]:
+      return new Binary2();
+    case Type2["LargeBinary"]:
+      return new LargeBinary2();
+    case Type2["Utf8"]:
+      return new Utf82();
+    case Type2["LargeUtf8"]:
+      return new LargeUtf82();
+    case Type2["Bool"]:
+      return new Bool2();
+    case Type2["List"]:
+      return new List2((children || [])[0]);
+    case Type2["Struct_"]:
+      return new Struct(children || []);
+  }
+  switch (typeId) {
+    case Type2["Int"]: {
+      const t2 = f3.type(new Int());
+      return new Int_(t2.isSigned(), t2.bitWidth());
+    }
+    case Type2["FloatingPoint"]: {
+      const t2 = f3.type(new FloatingPoint());
+      return new Float(t2.precision());
+    }
+    case Type2["Decimal"]: {
+      const t2 = f3.type(new Decimal());
+      return new Decimal2(t2.scale(), t2.precision(), t2.bitWidth());
+    }
+    case Type2["Date"]: {
+      const t2 = f3.type(new Date2());
+      return new Date_(t2.unit());
+    }
+    case Type2["Time"]: {
+      const t2 = f3.type(new Time());
+      return new Time_(t2.unit(), t2.bitWidth());
+    }
+    case Type2["Timestamp"]: {
+      const t2 = f3.type(new Timestamp());
+      return new Timestamp_(t2.unit(), t2.timezone());
+    }
+    case Type2["Interval"]: {
+      const t2 = f3.type(new Interval());
+      return new Interval_(t2.unit());
+    }
+    case Type2["Duration"]: {
+      const t2 = f3.type(new Duration());
+      return new Duration2(t2.unit());
+    }
+    case Type2["Union"]: {
+      const t2 = f3.type(new Union());
+      return new Union_(t2.mode(), t2.typeIdsArray() || [], children || []);
+    }
+    case Type2["FixedSizeBinary"]: {
+      const t2 = f3.type(new FixedSizeBinary());
+      return new FixedSizeBinary2(t2.byteWidth());
+    }
+    case Type2["FixedSizeList"]: {
+      const t2 = f3.type(new FixedSizeList());
+      return new FixedSizeList2(t2.listSize(), (children || [])[0]);
+    }
+    case Type2["Map"]: {
+      const t2 = f3.type(new Map2());
+      return new Map_((children || [])[0], t2.keysSorted());
+    }
+  }
+  throw new Error(`Unrecognized type: "${Type2[typeId]}" (${typeId})`);
+}
+function encodeSchema(b, schema) {
+  const fieldOffsets = schema.fields.map((f3) => Field2.encode(b, f3));
+  Schema.startFieldsVector(b, fieldOffsets.length);
+  const fieldsVectorOffset = Schema.createFieldsVector(b, fieldOffsets);
+  const metadataOffset = !(schema.metadata && schema.metadata.size > 0) ? -1 : Schema.createCustomMetadataVector(b, [...schema.metadata].map(([k, v]) => {
+    const key = b.createString(`${k}`);
+    const val = b.createString(`${v}`);
+    KeyValue.startKeyValue(b);
+    KeyValue.addKey(b, key);
+    KeyValue.addValue(b, val);
+    return KeyValue.endKeyValue(b);
+  }));
+  Schema.startSchema(b);
+  Schema.addFields(b, fieldsVectorOffset);
+  Schema.addEndianness(b, platformIsLittleEndian ? Endianness.Little : Endianness.Big);
+  if (metadataOffset !== -1) {
+    Schema.addCustomMetadata(b, metadataOffset);
+  }
+  return Schema.endSchema(b);
+}
+function encodeField(b, field) {
+  let nameOffset = -1;
+  let typeOffset = -1;
+  let dictionaryOffset = -1;
+  const type = field.type;
+  let typeId = field.typeId;
+  if (!DataType.isDictionary(type)) {
+    typeOffset = instance7.visit(type, b);
+  } else {
+    typeId = type.dictionary.typeId;
+    dictionaryOffset = instance7.visit(type, b);
+    typeOffset = instance7.visit(type.dictionary, b);
+  }
+  const childOffsets = (type.children || []).map((f3) => Field2.encode(b, f3));
+  const childrenVectorOffset = Field.createChildrenVector(b, childOffsets);
+  const metadataOffset = !(field.metadata && field.metadata.size > 0) ? -1 : Field.createCustomMetadataVector(b, [...field.metadata].map(([k, v]) => {
+    const key = b.createString(`${k}`);
+    const val = b.createString(`${v}`);
+    KeyValue.startKeyValue(b);
+    KeyValue.addKey(b, key);
+    KeyValue.addValue(b, val);
+    return KeyValue.endKeyValue(b);
+  }));
+  if (field.name) {
+    nameOffset = b.createString(field.name);
+  }
+  Field.startField(b);
+  Field.addType(b, typeOffset);
+  Field.addTypeType(b, typeId);
+  Field.addChildren(b, childrenVectorOffset);
+  Field.addNullable(b, !!field.nullable);
+  if (nameOffset !== -1) {
+    Field.addName(b, nameOffset);
+  }
+  if (dictionaryOffset !== -1) {
+    Field.addDictionary(b, dictionaryOffset);
+  }
+  if (metadataOffset !== -1) {
+    Field.addCustomMetadata(b, metadataOffset);
+  }
+  return Field.endField(b);
+}
+function encodeRecordBatch(b, recordBatch) {
+  const nodes = recordBatch.nodes || [];
+  const buffers = recordBatch.buffers || [];
+  RecordBatch.startNodesVector(b, nodes.length);
+  for (const n of nodes.slice().reverse())
+    FieldNode2.encode(b, n);
+  const nodesVectorOffset = b.endVector();
+  RecordBatch.startBuffersVector(b, buffers.length);
+  for (const b_ of buffers.slice().reverse())
+    BufferRegion.encode(b, b_);
+  const buffersVectorOffset = b.endVector();
+  RecordBatch.startRecordBatch(b);
+  RecordBatch.addLength(b, BigInt(recordBatch.length));
+  RecordBatch.addNodes(b, nodesVectorOffset);
+  RecordBatch.addBuffers(b, buffersVectorOffset);
+  return RecordBatch.endRecordBatch(b);
+}
+function encodeDictionaryBatch(b, dictionaryBatch) {
+  const dataOffset = RecordBatch3.encode(b, dictionaryBatch.data);
+  DictionaryBatch.startDictionaryBatch(b);
+  DictionaryBatch.addId(b, BigInt(dictionaryBatch.id));
+  DictionaryBatch.addIsDelta(b, dictionaryBatch.isDelta);
+  DictionaryBatch.addData(b, dataOffset);
+  return DictionaryBatch.endDictionaryBatch(b);
+}
+function encodeFieldNode(b, node) {
+  return FieldNode.createFieldNode(b, BigInt(node.length), BigInt(node.nullCount));
+}
+function encodeBufferRegion(b, node) {
+  return Buffer4.createBuffer(b, BigInt(node.offset), BigInt(node.length));
+}
+var platformIsLittleEndian = (() => {
+  const buffer = new ArrayBuffer(2);
+  new DataView(buffer).setInt16(
+    0,
+    256,
+    true
+    /* littleEndian */
+  );
+  return new Int16Array(buffer)[0] === 256;
+})();
+
+// node_modules/apache-arrow/ipc/message.mjs
+var invalidMessageType = (type) => `Expected ${MessageHeader[type]} Message in stream, but was null or length 0.`;
+var nullMessage = (type) => `Header pointer of flatbuffer-encoded ${MessageHeader[type]} Message is null or length 0.`;
+var invalidMessageMetadata = (expected, actual) => `Expected to read ${expected} metadata bytes, but only read ${actual}.`;
+var invalidMessageBodyLength = (expected, actual) => `Expected to read ${expected} bytes for message body, but only read ${actual}.`;
+var MessageReader = class {
+  constructor(source) {
+    this.source = source instanceof ByteStream ? source : new ByteStream(source);
+  }
+  [Symbol.iterator]() {
+    return this;
+  }
+  next() {
+    let r2;
+    if ((r2 = this.readMetadataLength()).done) {
+      return ITERATOR_DONE;
+    }
+    if (r2.value === -1 && (r2 = this.readMetadataLength()).done) {
+      return ITERATOR_DONE;
+    }
+    if ((r2 = this.readMetadata(r2.value)).done) {
+      return ITERATOR_DONE;
+    }
+    return r2;
+  }
+  throw(value) {
+    return this.source.throw(value);
+  }
+  return(value) {
+    return this.source.return(value);
+  }
+  readMessage(type) {
+    let r2;
+    if ((r2 = this.next()).done) {
+      return null;
+    }
+    if (type != null && r2.value.headerType !== type) {
+      throw new Error(invalidMessageType(type));
+    }
+    return r2.value;
+  }
+  readMessageBody(bodyLength) {
+    if (bodyLength <= 0) {
+      return new Uint8Array(0);
+    }
+    const buf = toUint8Array(this.source.read(bodyLength));
+    if (buf.byteLength < bodyLength) {
+      throw new Error(invalidMessageBodyLength(bodyLength, buf.byteLength));
+    }
+    return (
+      /* 1. */
+      buf.byteOffset % 8 === 0 && /* 2. */
+      buf.byteOffset + buf.byteLength <= buf.buffer.byteLength ? buf : buf.slice()
+    );
+  }
+  readSchema(throwIfNull = false) {
+    const type = MessageHeader.Schema;
+    const message = this.readMessage(type);
+    const schema = message === null || message === void 0 ? void 0 : message.header();
+    if (throwIfNull && !schema) {
+      throw new Error(nullMessage(type));
+    }
+    return schema;
+  }
+  readMetadataLength() {
+    const buf = this.source.read(PADDING);
+    const bb = buf && new import_flatbuffers.ByteBuffer(buf);
+    const len = (bb === null || bb === void 0 ? void 0 : bb.readInt32(0)) || 0;
+    return { done: len === 0, value: len };
+  }
+  readMetadata(metadataLength) {
+    const buf = this.source.read(metadataLength);
+    if (!buf) {
+      return ITERATOR_DONE;
+    }
+    if (buf.byteLength < metadataLength) {
+      throw new Error(invalidMessageMetadata(metadataLength, buf.byteLength));
+    }
+    return { done: false, value: Message2.decode(buf) };
+  }
+};
+var AsyncMessageReader = class {
+  constructor(source, byteLength) {
+    this.source = source instanceof AsyncByteStream ? source : isFileHandle(source) ? new AsyncRandomAccessFile(source, byteLength) : new AsyncByteStream(source);
+  }
+  [Symbol.asyncIterator]() {
+    return this;
+  }
+  next() {
+    return __awaiter(this, void 0, void 0, function* () {
+      let r2;
+      if ((r2 = yield this.readMetadataLength()).done) {
+        return ITERATOR_DONE;
+      }
+      if (r2.value === -1 && (r2 = yield this.readMetadataLength()).done) {
+        return ITERATOR_DONE;
+      }
+      if ((r2 = yield this.readMetadata(r2.value)).done) {
+        return ITERATOR_DONE;
+      }
+      return r2;
+    });
+  }
+  throw(value) {
+    return __awaiter(this, void 0, void 0, function* () {
+      return yield this.source.throw(value);
+    });
+  }
+  return(value) {
+    return __awaiter(this, void 0, void 0, function* () {
+      return yield this.source.return(value);
+    });
+  }
+  readMessage(type) {
+    return __awaiter(this, void 0, void 0, function* () {
+      let r2;
+      if ((r2 = yield this.next()).done) {
+        return null;
+      }
+      if (type != null && r2.value.headerType !== type) {
+        throw new Error(invalidMessageType(type));
+      }
+      return r2.value;
+    });
+  }
+  readMessageBody(bodyLength) {
+    return __awaiter(this, void 0, void 0, function* () {
+      if (bodyLength <= 0) {
+        return new Uint8Array(0);
+      }
+      const buf = toUint8Array(yield this.source.read(bodyLength));
+      if (buf.byteLength < bodyLength) {
+        throw new Error(invalidMessageBodyLength(bodyLength, buf.byteLength));
+      }
+      return (
+        /* 1. */
+        buf.byteOffset % 8 === 0 && /* 2. */
+        buf.byteOffset + buf.byteLength <= buf.buffer.byteLength ? buf : buf.slice()
+      );
+    });
+  }
+  readSchema() {
+    return __awaiter(this, arguments, void 0, function* (throwIfNull = false) {
+      const type = MessageHeader.Schema;
+      const message = yield this.readMessage(type);
+      const schema = message === null || message === void 0 ? void 0 : message.header();
+      if (throwIfNull && !schema) {
+        throw new Error(nullMessage(type));
+      }
+      return schema;
+    });
+  }
+  readMetadataLength() {
+    return __awaiter(this, void 0, void 0, function* () {
+      const buf = yield this.source.read(PADDING);
+      const bb = buf && new import_flatbuffers.ByteBuffer(buf);
+      const len = (bb === null || bb === void 0 ? void 0 : bb.readInt32(0)) || 0;
+      return { done: len === 0, value: len };
+    });
+  }
+  readMetadata(metadataLength) {
+    return __awaiter(this, void 0, void 0, function* () {
+      const buf = yield this.source.read(metadataLength);
+      if (!buf) {
+        return ITERATOR_DONE;
+      }
+      if (buf.byteLength < metadataLength) {
+        throw new Error(invalidMessageMetadata(metadataLength, buf.byteLength));
+      }
+      return { done: false, value: Message2.decode(buf) };
+    });
+  }
+};
+var JSONMessageReader = class extends MessageReader {
+  constructor(source) {
+    super(new Uint8Array(0));
+    this._schema = false;
+    this._body = [];
+    this._batchIndex = 0;
+    this._dictionaryIndex = 0;
+    this._json = source instanceof ArrowJSON ? source : new ArrowJSON(source);
+  }
+  next() {
+    const { _json } = this;
+    if (!this._schema) {
+      this._schema = true;
+      const message = Message2.fromJSON(_json.schema, MessageHeader.Schema);
+      return { done: false, value: message };
+    }
+    if (this._dictionaryIndex < _json.dictionaries.length) {
+      const batch = _json.dictionaries[this._dictionaryIndex++];
+      this._body = batch["data"]["columns"];
+      const message = Message2.fromJSON(batch, MessageHeader.DictionaryBatch);
+      return { done: false, value: message };
+    }
+    if (this._batchIndex < _json.batches.length) {
+      const batch = _json.batches[this._batchIndex++];
+      this._body = batch["columns"];
+      const message = Message2.fromJSON(batch, MessageHeader.RecordBatch);
+      return { done: false, value: message };
+    }
+    this._body = [];
+    return ITERATOR_DONE;
+  }
+  readMessageBody(_bodyLength) {
+    return flattenDataSources(this._body);
+    function flattenDataSources(xs) {
+      return (xs || []).reduce((buffers, column) => [
+        ...buffers,
+        ...column["VALIDITY"] && [column["VALIDITY"]] || [],
+        ...column["TYPE_ID"] && [column["TYPE_ID"]] || [],
+        ...column["OFFSET"] && [column["OFFSET"]] || [],
+        ...column["DATA"] && [column["DATA"]] || [],
+        ...flattenDataSources(column["children"])
+      ], []);
+    }
+  }
+  readMessage(type) {
+    let r2;
+    if ((r2 = this.next()).done) {
+      return null;
+    }
+    if (type != null && r2.value.headerType !== type) {
+      throw new Error(invalidMessageType(type));
+    }
+    return r2.value;
+  }
+  readSchema() {
+    const type = MessageHeader.Schema;
+    const message = this.readMessage(type);
+    const schema = message === null || message === void 0 ? void 0 : message.header();
+    if (!message || !schema) {
+      throw new Error(nullMessage(type));
+    }
+    return schema;
+  }
+};
+var PADDING = 4;
+var MAGIC_STR = "ARROW1";
+var MAGIC = new Uint8Array(MAGIC_STR.length);
+for (let i2 = 0; i2 < MAGIC_STR.length; i2 += 1) {
+  MAGIC[i2] = MAGIC_STR.codePointAt(i2);
+}
+function checkForMagicArrowString(buffer, index = 0) {
+  for (let i2 = -1, n = MAGIC.length; ++i2 < n; ) {
+    if (MAGIC[i2] !== buffer[index + i2]) {
+      return false;
+    }
+  }
+  return true;
+}
+var magicLength = MAGIC.length;
+var magicAndPadding = magicLength + PADDING;
+var magicX2AndPadding = magicLength * 2 + PADDING;
+
+// node_modules/apache-arrow/ipc/reader.mjs
+var RecordBatchReader = class _RecordBatchReader extends ReadableInterop {
+  constructor(impl) {
+    super();
+    this._impl = impl;
+  }
+  get closed() {
+    return this._impl.closed;
+  }
+  get schema() {
+    return this._impl.schema;
+  }
+  get autoDestroy() {
+    return this._impl.autoDestroy;
+  }
+  get dictionaries() {
+    return this._impl.dictionaries;
+  }
+  get numDictionaries() {
+    return this._impl.numDictionaries;
+  }
+  get numRecordBatches() {
+    return this._impl.numRecordBatches;
+  }
+  get footer() {
+    return this._impl.isFile() ? this._impl.footer : null;
+  }
+  isSync() {
+    return this._impl.isSync();
+  }
+  isAsync() {
+    return this._impl.isAsync();
+  }
+  isFile() {
+    return this._impl.isFile();
+  }
+  isStream() {
+    return this._impl.isStream();
+  }
+  next() {
+    return this._impl.next();
+  }
+  throw(value) {
+    return this._impl.throw(value);
+  }
+  return(value) {
+    return this._impl.return(value);
+  }
+  cancel() {
+    return this._impl.cancel();
+  }
+  reset(schema) {
+    this._impl.reset(schema);
+    this._DOMStream = void 0;
+    this._nodeStream = void 0;
+    return this;
+  }
+  open(options) {
+    const opening = this._impl.open(options);
+    return isPromise(opening) ? opening.then(() => this) : this;
+  }
+  readRecordBatch(index) {
+    return this._impl.isFile() ? this._impl.readRecordBatch(index) : null;
+  }
+  [Symbol.iterator]() {
+    return this._impl[Symbol.iterator]();
+  }
+  [Symbol.asyncIterator]() {
+    return this._impl[Symbol.asyncIterator]();
+  }
+  toDOMStream() {
+    return adapters_default.toDOMStream(this.isSync() ? { [Symbol.iterator]: () => this } : { [Symbol.asyncIterator]: () => this });
+  }
+  toNodeStream() {
+    return adapters_default.toNodeStream(this.isSync() ? { [Symbol.iterator]: () => this } : { [Symbol.asyncIterator]: () => this }, { objectMode: true });
+  }
+  /** @nocollapse */
+  // @ts-ignore
+  static throughNode(options) {
+    throw new Error(`"throughNode" not available in this environment`);
+  }
+  /** @nocollapse */
+  static throughDOM(writableStrategy, readableStrategy) {
+    throw new Error(`"throughDOM" not available in this environment`);
+  }
+  /** @nocollapse */
+  static from(source) {
+    if (source instanceof _RecordBatchReader) {
+      return source;
+    } else if (isArrowJSON(source)) {
+      return fromArrowJSON(source);
+    } else if (isFileHandle(source)) {
+      return fromFileHandle(source);
+    } else if (isPromise(source)) {
+      return (() => __awaiter(this, void 0, void 0, function* () {
+        return yield _RecordBatchReader.from(yield source);
+      }))();
+    } else if (isFetchResponse(source) || isReadableDOMStream(source) || isReadableNodeStream(source) || isAsyncIterable3(source)) {
+      return fromAsyncByteStream(new AsyncByteStream(source));
+    }
+    return fromByteStream(new ByteStream(source));
+  }
+  /** @nocollapse */
+  static readAll(source) {
+    if (source instanceof _RecordBatchReader) {
+      return source.isSync() ? readAllSync(source) : readAllAsync(source);
+    } else if (isArrowJSON(source) || ArrayBuffer.isView(source) || isIterable(source) || isIteratorResult(source)) {
+      return readAllSync(source);
+    }
+    return readAllAsync(source);
+  }
+};
+var RecordBatchStreamReader = class extends RecordBatchReader {
+  constructor(_impl) {
+    super(_impl);
+    this._impl = _impl;
+  }
+  readAll() {
+    return [...this];
+  }
+  [Symbol.iterator]() {
+    return this._impl[Symbol.iterator]();
+  }
+  [Symbol.asyncIterator]() {
+    return __asyncGenerator2(this, arguments, function* _a9() {
+      yield __await2(yield* __asyncDelegator(__asyncValues2(this[Symbol.iterator]())));
+    });
+  }
+};
+var AsyncRecordBatchStreamReader = class extends RecordBatchReader {
+  constructor(_impl) {
+    super(_impl);
+    this._impl = _impl;
+  }
+  readAll() {
+    return __awaiter(this, void 0, void 0, function* () {
+      var _a9, e_1, _b2, _c2;
+      const batches = new Array();
+      try {
+        for (var _d2 = true, _e2 = __asyncValues2(this), _f2; _f2 = yield _e2.next(), _a9 = _f2.done, !_a9; _d2 = true) {
+          _c2 = _f2.value;
+          _d2 = false;
+          const batch = _c2;
+          batches.push(batch);
+        }
+      } catch (e_1_1) {
+        e_1 = { error: e_1_1 };
+      } finally {
+        try {
+          if (!_d2 && !_a9 && (_b2 = _e2.return)) yield _b2.call(_e2);
+        } finally {
+          if (e_1) throw e_1.error;
+        }
+      }
+      return batches;
+    });
+  }
+  [Symbol.iterator]() {
+    throw new Error(`AsyncRecordBatchStreamReader is not Iterable`);
+  }
+  [Symbol.asyncIterator]() {
+    return this._impl[Symbol.asyncIterator]();
+  }
+};
+var RecordBatchFileReader = class extends RecordBatchStreamReader {
+  constructor(_impl) {
+    super(_impl);
+    this._impl = _impl;
+  }
+};
+var AsyncRecordBatchFileReader = class extends AsyncRecordBatchStreamReader {
+  constructor(_impl) {
+    super(_impl);
+    this._impl = _impl;
+  }
+};
+var RecordBatchReaderImpl = class {
+  get numDictionaries() {
+    return this._dictionaryIndex;
+  }
+  get numRecordBatches() {
+    return this._recordBatchIndex;
+  }
+  constructor(dictionaries = /* @__PURE__ */ new Map()) {
+    this.closed = false;
+    this.autoDestroy = true;
+    this._dictionaryIndex = 0;
+    this._recordBatchIndex = 0;
+    this.dictionaries = dictionaries;
+  }
+  isSync() {
+    return false;
+  }
+  isAsync() {
+    return false;
+  }
+  isFile() {
+    return false;
+  }
+  isStream() {
+    return false;
+  }
+  reset(schema) {
+    this._dictionaryIndex = 0;
+    this._recordBatchIndex = 0;
+    this.schema = schema;
+    this.dictionaries = /* @__PURE__ */ new Map();
+    return this;
+  }
+  _loadRecordBatch(header, body) {
+    const children = this._loadVectors(header, body, this.schema.fields);
+    const data = makeData({ type: new Struct(this.schema.fields), length: header.length, children });
+    return new RecordBatch2(this.schema, data);
+  }
+  _loadDictionaryBatch(header, body) {
+    const { id, isDelta } = header;
+    const { dictionaries, schema } = this;
+    const dictionary = dictionaries.get(id);
+    const type = schema.dictionaries.get(id);
+    const data = this._loadVectors(header.data, body, [type]);
+    return (dictionary && isDelta ? dictionary.concat(new Vector(data)) : new Vector(data)).memoize();
+  }
+  _loadVectors(header, body, types4) {
+    return new VectorLoader(body, header.nodes, header.buffers, this.dictionaries, this.schema.metadataVersion).visitMany(types4);
+  }
+};
+var RecordBatchStreamReaderImpl = class extends RecordBatchReaderImpl {
+  constructor(source, dictionaries) {
+    super(dictionaries);
+    this._reader = !isArrowJSON(source) ? new MessageReader(this._handle = source) : new JSONMessageReader(this._handle = source);
+  }
+  isSync() {
+    return true;
+  }
+  isStream() {
+    return true;
+  }
+  [Symbol.iterator]() {
+    return this;
+  }
+  cancel() {
+    if (!this.closed && (this.closed = true)) {
+      this.reset()._reader.return();
+      this._reader = null;
+      this.dictionaries = null;
+    }
+  }
+  open(options) {
+    if (!this.closed) {
+      this.autoDestroy = shouldAutoDestroy(this, options);
+      if (!(this.schema || (this.schema = this._reader.readSchema()))) {
+        this.cancel();
+      }
+    }
+    return this;
+  }
+  throw(value) {
+    if (!this.closed && this.autoDestroy && (this.closed = true)) {
+      return this.reset()._reader.throw(value);
+    }
+    return ITERATOR_DONE;
+  }
+  return(value) {
+    if (!this.closed && this.autoDestroy && (this.closed = true)) {
+      return this.reset()._reader.return(value);
+    }
+    return ITERATOR_DONE;
+  }
+  next() {
+    if (this.closed) {
+      return ITERATOR_DONE;
+    }
+    let message;
+    const { _reader: reader } = this;
+    while (message = this._readNextMessageAndValidate()) {
+      if (message.isSchema()) {
+        this.reset(message.header());
+      } else if (message.isRecordBatch()) {
+        this._recordBatchIndex++;
+        const header = message.header();
+        const buffer = reader.readMessageBody(message.bodyLength);
+        const recordBatch = this._loadRecordBatch(header, buffer);
+        return { done: false, value: recordBatch };
+      } else if (message.isDictionaryBatch()) {
+        this._dictionaryIndex++;
+        const header = message.header();
+        const buffer = reader.readMessageBody(message.bodyLength);
+        const vector = this._loadDictionaryBatch(header, buffer);
+        this.dictionaries.set(header.id, vector);
+      }
+    }
+    if (this.schema && this._recordBatchIndex === 0) {
+      this._recordBatchIndex++;
+      return { done: false, value: new _InternalEmptyPlaceholderRecordBatch(this.schema) };
+    }
+    return this.return();
+  }
+  _readNextMessageAndValidate(type) {
+    return this._reader.readMessage(type);
+  }
+};
+var AsyncRecordBatchStreamReaderImpl = class extends RecordBatchReaderImpl {
+  constructor(source, dictionaries) {
+    super(dictionaries);
+    this._reader = new AsyncMessageReader(this._handle = source);
+  }
+  isAsync() {
+    return true;
+  }
+  isStream() {
+    return true;
+  }
+  [Symbol.asyncIterator]() {
+    return this;
+  }
+  cancel() {
+    return __awaiter(this, void 0, void 0, function* () {
+      if (!this.closed && (this.closed = true)) {
+        yield this.reset()._reader.return();
+        this._reader = null;
+        this.dictionaries = null;
+      }
+    });
+  }
+  open(options) {
+    return __awaiter(this, void 0, void 0, function* () {
+      if (!this.closed) {
+        this.autoDestroy = shouldAutoDestroy(this, options);
+        if (!(this.schema || (this.schema = yield this._reader.readSchema()))) {
+          yield this.cancel();
+        }
+      }
+      return this;
+    });
+  }
+  throw(value) {
+    return __awaiter(this, void 0, void 0, function* () {
+      if (!this.closed && this.autoDestroy && (this.closed = true)) {
+        return yield this.reset()._reader.throw(value);
+      }
+      return ITERATOR_DONE;
+    });
+  }
+  return(value) {
+    return __awaiter(this, void 0, void 0, function* () {
+      if (!this.closed && this.autoDestroy && (this.closed = true)) {
+        return yield this.reset()._reader.return(value);
+      }
+      return ITERATOR_DONE;
+    });
+  }
+  next() {
+    return __awaiter(this, void 0, void 0, function* () {
+      if (this.closed) {
+        return ITERATOR_DONE;
+      }
+      let message;
+      const { _reader: reader } = this;
+      while (message = yield this._readNextMessageAndValidate()) {
+        if (message.isSchema()) {
+          yield this.reset(message.header());
+        } else if (message.isRecordBatch()) {
+          this._recordBatchIndex++;
+          const header = message.header();
+          const buffer = yield reader.readMessageBody(message.bodyLength);
+          const recordBatch = this._loadRecordBatch(header, buffer);
+          return { done: false, value: recordBatch };
+        } else if (message.isDictionaryBatch()) {
+          this._dictionaryIndex++;
+          const header = message.header();
+          const buffer = yield reader.readMessageBody(message.bodyLength);
+          const vector = this._loadDictionaryBatch(header, buffer);
+          this.dictionaries.set(header.id, vector);
+        }
+      }
+      if (this.schema && this._recordBatchIndex === 0) {
+        this._recordBatchIndex++;
+        return { done: false, value: new _InternalEmptyPlaceholderRecordBatch(this.schema) };
+      }
+      return yield this.return();
+    });
+  }
+  _readNextMessageAndValidate(type) {
+    return __awaiter(this, void 0, void 0, function* () {
+      return yield this._reader.readMessage(type);
+    });
+  }
+};
+var RecordBatchFileReaderImpl = class extends RecordBatchStreamReaderImpl {
+  get footer() {
+    return this._footer;
+  }
+  get numDictionaries() {
+    return this._footer ? this._footer.numDictionaries : 0;
+  }
+  get numRecordBatches() {
+    return this._footer ? this._footer.numRecordBatches : 0;
+  }
+  constructor(source, dictionaries) {
+    super(source instanceof RandomAccessFile ? source : new RandomAccessFile(source), dictionaries);
+  }
+  isSync() {
+    return true;
+  }
+  isFile() {
+    return true;
+  }
+  open(options) {
+    if (!this.closed && !this._footer) {
+      this.schema = (this._footer = this._readFooter()).schema;
+      for (const block of this._footer.dictionaryBatches()) {
+        block && this._readDictionaryBatch(this._dictionaryIndex++);
+      }
+    }
+    return super.open(options);
+  }
+  readRecordBatch(index) {
+    var _a9;
+    if (this.closed) {
+      return null;
+    }
+    if (!this._footer) {
+      this.open();
+    }
+    const block = (_a9 = this._footer) === null || _a9 === void 0 ? void 0 : _a9.getRecordBatch(index);
+    if (block && this._handle.seek(block.offset)) {
+      const message = this._reader.readMessage(MessageHeader.RecordBatch);
+      if (message === null || message === void 0 ? void 0 : message.isRecordBatch()) {
+        const header = message.header();
+        const buffer = this._reader.readMessageBody(message.bodyLength);
+        const recordBatch = this._loadRecordBatch(header, buffer);
+        return recordBatch;
+      }
+    }
+    return null;
+  }
+  _readDictionaryBatch(index) {
+    var _a9;
+    const block = (_a9 = this._footer) === null || _a9 === void 0 ? void 0 : _a9.getDictionaryBatch(index);
+    if (block && this._handle.seek(block.offset)) {
+      const message = this._reader.readMessage(MessageHeader.DictionaryBatch);
+      if (message === null || message === void 0 ? void 0 : message.isDictionaryBatch()) {
+        const header = message.header();
+        const buffer = this._reader.readMessageBody(message.bodyLength);
+        const vector = this._loadDictionaryBatch(header, buffer);
+        this.dictionaries.set(header.id, vector);
+      }
+    }
+  }
+  _readFooter() {
+    const { _handle } = this;
+    const offset = _handle.size - magicAndPadding;
+    const length = _handle.readInt32(offset);
+    const buffer = _handle.readAt(offset - length, length);
+    return Footer_.decode(buffer);
+  }
+  _readNextMessageAndValidate(type) {
+    var _a9;
+    if (!this._footer) {
+      this.open();
+    }
+    if (this._footer && this._recordBatchIndex < this.numRecordBatches) {
+      const block = (_a9 = this._footer) === null || _a9 === void 0 ? void 0 : _a9.getRecordBatch(this._recordBatchIndex);
+      if (block && this._handle.seek(block.offset)) {
+        return this._reader.readMessage(type);
+      }
+    }
+    return null;
+  }
+};
+var AsyncRecordBatchFileReaderImpl = class extends AsyncRecordBatchStreamReaderImpl {
+  get footer() {
+    return this._footer;
+  }
+  get numDictionaries() {
+    return this._footer ? this._footer.numDictionaries : 0;
+  }
+  get numRecordBatches() {
+    return this._footer ? this._footer.numRecordBatches : 0;
+  }
+  constructor(source, ...rest) {
+    const byteLength = typeof rest[0] !== "number" ? rest.shift() : void 0;
+    const dictionaries = rest[0] instanceof Map ? rest.shift() : void 0;
+    super(source instanceof AsyncRandomAccessFile ? source : new AsyncRandomAccessFile(source, byteLength), dictionaries);
+  }
+  isFile() {
+    return true;
+  }
+  isAsync() {
+    return true;
+  }
+  open(options) {
+    const _super = Object.create(null, {
+      open: { get: () => super.open }
+    });
+    return __awaiter(this, void 0, void 0, function* () {
+      if (!this.closed && !this._footer) {
+        this.schema = (this._footer = yield this._readFooter()).schema;
+        for (const block of this._footer.dictionaryBatches()) {
+          block && (yield this._readDictionaryBatch(this._dictionaryIndex++));
+        }
+      }
+      return yield _super.open.call(this, options);
+    });
+  }
+  readRecordBatch(index) {
+    return __awaiter(this, void 0, void 0, function* () {
+      var _a9;
+      if (this.closed) {
+        return null;
+      }
+      if (!this._footer) {
+        yield this.open();
+      }
+      const block = (_a9 = this._footer) === null || _a9 === void 0 ? void 0 : _a9.getRecordBatch(index);
+      if (block && (yield this._handle.seek(block.offset))) {
+        const message = yield this._reader.readMessage(MessageHeader.RecordBatch);
+        if (message === null || message === void 0 ? void 0 : message.isRecordBatch()) {
+          const header = message.header();
+          const buffer = yield this._reader.readMessageBody(message.bodyLength);
+          const recordBatch = this._loadRecordBatch(header, buffer);
+          return recordBatch;
+        }
+      }
+      return null;
+    });
+  }
+  _readDictionaryBatch(index) {
+    return __awaiter(this, void 0, void 0, function* () {
+      var _a9;
+      const block = (_a9 = this._footer) === null || _a9 === void 0 ? void 0 : _a9.getDictionaryBatch(index);
+      if (block && (yield this._handle.seek(block.offset))) {
+        const message = yield this._reader.readMessage(MessageHeader.DictionaryBatch);
+        if (message === null || message === void 0 ? void 0 : message.isDictionaryBatch()) {
+          const header = message.header();
+          const buffer = yield this._reader.readMessageBody(message.bodyLength);
+          const vector = this._loadDictionaryBatch(header, buffer);
+          this.dictionaries.set(header.id, vector);
+        }
+      }
+    });
+  }
+  _readFooter() {
+    return __awaiter(this, void 0, void 0, function* () {
+      const { _handle } = this;
+      _handle._pending && (yield _handle._pending);
+      const offset = _handle.size - magicAndPadding;
+      const length = yield _handle.readInt32(offset);
+      const buffer = yield _handle.readAt(offset - length, length);
+      return Footer_.decode(buffer);
+    });
+  }
+  _readNextMessageAndValidate(type) {
+    return __awaiter(this, void 0, void 0, function* () {
+      if (!this._footer) {
+        yield this.open();
+      }
+      if (this._footer && this._recordBatchIndex < this.numRecordBatches) {
+        const block = this._footer.getRecordBatch(this._recordBatchIndex);
+        if (block && (yield this._handle.seek(block.offset))) {
+          return yield this._reader.readMessage(type);
+        }
+      }
+      return null;
+    });
+  }
+};
+var RecordBatchJSONReaderImpl = class extends RecordBatchStreamReaderImpl {
+  constructor(source, dictionaries) {
+    super(source, dictionaries);
+  }
+  _loadVectors(header, body, types4) {
+    return new JSONVectorLoader(body, header.nodes, header.buffers, this.dictionaries, this.schema.metadataVersion).visitMany(types4);
+  }
+};
+function shouldAutoDestroy(self2, options) {
+  return options && typeof options["autoDestroy"] === "boolean" ? options["autoDestroy"] : self2["autoDestroy"];
+}
+function* readAllSync(source) {
+  const reader = RecordBatchReader.from(source);
+  try {
+    if (!reader.open({ autoDestroy: false }).closed) {
+      do {
+        yield reader;
+      } while (!reader.reset().open().closed);
+    }
+  } finally {
+    reader.cancel();
+  }
+}
+function readAllAsync(source) {
+  return __asyncGenerator2(this, arguments, function* readAllAsync_1() {
+    const reader = yield __await2(RecordBatchReader.from(source));
+    try {
+      if (!(yield __await2(reader.open({ autoDestroy: false }))).closed) {
+        do {
+          yield yield __await2(reader);
+        } while (!(yield __await2(reader.reset().open())).closed);
+      }
+    } finally {
+      yield __await2(reader.cancel());
+    }
+  });
+}
+function fromArrowJSON(source) {
+  return new RecordBatchStreamReader(new RecordBatchJSONReaderImpl(source));
+}
+function fromByteStream(source) {
+  const bytes = source.peek(magicLength + 7 & ~7);
+  return bytes && bytes.byteLength >= 4 ? !checkForMagicArrowString(bytes) ? new RecordBatchStreamReader(new RecordBatchStreamReaderImpl(source)) : new RecordBatchFileReader(new RecordBatchFileReaderImpl(source.read())) : new RecordBatchStreamReader(new RecordBatchStreamReaderImpl((function* () {
+  })()));
+}
+function fromAsyncByteStream(source) {
+  return __awaiter(this, void 0, void 0, function* () {
+    const bytes = yield source.peek(magicLength + 7 & ~7);
+    return bytes && bytes.byteLength >= 4 ? !checkForMagicArrowString(bytes) ? new AsyncRecordBatchStreamReader(new AsyncRecordBatchStreamReaderImpl(source)) : new RecordBatchFileReader(new RecordBatchFileReaderImpl(yield source.read())) : new AsyncRecordBatchStreamReader(new AsyncRecordBatchStreamReaderImpl((function() {
+      return __asyncGenerator2(this, arguments, function* () {
+      });
+    })()));
+  });
+}
+function fromFileHandle(source) {
+  return __awaiter(this, void 0, void 0, function* () {
+    const { size } = yield source.stat();
+    const file = new AsyncRandomAccessFile(source, size);
+    if (size >= magicX2AndPadding && checkForMagicArrowString(yield file.readAt(0, magicLength + 7 & ~7))) {
+      return new AsyncRecordBatchFileReader(new AsyncRecordBatchFileReaderImpl(file));
+    }
+    return new AsyncRecordBatchStreamReader(new AsyncRecordBatchStreamReaderImpl(file));
+  });
+}
+
+// node_modules/apache-arrow/visitor/vectorassembler.mjs
+var VectorAssembler = class _VectorAssembler extends Visitor {
+  /** @nocollapse */
+  static assemble(...args) {
+    const unwrap = (nodes) => nodes.flatMap((node) => Array.isArray(node) ? unwrap(node) : node instanceof RecordBatch2 ? node.data.children : node.data);
+    const assembler = new _VectorAssembler();
+    assembler.visitMany(unwrap(args));
+    return assembler;
+  }
+  constructor() {
+    super();
+    this._byteLength = 0;
+    this._nodes = [];
+    this._buffers = [];
+    this._bufferRegions = [];
+  }
+  visit(data) {
+    if (data instanceof Vector) {
+      this.visitMany(data.data);
+      return this;
+    }
+    const { type } = data;
+    if (!DataType.isDictionary(type)) {
+      const { length } = data;
+      if (length > 2147483647) {
+        throw new RangeError("Cannot write arrays larger than 2^31 - 1 in length");
+      }
+      if (DataType.isUnion(type)) {
+        this.nodes.push(new FieldNode2(length, 0));
+      } else {
+        const { nullCount } = data;
+        if (!DataType.isNull(type)) {
+          addBuffer.call(this, nullCount <= 0 ? new Uint8Array(0) : truncateBitmap(data.offset, length, data.nullBitmap));
+        }
+        this.nodes.push(new FieldNode2(length, nullCount));
+      }
+    }
+    return super.visit(data);
+  }
+  visitNull(_null) {
+    return this;
+  }
+  visitDictionary(data) {
+    return this.visit(data.clone(data.type.indices));
+  }
+  get nodes() {
+    return this._nodes;
+  }
+  get buffers() {
+    return this._buffers;
+  }
+  get byteLength() {
+    return this._byteLength;
+  }
+  get bufferRegions() {
+    return this._bufferRegions;
+  }
+};
+function addBuffer(values) {
+  const byteLength = values.byteLength + 7 & ~7;
+  this.buffers.push(values);
+  this.bufferRegions.push(new BufferRegion(this._byteLength, byteLength));
+  this._byteLength += byteLength;
+  return this;
+}
+function assembleUnion(data) {
+  var _a9;
+  const { type, length, typeIds, valueOffsets } = data;
+  addBuffer.call(this, typeIds);
+  if (type.mode === UnionMode.Sparse) {
+    return assembleNestedVector.call(this, data);
+  } else if (type.mode === UnionMode.Dense) {
+    if (data.offset <= 0) {
+      addBuffer.call(this, valueOffsets);
+      return assembleNestedVector.call(this, data);
+    } else {
+      const shiftedOffsets = new Int32Array(length);
+      const childOffsets = /* @__PURE__ */ Object.create(null);
+      const childLengths = /* @__PURE__ */ Object.create(null);
+      for (let typeId, shift, index = -1; ++index < length; ) {
+        if ((typeId = typeIds[index]) === void 0) {
+          continue;
+        }
+        if ((shift = childOffsets[typeId]) === void 0) {
+          shift = childOffsets[typeId] = valueOffsets[index];
+        }
+        shiftedOffsets[index] = valueOffsets[index] - shift;
+        childLengths[typeId] = ((_a9 = childLengths[typeId]) !== null && _a9 !== void 0 ? _a9 : 0) + 1;
+      }
+      addBuffer.call(this, shiftedOffsets);
+      this.visitMany(data.children.map((child, childIndex) => {
+        const typeId = type.typeIds[childIndex];
+        const childOffset = childOffsets[typeId];
+        const childLength = childLengths[typeId];
+        return child.slice(childOffset, Math.min(length, childLength));
+      }));
+    }
+  }
+  return this;
+}
+function assembleBoolVector(data) {
+  let values;
+  if (data.nullCount >= data.length) {
+    return addBuffer.call(this, new Uint8Array(0));
+  } else if ((values = data.values) instanceof Uint8Array) {
+    return addBuffer.call(this, truncateBitmap(data.offset, data.length, values));
+  }
+  return addBuffer.call(this, packBools(data.values));
+}
+function assembleFlatVector(data) {
+  return addBuffer.call(this, data.values.subarray(0, data.length * data.stride));
+}
+function assembleFlatListVector(data) {
+  const { length, values, valueOffsets } = data;
+  const begin = bigIntToNumber(valueOffsets[0]);
+  const end = bigIntToNumber(valueOffsets[length]);
+  const byteLength = Math.min(end - begin, values.byteLength - begin);
+  addBuffer.call(this, rebaseValueOffsets(-begin, length + 1, valueOffsets));
+  addBuffer.call(this, values.subarray(begin, begin + byteLength));
+  return this;
+}
+function assembleListVector(data) {
+  const { length, valueOffsets } = data;
+  if (valueOffsets) {
+    const { [0]: begin, [length]: end } = valueOffsets;
+    addBuffer.call(this, rebaseValueOffsets(-begin, length + 1, valueOffsets));
+    return this.visit(data.children[0].slice(begin, end - begin));
+  }
+  return this.visit(data.children[0]);
+}
+function assembleNestedVector(data) {
+  return this.visitMany(data.type.children.map((_, i2) => data.children[i2]).filter(Boolean))[0];
+}
+VectorAssembler.prototype.visitBool = assembleBoolVector;
+VectorAssembler.prototype.visitInt = assembleFlatVector;
+VectorAssembler.prototype.visitFloat = assembleFlatVector;
+VectorAssembler.prototype.visitUtf8 = assembleFlatListVector;
+VectorAssembler.prototype.visitLargeUtf8 = assembleFlatListVector;
+VectorAssembler.prototype.visitBinary = assembleFlatListVector;
+VectorAssembler.prototype.visitLargeBinary = assembleFlatListVector;
+VectorAssembler.prototype.visitFixedSizeBinary = assembleFlatVector;
+VectorAssembler.prototype.visitDate = assembleFlatVector;
+VectorAssembler.prototype.visitTimestamp = assembleFlatVector;
+VectorAssembler.prototype.visitTime = assembleFlatVector;
+VectorAssembler.prototype.visitDecimal = assembleFlatVector;
+VectorAssembler.prototype.visitList = assembleListVector;
+VectorAssembler.prototype.visitStruct = assembleNestedVector;
+VectorAssembler.prototype.visitUnion = assembleUnion;
+VectorAssembler.prototype.visitInterval = assembleFlatVector;
+VectorAssembler.prototype.visitDuration = assembleFlatVector;
+VectorAssembler.prototype.visitFixedSizeList = assembleListVector;
+VectorAssembler.prototype.visitMap = assembleListVector;
+
+// node_modules/apache-arrow/ipc/writer.mjs
+var RecordBatchWriter = class extends ReadableInterop {
+  /** @nocollapse */
+  // @ts-ignore
+  static throughNode(options) {
+    throw new Error(`"throughNode" not available in this environment`);
+  }
+  /** @nocollapse */
+  static throughDOM(writableStrategy, readableStrategy) {
+    throw new Error(`"throughDOM" not available in this environment`);
+  }
+  constructor(options) {
+    super();
+    this._position = 0;
+    this._started = false;
+    this._sink = new AsyncByteQueue();
+    this._schema = null;
+    this._dictionaryBlocks = [];
+    this._recordBatchBlocks = [];
+    this._seenDictionaries = /* @__PURE__ */ new Map();
+    this._dictionaryDeltaOffsets = /* @__PURE__ */ new Map();
+    isObject(options) || (options = { autoDestroy: true, writeLegacyIpcFormat: false });
+    this._autoDestroy = typeof options.autoDestroy === "boolean" ? options.autoDestroy : true;
+    this._writeLegacyIpcFormat = typeof options.writeLegacyIpcFormat === "boolean" ? options.writeLegacyIpcFormat : false;
+  }
+  toString(sync = false) {
+    return this._sink.toString(sync);
+  }
+  toUint8Array(sync = false) {
+    return this._sink.toUint8Array(sync);
+  }
+  writeAll(input) {
+    if (isPromise(input)) {
+      return input.then((x2) => this.writeAll(x2));
+    } else if (isAsyncIterable3(input)) {
+      return writeAllAsync(this, input);
+    }
+    return writeAll(this, input);
+  }
+  get closed() {
+    return this._sink.closed;
+  }
+  [Symbol.asyncIterator]() {
+    return this._sink[Symbol.asyncIterator]();
+  }
+  toDOMStream(options) {
+    return this._sink.toDOMStream(options);
+  }
+  toNodeStream(options) {
+    return this._sink.toNodeStream(options);
+  }
+  close() {
+    return this.reset()._sink.close();
+  }
+  abort(reason) {
+    return this.reset()._sink.abort(reason);
+  }
+  finish() {
+    this._autoDestroy ? this.close() : this.reset(this._sink, this._schema);
+    return this;
+  }
+  reset(sink = this._sink, schema = null) {
+    if (sink === this._sink || sink instanceof AsyncByteQueue) {
+      this._sink = sink;
+    } else {
+      this._sink = new AsyncByteQueue();
+      if (sink && isWritableDOMStream(sink)) {
+        this.toDOMStream({ type: "bytes" }).pipeTo(sink);
+      } else if (sink && isWritableNodeStream(sink)) {
+        this.toNodeStream({ objectMode: false }).pipe(sink);
+      }
+    }
+    if (this._started && this._schema) {
+      this._writeFooter(this._schema);
+    }
+    this._started = false;
+    this._dictionaryBlocks = [];
+    this._recordBatchBlocks = [];
+    this._seenDictionaries = /* @__PURE__ */ new Map();
+    this._dictionaryDeltaOffsets = /* @__PURE__ */ new Map();
+    if (!schema || !compareSchemas(schema, this._schema)) {
+      if (schema == null) {
+        this._position = 0;
+        this._schema = null;
+      } else {
+        this._started = true;
+        this._schema = schema;
+        this._writeSchema(schema);
+      }
+    }
+    return this;
+  }
+  write(payload) {
+    let schema = null;
+    if (!this._sink) {
+      throw new Error(`RecordBatchWriter is closed`);
+    } else if (payload == null) {
+      return this.finish() && void 0;
+    } else if (payload instanceof Table && !(schema = payload.schema)) {
+      return this.finish() && void 0;
+    } else if (payload instanceof RecordBatch2 && !(schema = payload.schema)) {
+      return this.finish() && void 0;
+    }
+    if (schema && !compareSchemas(schema, this._schema)) {
+      if (this._started && this._autoDestroy) {
+        return this.close();
+      }
+      this.reset(this._sink, schema);
+    }
+    if (payload instanceof RecordBatch2) {
+      if (!(payload instanceof _InternalEmptyPlaceholderRecordBatch)) {
+        this._writeRecordBatch(payload);
+      }
+    } else if (payload instanceof Table) {
+      this.writeAll(payload.batches);
+    } else if (isIterable(payload)) {
+      this.writeAll(payload);
+    }
+  }
+  _writeMessage(message, alignment = 8) {
+    const a = alignment - 1;
+    const buffer = Message2.encode(message);
+    const flatbufferSize = buffer.byteLength;
+    const prefixSize = !this._writeLegacyIpcFormat ? 8 : 4;
+    const alignedSize = flatbufferSize + prefixSize + a & ~a;
+    const nPaddingBytes = alignedSize - flatbufferSize - prefixSize;
+    if (message.headerType === MessageHeader.RecordBatch) {
+      this._recordBatchBlocks.push(new FileBlock(alignedSize, message.bodyLength, this._position));
+    } else if (message.headerType === MessageHeader.DictionaryBatch) {
+      this._dictionaryBlocks.push(new FileBlock(alignedSize, message.bodyLength, this._position));
+    }
+    if (!this._writeLegacyIpcFormat) {
+      this._write(Int32Array.of(-1));
+    }
+    this._write(Int32Array.of(alignedSize - prefixSize));
+    if (flatbufferSize > 0) {
+      this._write(buffer);
+    }
+    return this._writePadding(nPaddingBytes);
+  }
+  _write(chunk) {
+    if (this._started) {
+      const buffer = toUint8Array(chunk);
+      if (buffer && buffer.byteLength > 0) {
+        this._sink.write(buffer);
+        this._position += buffer.byteLength;
+      }
+    }
+    return this;
+  }
+  _writeSchema(schema) {
+    return this._writeMessage(Message2.from(schema));
+  }
+  // @ts-ignore
+  _writeFooter(schema) {
+    return this._writeLegacyIpcFormat ? this._write(Int32Array.of(0)) : this._write(Int32Array.of(-1, 0));
+  }
+  _writeMagic() {
+    return this._write(MAGIC);
+  }
+  _writePadding(nBytes) {
+    return nBytes > 0 ? this._write(new Uint8Array(nBytes)) : this;
+  }
+  _writeRecordBatch(batch) {
+    const { byteLength, nodes, bufferRegions, buffers } = VectorAssembler.assemble(batch);
+    const recordBatch = new RecordBatch3(batch.numRows, nodes, bufferRegions);
+    const message = Message2.from(recordBatch, byteLength);
+    return this._writeDictionaries(batch)._writeMessage(message)._writeBodyBuffers(buffers);
+  }
+  _writeDictionaryBatch(dictionary, id, isDelta = false) {
+    const { byteLength, nodes, bufferRegions, buffers } = VectorAssembler.assemble(new Vector([dictionary]));
+    const recordBatch = new RecordBatch3(dictionary.length, nodes, bufferRegions);
+    const dictionaryBatch = new DictionaryBatch2(recordBatch, id, isDelta);
+    const message = Message2.from(dictionaryBatch, byteLength);
+    return this._writeMessage(message)._writeBodyBuffers(buffers);
+  }
+  _writeBodyBuffers(buffers) {
+    let buffer;
+    let size, padding;
+    for (let i2 = -1, n = buffers.length; ++i2 < n; ) {
+      if ((buffer = buffers[i2]) && (size = buffer.byteLength) > 0) {
+        this._write(buffer);
+        if ((padding = (size + 7 & ~7) - size) > 0) {
+          this._writePadding(padding);
+        }
+      }
+    }
+    return this;
+  }
+  _writeDictionaries(batch) {
+    var _a9, _b2;
+    for (const [id, dictionary] of batch.dictionaries) {
+      const chunks = (_a9 = dictionary === null || dictionary === void 0 ? void 0 : dictionary.data) !== null && _a9 !== void 0 ? _a9 : [];
+      const prevDictionary = this._seenDictionaries.get(id);
+      const offset = (_b2 = this._dictionaryDeltaOffsets.get(id)) !== null && _b2 !== void 0 ? _b2 : 0;
+      if (!prevDictionary || prevDictionary.data[0] !== chunks[0]) {
+        for (const [index, chunk] of chunks.entries())
+          this._writeDictionaryBatch(chunk, id, index > 0);
+      } else if (offset < chunks.length) {
+        for (const chunk of chunks.slice(offset))
+          this._writeDictionaryBatch(chunk, id, true);
+      }
+      this._seenDictionaries.set(id, dictionary);
+      this._dictionaryDeltaOffsets.set(id, chunks.length);
+    }
+    return this;
+  }
+};
+var RecordBatchStreamWriter = class _RecordBatchStreamWriter extends RecordBatchWriter {
+  /** @nocollapse */
+  static writeAll(input, options) {
+    const writer = new _RecordBatchStreamWriter(options);
+    if (isPromise(input)) {
+      return input.then((x2) => writer.writeAll(x2));
+    } else if (isAsyncIterable3(input)) {
+      return writeAllAsync(writer, input);
+    }
+    return writeAll(writer, input);
+  }
+};
+var RecordBatchFileWriter = class _RecordBatchFileWriter extends RecordBatchWriter {
+  /** @nocollapse */
+  static writeAll(input) {
+    const writer = new _RecordBatchFileWriter();
+    if (isPromise(input)) {
+      return input.then((x2) => writer.writeAll(x2));
+    } else if (isAsyncIterable3(input)) {
+      return writeAllAsync(writer, input);
+    }
+    return writeAll(writer, input);
+  }
+  constructor() {
+    super();
+    this._autoDestroy = true;
+  }
+  // @ts-ignore
+  _writeSchema(schema) {
+    return this._writeMagic()._writePadding(2);
+  }
+  _writeDictionaryBatch(dictionary, id, isDelta = false) {
+    if (!isDelta && this._seenDictionaries.has(id)) {
+      throw new Error("The Arrow File format does not support replacement dictionaries. ");
+    }
+    return super._writeDictionaryBatch(dictionary, id, isDelta);
+  }
+  _writeFooter(schema) {
+    const buffer = Footer_.encode(new Footer_(schema, MetadataVersion.V5, this._recordBatchBlocks, this._dictionaryBlocks));
+    return super._writeFooter(schema)._write(buffer)._write(Int32Array.of(buffer.byteLength))._writeMagic();
+  }
+};
+function writeAll(writer, input) {
+  let chunks = input;
+  if (input instanceof Table) {
+    chunks = input.batches;
+    writer.reset(void 0, input.schema);
+  }
+  for (const batch of chunks) {
+    writer.write(batch);
+  }
+  return writer.finish();
+}
+function writeAllAsync(writer, batches) {
+  return __awaiter(this, void 0, void 0, function* () {
+    var _a9, batches_1, batches_1_1;
+    var _b2, e_1, _c2, _d2;
+    try {
+      for (_a9 = true, batches_1 = __asyncValues2(batches); batches_1_1 = yield batches_1.next(), _b2 = batches_1_1.done, !_b2; _a9 = true) {
+        _d2 = batches_1_1.value;
+        _a9 = false;
+        const batch = _d2;
+        writer.write(batch);
+      }
+    } catch (e_1_1) {
+      e_1 = { error: e_1_1 };
+    } finally {
+      try {
+        if (!_a9 && !_b2 && (_c2 = batches_1.return)) yield _c2.call(batches_1);
+      } finally {
+        if (e_1) throw e_1.error;
+      }
+    }
+    return writer.finish();
+  });
+}
+
+// node_modules/apache-arrow/io/whatwg/iterable.mjs
+function toDOMStream(source, options) {
+  if (isAsyncIterable3(source)) {
+    return asyncIterableAsReadableDOMStream(source, options);
+  }
+  if (isIterable(source)) {
+    return iterableAsReadableDOMStream(source, options);
+  }
+  throw new Error(`toDOMStream() must be called with an Iterable or AsyncIterable`);
+}
+function iterableAsReadableDOMStream(source, options) {
+  let it = null;
+  const bm = (options === null || options === void 0 ? void 0 : options.type) === "bytes" || false;
+  const hwm = (options === null || options === void 0 ? void 0 : options.highWaterMark) || Math.pow(2, 24);
+  return new ReadableStream(Object.assign(Object.assign({}, options), {
+    start(controller) {
+      next(controller, it || (it = source[Symbol.iterator]()));
+    },
+    pull(controller) {
+      it ? next(controller, it) : controller.close();
+    },
+    cancel() {
+      ((it === null || it === void 0 ? void 0 : it.return) && it.return() || true) && (it = null);
+    }
+  }), Object.assign({ highWaterMark: bm ? hwm : void 0 }, options));
+  function next(controller, it2) {
+    let buf;
+    let r2 = null;
+    let size = controller.desiredSize || null;
+    while (!(r2 = it2.next(bm ? size : null)).done) {
+      if (ArrayBuffer.isView(r2.value) && (buf = toUint8Array(r2.value))) {
+        size != null && bm && (size = size - buf.byteLength + 1);
+        r2.value = buf;
+      }
+      controller.enqueue(r2.value);
+      if (size != null && --size <= 0) {
+        return;
+      }
+    }
+    controller.close();
+  }
+}
+function asyncIterableAsReadableDOMStream(source, options) {
+  let it = null;
+  const bm = (options === null || options === void 0 ? void 0 : options.type) === "bytes" || false;
+  const hwm = (options === null || options === void 0 ? void 0 : options.highWaterMark) || Math.pow(2, 24);
+  return new ReadableStream(Object.assign(Object.assign({}, options), {
+    start(controller) {
+      return __awaiter(this, void 0, void 0, function* () {
+        yield next(controller, it || (it = source[Symbol.asyncIterator]()));
+      });
+    },
+    pull(controller) {
+      return __awaiter(this, void 0, void 0, function* () {
+        it ? yield next(controller, it) : controller.close();
+      });
+    },
+    cancel() {
+      return __awaiter(this, void 0, void 0, function* () {
+        ((it === null || it === void 0 ? void 0 : it.return) && (yield it.return()) || true) && (it = null);
+      });
+    }
+  }), Object.assign({ highWaterMark: bm ? hwm : void 0 }, options));
+  function next(controller, it2) {
+    return __awaiter(this, void 0, void 0, function* () {
+      let buf;
+      let r2 = null;
+      let size = controller.desiredSize || null;
+      while (!(r2 = yield it2.next(bm ? size : null)).done) {
+        if (ArrayBuffer.isView(r2.value) && (buf = toUint8Array(r2.value))) {
+          size != null && bm && (size = size - buf.byteLength + 1);
+          r2.value = buf;
+        }
+        controller.enqueue(r2.value);
+        if (size != null && --size <= 0) {
+          return;
+        }
+      }
+      controller.close();
+    });
+  }
+}
+
+// node_modules/apache-arrow/io/whatwg/builder.mjs
+function builderThroughDOMStream(options) {
+  return new BuilderTransform(options);
+}
+var BuilderTransform = class {
+  constructor(options) {
+    this._numChunks = 0;
+    this._finished = false;
+    this._bufferedSize = 0;
+    const { ["readableStrategy"]: readableStrategy, ["writableStrategy"]: writableStrategy, ["queueingStrategy"]: queueingStrategy = "count" } = options, builderOptions = __rest2(options, ["readableStrategy", "writableStrategy", "queueingStrategy"]);
+    this._controller = null;
+    this._builder = makeBuilder(builderOptions);
+    this._getSize = queueingStrategy !== "bytes" ? chunkLength : chunkByteLength;
+    const { ["highWaterMark"]: readableHighWaterMark = queueingStrategy === "bytes" ? Math.pow(2, 14) : 1e3 } = Object.assign({}, readableStrategy);
+    const { ["highWaterMark"]: writableHighWaterMark = queueingStrategy === "bytes" ? Math.pow(2, 14) : 1e3 } = Object.assign({}, writableStrategy);
+    this["readable"] = new ReadableStream({
+      ["cancel"]: () => {
+        this._builder.clear();
+      },
+      ["pull"]: (c) => {
+        this._maybeFlush(this._builder, this._controller = c);
+      },
+      ["start"]: (c) => {
+        this._maybeFlush(this._builder, this._controller = c);
+      }
+    }, {
+      "highWaterMark": readableHighWaterMark,
+      "size": queueingStrategy !== "bytes" ? chunkLength : chunkByteLength
+    });
+    this["writable"] = new WritableStream({
+      ["abort"]: () => {
+        this._builder.clear();
+      },
+      ["write"]: () => {
+        this._maybeFlush(this._builder, this._controller);
+      },
+      ["close"]: () => {
+        this._maybeFlush(this._builder.finish(), this._controller);
+      }
+    }, {
+      "highWaterMark": writableHighWaterMark,
+      "size": (value) => this._writeValueAndReturnChunkSize(value)
+    });
+  }
+  _writeValueAndReturnChunkSize(value) {
+    const bufferedSize = this._bufferedSize;
+    this._bufferedSize = this._getSize(this._builder.append(value));
+    return this._bufferedSize - bufferedSize;
+  }
+  _maybeFlush(builder, controller) {
+    if (controller == null) {
+      return;
+    }
+    if (this._bufferedSize >= controller.desiredSize) {
+      ++this._numChunks && this._enqueue(controller, builder.toVector());
+    }
+    if (builder.finished) {
+      if (builder.length > 0 || this._numChunks === 0) {
+        ++this._numChunks && this._enqueue(controller, builder.toVector());
+      }
+      if (!this._finished && (this._finished = true)) {
+        this._enqueue(controller, null);
+      }
+    }
+  }
+  _enqueue(controller, chunk) {
+    this._bufferedSize = 0;
+    this._controller = null;
+    chunk == null ? controller.close() : controller.enqueue(chunk);
+  }
+};
+var chunkLength = (chunk) => {
+  var _a9;
+  return (_a9 = chunk === null || chunk === void 0 ? void 0 : chunk.length) !== null && _a9 !== void 0 ? _a9 : 0;
+};
+var chunkByteLength = (chunk) => {
+  var _a9;
+  return (_a9 = chunk === null || chunk === void 0 ? void 0 : chunk.byteLength) !== null && _a9 !== void 0 ? _a9 : 0;
+};
+
+// node_modules/apache-arrow/io/whatwg/reader.mjs
+function recordBatchReaderThroughDOMStream(writableStrategy, readableStrategy) {
+  const queue = new AsyncByteQueue();
+  let reader = null;
+  const readable = new ReadableStream({
+    cancel() {
+      return __awaiter(this, void 0, void 0, function* () {
+        yield queue.close();
+      });
+    },
+    start(controller) {
+      return __awaiter(this, void 0, void 0, function* () {
+        yield next(controller, reader || (reader = yield open2()));
+      });
+    },
+    pull(controller) {
+      return __awaiter(this, void 0, void 0, function* () {
+        reader ? yield next(controller, reader) : controller.close();
+      });
+    }
+  });
+  return { writable: new WritableStream(queue, Object.assign({ "highWaterMark": Math.pow(2, 14) }, writableStrategy)), readable };
+  function open2() {
+    return __awaiter(this, void 0, void 0, function* () {
+      return yield (yield RecordBatchReader.from(queue)).open(readableStrategy);
+    });
+  }
+  function next(controller, reader2) {
+    return __awaiter(this, void 0, void 0, function* () {
+      let size = controller.desiredSize;
+      let r2 = null;
+      while (!(r2 = yield reader2.next()).done) {
+        controller.enqueue(r2.value);
+        if (size != null && --size <= 0) {
+          return;
+        }
+      }
+      controller.close();
+    });
+  }
+}
+
+// node_modules/apache-arrow/io/whatwg/writer.mjs
+function recordBatchWriterThroughDOMStream(writableStrategy, readableStrategy) {
+  const writer = new this(writableStrategy);
+  const reader = new AsyncByteStream(writer);
+  const readable = new ReadableStream({
+    // type: 'bytes',
+    cancel() {
+      return __awaiter(this, void 0, void 0, function* () {
+        yield reader.cancel();
+      });
+    },
+    pull(controller) {
+      return __awaiter(this, void 0, void 0, function* () {
+        yield next(controller);
+      });
+    },
+    start(controller) {
+      return __awaiter(this, void 0, void 0, function* () {
+        yield next(controller);
+      });
+    }
+  }, Object.assign({ "highWaterMark": Math.pow(2, 14) }, readableStrategy));
+  return { writable: new WritableStream(writer, writableStrategy), readable };
+  function next(controller) {
+    return __awaiter(this, void 0, void 0, function* () {
+      let buf = null;
+      let size = controller.desiredSize;
+      while (buf = yield reader.read(size || null)) {
+        controller.enqueue(buf);
+        if (size != null && (size -= buf.byteLength) <= 0) {
+          return;
+        }
+      }
+      controller.close();
+    });
+  }
+}
+
+// node_modules/apache-arrow/Arrow.mjs
+var util = Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign({}, bn_exports), int_exports), bit_exports), math_exports), buffer_exports), vector_exports), pretty_exports), {
+  compareSchemas,
+  compareFields,
+  compareTypes
+});
+
+// node_modules/apache-arrow/Arrow.dom.mjs
+adapters_default.toDOMStream = toDOMStream;
+Builder["throughDOM"] = builderThroughDOMStream;
+RecordBatchReader["throughDOM"] = recordBatchReaderThroughDOMStream;
+RecordBatchFileReader["throughDOM"] = recordBatchReaderThroughDOMStream;
+RecordBatchStreamReader["throughDOM"] = recordBatchReaderThroughDOMStream;
+RecordBatchWriter["throughDOM"] = recordBatchWriterThroughDOMStream;
+RecordBatchFileWriter["throughDOM"] = recordBatchWriterThroughDOMStream;
+RecordBatchStreamWriter["throughDOM"] = recordBatchWriterThroughDOMStream;
+
+// src/indexing/vectorDB.ts
+function getSchema(dimension) {
+  return new Schema2([
+    new Field2("vector", new FixedSizeList2(dimension, new Field2("item", new Float32()))),
+    new Field2("text", new Utf82()),
+    new Field2("filePath", new Utf82()),
+    new Field2("startLine", new Int32()),
+    new Field2("endLine", new Int32()),
+    new Field2("type", new Utf82()),
+    new Field2("symbol", new Utf82()),
+    new Field2("parentSymbol", new Utf82())
+  ]);
+}
 var VectorDB = class _VectorDB {
-  constructor(dimension, connection, table) {
+  constructor(dimension, connection, table, reranker) {
     this.dimension = dimension;
     this.connection = connection;
     this.table = table;
+    this.reranker = reranker;
   }
   dimension;
   connection;
   table;
+  reranker;
   static async create(context, dimension = void 0) {
     if (!context.storageUri) throw new Error("Cannot initialze VectorDB: No active workspace");
     const dbUri = vscode4.Uri.joinPath(context.storageUri, "vector-db");
@@ -50986,33 +62818,23 @@ var VectorDB = class _VectorDB {
     const connection = await lancedb.connect(dbPath);
     const tableName = "workspace_chunks";
     const tableNames = await connection.tableNames();
-    console.log(`Current tables in workspace: ${tableNames}`);
     const tableExists = tableNames.includes(tableName);
     let table;
+    const reranker = await lancedb.rerankers.RRFReranker.create();
     if (dimension === void 0 && tableExists) {
       table = await connection.openTable(tableName);
       const rows = await table.query().limit(1).toArray();
       if (rows.length > 0) {
         const existingDimension = rows[0].vector.length;
-        return new _VectorDB(existingDimension, connection, table);
+        return new _VectorDB(existingDimension, connection, table, reranker);
       }
     }
     if (dimension === void 0) throw new Error("Workspace has not been indexed yet.");
     if (tableExists) await connection.dropTable(tableName);
-    const initialSchema = [
-      {
-        vector: Array(dimension).fill(0),
-        text: "__INITIAL_SCHEMA__",
-        filePath: "system",
-        startLine: 0,
-        endLine: 0,
-        type: "system",
-        symbol: "",
-        parentSymbol: ""
-      }
-    ];
-    table = await connection.createTable(tableName, initialSchema);
-    return new _VectorDB(dimension, connection, table);
+    const schema = getSchema(dimension);
+    table = await connection.createTable(tableName, [], { schema });
+    await table.createIndex("text", { config: lancedb.Index.fts() });
+    return new _VectorDB(dimension, connection, table, reranker);
   }
   async insertRows(rows) {
     if (rows.length === 0) return;
@@ -51021,31 +62843,25 @@ var VectorDB = class _VectorDB {
   async deleteByFilePath(filePath) {
     await this.table.delete(`filePath = '${filePath.replace(/'/g, "''")}'`);
   }
-  async vectorSearch(queryVector, limit2) {
-    const results = await this.table.search(queryVector).limit(limit2).toArray();
-    return results.filter((row) => row.filePath !== "system");
+  async hybridSearch(queryText, queryVector, limit2) {
+    const results = await this.table.query().fullTextSearch(queryText).nearestTo(queryVector).rerank(this.reranker).limit(limit2).toArray();
+    return results;
   }
   async clearAll() {
-    const initialSchema = [
-      {
-        vector: Array(this.dimension).fill(0),
-        text: "__INITIAL_SCHEMA__",
-        filePath: "system",
-        startLine: 0,
-        endLine: 0,
-        type: "system",
-        symbol: "",
-        parentSymbol: ""
-      }
-    ];
+    const schema = getSchema(this.dimension);
     this.table = await this.connection.createTable(
       "workspace_chunks",
-      initialSchema,
-      { mode: "overwrite" }
+      [],
+      { schema, mode: "overwrite" }
     );
+    await this.table.createIndex("text", { config: lancedb.Index.fts() });
   }
   async getRowsByFilePath(filePath) {
     return await this.table.query().where(`filePath = '${filePath.replace(/'/g, "''")}'`).toArray();
+  }
+  async getFilePathByImport(importName) {
+    const result = await this.table.query().fullTextSearch(importName).select(["filePath"]).toArray();
+    return result;
   }
 };
 
@@ -51083,6 +62899,9 @@ var javascriptChunkConfig = {
     "enum_declaration",
     "variable_declarator"
   ]),
+  importNodeTypes: /* @__PURE__ */ new Set([
+    "import_statement"
+  ]),
   getSymbolName(node) {
     return node.childForFieldName("name")?.text;
   },
@@ -51108,6 +62927,9 @@ var cChunkConfig = {
     "struct_specifier",
     "enum_specifier",
     "union_specifier"
+  ]),
+  importNodeTypes: /* @__PURE__ */ new Set([
+    "preproc_include"
   ]),
   getSymbolName(node) {
     const name = node.childForFieldName("name")?.text;
@@ -51135,6 +62957,9 @@ var cppChunkConfig = {
     "struct_specifier",
     "enum_specifier",
     "namespace_definition"
+  ]),
+  importNodeTypes: /* @__PURE__ */ new Set([
+    "preproc_include"
   ]),
   getSymbolName(node) {
     const name = node.childForFieldName("name")?.text;
@@ -51169,6 +62994,9 @@ var csharpChunkConfig = {
     "constructor_declaration",
     "property_declaration"
   ]),
+  importNodeTypes: /* @__PURE__ */ new Set([
+    "using_directive"
+  ]),
   getSymbolName(node) {
     return node.childForFieldName("name")?.text;
   },
@@ -51195,6 +63023,9 @@ var javaChunkConfig = {
     "method_declaration",
     "constructor_declaration"
   ]),
+  importNodeTypes: /* @__PURE__ */ new Set([
+    "import_declaration"
+  ]),
   getSymbolName(node) {
     return node.childForFieldName("name")?.text;
   },
@@ -51204,10 +63035,10 @@ var javaChunkConfig = {
 };
 
 // src/indexing/languages/python.ts
-function findNamedChild(node, types3) {
+function findNamedChild(node, types4) {
   for (let i2 = 0; i2 < node.namedChildCount; i2++) {
     const child = node.namedChild(i2);
-    if (child && types3.includes(child.type)) return child;
+    if (child && types4.includes(child.type)) return child;
   }
   return void 0;
 }
@@ -51221,6 +63052,10 @@ var pythonChunkConfig = {
     "function_definition",
     "class_definition",
     "decorated_definition"
+  ]),
+  importNodeTypes: /* @__PURE__ */ new Set([
+    "import_statement",
+    "import_from_statement"
   ]),
   getSymbolName(node) {
     const directName = node.childForFieldName("name")?.text;
@@ -51259,6 +63094,9 @@ var rustChunkConfig = {
     "mod_item",
     "type_item"
   ]),
+  importNodeTypes: /* @__PURE__ */ new Set([
+    "use_declaration"
+  ]),
   getSymbolName(node) {
     return node.childForFieldName("name")?.text;
   },
@@ -51278,6 +63116,9 @@ var goChunkConfig = {
     "function_declaration",
     "method_declaration",
     "type_declaration"
+  ]),
+  importNodeTypes: /* @__PURE__ */ new Set([
+    "import_declaration"
   ]),
   getSymbolName(node) {
     return node.childForFieldName("name")?.text;
@@ -51313,6 +63154,14 @@ var languageConfigs = /* @__PURE__ */ new Map([
     ...cppChunkConfig,
     wasmFile: "tree-sitter-cpp.wasm"
   }],
+  [".hpp", {
+    ...cppChunkConfig,
+    wasmFile: "tree-sitter-cpp.wasm"
+  }],
+  [".h", {
+    ...cppChunkConfig,
+    wasmFile: "tree-sitter-cpp.wasm"
+  }],
   [".cs", {
     ...csharpChunkConfig,
     wasmFile: "tree-sitter-c_sharp.wasm"
@@ -51335,7 +63184,7 @@ var languageConfigs = /* @__PURE__ */ new Map([
   }]
 ]);
 var supportedExtensions = [...languageConfigs.keys()];
-var includePattern = `**/*.{${supportedExtensions.map((ext) => ext.slice(1)).join(",")}}`;
+var includePattern = `**/*.{${supportedExtensions.map((ext2) => ext2.slice(1)).join(",")}}`;
 var globalExcludePatterns = [
   "**/.git/**",
   "**/.svn/**",
@@ -51387,6 +63236,7 @@ var CodeChunker = class _CodeChunker {
   MAX_CHUNK_LINES = 120;
   MIN_CHUNK_LINES = 3;
   languageCache = /* @__PURE__ */ new Map();
+  neighbourhoodCache = /* @__PURE__ */ new Map();
   static async create(extensionUri) {
     const wasmUri = vscode5.Uri.joinPath(extensionUri, "wasm");
     await import_web_tree_sitter.Parser.init({
@@ -51396,16 +63246,6 @@ var CodeChunker = class _CodeChunker {
     });
     const parser = new import_web_tree_sitter.Parser();
     return new _CodeChunker(parser, wasmUri);
-  }
-  async getLanguageForExtension(extension2) {
-    const cachedLanguage = this.languageCache.get(extension2);
-    if (cachedLanguage) return cachedLanguage;
-    const config = languageConfigs.get(extension2);
-    if (!config) throw Error(`Unsupported extension: ${extension2}`);
-    const wasmPath = vscode5.Uri.joinPath(this.wasmUri, "languages", config.wasmFile).fsPath;
-    const language = await import_web_tree_sitter.Language.load(wasmPath);
-    this.languageCache.set(extension2, language);
-    return language;
   }
   async chunkWorkspace() {
     const uris = await vscode5.workspace.findFiles(
@@ -51433,43 +63273,63 @@ var CodeChunker = class _CodeChunker {
     const config = languageConfigs.get(extension2);
     if (!config) throw Error(`Unsupported extension: ${extension2}`);
     if (!content.trim()) return [];
+    const siblings = await this.getSiblingFiles(uri);
     this.parser.setLanguage(language);
     const tree = this.parser.parse(content);
     const lines = content.split(/\r?\n/);
     if (!tree) return [];
-    return this.chunkRootNode(tree.rootNode, config, lines, filePath);
+    return this.chunkRootNode(tree.rootNode, config, lines, filePath, siblings);
+  }
+  clearNeighbourHoodCache() {
+    this.neighbourhoodCache.clear();
+  }
+  async getLanguageForExtension(extension2) {
+    const cachedLanguage = this.languageCache.get(extension2);
+    if (cachedLanguage) return cachedLanguage;
+    const config = languageConfigs.get(extension2);
+    if (!config) throw Error(`Unsupported extension: ${extension2}`);
+    const wasmPath = vscode5.Uri.joinPath(this.wasmUri, "languages", config.wasmFile).fsPath;
+    const language = await import_web_tree_sitter.Language.load(wasmPath);
+    this.languageCache.set(extension2, language);
+    return language;
   }
   getExtension(filePath) {
-    const match = filePath.match(/\.[^.]+$/);
-    return match ? match[0] : "";
+    const match2 = filePath.match(/\.[^.]+$/);
+    return match2 ? match2[0] : "";
   }
-  chunkRootNode(rootNode, config, lines, filePath) {
+  chunkRootNode(rootNode, config, lines, filePath, siblings) {
     const chunks = [];
-    this.collectChunks(rootNode, config, lines, filePath, chunks, void 0);
+    const fileImports = this.extractImports(rootNode, config, lines);
+    this.collectChunks(rootNode, config, lines, filePath, fileImports, siblings, chunks, void 0);
     return chunks;
   }
-  collectChunks(node, config, lines, filePath, chunks, parentSymbol) {
+  collectChunks(node, config, lines, filePath, fileImports, siblings, chunks, parentSymbol) {
     const symbol = config.getSymbolName(node);
     const nextParent = symbol ?? parentSymbol;
     const isChunkable = config.isChunkableNode ? config.isChunkableNode(node) : config.chunkableNodeTypes.has(node.type);
-    if (isChunkable && this.shouldEmitWholeNode(node)) {
-      chunks.push(this.nodeToChunk(node, config, lines, filePath, parentSymbol));
-      return;
+    if (isChunkable) {
+      if (this.shouldEmitWholeNode(node)) chunks.push(this.nodeToChunk(node, config, lines, filePath, fileImports, siblings, parentSymbol));
+      else {
+        const windowedChunks = this.SlidingChunkNode(node, config, lines, filePath, fileImports, siblings, parentSymbol);
+        chunks.push(...windowedChunks);
+      }
     }
     if (config.shouldRecurseInto && !config.shouldRecurseInto(node)) return;
     for (let i2 = 0; i2 < node.namedChildCount; i2++) {
       const child = node.namedChild(i2);
       if (!child) continue;
-      this.collectChunks(child, config, lines, filePath, chunks, nextParent);
+      this.collectChunks(child, config, lines, filePath, fileImports, siblings, chunks, nextParent);
     }
   }
-  nodeToChunk(node, config, lines, filePath, parentSymbol) {
+  nodeToChunk(node, config, lines, filePath, fileImports, siblings, parentSymbol) {
     const startLine = node.startPosition.row;
     const endLine = node.endPosition.row;
     const sourceText = lines.slice(startLine, endLine + 1).join("\n");
     const symbol = config.getSymbolName(node);
     const header = [
       `File: ${filePath}`,
+      siblings ? siblings.trim() : void 0,
+      fileImports ? fileImports.trim() : void 0,
       parentSymbol ? `Parent: ${parentSymbol}` : void 0,
       symbol ? `Symbol: ${symbol}` : void 0,
       `Type: ${node.type}`
@@ -51492,19 +63352,1976 @@ ${sourceText}`;
     const lineCount = node.endPosition.row - node.startPosition.row + 1;
     return lineCount <= this.MAX_CHUNK_LINES;
   }
+  SlidingChunkNode(node, config, lines, filePath, fileImports, siblings, parentSymbol) {
+    const chunks = [];
+    const startLine = node.startPosition.row;
+    const endLine = node.endPosition.row;
+    const nodeLines = lines.slice(startLine, endLine + 1);
+    const symbol = config.getSymbolName(node);
+    const CHUNK_SIZE = 100;
+    const OVERLAP = 20;
+    for (let i2 = 0; i2 < nodeLines.length; i2 += CHUNK_SIZE - OVERLAP) {
+      const chunkLines = nodeLines.slice(i2, i2 + CHUNK_SIZE);
+      if (chunkLines.length < this.MIN_CHUNK_LINES) break;
+      const header = [
+        `File: ${filePath}`,
+        siblings ? siblings.trim() : void 0,
+        fileImports ? fileImports.trim() : void 0,
+        parentSymbol ? `Parent: ${parentSymbol}` : void 0,
+        symbol ? `Symbol: ${symbol} (Part ${Math.floor(i2 / (CHUNK_SIZE - OVERLAP)) + 1})` : void 0,
+        `Type: ${node.type}`
+      ].filter(Boolean).join("\n");
+      const text = `${header}
+
+${chunkLines.join("\n")}`;
+      chunks.push({
+        text,
+        filePath,
+        startLine: startLine + i2 + 1,
+        endLine: startLine + i2 + chunkLines.length,
+        type: node.type,
+        symbol: symbol ?? "",
+        parentSymbol: parentSymbol ?? ""
+      });
+    }
+    return chunks;
+  }
+  extractImports(rootNode, config, lines) {
+    if (!config.importNodeTypes) return "";
+    const imports = [];
+    for (let i2 = 0; i2 < rootNode.namedChildCount; i2++) {
+      const child = rootNode.namedChild(i2);
+      if (child && config.importNodeTypes.has(child.type)) {
+        const start = child.startPosition.row;
+        const end = child.endPosition.row;
+        imports.push(lines.slice(start, end + 1).join("\n"));
+      }
+    }
+    if (imports.length === 0) return "[IMPORTS]\n[/IMPORTS]";
+    return `[IMPORTS]
+${imports.join("\n")}
+[/IMPORTS]`;
+  }
+  async getSiblingFiles(uri) {
+    try {
+      const parentUri = vscode5.Uri.joinPath(uri, "..");
+      const parentPath = parentUri.fsPath;
+      const currentFileName = uri.path.split("/").pop();
+      let allFiles;
+      if (this.neighbourhoodCache.has(parentPath)) {
+        allFiles = this.neighbourhoodCache.get(parentPath);
+      } else {
+        const entries = await vscode5.workspace.fs.readDirectory(parentUri);
+        allFiles = entries.filter(([name, type]) => type === vscode5.FileType.File).map(([name]) => name);
+        this.neighbourhoodCache.set(parentPath, allFiles);
+      }
+      const siblings = allFiles.filter((name) => name !== currentFileName).map((name) => `  - ${name}`);
+      if (siblings.length === 0) return "[SIBLINGS]\n[/SIBLINGS]";
+      return `[SIBLINGS]
+${siblings.join("\n")}
+[/SIBLINGS]`;
+    } catch (e2) {
+      console.warn(`Failed to read siblings for ${uri.fsPath}`, e2);
+      return "[IMPORTS]\n[/IMPORTS]";
+      ;
+    }
+  }
+  async getFileContext(uri) {
+    const filePath = vscode5.workspace.asRelativePath(uri);
+    const extension2 = this.getExtension(filePath);
+    const language = await this.getLanguageForExtension(extension2);
+    const content = await getFileContent(uri);
+    const config = languageConfigs.get(extension2);
+    if (!config) throw Error(`Unsupported extension: ${extension2}`);
+    if (!content.trim()) return { imports: "", siblings: "" };
+    const siblings = await this.getSiblingFiles(uri);
+    this.parser.setLanguage(language);
+    const tree = this.parser.parse(content);
+    const lines = content.split(/\r?\n/);
+    if (!tree) return { imports: "", siblings: "" };
+    const imports = this.extractImports(tree.rootNode, config, lines);
+    return { imports, siblings };
+  }
 };
 
 // src/indexing/indexer.ts
+var vscode6 = __toESM(require("vscode"));
 var crypto2 = __toESM(require("crypto"));
+
+// src/utils/apiUtils.ts
+async function getModelsFromProvider(provider, apiKey) {
+  const providerInstance = ChatFactory.create(provider, apiKey);
+  return await providerInstance.getModels();
+}
+async function getEmbeddingModelsFromProvider(provider, apiKey) {
+  const providerInstance = EmbedFactory.create(provider, apiKey);
+  return await providerInstance.getModels();
+}
+async function getAPIKey(context, provider) {
+  const secretKey = `${provider.toUpperCase()}_API_KEY`;
+  return await context.secrets.get(secretKey);
+}
+async function getEmbeddingAPIKey(context, provider) {
+  const secretKey = `${provider.toUpperCase()}_EMBEDDING_API_KEY`;
+  return await context.secrets.get(secretKey);
+}
+
+// node_modules/brace-expansion/node_modules/balanced-match/dist/esm/index.js
+var balanced = (a, b, str2) => {
+  const ma = a instanceof RegExp ? maybeMatch(a, str2) : a;
+  const mb = b instanceof RegExp ? maybeMatch(b, str2) : b;
+  const r2 = ma !== null && mb != null && range(ma, mb, str2);
+  return r2 && {
+    start: r2[0],
+    end: r2[1],
+    pre: str2.slice(0, r2[0]),
+    body: str2.slice(r2[0] + ma.length, r2[1]),
+    post: str2.slice(r2[1] + mb.length)
+  };
+};
+var maybeMatch = (reg, str2) => {
+  const m2 = str2.match(reg);
+  return m2 ? m2[0] : null;
+};
+var range = (a, b, str2) => {
+  let begs, beg, left, right = void 0, result;
+  let ai = str2.indexOf(a);
+  let bi = str2.indexOf(b, ai + 1);
+  let i2 = ai;
+  if (ai >= 0 && bi > 0) {
+    if (a === b) {
+      return [ai, bi];
+    }
+    begs = [];
+    left = str2.length;
+    while (i2 >= 0 && !result) {
+      if (i2 === ai) {
+        begs.push(i2);
+        ai = str2.indexOf(a, i2 + 1);
+      } else if (begs.length === 1) {
+        const r2 = begs.pop();
+        if (r2 !== void 0)
+          result = [r2, bi];
+      } else {
+        beg = begs.pop();
+        if (beg !== void 0 && beg < left) {
+          left = beg;
+          right = bi;
+        }
+        bi = str2.indexOf(b, i2 + 1);
+      }
+      i2 = ai < bi && ai >= 0 ? ai : bi;
+    }
+    if (begs.length && right !== void 0) {
+      result = [left, right];
+    }
+  }
+  return result;
+};
+
+// node_modules/brace-expansion/dist/esm/index.js
+var escSlash = "\0SLASH" + Math.random() + "\0";
+var escOpen = "\0OPEN" + Math.random() + "\0";
+var escClose = "\0CLOSE" + Math.random() + "\0";
+var escComma = "\0COMMA" + Math.random() + "\0";
+var escPeriod = "\0PERIOD" + Math.random() + "\0";
+var escSlashPattern = new RegExp(escSlash, "g");
+var escOpenPattern = new RegExp(escOpen, "g");
+var escClosePattern = new RegExp(escClose, "g");
+var escCommaPattern = new RegExp(escComma, "g");
+var escPeriodPattern = new RegExp(escPeriod, "g");
+var slashPattern = /\\\\/g;
+var openPattern = /\\{/g;
+var closePattern = /\\}/g;
+var commaPattern = /\\,/g;
+var periodPattern = /\\\./g;
+var EXPANSION_MAX = 1e5;
+function numeric(str2) {
+  return !isNaN(str2) ? parseInt(str2, 10) : str2.charCodeAt(0);
+}
+function escapeBraces(str2) {
+  return str2.replace(slashPattern, escSlash).replace(openPattern, escOpen).replace(closePattern, escClose).replace(commaPattern, escComma).replace(periodPattern, escPeriod);
+}
+function unescapeBraces(str2) {
+  return str2.replace(escSlashPattern, "\\").replace(escOpenPattern, "{").replace(escClosePattern, "}").replace(escCommaPattern, ",").replace(escPeriodPattern, ".");
+}
+function parseCommaParts(str2) {
+  if (!str2) {
+    return [""];
+  }
+  const parts = [];
+  const m2 = balanced("{", "}", str2);
+  if (!m2) {
+    return str2.split(",");
+  }
+  const { pre, body, post } = m2;
+  const p = pre.split(",");
+  p[p.length - 1] += "{" + body + "}";
+  const postParts = parseCommaParts(post);
+  if (post.length) {
+    ;
+    p[p.length - 1] += postParts.shift();
+    p.push.apply(p, postParts);
+  }
+  parts.push.apply(parts, p);
+  return parts;
+}
+function expand(str2, options = {}) {
+  if (!str2) {
+    return [];
+  }
+  const { max = EXPANSION_MAX } = options;
+  if (str2.slice(0, 2) === "{}") {
+    str2 = "\\{\\}" + str2.slice(2);
+  }
+  return expand_(escapeBraces(str2), max, true).map(unescapeBraces);
+}
+function embrace(str2) {
+  return "{" + str2 + "}";
+}
+function isPadded(el) {
+  return /^-?0\d/.test(el);
+}
+function lte(i2, y) {
+  return i2 <= y;
+}
+function gte(i2, y) {
+  return i2 >= y;
+}
+function expand_(str2, max, isTop) {
+  const expansions = [];
+  const m2 = balanced("{", "}", str2);
+  if (!m2)
+    return [str2];
+  const pre = m2.pre;
+  const post = m2.post.length ? expand_(m2.post, max, false) : [""];
+  if (/\$$/.test(m2.pre)) {
+    for (let k = 0; k < post.length && k < max; k++) {
+      const expansion = pre + "{" + m2.body + "}" + post[k];
+      expansions.push(expansion);
+    }
+  } else {
+    const isNumericSequence = /^-?\d+\.\.-?\d+(?:\.\.-?\d+)?$/.test(m2.body);
+    const isAlphaSequence = /^[a-zA-Z]\.\.[a-zA-Z](?:\.\.-?\d+)?$/.test(m2.body);
+    const isSequence = isNumericSequence || isAlphaSequence;
+    const isOptions = m2.body.indexOf(",") >= 0;
+    if (!isSequence && !isOptions) {
+      if (m2.post.match(/,(?!,).*\}/)) {
+        str2 = m2.pre + "{" + m2.body + escClose + m2.post;
+        return expand_(str2, max, true);
+      }
+      return [str2];
+    }
+    let n;
+    if (isSequence) {
+      n = m2.body.split(/\.\./);
+    } else {
+      n = parseCommaParts(m2.body);
+      if (n.length === 1 && n[0] !== void 0) {
+        n = expand_(n[0], max, false).map(embrace);
+        if (n.length === 1) {
+          return post.map((p) => m2.pre + n[0] + p);
+        }
+      }
+    }
+    let N;
+    if (isSequence && n[0] !== void 0 && n[1] !== void 0) {
+      const x2 = numeric(n[0]);
+      const y = numeric(n[1]);
+      const width = Math.max(n[0].length, n[1].length);
+      let incr = n.length === 3 && n[2] !== void 0 ? Math.max(Math.abs(numeric(n[2])), 1) : 1;
+      let test = lte;
+      const reverse = y < x2;
+      if (reverse) {
+        incr *= -1;
+        test = gte;
+      }
+      const pad = n.some(isPadded);
+      N = [];
+      for (let i2 = x2; test(i2, y) && N.length < max; i2 += incr) {
+        let c;
+        if (isAlphaSequence) {
+          c = String.fromCharCode(i2);
+          if (c === "\\") {
+            c = "";
+          }
+        } else {
+          c = String(i2);
+          if (pad) {
+            const need = width - c.length;
+            if (need > 0) {
+              const z = new Array(need + 1).join("0");
+              if (i2 < 0) {
+                c = "-" + z + c.slice(1);
+              } else {
+                c = z + c;
+              }
+            }
+          }
+        }
+        N.push(c);
+      }
+    } else {
+      N = [];
+      for (let j = 0; j < n.length; j++) {
+        N.push.apply(N, expand_(n[j], max, false));
+      }
+    }
+    for (let j = 0; j < N.length; j++) {
+      for (let k = 0; k < post.length && expansions.length < max; k++) {
+        const expansion = pre + N[j] + post[k];
+        if (!isTop || isSequence || expansion) {
+          expansions.push(expansion);
+        }
+      }
+    }
+  }
+  return expansions;
+}
+
+// node_modules/minimatch/dist/esm/assert-valid-pattern.js
+var MAX_PATTERN_LENGTH = 1024 * 64;
+var assertValidPattern = (pattern) => {
+  if (typeof pattern !== "string") {
+    throw new TypeError("invalid pattern");
+  }
+  if (pattern.length > MAX_PATTERN_LENGTH) {
+    throw new TypeError("pattern is too long");
+  }
+};
+
+// node_modules/minimatch/dist/esm/brace-expressions.js
+var posixClasses = {
+  "[:alnum:]": ["\\p{L}\\p{Nl}\\p{Nd}", true],
+  "[:alpha:]": ["\\p{L}\\p{Nl}", true],
+  "[:ascii:]": ["\\x00-\\x7f", false],
+  "[:blank:]": ["\\p{Zs}\\t", true],
+  "[:cntrl:]": ["\\p{Cc}", true],
+  "[:digit:]": ["\\p{Nd}", true],
+  "[:graph:]": ["\\p{Z}\\p{C}", true, true],
+  "[:lower:]": ["\\p{Ll}", true],
+  "[:print:]": ["\\p{C}", true],
+  "[:punct:]": ["\\p{P}", true],
+  "[:space:]": ["\\p{Z}\\t\\r\\n\\v\\f", true],
+  "[:upper:]": ["\\p{Lu}", true],
+  "[:word:]": ["\\p{L}\\p{Nl}\\p{Nd}\\p{Pc}", true],
+  "[:xdigit:]": ["A-Fa-f0-9", false]
+};
+var braceEscape = (s2) => s2.replace(/[[\]\\-]/g, "\\$&");
+var regexpEscape = (s2) => s2.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
+var rangesToString = (ranges) => ranges.join("");
+var parseClass = (glob, position) => {
+  const pos = position;
+  if (glob.charAt(pos) !== "[") {
+    throw new Error("not in a brace expression");
+  }
+  const ranges = [];
+  const negs = [];
+  let i2 = pos + 1;
+  let sawStart = false;
+  let uflag = false;
+  let escaping = false;
+  let negate = false;
+  let endPos = pos;
+  let rangeStart = "";
+  WHILE: while (i2 < glob.length) {
+    const c = glob.charAt(i2);
+    if ((c === "!" || c === "^") && i2 === pos + 1) {
+      negate = true;
+      i2++;
+      continue;
+    }
+    if (c === "]" && sawStart && !escaping) {
+      endPos = i2 + 1;
+      break;
+    }
+    sawStart = true;
+    if (c === "\\") {
+      if (!escaping) {
+        escaping = true;
+        i2++;
+        continue;
+      }
+    }
+    if (c === "[" && !escaping) {
+      for (const [cls, [unip, u, neg]] of Object.entries(posixClasses)) {
+        if (glob.startsWith(cls, i2)) {
+          if (rangeStart) {
+            return ["$.", false, glob.length - pos, true];
+          }
+          i2 += cls.length;
+          if (neg)
+            negs.push(unip);
+          else
+            ranges.push(unip);
+          uflag = uflag || u;
+          continue WHILE;
+        }
+      }
+    }
+    escaping = false;
+    if (rangeStart) {
+      if (c > rangeStart) {
+        ranges.push(braceEscape(rangeStart) + "-" + braceEscape(c));
+      } else if (c === rangeStart) {
+        ranges.push(braceEscape(c));
+      }
+      rangeStart = "";
+      i2++;
+      continue;
+    }
+    if (glob.startsWith("-]", i2 + 1)) {
+      ranges.push(braceEscape(c + "-"));
+      i2 += 2;
+      continue;
+    }
+    if (glob.startsWith("-", i2 + 1)) {
+      rangeStart = c;
+      i2 += 2;
+      continue;
+    }
+    ranges.push(braceEscape(c));
+    i2++;
+  }
+  if (endPos < i2) {
+    return ["", false, 0, false];
+  }
+  if (!ranges.length && !negs.length) {
+    return ["$.", false, glob.length - pos, true];
+  }
+  if (negs.length === 0 && ranges.length === 1 && /^\\?.$/.test(ranges[0]) && !negate) {
+    const r2 = ranges[0].length === 2 ? ranges[0].slice(-1) : ranges[0];
+    return [regexpEscape(r2), false, endPos - pos, false];
+  }
+  const sranges = "[" + (negate ? "^" : "") + rangesToString(ranges) + "]";
+  const snegs = "[" + (negate ? "" : "^") + rangesToString(negs) + "]";
+  const comb = ranges.length && negs.length ? "(" + sranges + "|" + snegs + ")" : ranges.length ? sranges : snegs;
+  return [comb, uflag, endPos - pos, true];
+};
+
+// node_modules/minimatch/dist/esm/unescape.js
+var unescape2 = (s2, { windowsPathsNoEscape = false, magicalBraces = true } = {}) => {
+  if (magicalBraces) {
+    return windowsPathsNoEscape ? s2.replace(/\[([^/\\])\]/g, "$1") : s2.replace(/((?!\\).|^)\[([^/\\])\]/g, "$1$2").replace(/\\([^/])/g, "$1");
+  }
+  return windowsPathsNoEscape ? s2.replace(/\[([^/\\{}])\]/g, "$1") : s2.replace(/((?!\\).|^)\[([^/\\{}])\]/g, "$1$2").replace(/\\([^/{}])/g, "$1");
+};
+
+// node_modules/minimatch/dist/esm/ast.js
+var _a8;
+var types3 = /* @__PURE__ */ new Set(["!", "?", "+", "*", "@"]);
+var isExtglobType = (c) => types3.has(c);
+var isExtglobAST = (c) => isExtglobType(c.type);
+var adoptionMap = /* @__PURE__ */ new Map([
+  ["!", ["@"]],
+  ["?", ["?", "@"]],
+  ["@", ["@"]],
+  ["*", ["*", "+", "?", "@"]],
+  ["+", ["+", "@"]]
+]);
+var adoptionWithSpaceMap = /* @__PURE__ */ new Map([
+  ["!", ["?"]],
+  ["@", ["?"]],
+  ["+", ["?", "*"]]
+]);
+var adoptionAnyMap = /* @__PURE__ */ new Map([
+  ["!", ["?", "@"]],
+  ["?", ["?", "@"]],
+  ["@", ["?", "@"]],
+  ["*", ["*", "+", "?", "@"]],
+  ["+", ["+", "@", "?", "*"]]
+]);
+var usurpMap = /* @__PURE__ */ new Map([
+  ["!", /* @__PURE__ */ new Map([["!", "@"]])],
+  [
+    "?",
+    /* @__PURE__ */ new Map([
+      ["*", "*"],
+      ["+", "*"]
+    ])
+  ],
+  [
+    "@",
+    /* @__PURE__ */ new Map([
+      ["!", "!"],
+      ["?", "?"],
+      ["@", "@"],
+      ["*", "*"],
+      ["+", "+"]
+    ])
+  ],
+  [
+    "+",
+    /* @__PURE__ */ new Map([
+      ["?", "*"],
+      ["*", "*"]
+    ])
+  ]
+]);
+var startNoTraversal = "(?!(?:^|/)\\.\\.?(?:$|/))";
+var startNoDot = "(?!\\.)";
+var addPatternStart = /* @__PURE__ */ new Set(["[", "."]);
+var justDots = /* @__PURE__ */ new Set(["..", "."]);
+var reSpecials = new Set("().*{}+?[]^$\\!");
+var regExpEscape = (s2) => s2.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
+var qmark = "[^/]";
+var star = qmark + "*?";
+var starNoEmpty = qmark + "+?";
+var ID = 0;
+var AST = class {
+  type;
+  #root;
+  #hasMagic;
+  #uflag = false;
+  #parts = [];
+  #parent;
+  #parentIndex;
+  #negs;
+  #filledNegs = false;
+  #options;
+  #toString;
+  // set to true if it's an extglob with no children
+  // (which really means one child of '')
+  #emptyExt = false;
+  id = ++ID;
+  get depth() {
+    return (this.#parent?.depth ?? -1) + 1;
+  }
+  [/* @__PURE__ */ Symbol.for("nodejs.util.inspect.custom")]() {
+    return {
+      "@@type": "AST",
+      id: this.id,
+      type: this.type,
+      root: this.#root.id,
+      parent: this.#parent?.id,
+      depth: this.depth,
+      partsLength: this.#parts.length,
+      parts: this.#parts
+    };
+  }
+  constructor(type, parent, options = {}) {
+    this.type = type;
+    if (type)
+      this.#hasMagic = true;
+    this.#parent = parent;
+    this.#root = this.#parent ? this.#parent.#root : this;
+    this.#options = this.#root === this ? options : this.#root.#options;
+    this.#negs = this.#root === this ? [] : this.#root.#negs;
+    if (type === "!" && !this.#root.#filledNegs)
+      this.#negs.push(this);
+    this.#parentIndex = this.#parent ? this.#parent.#parts.length : 0;
+  }
+  get hasMagic() {
+    if (this.#hasMagic !== void 0)
+      return this.#hasMagic;
+    for (const p of this.#parts) {
+      if (typeof p === "string")
+        continue;
+      if (p.type || p.hasMagic)
+        return this.#hasMagic = true;
+    }
+    return this.#hasMagic;
+  }
+  // reconstructs the pattern
+  toString() {
+    return this.#toString !== void 0 ? this.#toString : !this.type ? this.#toString = this.#parts.map((p) => String(p)).join("") : this.#toString = this.type + "(" + this.#parts.map((p) => String(p)).join("|") + ")";
+  }
+  #fillNegs() {
+    if (this !== this.#root)
+      throw new Error("should only call on root");
+    if (this.#filledNegs)
+      return this;
+    this.toString();
+    this.#filledNegs = true;
+    let n;
+    while (n = this.#negs.pop()) {
+      if (n.type !== "!")
+        continue;
+      let p = n;
+      let pp = p.#parent;
+      while (pp) {
+        for (let i2 = p.#parentIndex + 1; !pp.type && i2 < pp.#parts.length; i2++) {
+          for (const part of n.#parts) {
+            if (typeof part === "string") {
+              throw new Error("string part in extglob AST??");
+            }
+            part.copyIn(pp.#parts[i2]);
+          }
+        }
+        p = pp;
+        pp = p.#parent;
+      }
+    }
+    return this;
+  }
+  push(...parts) {
+    for (const p of parts) {
+      if (p === "")
+        continue;
+      if (typeof p !== "string" && !(p instanceof _a8 && p.#parent === this)) {
+        throw new Error("invalid part: " + p);
+      }
+      this.#parts.push(p);
+    }
+  }
+  toJSON() {
+    const ret = this.type === null ? this.#parts.slice().map((p) => typeof p === "string" ? p : p.toJSON()) : [this.type, ...this.#parts.map((p) => p.toJSON())];
+    if (this.isStart() && !this.type)
+      ret.unshift([]);
+    if (this.isEnd() && (this === this.#root || this.#root.#filledNegs && this.#parent?.type === "!")) {
+      ret.push({});
+    }
+    return ret;
+  }
+  isStart() {
+    if (this.#root === this)
+      return true;
+    if (!this.#parent?.isStart())
+      return false;
+    if (this.#parentIndex === 0)
+      return true;
+    const p = this.#parent;
+    for (let i2 = 0; i2 < this.#parentIndex; i2++) {
+      const pp = p.#parts[i2];
+      if (!(pp instanceof _a8 && pp.type === "!")) {
+        return false;
+      }
+    }
+    return true;
+  }
+  isEnd() {
+    if (this.#root === this)
+      return true;
+    if (this.#parent?.type === "!")
+      return true;
+    if (!this.#parent?.isEnd())
+      return false;
+    if (!this.type)
+      return this.#parent?.isEnd();
+    const pl = this.#parent ? this.#parent.#parts.length : 0;
+    return this.#parentIndex === pl - 1;
+  }
+  copyIn(part) {
+    if (typeof part === "string")
+      this.push(part);
+    else
+      this.push(part.clone(this));
+  }
+  clone(parent) {
+    const c = new _a8(this.type, parent);
+    for (const p of this.#parts) {
+      c.copyIn(p);
+    }
+    return c;
+  }
+  static #parseAST(str2, ast, pos, opt, extDepth) {
+    const maxDepth = opt.maxExtglobRecursion ?? 2;
+    let escaping = false;
+    let inBrace = false;
+    let braceStart = -1;
+    let braceNeg = false;
+    if (ast.type === null) {
+      let i3 = pos;
+      let acc2 = "";
+      while (i3 < str2.length) {
+        const c = str2.charAt(i3++);
+        if (escaping || c === "\\") {
+          escaping = !escaping;
+          acc2 += c;
+          continue;
+        }
+        if (inBrace) {
+          if (i3 === braceStart + 1) {
+            if (c === "^" || c === "!") {
+              braceNeg = true;
+            }
+          } else if (c === "]" && !(i3 === braceStart + 2 && braceNeg)) {
+            inBrace = false;
+          }
+          acc2 += c;
+          continue;
+        } else if (c === "[") {
+          inBrace = true;
+          braceStart = i3;
+          braceNeg = false;
+          acc2 += c;
+          continue;
+        }
+        const doRecurse = !opt.noext && isExtglobType(c) && str2.charAt(i3) === "(" && extDepth <= maxDepth;
+        if (doRecurse) {
+          ast.push(acc2);
+          acc2 = "";
+          const ext2 = new _a8(c, ast);
+          i3 = _a8.#parseAST(str2, ext2, i3, opt, extDepth + 1);
+          ast.push(ext2);
+          continue;
+        }
+        acc2 += c;
+      }
+      ast.push(acc2);
+      return i3;
+    }
+    let i2 = pos + 1;
+    let part = new _a8(null, ast);
+    const parts = [];
+    let acc = "";
+    while (i2 < str2.length) {
+      const c = str2.charAt(i2++);
+      if (escaping || c === "\\") {
+        escaping = !escaping;
+        acc += c;
+        continue;
+      }
+      if (inBrace) {
+        if (i2 === braceStart + 1) {
+          if (c === "^" || c === "!") {
+            braceNeg = true;
+          }
+        } else if (c === "]" && !(i2 === braceStart + 2 && braceNeg)) {
+          inBrace = false;
+        }
+        acc += c;
+        continue;
+      } else if (c === "[") {
+        inBrace = true;
+        braceStart = i2;
+        braceNeg = false;
+        acc += c;
+        continue;
+      }
+      const doRecurse = !opt.noext && isExtglobType(c) && str2.charAt(i2) === "(" && /* c8 ignore start - the maxDepth is sufficient here */
+      (extDepth <= maxDepth || ast && ast.#canAdoptType(c));
+      if (doRecurse) {
+        const depthAdd = ast && ast.#canAdoptType(c) ? 0 : 1;
+        part.push(acc);
+        acc = "";
+        const ext2 = new _a8(c, part);
+        part.push(ext2);
+        i2 = _a8.#parseAST(str2, ext2, i2, opt, extDepth + depthAdd);
+        continue;
+      }
+      if (c === "|") {
+        part.push(acc);
+        acc = "";
+        parts.push(part);
+        part = new _a8(null, ast);
+        continue;
+      }
+      if (c === ")") {
+        if (acc === "" && ast.#parts.length === 0) {
+          ast.#emptyExt = true;
+        }
+        part.push(acc);
+        acc = "";
+        ast.push(...parts, part);
+        return i2;
+      }
+      acc += c;
+    }
+    ast.type = null;
+    ast.#hasMagic = void 0;
+    ast.#parts = [str2.substring(pos - 1)];
+    return i2;
+  }
+  #canAdoptWithSpace(child) {
+    return this.#canAdopt(child, adoptionWithSpaceMap);
+  }
+  #canAdopt(child, map = adoptionMap) {
+    if (!child || typeof child !== "object" || child.type !== null || child.#parts.length !== 1 || this.type === null) {
+      return false;
+    }
+    const gc = child.#parts[0];
+    if (!gc || typeof gc !== "object" || gc.type === null) {
+      return false;
+    }
+    return this.#canAdoptType(gc.type, map);
+  }
+  #canAdoptType(c, map = adoptionAnyMap) {
+    return !!map.get(this.type)?.includes(c);
+  }
+  #adoptWithSpace(child, index) {
+    const gc = child.#parts[0];
+    const blank = new _a8(null, gc, this.options);
+    blank.#parts.push("");
+    gc.push(blank);
+    this.#adopt(child, index);
+  }
+  #adopt(child, index) {
+    const gc = child.#parts[0];
+    this.#parts.splice(index, 1, ...gc.#parts);
+    for (const p of gc.#parts) {
+      if (typeof p === "object")
+        p.#parent = this;
+    }
+    this.#toString = void 0;
+  }
+  #canUsurpType(c) {
+    const m2 = usurpMap.get(this.type);
+    return !!m2?.has(c);
+  }
+  #canUsurp(child) {
+    if (!child || typeof child !== "object" || child.type !== null || child.#parts.length !== 1 || this.type === null || this.#parts.length !== 1) {
+      return false;
+    }
+    const gc = child.#parts[0];
+    if (!gc || typeof gc !== "object" || gc.type === null) {
+      return false;
+    }
+    return this.#canUsurpType(gc.type);
+  }
+  #usurp(child) {
+    const m2 = usurpMap.get(this.type);
+    const gc = child.#parts[0];
+    const nt = m2?.get(gc.type);
+    if (!nt)
+      return false;
+    this.#parts = gc.#parts;
+    for (const p of this.#parts) {
+      if (typeof p === "object") {
+        p.#parent = this;
+      }
+    }
+    this.type = nt;
+    this.#toString = void 0;
+    this.#emptyExt = false;
+  }
+  static fromGlob(pattern, options = {}) {
+    const ast = new _a8(null, void 0, options);
+    _a8.#parseAST(pattern, ast, 0, options, 0);
+    return ast;
+  }
+  // returns the regular expression if there's magic, or the unescaped
+  // string if not.
+  toMMPattern() {
+    if (this !== this.#root)
+      return this.#root.toMMPattern();
+    const glob = this.toString();
+    const [re, body, hasMagic, uflag] = this.toRegExpSource();
+    const anyMagic = hasMagic || this.#hasMagic || this.#options.nocase && !this.#options.nocaseMagicOnly && glob.toUpperCase() !== glob.toLowerCase();
+    if (!anyMagic) {
+      return body;
+    }
+    const flags = (this.#options.nocase ? "i" : "") + (uflag ? "u" : "");
+    return Object.assign(new RegExp(`^${re}$`, flags), {
+      _src: re,
+      _glob: glob
+    });
+  }
+  get options() {
+    return this.#options;
+  }
+  // returns the string match, the regexp source, whether there's magic
+  // in the regexp (so a regular expression is required) and whether or
+  // not the uflag is needed for the regular expression (for posix classes)
+  // TODO: instead of injecting the start/end at this point, just return
+  // the BODY of the regexp, along with the start/end portions suitable
+  // for binding the start/end in either a joined full-path makeRe context
+  // (where we bind to (^|/), or a standalone matchPart context (where
+  // we bind to ^, and not /).  Otherwise slashes get duped!
+  //
+  // In part-matching mode, the start is:
+  // - if not isStart: nothing
+  // - if traversal possible, but not allowed: ^(?!\.\.?$)
+  // - if dots allowed or not possible: ^
+  // - if dots possible and not allowed: ^(?!\.)
+  // end is:
+  // - if not isEnd(): nothing
+  // - else: $
+  //
+  // In full-path matching mode, we put the slash at the START of the
+  // pattern, so start is:
+  // - if first pattern: same as part-matching mode
+  // - if not isStart(): nothing
+  // - if traversal possible, but not allowed: /(?!\.\.?(?:$|/))
+  // - if dots allowed or not possible: /
+  // - if dots possible and not allowed: /(?!\.)
+  // end is:
+  // - if last pattern, same as part-matching mode
+  // - else nothing
+  //
+  // Always put the (?:$|/) on negated tails, though, because that has to be
+  // there to bind the end of the negated pattern portion, and it's easier to
+  // just stick it in now rather than try to inject it later in the middle of
+  // the pattern.
+  //
+  // We can just always return the same end, and leave it up to the caller
+  // to know whether it's going to be used joined or in parts.
+  // And, if the start is adjusted slightly, can do the same there:
+  // - if not isStart: nothing
+  // - if traversal possible, but not allowed: (?:/|^)(?!\.\.?$)
+  // - if dots allowed or not possible: (?:/|^)
+  // - if dots possible and not allowed: (?:/|^)(?!\.)
+  //
+  // But it's better to have a simpler binding without a conditional, for
+  // performance, so probably better to return both start options.
+  //
+  // Then the caller just ignores the end if it's not the first pattern,
+  // and the start always gets applied.
+  //
+  // But that's always going to be $ if it's the ending pattern, or nothing,
+  // so the caller can just attach $ at the end of the pattern when building.
+  //
+  // So the todo is:
+  // - better detect what kind of start is needed
+  // - return both flavors of starting pattern
+  // - attach $ at the end of the pattern when creating the actual RegExp
+  //
+  // Ah, but wait, no, that all only applies to the root when the first pattern
+  // is not an extglob. If the first pattern IS an extglob, then we need all
+  // that dot prevention biz to live in the extglob portions, because eg
+  // +(*|.x*) can match .xy but not .yx.
+  //
+  // So, return the two flavors if it's #root and the first child is not an
+  // AST, otherwise leave it to the child AST to handle it, and there,
+  // use the (?:^|/) style of start binding.
+  //
+  // Even simplified further:
+  // - Since the start for a join is eg /(?!\.) and the start for a part
+  // is ^(?!\.), we can just prepend (?!\.) to the pattern (either root
+  // or start or whatever) and prepend ^ or / at the Regexp construction.
+  toRegExpSource(allowDot) {
+    const dot = allowDot ?? !!this.#options.dot;
+    if (this.#root === this) {
+      this.#flatten();
+      this.#fillNegs();
+    }
+    if (!isExtglobAST(this)) {
+      const noEmpty = this.isStart() && this.isEnd() && !this.#parts.some((s2) => typeof s2 !== "string");
+      const src = this.#parts.map((p) => {
+        const [re, _, hasMagic, uflag] = typeof p === "string" ? _a8.#parseGlob(p, this.#hasMagic, noEmpty) : p.toRegExpSource(allowDot);
+        this.#hasMagic = this.#hasMagic || hasMagic;
+        this.#uflag = this.#uflag || uflag;
+        return re;
+      }).join("");
+      let start2 = "";
+      if (this.isStart()) {
+        if (typeof this.#parts[0] === "string") {
+          const dotTravAllowed = this.#parts.length === 1 && justDots.has(this.#parts[0]);
+          if (!dotTravAllowed) {
+            const aps = addPatternStart;
+            const needNoTrav = (
+              // dots are allowed, and the pattern starts with [ or .
+              dot && aps.has(src.charAt(0)) || // the pattern starts with \., and then [ or .
+              src.startsWith("\\.") && aps.has(src.charAt(2)) || // the pattern starts with \.\., and then [ or .
+              src.startsWith("\\.\\.") && aps.has(src.charAt(4))
+            );
+            const needNoDot = !dot && !allowDot && aps.has(src.charAt(0));
+            start2 = needNoTrav ? startNoTraversal : needNoDot ? startNoDot : "";
+          }
+        }
+      }
+      let end = "";
+      if (this.isEnd() && this.#root.#filledNegs && this.#parent?.type === "!") {
+        end = "(?:$|\\/)";
+      }
+      const final2 = start2 + src + end;
+      return [
+        final2,
+        unescape2(src),
+        this.#hasMagic = !!this.#hasMagic,
+        this.#uflag
+      ];
+    }
+    const repeated = this.type === "*" || this.type === "+";
+    const start = this.type === "!" ? "(?:(?!(?:" : "(?:";
+    let body = this.#partsToRegExp(dot);
+    if (this.isStart() && this.isEnd() && !body && this.type !== "!") {
+      const s2 = this.toString();
+      const me = this;
+      me.#parts = [s2];
+      me.type = null;
+      me.#hasMagic = void 0;
+      return [s2, unescape2(this.toString()), false, false];
+    }
+    let bodyDotAllowed = !repeated || allowDot || dot || !startNoDot ? "" : this.#partsToRegExp(true);
+    if (bodyDotAllowed === body) {
+      bodyDotAllowed = "";
+    }
+    if (bodyDotAllowed) {
+      body = `(?:${body})(?:${bodyDotAllowed})*?`;
+    }
+    let final = "";
+    if (this.type === "!" && this.#emptyExt) {
+      final = (this.isStart() && !dot ? startNoDot : "") + starNoEmpty;
+    } else {
+      const close = this.type === "!" ? (
+        // !() must match something,but !(x) can match ''
+        "))" + (this.isStart() && !dot && !allowDot ? startNoDot : "") + star + ")"
+      ) : this.type === "@" ? ")" : this.type === "?" ? ")?" : this.type === "+" && bodyDotAllowed ? ")" : this.type === "*" && bodyDotAllowed ? `)?` : `)${this.type}`;
+      final = start + body + close;
+    }
+    return [
+      final,
+      unescape2(body),
+      this.#hasMagic = !!this.#hasMagic,
+      this.#uflag
+    ];
+  }
+  #flatten() {
+    if (!isExtglobAST(this)) {
+      for (const p of this.#parts) {
+        if (typeof p === "object") {
+          p.#flatten();
+        }
+      }
+    } else {
+      let iterations = 0;
+      let done = false;
+      do {
+        done = true;
+        for (let i2 = 0; i2 < this.#parts.length; i2++) {
+          const c = this.#parts[i2];
+          if (typeof c === "object") {
+            c.#flatten();
+            if (this.#canAdopt(c)) {
+              done = false;
+              this.#adopt(c, i2);
+            } else if (this.#canAdoptWithSpace(c)) {
+              done = false;
+              this.#adoptWithSpace(c, i2);
+            } else if (this.#canUsurp(c)) {
+              done = false;
+              this.#usurp(c);
+            }
+          }
+        }
+      } while (!done && ++iterations < 10);
+    }
+    this.#toString = void 0;
+  }
+  #partsToRegExp(dot) {
+    return this.#parts.map((p) => {
+      if (typeof p === "string") {
+        throw new Error("string type in extglob ast??");
+      }
+      const [re, _, _hasMagic, uflag] = p.toRegExpSource(dot);
+      this.#uflag = this.#uflag || uflag;
+      return re;
+    }).filter((p) => !(this.isStart() && this.isEnd()) || !!p).join("|");
+  }
+  static #parseGlob(glob, hasMagic, noEmpty = false) {
+    let escaping = false;
+    let re = "";
+    let uflag = false;
+    let inStar = false;
+    for (let i2 = 0; i2 < glob.length; i2++) {
+      const c = glob.charAt(i2);
+      if (escaping) {
+        escaping = false;
+        re += (reSpecials.has(c) ? "\\" : "") + c;
+        continue;
+      }
+      if (c === "*") {
+        if (inStar)
+          continue;
+        inStar = true;
+        re += noEmpty && /^[*]+$/.test(glob) ? starNoEmpty : star;
+        hasMagic = true;
+        continue;
+      } else {
+        inStar = false;
+      }
+      if (c === "\\") {
+        if (i2 === glob.length - 1) {
+          re += "\\\\";
+        } else {
+          escaping = true;
+        }
+        continue;
+      }
+      if (c === "[") {
+        const [src, needUflag, consumed, magic] = parseClass(glob, i2);
+        if (consumed) {
+          re += src;
+          uflag = uflag || needUflag;
+          i2 += consumed - 1;
+          hasMagic = hasMagic || magic;
+          continue;
+        }
+      }
+      if (c === "?") {
+        re += qmark;
+        hasMagic = true;
+        continue;
+      }
+      re += regExpEscape(c);
+    }
+    return [re, unescape2(glob), !!hasMagic, uflag];
+  }
+};
+_a8 = AST;
+
+// node_modules/minimatch/dist/esm/escape.js
+var escape2 = (s2, { windowsPathsNoEscape = false, magicalBraces = false } = {}) => {
+  if (magicalBraces) {
+    return windowsPathsNoEscape ? s2.replace(/[?*()[\]{}]/g, "[$&]") : s2.replace(/[?*()[\]\\{}]/g, "\\$&");
+  }
+  return windowsPathsNoEscape ? s2.replace(/[?*()[\]]/g, "[$&]") : s2.replace(/[?*()[\]\\]/g, "\\$&");
+};
+
+// node_modules/minimatch/dist/esm/index.js
+var minimatch = (p, pattern, options = {}) => {
+  assertValidPattern(pattern);
+  if (!options.nocomment && pattern.charAt(0) === "#") {
+    return false;
+  }
+  return new Minimatch(pattern, options).match(p);
+};
+var starDotExtRE = /^\*+([^+@!?*[(]*)$/;
+var starDotExtTest = (ext2) => (f3) => !f3.startsWith(".") && f3.endsWith(ext2);
+var starDotExtTestDot = (ext2) => (f3) => f3.endsWith(ext2);
+var starDotExtTestNocase = (ext2) => {
+  ext2 = ext2.toLowerCase();
+  return (f3) => !f3.startsWith(".") && f3.toLowerCase().endsWith(ext2);
+};
+var starDotExtTestNocaseDot = (ext2) => {
+  ext2 = ext2.toLowerCase();
+  return (f3) => f3.toLowerCase().endsWith(ext2);
+};
+var starDotStarRE = /^\*+\.\*+$/;
+var starDotStarTest = (f3) => !f3.startsWith(".") && f3.includes(".");
+var starDotStarTestDot = (f3) => f3 !== "." && f3 !== ".." && f3.includes(".");
+var dotStarRE = /^\.\*+$/;
+var dotStarTest = (f3) => f3 !== "." && f3 !== ".." && f3.startsWith(".");
+var starRE = /^\*+$/;
+var starTest = (f3) => f3.length !== 0 && !f3.startsWith(".");
+var starTestDot = (f3) => f3.length !== 0 && f3 !== "." && f3 !== "..";
+var qmarksRE = /^\?+([^+@!?*[(]*)?$/;
+var qmarksTestNocase = ([$0, ext2 = ""]) => {
+  const noext = qmarksTestNoExt([$0]);
+  if (!ext2)
+    return noext;
+  ext2 = ext2.toLowerCase();
+  return (f3) => noext(f3) && f3.toLowerCase().endsWith(ext2);
+};
+var qmarksTestNocaseDot = ([$0, ext2 = ""]) => {
+  const noext = qmarksTestNoExtDot([$0]);
+  if (!ext2)
+    return noext;
+  ext2 = ext2.toLowerCase();
+  return (f3) => noext(f3) && f3.toLowerCase().endsWith(ext2);
+};
+var qmarksTestDot = ([$0, ext2 = ""]) => {
+  const noext = qmarksTestNoExtDot([$0]);
+  return !ext2 ? noext : (f3) => noext(f3) && f3.endsWith(ext2);
+};
+var qmarksTest = ([$0, ext2 = ""]) => {
+  const noext = qmarksTestNoExt([$0]);
+  return !ext2 ? noext : (f3) => noext(f3) && f3.endsWith(ext2);
+};
+var qmarksTestNoExt = ([$0]) => {
+  const len = $0.length;
+  return (f3) => f3.length === len && !f3.startsWith(".");
+};
+var qmarksTestNoExtDot = ([$0]) => {
+  const len = $0.length;
+  return (f3) => f3.length === len && f3 !== "." && f3 !== "..";
+};
+var defaultPlatform = typeof process === "object" && process ? typeof process.env === "object" && process.env && process.env.__MINIMATCH_TESTING_PLATFORM__ || process.platform : "posix";
+var path3 = {
+  win32: { sep: "\\" },
+  posix: { sep: "/" }
+};
+var sep = defaultPlatform === "win32" ? path3.win32.sep : path3.posix.sep;
+minimatch.sep = sep;
+var GLOBSTAR = /* @__PURE__ */ Symbol("globstar **");
+minimatch.GLOBSTAR = GLOBSTAR;
+var qmark2 = "[^/]";
+var star2 = qmark2 + "*?";
+var twoStarDot = "(?:(?!(?:\\/|^)(?:\\.{1,2})($|\\/)).)*?";
+var twoStarNoDot = "(?:(?!(?:\\/|^)\\.).)*?";
+var filter = (pattern, options = {}) => (p) => minimatch(p, pattern, options);
+minimatch.filter = filter;
+var ext = (a, b = {}) => Object.assign({}, a, b);
+var defaults2 = (def) => {
+  if (!def || typeof def !== "object" || !Object.keys(def).length) {
+    return minimatch;
+  }
+  const orig = minimatch;
+  const m2 = (p, pattern, options = {}) => orig(p, pattern, ext(def, options));
+  return Object.assign(m2, {
+    Minimatch: class Minimatch extends orig.Minimatch {
+      constructor(pattern, options = {}) {
+        super(pattern, ext(def, options));
+      }
+      static defaults(options) {
+        return orig.defaults(ext(def, options)).Minimatch;
+      }
+    },
+    AST: class AST extends orig.AST {
+      /* c8 ignore start */
+      constructor(type, parent, options = {}) {
+        super(type, parent, ext(def, options));
+      }
+      /* c8 ignore stop */
+      static fromGlob(pattern, options = {}) {
+        return orig.AST.fromGlob(pattern, ext(def, options));
+      }
+    },
+    unescape: (s2, options = {}) => orig.unescape(s2, ext(def, options)),
+    escape: (s2, options = {}) => orig.escape(s2, ext(def, options)),
+    filter: (pattern, options = {}) => orig.filter(pattern, ext(def, options)),
+    defaults: (options) => orig.defaults(ext(def, options)),
+    makeRe: (pattern, options = {}) => orig.makeRe(pattern, ext(def, options)),
+    braceExpand: (pattern, options = {}) => orig.braceExpand(pattern, ext(def, options)),
+    match: (list, pattern, options = {}) => orig.match(list, pattern, ext(def, options)),
+    sep: orig.sep,
+    GLOBSTAR
+  });
+};
+minimatch.defaults = defaults2;
+var braceExpand = (pattern, options = {}) => {
+  assertValidPattern(pattern);
+  if (options.nobrace || !/\{(?:(?!\{).)*\}/.test(pattern)) {
+    return [pattern];
+  }
+  return expand(pattern, { max: options.braceExpandMax });
+};
+minimatch.braceExpand = braceExpand;
+var makeRe = (pattern, options = {}) => new Minimatch(pattern, options).makeRe();
+minimatch.makeRe = makeRe;
+var match = (list, pattern, options = {}) => {
+  const mm = new Minimatch(pattern, options);
+  list = list.filter((f3) => mm.match(f3));
+  if (mm.options.nonull && !list.length) {
+    list.push(pattern);
+  }
+  return list;
+};
+minimatch.match = match;
+var globMagic = /[?*]|[+@!]\(.*?\)|\[|\]/;
+var regExpEscape2 = (s2) => s2.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
+var Minimatch = class {
+  options;
+  set;
+  pattern;
+  windowsPathsNoEscape;
+  nonegate;
+  negate;
+  comment;
+  empty;
+  preserveMultipleSlashes;
+  partial;
+  globSet;
+  globParts;
+  nocase;
+  isWindows;
+  platform;
+  windowsNoMagicRoot;
+  maxGlobstarRecursion;
+  regexp;
+  constructor(pattern, options = {}) {
+    assertValidPattern(pattern);
+    options = options || {};
+    this.options = options;
+    this.maxGlobstarRecursion = options.maxGlobstarRecursion ?? 200;
+    this.pattern = pattern;
+    this.platform = options.platform || defaultPlatform;
+    this.isWindows = this.platform === "win32";
+    const awe = "allowWindowsEscape";
+    this.windowsPathsNoEscape = !!options.windowsPathsNoEscape || options[awe] === false;
+    if (this.windowsPathsNoEscape) {
+      this.pattern = this.pattern.replace(/\\/g, "/");
+    }
+    this.preserveMultipleSlashes = !!options.preserveMultipleSlashes;
+    this.regexp = null;
+    this.negate = false;
+    this.nonegate = !!options.nonegate;
+    this.comment = false;
+    this.empty = false;
+    this.partial = !!options.partial;
+    this.nocase = !!this.options.nocase;
+    this.windowsNoMagicRoot = options.windowsNoMagicRoot !== void 0 ? options.windowsNoMagicRoot : !!(this.isWindows && this.nocase);
+    this.globSet = [];
+    this.globParts = [];
+    this.set = [];
+    this.make();
+  }
+  hasMagic() {
+    if (this.options.magicalBraces && this.set.length > 1) {
+      return true;
+    }
+    for (const pattern of this.set) {
+      for (const part of pattern) {
+        if (typeof part !== "string")
+          return true;
+      }
+    }
+    return false;
+  }
+  debug(..._) {
+  }
+  make() {
+    const pattern = this.pattern;
+    const options = this.options;
+    if (!options.nocomment && pattern.charAt(0) === "#") {
+      this.comment = true;
+      return;
+    }
+    if (!pattern) {
+      this.empty = true;
+      return;
+    }
+    this.parseNegate();
+    this.globSet = [...new Set(this.braceExpand())];
+    if (options.debug) {
+      this.debug = (...args) => console.error(...args);
+    }
+    this.debug(this.pattern, this.globSet);
+    const rawGlobParts = this.globSet.map((s2) => this.slashSplit(s2));
+    this.globParts = this.preprocess(rawGlobParts);
+    this.debug(this.pattern, this.globParts);
+    let set = this.globParts.map((s2, _, __) => {
+      if (this.isWindows && this.windowsNoMagicRoot) {
+        const isUNC = s2[0] === "" && s2[1] === "" && (s2[2] === "?" || !globMagic.test(s2[2])) && !globMagic.test(s2[3]);
+        const isDrive = /^[a-z]:/i.test(s2[0]);
+        if (isUNC) {
+          return [
+            ...s2.slice(0, 4),
+            ...s2.slice(4).map((ss) => this.parse(ss))
+          ];
+        } else if (isDrive) {
+          return [s2[0], ...s2.slice(1).map((ss) => this.parse(ss))];
+        }
+      }
+      return s2.map((ss) => this.parse(ss));
+    });
+    this.debug(this.pattern, set);
+    this.set = set.filter((s2) => s2.indexOf(false) === -1);
+    if (this.isWindows) {
+      for (let i2 = 0; i2 < this.set.length; i2++) {
+        const p = this.set[i2];
+        if (p[0] === "" && p[1] === "" && this.globParts[i2][2] === "?" && typeof p[3] === "string" && /^[a-z]:$/i.test(p[3])) {
+          p[2] = "?";
+        }
+      }
+    }
+    this.debug(this.pattern, this.set);
+  }
+  // various transforms to equivalent pattern sets that are
+  // faster to process in a filesystem walk.  The goal is to
+  // eliminate what we can, and push all ** patterns as far
+  // to the right as possible, even if it increases the number
+  // of patterns that we have to process.
+  preprocess(globParts) {
+    if (this.options.noglobstar) {
+      for (const partset of globParts) {
+        for (let j = 0; j < partset.length; j++) {
+          if (partset[j] === "**") {
+            partset[j] = "*";
+          }
+        }
+      }
+    }
+    const { optimizationLevel = 1 } = this.options;
+    if (optimizationLevel >= 2) {
+      globParts = this.firstPhasePreProcess(globParts);
+      globParts = this.secondPhasePreProcess(globParts);
+    } else if (optimizationLevel >= 1) {
+      globParts = this.levelOneOptimize(globParts);
+    } else {
+      globParts = this.adjascentGlobstarOptimize(globParts);
+    }
+    return globParts;
+  }
+  // just get rid of adjascent ** portions
+  adjascentGlobstarOptimize(globParts) {
+    return globParts.map((parts) => {
+      let gs = -1;
+      while (-1 !== (gs = parts.indexOf("**", gs + 1))) {
+        let i2 = gs;
+        while (parts[i2 + 1] === "**") {
+          i2++;
+        }
+        if (i2 !== gs) {
+          parts.splice(gs, i2 - gs);
+        }
+      }
+      return parts;
+    });
+  }
+  // get rid of adjascent ** and resolve .. portions
+  levelOneOptimize(globParts) {
+    return globParts.map((parts) => {
+      parts = parts.reduce((set, part) => {
+        const prev = set[set.length - 1];
+        if (part === "**" && prev === "**") {
+          return set;
+        }
+        if (part === "..") {
+          if (prev && prev !== ".." && prev !== "." && prev !== "**") {
+            set.pop();
+            return set;
+          }
+        }
+        set.push(part);
+        return set;
+      }, []);
+      return parts.length === 0 ? [""] : parts;
+    });
+  }
+  levelTwoFileOptimize(parts) {
+    if (!Array.isArray(parts)) {
+      parts = this.slashSplit(parts);
+    }
+    let didSomething = false;
+    do {
+      didSomething = false;
+      if (!this.preserveMultipleSlashes) {
+        for (let i2 = 1; i2 < parts.length - 1; i2++) {
+          const p = parts[i2];
+          if (i2 === 1 && p === "" && parts[0] === "")
+            continue;
+          if (p === "." || p === "") {
+            didSomething = true;
+            parts.splice(i2, 1);
+            i2--;
+          }
+        }
+        if (parts[0] === "." && parts.length === 2 && (parts[1] === "." || parts[1] === "")) {
+          didSomething = true;
+          parts.pop();
+        }
+      }
+      let dd = 0;
+      while (-1 !== (dd = parts.indexOf("..", dd + 1))) {
+        const p = parts[dd - 1];
+        if (p && p !== "." && p !== ".." && p !== "**" && !(this.isWindows && /^[a-z]:$/i.test(p))) {
+          didSomething = true;
+          parts.splice(dd - 1, 2);
+          dd -= 2;
+        }
+      }
+    } while (didSomething);
+    return parts.length === 0 ? [""] : parts;
+  }
+  // First phase: single-pattern processing
+  // <pre> is 1 or more portions
+  // <rest> is 1 or more portions
+  // <p> is any portion other than ., .., '', or **
+  // <e> is . or ''
+  //
+  // **/.. is *brutal* for filesystem walking performance, because
+  // it effectively resets the recursive walk each time it occurs,
+  // and ** cannot be reduced out by a .. pattern part like a regexp
+  // or most strings (other than .., ., and '') can be.
+  //
+  // <pre>/**/../<p>/<p>/<rest> -> {<pre>/../<p>/<p>/<rest>,<pre>/**/<p>/<p>/<rest>}
+  // <pre>/<e>/<rest> -> <pre>/<rest>
+  // <pre>/<p>/../<rest> -> <pre>/<rest>
+  // **/**/<rest> -> **/<rest>
+  //
+  // **/*/<rest> -> */**/<rest> <== not valid because ** doesn't follow
+  // this WOULD be allowed if ** did follow symlinks, or * didn't
+  firstPhasePreProcess(globParts) {
+    let didSomething = false;
+    do {
+      didSomething = false;
+      for (let parts of globParts) {
+        let gs = -1;
+        while (-1 !== (gs = parts.indexOf("**", gs + 1))) {
+          let gss = gs;
+          while (parts[gss + 1] === "**") {
+            gss++;
+          }
+          if (gss > gs) {
+            parts.splice(gs + 1, gss - gs);
+          }
+          let next = parts[gs + 1];
+          const p = parts[gs + 2];
+          const p2 = parts[gs + 3];
+          if (next !== "..")
+            continue;
+          if (!p || p === "." || p === ".." || !p2 || p2 === "." || p2 === "..") {
+            continue;
+          }
+          didSomething = true;
+          parts.splice(gs, 1);
+          const other = parts.slice(0);
+          other[gs] = "**";
+          globParts.push(other);
+          gs--;
+        }
+        if (!this.preserveMultipleSlashes) {
+          for (let i2 = 1; i2 < parts.length - 1; i2++) {
+            const p = parts[i2];
+            if (i2 === 1 && p === "" && parts[0] === "")
+              continue;
+            if (p === "." || p === "") {
+              didSomething = true;
+              parts.splice(i2, 1);
+              i2--;
+            }
+          }
+          if (parts[0] === "." && parts.length === 2 && (parts[1] === "." || parts[1] === "")) {
+            didSomething = true;
+            parts.pop();
+          }
+        }
+        let dd = 0;
+        while (-1 !== (dd = parts.indexOf("..", dd + 1))) {
+          const p = parts[dd - 1];
+          if (p && p !== "." && p !== ".." && p !== "**") {
+            didSomething = true;
+            const needDot = dd === 1 && parts[dd + 1] === "**";
+            const splin = needDot ? ["."] : [];
+            parts.splice(dd - 1, 2, ...splin);
+            if (parts.length === 0)
+              parts.push("");
+            dd -= 2;
+          }
+        }
+      }
+    } while (didSomething);
+    return globParts;
+  }
+  // second phase: multi-pattern dedupes
+  // {<pre>/*/<rest>,<pre>/<p>/<rest>} -> <pre>/*/<rest>
+  // {<pre>/<rest>,<pre>/<rest>} -> <pre>/<rest>
+  // {<pre>/**/<rest>,<pre>/<rest>} -> <pre>/**/<rest>
+  //
+  // {<pre>/**/<rest>,<pre>/**/<p>/<rest>} -> <pre>/**/<rest>
+  // ^-- not valid because ** doens't follow symlinks
+  secondPhasePreProcess(globParts) {
+    for (let i2 = 0; i2 < globParts.length - 1; i2++) {
+      for (let j = i2 + 1; j < globParts.length; j++) {
+        const matched = this.partsMatch(globParts[i2], globParts[j], !this.preserveMultipleSlashes);
+        if (matched) {
+          globParts[i2] = [];
+          globParts[j] = matched;
+          break;
+        }
+      }
+    }
+    return globParts.filter((gs) => gs.length);
+  }
+  partsMatch(a, b, emptyGSMatch = false) {
+    let ai = 0;
+    let bi = 0;
+    let result = [];
+    let which = "";
+    while (ai < a.length && bi < b.length) {
+      if (a[ai] === b[bi]) {
+        result.push(which === "b" ? b[bi] : a[ai]);
+        ai++;
+        bi++;
+      } else if (emptyGSMatch && a[ai] === "**" && b[bi] === a[ai + 1]) {
+        result.push(a[ai]);
+        ai++;
+      } else if (emptyGSMatch && b[bi] === "**" && a[ai] === b[bi + 1]) {
+        result.push(b[bi]);
+        bi++;
+      } else if (a[ai] === "*" && b[bi] && (this.options.dot || !b[bi].startsWith(".")) && b[bi] !== "**") {
+        if (which === "b")
+          return false;
+        which = "a";
+        result.push(a[ai]);
+        ai++;
+        bi++;
+      } else if (b[bi] === "*" && a[ai] && (this.options.dot || !a[ai].startsWith(".")) && a[ai] !== "**") {
+        if (which === "a")
+          return false;
+        which = "b";
+        result.push(b[bi]);
+        ai++;
+        bi++;
+      } else {
+        return false;
+      }
+    }
+    return a.length === b.length && result;
+  }
+  parseNegate() {
+    if (this.nonegate)
+      return;
+    const pattern = this.pattern;
+    let negate = false;
+    let negateOffset = 0;
+    for (let i2 = 0; i2 < pattern.length && pattern.charAt(i2) === "!"; i2++) {
+      negate = !negate;
+      negateOffset++;
+    }
+    if (negateOffset)
+      this.pattern = pattern.slice(negateOffset);
+    this.negate = negate;
+  }
+  // set partial to true to test if, for example,
+  // "/a/b" matches the start of "/*/b/*/d"
+  // Partial means, if you run out of file before you run
+  // out of pattern, then that's fine, as long as all
+  // the parts match.
+  matchOne(file, pattern, partial = false) {
+    let fileStartIndex = 0;
+    let patternStartIndex = 0;
+    if (this.isWindows) {
+      const fileDrive = typeof file[0] === "string" && /^[a-z]:$/i.test(file[0]);
+      const fileUNC = !fileDrive && file[0] === "" && file[1] === "" && file[2] === "?" && /^[a-z]:$/i.test(file[3]);
+      const patternDrive = typeof pattern[0] === "string" && /^[a-z]:$/i.test(pattern[0]);
+      const patternUNC = !patternDrive && pattern[0] === "" && pattern[1] === "" && pattern[2] === "?" && typeof pattern[3] === "string" && /^[a-z]:$/i.test(pattern[3]);
+      const fdi = fileUNC ? 3 : fileDrive ? 0 : void 0;
+      const pdi = patternUNC ? 3 : patternDrive ? 0 : void 0;
+      if (typeof fdi === "number" && typeof pdi === "number") {
+        const [fd, pd] = [
+          file[fdi],
+          pattern[pdi]
+        ];
+        if (fd.toLowerCase() === pd.toLowerCase()) {
+          pattern[pdi] = fd;
+          patternStartIndex = pdi;
+          fileStartIndex = fdi;
+        }
+      }
+    }
+    const { optimizationLevel = 1 } = this.options;
+    if (optimizationLevel >= 2) {
+      file = this.levelTwoFileOptimize(file);
+    }
+    if (pattern.includes(GLOBSTAR)) {
+      return this.#matchGlobstar(file, pattern, partial, fileStartIndex, patternStartIndex);
+    }
+    return this.#matchOne(file, pattern, partial, fileStartIndex, patternStartIndex);
+  }
+  #matchGlobstar(file, pattern, partial, fileIndex, patternIndex) {
+    const firstgs = pattern.indexOf(GLOBSTAR, patternIndex);
+    const lastgs = pattern.lastIndexOf(GLOBSTAR);
+    const [head, body, tail] = partial ? [
+      pattern.slice(patternIndex, firstgs),
+      pattern.slice(firstgs + 1),
+      []
+    ] : [
+      pattern.slice(patternIndex, firstgs),
+      pattern.slice(firstgs + 1, lastgs),
+      pattern.slice(lastgs + 1)
+    ];
+    if (head.length) {
+      const fileHead = file.slice(fileIndex, fileIndex + head.length);
+      if (!this.#matchOne(fileHead, head, partial, 0, 0)) {
+        return false;
+      }
+      fileIndex += head.length;
+      patternIndex += head.length;
+    }
+    let fileTailMatch = 0;
+    if (tail.length) {
+      if (tail.length + fileIndex > file.length)
+        return false;
+      let tailStart = file.length - tail.length;
+      if (this.#matchOne(file, tail, partial, tailStart, 0)) {
+        fileTailMatch = tail.length;
+      } else {
+        if (file[file.length - 1] !== "" || fileIndex + tail.length === file.length) {
+          return false;
+        }
+        tailStart--;
+        if (!this.#matchOne(file, tail, partial, tailStart, 0)) {
+          return false;
+        }
+        fileTailMatch = tail.length + 1;
+      }
+    }
+    if (!body.length) {
+      let sawSome = !!fileTailMatch;
+      for (let i3 = fileIndex; i3 < file.length - fileTailMatch; i3++) {
+        const f3 = String(file[i3]);
+        sawSome = true;
+        if (f3 === "." || f3 === ".." || !this.options.dot && f3.startsWith(".")) {
+          return false;
+        }
+      }
+      return partial || sawSome;
+    }
+    const bodySegments = [[[], 0]];
+    let currentBody = bodySegments[0];
+    let nonGsParts = 0;
+    const nonGsPartsSums = [0];
+    for (const b of body) {
+      if (b === GLOBSTAR) {
+        nonGsPartsSums.push(nonGsParts);
+        currentBody = [[], 0];
+        bodySegments.push(currentBody);
+      } else {
+        currentBody[0].push(b);
+        nonGsParts++;
+      }
+    }
+    let i2 = bodySegments.length - 1;
+    const fileLength = file.length - fileTailMatch;
+    for (const b of bodySegments) {
+      b[1] = fileLength - (nonGsPartsSums[i2--] + b[0].length);
+    }
+    return !!this.#matchGlobStarBodySections(file, bodySegments, fileIndex, 0, partial, 0, !!fileTailMatch);
+  }
+  // return false for "nope, not matching"
+  // return null for "not matching, cannot keep trying"
+  #matchGlobStarBodySections(file, bodySegments, fileIndex, bodyIndex, partial, globStarDepth, sawTail) {
+    const bs = bodySegments[bodyIndex];
+    if (!bs) {
+      for (let i2 = fileIndex; i2 < file.length; i2++) {
+        sawTail = true;
+        const f3 = file[i2];
+        if (f3 === "." || f3 === ".." || !this.options.dot && f3.startsWith(".")) {
+          return false;
+        }
+      }
+      return sawTail;
+    }
+    const [body, after] = bs;
+    while (fileIndex <= after) {
+      const m2 = this.#matchOne(file.slice(0, fileIndex + body.length), body, partial, fileIndex, 0);
+      if (m2 && globStarDepth < this.maxGlobstarRecursion) {
+        const sub = this.#matchGlobStarBodySections(file, bodySegments, fileIndex + body.length, bodyIndex + 1, partial, globStarDepth + 1, sawTail);
+        if (sub !== false) {
+          return sub;
+        }
+      }
+      const f3 = file[fileIndex];
+      if (f3 === "." || f3 === ".." || !this.options.dot && f3.startsWith(".")) {
+        return false;
+      }
+      fileIndex++;
+    }
+    return partial || null;
+  }
+  #matchOne(file, pattern, partial, fileIndex, patternIndex) {
+    let fi;
+    let pi;
+    let pl;
+    let fl;
+    for (fi = fileIndex, pi = patternIndex, fl = file.length, pl = pattern.length; fi < fl && pi < pl; fi++, pi++) {
+      this.debug("matchOne loop");
+      let p = pattern[pi];
+      let f3 = file[fi];
+      this.debug(pattern, p, f3);
+      if (p === false || p === GLOBSTAR) {
+        return false;
+      }
+      let hit;
+      if (typeof p === "string") {
+        hit = f3 === p;
+        this.debug("string match", p, f3, hit);
+      } else {
+        hit = p.test(f3);
+        this.debug("pattern match", p, f3, hit);
+      }
+      if (!hit)
+        return false;
+    }
+    if (fi === fl && pi === pl) {
+      return true;
+    } else if (fi === fl) {
+      return partial;
+    } else if (pi === pl) {
+      return fi === fl - 1 && file[fi] === "";
+    } else {
+      throw new Error("wtf?");
+    }
+  }
+  braceExpand() {
+    return braceExpand(this.pattern, this.options);
+  }
+  parse(pattern) {
+    assertValidPattern(pattern);
+    const options = this.options;
+    if (pattern === "**")
+      return GLOBSTAR;
+    if (pattern === "")
+      return "";
+    let m2;
+    let fastTest = null;
+    if (m2 = pattern.match(starRE)) {
+      fastTest = options.dot ? starTestDot : starTest;
+    } else if (m2 = pattern.match(starDotExtRE)) {
+      fastTest = (options.nocase ? options.dot ? starDotExtTestNocaseDot : starDotExtTestNocase : options.dot ? starDotExtTestDot : starDotExtTest)(m2[1]);
+    } else if (m2 = pattern.match(qmarksRE)) {
+      fastTest = (options.nocase ? options.dot ? qmarksTestNocaseDot : qmarksTestNocase : options.dot ? qmarksTestDot : qmarksTest)(m2);
+    } else if (m2 = pattern.match(starDotStarRE)) {
+      fastTest = options.dot ? starDotStarTestDot : starDotStarTest;
+    } else if (m2 = pattern.match(dotStarRE)) {
+      fastTest = dotStarTest;
+    }
+    const re = AST.fromGlob(pattern, this.options).toMMPattern();
+    if (fastTest && typeof re === "object") {
+      Reflect.defineProperty(re, "test", { value: fastTest });
+    }
+    return re;
+  }
+  makeRe() {
+    if (this.regexp || this.regexp === false)
+      return this.regexp;
+    const set = this.set;
+    if (!set.length) {
+      this.regexp = false;
+      return this.regexp;
+    }
+    const options = this.options;
+    const twoStar = options.noglobstar ? star2 : options.dot ? twoStarDot : twoStarNoDot;
+    const flags = new Set(options.nocase ? ["i"] : []);
+    let re = set.map((pattern) => {
+      const pp = pattern.map((p) => {
+        if (p instanceof RegExp) {
+          for (const f3 of p.flags.split(""))
+            flags.add(f3);
+        }
+        return typeof p === "string" ? regExpEscape2(p) : p === GLOBSTAR ? GLOBSTAR : p._src;
+      });
+      pp.forEach((p, i2) => {
+        const next = pp[i2 + 1];
+        const prev = pp[i2 - 1];
+        if (p !== GLOBSTAR || prev === GLOBSTAR) {
+          return;
+        }
+        if (prev === void 0) {
+          if (next !== void 0 && next !== GLOBSTAR) {
+            pp[i2 + 1] = "(?:\\/|" + twoStar + "\\/)?" + next;
+          } else {
+            pp[i2] = twoStar;
+          }
+        } else if (next === void 0) {
+          pp[i2 - 1] = prev + "(?:\\/|\\/" + twoStar + ")?";
+        } else if (next !== GLOBSTAR) {
+          pp[i2 - 1] = prev + "(?:\\/|\\/" + twoStar + "\\/)" + next;
+          pp[i2 + 1] = GLOBSTAR;
+        }
+      });
+      const filtered = pp.filter((p) => p !== GLOBSTAR);
+      if (this.partial && filtered.length >= 1) {
+        const prefixes = [];
+        for (let i2 = 1; i2 <= filtered.length; i2++) {
+          prefixes.push(filtered.slice(0, i2).join("/"));
+        }
+        return "(?:" + prefixes.join("|") + ")";
+      }
+      return filtered.join("/");
+    }).join("|");
+    const [open2, close] = set.length > 1 ? ["(?:", ")"] : ["", ""];
+    re = "^" + open2 + re + close + "$";
+    if (this.partial) {
+      re = "^(?:\\/|" + open2 + re.slice(1, -1) + close + ")$";
+    }
+    if (this.negate)
+      re = "^(?!" + re + ").+$";
+    try {
+      this.regexp = new RegExp(re, [...flags].join(""));
+    } catch {
+      this.regexp = false;
+    }
+    return this.regexp;
+  }
+  slashSplit(p) {
+    if (this.preserveMultipleSlashes) {
+      return p.split("/");
+    } else if (this.isWindows && /^\/\/[^/]+/.test(p)) {
+      return ["", ...p.split(/\/+/)];
+    } else {
+      return p.split(/\/+/);
+    }
+  }
+  match(f3, partial = this.partial) {
+    this.debug("match", f3, this.pattern);
+    if (this.comment) {
+      return false;
+    }
+    if (this.empty) {
+      return f3 === "";
+    }
+    if (f3 === "/" && partial) {
+      return true;
+    }
+    const options = this.options;
+    if (this.isWindows) {
+      f3 = f3.split("\\").join("/");
+    }
+    const ff = this.slashSplit(f3);
+    this.debug(this.pattern, "split", ff);
+    const set = this.set;
+    this.debug(this.pattern, "set", set);
+    let filename = ff[ff.length - 1];
+    if (!filename) {
+      for (let i2 = ff.length - 2; !filename && i2 >= 0; i2--) {
+        filename = ff[i2];
+      }
+    }
+    for (const pattern of set) {
+      let file = ff;
+      if (options.matchBase && pattern.length === 1) {
+        file = [filename];
+      }
+      const hit = this.matchOne(file, pattern, partial);
+      if (hit) {
+        if (options.flipNegate) {
+          return true;
+        }
+        return !this.negate;
+      }
+    }
+    if (options.flipNegate) {
+      return false;
+    }
+    return this.negate;
+  }
+  static defaults(def) {
+    return minimatch.defaults(def).Minimatch;
+  }
+};
+minimatch.AST = AST;
+minimatch.Minimatch = Minimatch;
+minimatch.escape = escape2;
+minimatch.unescape = unescape2;
+
+// src/indexing/indexer.ts
 var Indexer = class _Indexer {
   constructor(context, cc, db) {
     this.context = context;
     this.cc = cc;
     this.db = db;
+    const extGlob = supportedExtensions.map((ext2) => ext2.replace(/^\./, "")).join(",");
+    const watchPattern = `**/*.{${extGlob}}`;
+    const watcher = vscode6.workspace.createFileSystemWatcher(watchPattern);
+    watcher.onDidChange(async (uri) => {
+      if (!this.indexEnabled) return;
+      this.scheduleReindex([vscode6.workspace.asRelativePath(uri)]);
+    });
+    watcher.onDidCreate(async (uri) => {
+      if (!this.indexEnabled) return;
+      this.scheduleReindex([vscode6.workspace.asRelativePath(uri)]);
+      await this.scheduleNeighbourHoodUpdate(uri);
+    });
+    watcher.onDidDelete(async (uri) => {
+      if (!this.indexEnabled) return;
+      this.scheduleDeleteFile([vscode6.workspace.asRelativePath(uri)]);
+      await this.scheduleNeighbourHoodUpdate(uri);
+    });
+    vscode6.workspace.onDidRenameFiles(async (e2) => {
+      if (!this.indexEnabled) return;
+      for (const file of e2.files) {
+        const oldPath = vscode6.workspace.asRelativePath(file.oldUri);
+        const newPath = vscode6.workspace.asRelativePath(file.newUri);
+        if (this.isSupportedFile(newPath) && !this.isExcluded(newPath)) {
+          this.scheduleReindex([newPath]);
+        }
+        if (this.isSupportedFile(oldPath)) {
+          this.scheduleDeleteFile([oldPath]);
+        }
+        const dependants = await this.findDependantFiles(oldPath);
+        for (const dep of dependants) {
+          if (!this.dirtyFiles.has(dep) && !this.deletedFiles.has(dep)) {
+            this.headerDirtyFiles.add(dep);
+          }
+        }
+      }
+      this.resetReindexTimer();
+    });
   }
   context;
   cc;
   db;
+  dirtyFiles = /* @__PURE__ */ new Set();
+  deletedFiles = /* @__PURE__ */ new Set();
+  headerDirtyFiles = /* @__PURE__ */ new Set();
+  reindexTimer;
+  emitter = new vscode6.EventEmitter();
+  onDidUpdateStatus = this.emitter.event;
+  excludePattern = [...globalExcludePatterns, ...languageExcludePatterns];
   static async create(context) {
     const cc = await CodeChunker.create(context.extensionUri);
     let db;
@@ -51516,10 +65333,17 @@ var Indexer = class _Indexer {
     }
     return new _Indexer(context, cc, db);
   }
+  dbConnected() {
+    return this.db !== void 0;
+  }
   // Initial indexing of all relevant files in the workspace
   async indexWorkspace(embedProvider, model) {
     const chunks = await this.cc.chunkWorkspace();
-    if (chunks.length === 0) return;
+    this.cc.clearNeighbourHoodCache();
+    if (chunks.length === 0) {
+      console.log("Workspace has no valid files to embed, skipping DB creation");
+      return false;
+    }
     const texts = chunks.map((chunk) => chunk.text);
     const vectors = await embedProvider.embed(model, texts);
     const dimension = vectors[0].length;
@@ -51530,6 +65354,46 @@ var Indexer = class _Indexer {
       ...chunk
     }));
     await this.db.insertRows(rows);
+    return true;
+  }
+  scheduleReindex(filePaths) {
+    for (const filePath of filePaths) {
+      this.dirtyFiles.add(filePath);
+      this.headerDirtyFiles.delete(filePath);
+    }
+    this.resetReindexTimer();
+  }
+  scheduleDeleteFile(filePaths) {
+    for (const filePath of filePaths) {
+      this.deletedFiles.add(filePath);
+      this.dirtyFiles.delete(filePath);
+      this.headerDirtyFiles.delete(filePath);
+    }
+    this.resetReindexTimer();
+  }
+  async scheduleNeighbourHoodUpdate(triggerUri) {
+    try {
+      const parentUri = vscode6.Uri.joinPath(triggerUri, "..");
+      const entries = await vscode6.workspace.fs.readDirectory(parentUri);
+      const triggerFileName = triggerUri.path.split("/").pop();
+      for (const [name, type] of entries) {
+        if (type === vscode6.FileType.File && name !== triggerFileName) {
+          const siblingUri = vscode6.Uri.joinPath(parentUri, name);
+          const siblingPath = vscode6.workspace.asRelativePath(siblingUri);
+          if (this.isSupportedFile(name) && !this.isExcluded(siblingPath)) {
+            if (!this.dirtyFiles.has(siblingPath) && !this.deletedFiles.has(siblingPath)) {
+              this.headerDirtyFiles.add(siblingPath);
+            }
+          }
+        }
+      }
+      this.resetReindexTimer();
+    } catch (e2) {
+      console.warn(`Failed to schedule neighbourhood update`, e2);
+    }
+  }
+  async search(queryText, vector, limit2 = 10) {
+    return this.db.hybridSearch(queryText, vector, limit2);
   }
   async reindexFile(filePath, embedProvider, model) {
     if (!this.db) throw new Error("Cannot reindex file: VectorDB is not connected");
@@ -51546,20 +65410,100 @@ var Indexer = class _Indexer {
     await this.db.insertRows(rows);
     const storedRows = await this.db.getRowsByFilePath(filePath);
     for (let i2 = 0; i2 < Math.min(3, storedRows.length); i2++) {
-      this.debugVector(`stored vector ${i2 + 1} for ${filePath}`, storedRows[i2].vector, storedRows[i2].text);
+      _Indexer.debugVector(`stored vector ${i2 + 1} for ${filePath}`, storedRows[i2].vector, storedRows[i2].text);
     }
-  }
-  async search(vector, limit2 = 10) {
-    return this.db.vectorSearch(vector, limit2);
   }
   async deleteFile(filePath) {
     if (!this.db) throw new Error("Cannot delete file: VectorDB is not connected");
     await this.db.deleteByFilePath(filePath);
   }
-  dbConnected() {
-    return this.db !== void 0;
+  isSupportedFile(fileName) {
+    return supportedExtensions.some((ext2) => fileName.endsWith(ext2));
   }
-  debugVector(label, vector, text) {
+  isExcluded(filePath) {
+    return this.excludePattern.some((pattern) => minimatch(filePath, pattern, { dot: true }));
+  }
+  indexEnabled() {
+    return this.context.globalState.get("indexingEnabled") ?? false;
+  }
+  async updateFileHeader(filePath) {
+    if (!this.db) throw new Error("Cannot update file: VectorDB is not connected");
+    const existingRows = await this.db.getRowsByFilePath(filePath);
+    if (existingRows.length === 0) return;
+    const workspaceUri = getWorkspaceUri(filePath);
+    const { imports, siblings } = await this.cc.getFileContext(workspaceUri);
+    const siblingsRegex = /\[SIBLINGS\][\s\S]*?\[\/SIBLINGS\]/;
+    const importsRegex = /\[IMPORTS\][\s\S]*?\[\/IMPORTS\]/;
+    const rowsToUpdate = existingRows.map((row) => {
+      let updatedText = row.text;
+      if (siblingsRegex.test(updatedText)) {
+        updatedText = updatedText.replace(siblingsRegex, siblings);
+      }
+      if (importsRegex.test(updatedText)) {
+        updatedText = updatedText.replace(importsRegex, imports);
+      }
+      return {
+        ...row,
+        text: updatedText
+      };
+    });
+    await this.db.deleteByFilePath(filePath);
+    await this.db.insertRows(rowsToUpdate);
+  }
+  async findDependantFiles(oldFileName) {
+    if (!this.db) throw new Error("Cannot find dependant files: VectorDB is not Connected");
+    const importName = oldFileName.replace(/\.[^/.]+$/, "");
+    const dependants = await this.db.getFilePathByImport(importName);
+    const uniqueFiles = new Set(dependants.map((r2) => r2.filePath));
+    uniqueFiles.delete(oldFileName);
+    return Array.from(uniqueFiles);
+  }
+  async flushReindexQueue() {
+    const providerId = this.context.globalState.get("selectedEmbeddingProvider");
+    const model = this.context.globalState.get("selectedEmbeddingModel");
+    if (!providerId || !model) return;
+    const apiKey = await getEmbeddingAPIKey(this.context, providerId);
+    if (!apiKey) return;
+    if (!this.dbConnected()) return;
+    const deletedFiles = [...this.deletedFiles];
+    const dirtyFiles = [...this.dirtyFiles].filter((f3) => !this.deletedFiles.has(f3));
+    const headerDirtyFiles = [...this.headerDirtyFiles].filter(
+      (f3) => !this.dirtyFiles.has(f3) && !this.deletedFiles.has(f3)
+    );
+    this.dirtyFiles.clear();
+    this.deletedFiles.clear();
+    this.headerDirtyFiles.clear();
+    this.emitter.fire({
+      type: "indexingStatus",
+      status: `Reindexing ${dirtyFiles.length + deletedFiles.length + headerDirtyFiles.length} file(s)...`,
+      done: false
+    });
+    const embedProvider = EmbedFactory.create(providerId, apiKey);
+    try {
+      for (const file of deletedFiles) await this.deleteFile(file);
+      for (const file of dirtyFiles) await this.reindexFile(file, embedProvider, model);
+      for (const file of headerDirtyFiles) await this.updateFileHeader(file);
+      this.cc.clearNeighbourHoodCache();
+      this.emitter.fire({
+        type: "indexingStatus",
+        status: "Ready",
+        done: true
+      });
+    } catch (e2) {
+      console.error(`Failed to flush reindex queue: ${e2}`);
+      this.emitter.fire({
+        type: "indexingError",
+        error: e2 instanceof Error ? e2.message : String(e2)
+      });
+    }
+  }
+  resetReindexTimer() {
+    if (this.reindexTimer) clearTimeout(this.reindexTimer);
+    this.reindexTimer = setTimeout(() => {
+      void this.flushReindexQueue();
+    }, 1500);
+  }
+  static debugVector(label, vector, text) {
     const values = Array.from(vector);
     const textHash = crypto2.createHash("sha256").update(text).digest("hex").slice(0, 12);
     console.log(`[INDEX DEBUG] ${label}`);
@@ -51579,6 +65523,7 @@ var ChatApp = class {
     else this.chatHistory = this.getInitialChatMessages();
     this.indexLoadPromise = Indexer.create(this.context).then((indexer) => {
       this.indexer = indexer;
+      indexer.onDidUpdateStatus((event) => this.post(event));
       return indexer;
     });
     this.toolRegistry = createToolRegistry({
@@ -51586,7 +65531,7 @@ var ChatApp = class {
         const providerId = this.context.globalState.get("selectedEmbeddingProvider");
         const model = this.context.globalState.get("selectedEmbeddingModel");
         if (!providerId || !model) throw new Error("embedding provider/model is not configured");
-        const apiKey = await this.getEmbeddingAPIKey(providerId);
+        const apiKey = await getEmbeddingAPIKey(this.context, providerId);
         if (!apiKey) throw new Error("missing embedding API key");
         const indexer = await this.indexLoadPromise;
         return {
@@ -51594,22 +65539,6 @@ var ChatApp = class {
           embedProvider: EmbedFactory.create(providerId, apiKey),
           model
         };
-      }
-    });
-    const watcher = vscode6.workspace.createFileSystemWatcher("**/*.{ts,tsx,js,jsx}");
-    watcher.onDidChange((uri) => {
-      if (this.context.globalState.get("indexingEnabled")) {
-        this.scheduleReindex([vscode6.workspace.asRelativePath(uri)]);
-      }
-    });
-    watcher.onDidCreate((uri) => {
-      if (this.context.globalState.get("indexingEnabled")) {
-        this.scheduleReindex([vscode6.workspace.asRelativePath(uri)]);
-      }
-    });
-    watcher.onDidDelete((uri) => {
-      if (this.context.globalState.get("indexingEnabled")) {
-        this.scheduleDeleteFile([vscode6.workspace.asRelativePath(uri)]);
       }
     });
   }
@@ -51620,9 +65549,6 @@ var ChatApp = class {
   toolRegistry;
   indexer;
   indexLoadPromise;
-  dirtyFiles = /* @__PURE__ */ new Set();
-  deletedFiles = /* @__PURE__ */ new Set();
-  reindexTimer;
   getInitialChatMessages() {
     return [{
       role: "system",
@@ -51633,22 +65559,6 @@ var ChatApp = class {
                       Always explain your thought process before executing a tool.`
     }];
   }
-  async getModelsFromProvider(provider, apiKey) {
-    const providerInstance = ChatFactory.create(provider, apiKey);
-    return await providerInstance.getModels();
-  }
-  async getEmbeddingModelsFromProvider(provider, apiKey) {
-    const providerInstance = EmbedFactory.create(provider, apiKey);
-    return await providerInstance.getModels();
-  }
-  async getAPIKey(provider) {
-    const secretKey = `${provider.toUpperCase()}_API_KEY`;
-    return await this.context.secrets.get(secretKey);
-  }
-  async getEmbeddingAPIKey(provider) {
-    const secretKey = `${provider.toUpperCase()}_EMBEDDING_API_KEY`;
-    return await this.context.secrets.get(secretKey);
-  }
   post(message) {
     this._view?.webview.postMessage(message);
   }
@@ -51656,9 +65566,10 @@ var ChatApp = class {
     await this.context.workspaceState.update("agentChatHistory", this.chatHistory);
   }
   async runAgentTurn(provider, model, userMessage) {
-    const apiKey = await this.getAPIKey(provider);
+    const apiKey = await getAPIKey(this.context, provider);
+    const indexer = await this.indexLoadPromise;
     if (!apiKey) {
-      vscode6.window.showErrorMessage(`No API key for ${provider}`);
+      vscode7.window.showErrorMessage(`No API key for ${provider}`);
       return;
     }
     try {
@@ -51708,7 +65619,7 @@ var ChatApp = class {
               try {
                 result = await this.toolRegistry[toolName](toolArgs);
                 this.post({ type: "updateTool", status: "success" });
-                if (result.changedFiles?.length) this.scheduleReindex(result.changedFiles);
+                if (result.changedFiles?.length) indexer.scheduleReindex(result.changedFiles);
               } catch (e2) {
                 const message = e2 instanceof Error ? e2.message : String(e2);
                 result = { message: `Error executing ${toolName}: ${message}` };
@@ -51731,59 +65642,6 @@ var ChatApp = class {
       this.post({ type: "streamEnd" });
     }
   }
-  async scheduleReindex(filePaths) {
-    for (const filePath of filePaths) {
-      this.dirtyFiles.add(filePath);
-    }
-    if (this.reindexTimer) clearTimeout(this.reindexTimer);
-    this.reindexTimer = setTimeout(() => {
-      void this.flushReindexQueue();
-    }, 1500);
-  }
-  async scheduleDeleteFile(filePaths) {
-    for (const filePath of filePaths) {
-      this.deletedFiles.add(filePath);
-      this.dirtyFiles.delete(filePath);
-    }
-    if (this.reindexTimer) clearTimeout(this.reindexTimer);
-    this.reindexTimer = setTimeout(() => {
-      void this.flushReindexQueue();
-    }, 1500);
-  }
-  async flushReindexQueue() {
-    const dirtyFiles = [...this.dirtyFiles];
-    const deletedFiles = [...this.deletedFiles];
-    this.dirtyFiles.clear();
-    this.deletedFiles.clear();
-    const providerId = this.context.globalState.get("selectedEmbeddingProvider");
-    const model = this.context.globalState.get("selectedEmbeddingModel");
-    if (!providerId || !model) return;
-    const apiKey = await this.getEmbeddingAPIKey(providerId);
-    if (!apiKey) return;
-    const indexer = await this.indexLoadPromise;
-    if (!indexer.dbConnected()) return;
-    this.post({
-      type: "indexingStatus",
-      status: `Reindexing ${dirtyFiles.length + deletedFiles.length} file(s)...`,
-      done: false
-    });
-    const embedProvider = EmbedFactory.create(providerId, apiKey);
-    try {
-      for (const file of deletedFiles) await indexer.deleteFile(file);
-      for (const file of dirtyFiles) await indexer.reindexFile(file, embedProvider, model);
-      this.post({
-        type: "indexingStatus",
-        status: "Ready",
-        done: true
-      });
-    } catch (e2) {
-      console.error(`Failed to flush reindex queue: ${e2}`);
-      this.post({
-        type: "indexingError",
-        error: e2 instanceof Error ? e2.message : String(e2)
-      });
-    }
-  }
   resolveWebviewView(webviewView, ctx, token) {
     this._view = webviewView;
     webviewView.webview.options = {
@@ -51798,10 +65656,10 @@ var ChatApp = class {
           const savedModel = this.context.globalState.get("selectedModel");
           this.post({ type: "restoreHistory", history: this.chatHistory });
           if (savedProvider) {
-            const apiKey = await this.getAPIKey(savedProvider);
+            const apiKey = await getAPIKey(this.context, savedProvider);
             if (apiKey) {
               try {
-                const models = await this.getModelsFromProvider(savedProvider, apiKey);
+                const models = await getModelsFromProvider(savedProvider, apiKey);
                 this.post({
                   type: "restoreState",
                   provider: savedProvider,
@@ -51817,11 +65675,11 @@ var ChatApp = class {
           const savedEmbeddingModel = this.context.globalState.get("selectedEmbeddingModel");
           if (savedEmbeddingProvider) {
             const indexer = await this.indexLoadPromise;
-            const embedApiKey = await this.getEmbeddingAPIKey(savedEmbeddingProvider);
+            const embedApiKey = await getEmbeddingAPIKey(this.context, savedEmbeddingProvider);
             const hasIndex = indexer.dbConnected();
             if (embedApiKey) {
               try {
-                const models = await this.getEmbeddingModelsFromProvider(savedEmbeddingProvider, embedApiKey);
+                const models = await getEmbeddingModelsFromProvider(savedEmbeddingProvider, embedApiKey);
                 this.post({
                   type: "restoreIndexingState",
                   enabled: indexingEnabled,
@@ -51839,17 +65697,17 @@ var ChatApp = class {
         case "fetchModels": {
           try {
             await this.context.globalState.update("selectedProvider", data.provider);
-            const apiKey = await this.getAPIKey(data.provider);
+            const apiKey = await getAPIKey(this.context, data.provider);
             if (!apiKey) {
               this.post({ type: "requestApiKey", provider: data.provider });
               return;
             }
             this.post({
               type: "setModels",
-              models: await this.getModelsFromProvider(data.provider, apiKey)
+              models: await getModelsFromProvider(data.provider, apiKey)
             });
           } catch (e2) {
-            vscode6.window.showErrorMessage(`Failed to fetch models: ${e2}`);
+            vscode7.window.showErrorMessage(`Failed to fetch models: ${e2}`);
             this.post({ type: "error" });
           }
           break;
@@ -51860,10 +65718,10 @@ var ChatApp = class {
             await this.context.secrets.store(secretKey, data.key);
             this.post({
               type: "setModels",
-              models: await this.getModelsFromProvider(data.provider, data.key)
+              models: await getModelsFromProvider(data.provider, data.key)
             });
           } catch (e2) {
-            vscode6.window.showErrorMessage(`Invalid key or Failed to fetch models: ${e2}`);
+            vscode7.window.showErrorMessage(`Invalid key or Failed to fetch models: ${e2}`);
             this.post({ type: "requestApiKey", provider: data.provider });
           }
           break;
@@ -51891,15 +65749,15 @@ var ChatApp = class {
         case "fetchEmbeddingModels": {
           try {
             await this.context.globalState.update("selectedEmbeddingProvider", data.provider);
-            const apiKey = await this.getEmbeddingAPIKey(data.provider);
+            const apiKey = await getEmbeddingAPIKey(this.context, data.provider);
             if (!apiKey) {
               this.post({ type: "requestEmbeddingApiKey", provider: data.provider });
               return;
             }
-            const models = await this.getEmbeddingModelsFromProvider(data.provider, apiKey);
+            const models = await getEmbeddingModelsFromProvider(data.provider, apiKey);
             this.post({ type: "setEmbeddingModels", models });
           } catch (e2) {
-            vscode6.window.showErrorMessage(`Failed to fetch embedding models: ${e2}`);
+            vscode7.window.showErrorMessage(`Failed to fetch embedding models: ${e2}`);
             this.post({ type: "requestEmbeddingApiKey", provider: data.provider });
           }
           break;
@@ -51908,10 +65766,10 @@ var ChatApp = class {
           try {
             const secretKey = `${data.provider.toUpperCase()}_EMBEDDING_API_KEY`;
             await this.context.secrets.store(secretKey, data.key);
-            const models = await this.getEmbeddingModelsFromProvider(data.provider, data.key);
+            const models = await getEmbeddingModelsFromProvider(data.provider, data.key);
             this.post({ type: "setEmbeddingModels", models });
           } catch (e2) {
-            vscode6.window.showErrorMessage(`Invalid embedding API key: ${e2}`);
+            vscode7.window.showErrorMessage(`Invalid embedding API key: ${e2}`);
             this.post({ type: "requestEmbeddingApiKey", provider: data.provider });
           }
           break;
@@ -51922,22 +65780,32 @@ var ChatApp = class {
         }
         case "indexWorkspace": {
           try {
-            const apiKey = await this.getEmbeddingAPIKey(data.provider);
+            const apiKey = await getEmbeddingAPIKey(this.context, data.provider);
             if (!apiKey) {
               this.post({ type: "requestEmbeddingApiKey", provider: data.provider });
               return;
             }
-            if (!this.indexer) this.indexer = await Indexer.create(this.context);
+            const indexer = await this.indexLoadPromise;
             const embedProvider = EmbedFactory.create(data.provider, apiKey);
-            await this.indexer.indexWorkspace(embedProvider, data.model);
-            this.post({
-              type: "indexingStatus",
-              status: "Indexed",
-              done: true,
-              hasIndex: true
-            });
+            const success = await indexer.indexWorkspace(embedProvider, data.model);
+            if (success) {
+              this.post({
+                type: "indexingStatus",
+                status: "Indexed",
+                done: true,
+                hasIndex: true
+              });
+            } else {
+              this.post({
+                type: "indexingStatus",
+                status: "No supported files found",
+                done: true,
+                hasIndex: false
+              });
+              vscode7.window.showInformationMessage("No supported files found to index.");
+            }
           } catch (e2) {
-            vscode6.window.showErrorMessage(`Indexing failed: ${formatError(e2)}`);
+            vscode7.window.showErrorMessage(`Indexing failed: ${formatError(e2)}`);
             this.post({ type: "indexingError" });
           }
           break;
@@ -51946,15 +65814,15 @@ var ChatApp = class {
     });
   }
   _getHtml() {
-    const htmlPath = vscode6.Uri.joinPath(this.context.extensionUri, "media", "sidebar.html");
-    const cssPath = vscode6.Uri.joinPath(this.context.extensionUri, "media", "sidebar.css");
+    const htmlPath = vscode7.Uri.joinPath(this.context.extensionUri, "media", "sidebar.html");
+    const cssPath = vscode7.Uri.joinPath(this.context.extensionUri, "media", "sidebar.css");
     try {
       let html = fs3.readFileSync(htmlPath.fsPath, "utf-8");
       const styleUri = this._view.webview.asWebviewUri(cssPath);
       html = html.replace("{{styleUri}}", styleUri.toString());
       return html;
     } catch (e2) {
-      vscode6.window.showErrorMessage(`Error loading sidebar html: ${e2}`);
+      vscode7.window.showErrorMessage(`Error loading sidebar html: ${e2}`);
       return `<!DOCTYPE html><html><body>Error loading UI</body></html>`;
     }
   }
@@ -51970,7 +65838,7 @@ function formatError(e2) {
 function activate(context) {
   const chatApp = new ChatApp(context);
   context.subscriptions.push(
-    vscode7.window.registerWebviewViewProvider(
+    vscode8.window.registerWebviewViewProvider(
       "codeagent-sidebar",
       chatApp
     )
