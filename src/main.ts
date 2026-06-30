@@ -5,7 +5,7 @@ import { ChatMessage } from './apis/chat/chatProvider';
 import { createToolRegistry, ToolResult } from './tools/toolIndex';
 import { EmbedFactory } from './apis/embed/embedFactory';
 import { Indexer } from './indexing/indexer';
-import { getAPIKey, getEmbeddingAPIKey, getEmbeddingModelsFromProvider, getModelsFromProvider } from './utils/apiUtils';
+import { getChatAPIKey as getChatAPIKey, getEmbedAPIKey as getEmbedAPIKey, getEmbeddingModelsFromProvider as getEmbedModelsFromProvider, getModelsFromProvider as getChatModelsFromProvider } from './utils/apiUtils';
 
 declare const console: any;
 
@@ -21,7 +21,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
     private indexLoadPromise: Promise<Indexer>;
     
     constructor(private readonly context: vscode.ExtensionContext) {
-        const savedHistory = context.workspaceState.get<ChatMessage[]>('agentChatHistory');
+        const savedHistory = context.workspaceState.get<ChatMessage[]>('chatHistory');
         
         if (savedHistory && savedHistory.length > 0) this.chatHistory = savedHistory;
         else this.chatHistory = this.getInitialChatMessages();
@@ -34,20 +34,20 @@ export class ChatApp implements vscode.WebviewViewProvider {
         
         this.toolRegistry = createToolRegistry({
             createSearchCodebaseDeps: async () => {
-                const providerId = this.context.globalState.get<string>('selectedEmbeddingProvider');
-                const model = this.context.globalState.get<string>('selectedEmbeddingModel');
+                const providerId = this.context.globalState.get<string>('embedProvider');
+                const model = this.context.globalState.get<string>('embedModel');
                 
                 if (!providerId || !model) throw new Error("embedding provider/model is not configured");
                 
                 
-                const apiKey = await getEmbeddingAPIKey(this.context, providerId);
+                const apiKey = await getEmbedAPIKey(this.context, providerId);
                 if (!apiKey) throw new Error("missing embedding API key");
                 const indexer = await this.indexLoadPromise;
                 
                 return {
                     indexer: indexer,
                     embedProvider: EmbedFactory.create(providerId, apiKey),
-                    model
+                 model
                 };
             }
         });
@@ -66,10 +66,10 @@ export class ChatApp implements vscode.WebviewViewProvider {
 
     private post(message: any) { this._view?.webview.postMessage(message); }
 
-    private async saveChatHistory() { await this.context.workspaceState.update('agentChatHistory', this.chatHistory); }
+    private async saveChatHistory() { await this.context.workspaceState.update('chatHistory', this.chatHistory); }
 
     private async runAgentTurn(provider: string, model: string, userMessage: string,): Promise<void> {
-        const apiKey = await getAPIKey(this.context, provider);
+        const apiKey = await getChatAPIKey(this.context, provider);
         const indexer = await this.indexLoadPromise;
 
         // This shouldn't happen as the send function is disabled without apiKey
@@ -189,21 +189,27 @@ export class ChatApp implements vscode.WebviewViewProvider {
             switch (data.type) {
 
                 case 'webviewReady': {
-                    const savedProvider = this.context.globalState.get<string>('selectedProvider');
-                    const savedModel = this.context.globalState.get<string>('selectedModel');
+                    this.post({
+                        type: 'initProviders',
+                        chatProviders: ChatFactory.getAvailableProviders(),
+                        embedProviders: EmbedFactory.getAvailableProviders() 
+                    });
 
-                    this.post({ type: 'restoreHistory', history: this.chatHistory });
+                    const chatProvider = this.context.globalState.get<string>('chatProvider');
+                    const chatModel = this.context.globalState.get<string>('chatModel');
 
-                    if (savedProvider) {
-                        const apiKey = await getAPIKey(this.context, savedProvider);
+                    this.post({ type: 'restoreChatHistory', history: this.chatHistory });
+
+                    if (chatProvider) {
+                        const apiKey = await getChatAPIKey(this.context, chatProvider);
                         if (apiKey) {
                             try {
-                                const models = await getModelsFromProvider(savedProvider, apiKey);
+                                const chatModels = await getChatModelsFromProvider(chatProvider, apiKey);
                                 this.post({
-                                    type: 'restoreState',
-                                    provider: savedProvider,
-                                    model: savedModel,
-                                    models: models
+                                    type: 'restoreChatState',
+                                    provider: chatProvider,
+                                    choice: chatModel, 
+                                    models: chatModels
                                 });
                             } catch (e) {
 
@@ -211,127 +217,169 @@ export class ChatApp implements vscode.WebviewViewProvider {
                         }
                     }
 
-                    const indexingEnabled = this.context.globalState.get<boolean>('indexingEnabled') ?? false;
-                    const savedEmbeddingProvider = this.context.globalState.get<string>('selectedEmbeddingProvider');
-                    const savedEmbeddingModel = this.context.globalState.get<string>('selectedEmbeddingModel');
-
-                    if (savedEmbeddingProvider) {
-                        const indexer = await this.indexLoadPromise;
-                        const embedApiKey = await getEmbeddingAPIKey(this.context, savedEmbeddingProvider);
-                        const hasIndex = indexer.dbConnected();
-
-                        if (embedApiKey) {
-                            try {
-                                const models = await getEmbeddingModelsFromProvider(savedEmbeddingProvider, embedApiKey);
+                    const indexEnabled = this.context.globalState.get<boolean>('indexEnabled') ?? false;
+                    
+                    if (indexEnabled) {
+                        const embedProvider = this.context.globalState.get<string>('embedProvider');
+                        const embedModel = this.context.globalState.get<string>('embedModel');
+                        if (embedProvider) {
+                            const indexer = await this.indexLoadPromise;
+                            const embedApiKey = await getEmbedAPIKey(this.context, embedProvider);
+                            const hasIndex = indexer.dbConnected();
+                            
+                            if (!embedApiKey) {
+                                // Case 1: Provider selected, but no API key found
                                 this.post({
-                                    type: 'restoreIndexingState',
-                                    enabled: indexingEnabled,
-                                    provider: savedEmbeddingProvider,
-                                    model: savedEmbeddingModel,
-                                    models: models,
-                                    status: hasIndex ? 'Ready' :
-                                            indexingEnabled ? 'Not Indexed' : 'Disabled'
-                                }); 
-                            } catch (e) {}
+                                    type: 'restoreIndexState',
+                                    enabled: true,
+                                    provider: embedProvider,
+                                    needsAPIKey: true,
+                                    status: 'API key required'
+                                });
+                            } else {
+                                try {
+                                    // Case 2: Key exists, verify it by fetching models
+                                    const embedModels = await getEmbedModelsFromProvider(embedProvider, embedApiKey);
+                                    this.post({
+                                        type: 'restoreIndexState',
+                                        enabled: true,
+                                        provider: embedProvider,
+                                        choice: embedModel,
+                                        models: embedModels,
+                                        status: hasIndex ? 'Ready' : 'Not Indexed'
+                                    }); 
+                                } catch (e) {
+                                    // Case 3: Key exists but is invalid/expired
+                                    this.post({
+                                        type: 'restoreIndexState',
+                                        enabled: true,
+                                        provider: embedProvider,
+                                        needsAPIKey: true,
+                                        status: 'Invalid API key'
+                                    });
+                                }
+                            }
+                        } else {
+                            // Case 4: Indexing is enabled, but no provider is selected yet
+                            this.post({
+                                type: 'restoreIndexState',
+                                enabled: true,
+                                status: 'Select Provider'
+                            });
                         }
+                    } else {
+                        // Case 5: Indexing is disabled
+                        this.post({
+                            type: 'restoreIndexState',
+                            enabled: false,
+                            status: 'Disabled'
+                        });
                     }
                     
                     break;
                 }
-                case 'fetchModels': {
-                    try {
-                        await this.context.globalState.update('selectedProvider', data.provider);
 
-                        const apiKey = await getAPIKey(this.context, data.provider);
+                case 'fetchChatModels': {
+                    try {
+                        await this.context.globalState.update('chatProvider', data.provider);
+
+                        const apiKey = await getChatAPIKey(this.context, data.provider);
 
                         if (!apiKey) {
-                            this.post({ type: 'requestApiKey', provider: data.provider });
+                            this.post({ type: 'requestChatAPIKey', provider: data.provider });
                             return;
                         }
                         this.post({
-                            type: 'setModels',
-                            models: await getModelsFromProvider(data.provider, apiKey)
+                            type: 'setChatModels',
+                            models: await getChatModelsFromProvider(data.provider, apiKey)
                         });
 
                     } catch (e) {
                         vscode.window.showErrorMessage(`Failed to fetch models: ${e}`);
-                        this.post({ type: 'error' });
                     }
                     break;
                 }
-                case 'saveApiKey': {
+
+                case 'saveChatAPIKey': {
                     try {
-                        const secretKey = `${data.provider.toUpperCase()}_API_KEY`;
+                        const secretKey = `${data.provider.toUpperCase()}_CHAT_API_KEY`;
                         await this.context.secrets.store(secretKey, data.key);
 
                         this.post({
-                            type: 'setModels',
-                            models: await getModelsFromProvider(data.provider, data.key)
+                            type: 'setChatModels',
+                            models: await getChatModelsFromProvider(data.provider, data.key)
                         });
                     } catch (e) {
                         vscode.window.showErrorMessage(`Invalid key or Failed to fetch models: ${e}`);
-                        this.post({ type: 'requestApiKey', provider: data.provider });
+                        this.post({ type: 'requestChatAPIKey', provider: data.provider });
                     }
                     break;
                 }
 
-                case 'saveModelPreference': {
-                    await this.context.globalState.update('selectedModel', data.model);
+                case 'saveChatModel': {
+                    await this.context.globalState.update('chatModel', data.model);
                     break;
                 }
+
                 case 'askAgent': {
                     if (!data.value) { return; }
                     this.runAgentTurn(data.provider, data.model, data.value);
                     break;
                 }
+
                 case 'clearChat': {
                     this.chatHistory = this.getInitialChatMessages();
-                    await this.context.workspaceState.update('agentChatHistory', this.chatHistory);
+                    await this.context.workspaceState.update('chatHistory', this.chatHistory);
                     break;
                 }
-                case 'setIndexingEnabled': {
-                    await this.context.globalState.update('indexingEnabled', data.enabled);
+
+                case 'setIndexEnabled': {
+                    await this.context.globalState.update('indexEnabled', data.enabled);
                     break;
                 }
-                case 'fetchEmbeddingModels': {
+
+                case 'fetchEmbedModels': {
                     try {
-                        await this.context.globalState.update('selectedEmbeddingProvider', data.provider);
-                        const apiKey = await getEmbeddingAPIKey(this.context, data.provider);
+                        await this.context.globalState.update('embedProvider', data.provider);
+                        const apiKey = await getEmbedAPIKey(this.context, data.provider);
                         if (!apiKey) {
-                            this.post({ type: 'requestEmbeddingApiKey', provider: data.provider });
+                            this.post({ type: 'requestEmbedAPIKey', provider: data.provider });
                             return;
                         }
 
-                        const models = await getEmbeddingModelsFromProvider(data.provider, apiKey);
-                        this.post({ type: 'setEmbeddingModels', models });
+                        const models = await getEmbedModelsFromProvider(data.provider, apiKey);
+                        this.post({ type: 'setEmbedModels', models });
                     } catch (e) {
                         vscode.window.showErrorMessage(`Failed to fetch embedding models: ${e}`);
-                        this.post({ type: 'requestEmbeddingApiKey', provider: data.provider });
+                        this.post({ type: 'requestEmbedAPIKey', provider: data.provider });
                     }
                     break;
                 }
-                case 'saveEmbeddingApiKey': {
+
+                case 'saveEmbedAPIKey': {
                     try {
-                        const secretKey = `${data.provider.toUpperCase()}_EMBEDDING_API_KEY`;
+                        const secretKey = `${data.provider.toUpperCase()}_EMBED_API_KEY`;
                         await this.context.secrets.store(secretKey, data.key);
 
-                        const models = await getEmbeddingModelsFromProvider(data.provider, data.key);
-                        this.post ({type: 'setEmbeddingModels', models });
+                        const models = await getEmbedModelsFromProvider(data.provider, data.key);
+                        this.post ({type: 'setEmbedModels', models });
                     } catch (e) {
                         vscode.window.showErrorMessage(`Invalid embedding API key: ${e}`);
-                        this.post({ type: 'requestEmbeddingApiKey', provider: data.provider });
+                        this.post({ type: 'requestEmbedAPIKey', provider: data.provider });
                     }
                     break;
                 }
-                case 'saveEmbeddingModelPreference': {
-                    await this.context.globalState.update('selectedEmbeddingModel', data.model);
+
+                case 'saveEmbedModel': {
+                    await this.context.globalState.update('embedModel', data.model);
                     break;
                 }
+
                 case 'indexWorkspace': {
                     try {
-                        const apiKey = await getEmbeddingAPIKey(this.context, data.provider);
+                        const apiKey = await getEmbedAPIKey(this.context, data.provider);
                         if (!apiKey) {
-                            this.post({ type: 'requestEmbeddingApiKey', provider: data.provider });
+                            this.post({ type: 'requestEmbedAPIKey', provider: data.provider });
                             return;
                         }
                         
@@ -342,23 +390,31 @@ export class ChatApp implements vscode.WebviewViewProvider {
 
                         if (success) {
                             this.post({
-                                    type: 'indexingStatus',
+                                    type: 'updateIndexStatus',
                                     status: 'Indexed',
                                     done: true,
+                                    error: false,
                                     hasIndex: true
                                 });
                         } else {
                             this.post({
-                                type: 'indexingStatus',
+                                type: 'updateIndexStatus',
                                 status: 'No supported files found',
                                 done: true,
+                                error: false,
                                 hasIndex: false
                             });
                             vscode.window.showInformationMessage("No supported files found to index.");
                         }
                     } catch (e) {
                         vscode.window.showErrorMessage(`Indexing failed: ${formatError(e)}`);
-                        this.post({ type: 'indexingError' });
+                        this.post({ 
+                            type: 'updateIndexStatus',
+                            status: 'Error',
+                            done: false,
+                            error: true,
+                            hasIndex: false
+                        });
                     }
                     break;
                 }
@@ -367,15 +423,22 @@ export class ChatApp implements vscode.WebviewViewProvider {
     }
 
     private _getHtml(): string {
-        const htmlPath = vscode.Uri.joinPath(this.context.extensionUri, 'media', 'sidebar.html');
-        const cssPath = vscode.Uri.joinPath(this.context.extensionUri, 'media', 'sidebar.css');
+        const htmlPath = vscode.Uri.joinPath(this.context.extensionUri, 'media', 'frontend.html');
+        const scriptPath = vscode.Uri.joinPath(this.context.extensionUri, 'dist', 'webview.bundle.js');
+        const cssPath = vscode.Uri.joinPath(this.context.extensionUri, 'dist', 'webview.bundle.css');
+
         try {
             let html = fs.readFileSync(htmlPath.fsPath, 'utf-8');
+            
+            const scriptUri = this._view!.webview.asWebviewUri(scriptPath);
             const styleUri = this._view!.webview.asWebviewUri(cssPath);
+
             html = html.replace('{{styleUri}}', styleUri.toString());
+            html = html.replace('{{scriptUri}}', scriptUri.toString());
+            
             return html;
         } catch (e) {
-            vscode.window.showErrorMessage(`Error loading sidebar html: ${e}`);
+            vscode.window.showErrorMessage(`Error loading frontend html: ${e}`);
             return `<!DOCTYPE html><html><body>Error loading UI</body></html>`;
         }
     }

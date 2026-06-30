@@ -5,12 +5,12 @@ import * as vscode from 'vscode';
 import { getWorkspaceUri } from "../utils/workspace";
 import * as crypto from 'crypto';
 import { supportedExtensions, languageExcludePatterns, globalExcludePatterns} from "./languages/_languageIndex";
-import { getEmbeddingAPIKey } from "../utils/apiUtils";
+import { getEmbedAPIKey } from "../utils/apiUtils";
 import { EmbedFactory } from "../apis/embed/embedFactory";
 import { minimatch } from "minimatch";
 
 export interface IndexingStatusEvent {
-    type: 'indexingStatus' | 'indexingError';
+    type: 'updateIndexStatus',
     status?: string;
     done?: boolean;
     hasIndex?: boolean;
@@ -44,26 +44,26 @@ export class Indexer {
         
         // Watch for file edits, add editted files to reindex queue
         watcher.onDidChange(async uri => {
-            if (!this.indexEnabled) return;
+            if (!this.indexEnabled()) return;
             this.scheduleReindex([vscode.workspace.asRelativePath(uri)]);
         });
 
         // Watch for file creation, add created file to reindex queue and update neighbouring files' headers
         watcher.onDidCreate(async uri => {
-            if (!this.indexEnabled) return;
+            if (!this.indexEnabled()) return;
             this.scheduleReindex([vscode.workspace.asRelativePath(uri)]);
             await this.scheduleNeighbourHoodUpdate(uri);
         });
 
         // Watch for file deletion, add deleted file to deletion queue and update neighbouring files' headers
         watcher.onDidDelete(async uri => {
-            if (!this.indexEnabled) return;
+            if (!this.indexEnabled()) return;
             this.scheduleDeleteFile([vscode.workspace.asRelativePath(uri)]);
             await this.scheduleNeighbourHoodUpdate(uri);
         });
 
         vscode.workspace.onDidRenameFiles(async (e) => {
-            if (!this.indexEnabled) return;
+            if (!this.indexEnabled()) return;
             for (const file of e.files) {
                 const oldPath = vscode.workspace.asRelativePath(file.oldUri);
                 const newPath = vscode.workspace.asRelativePath(file.newUri);
@@ -223,7 +223,7 @@ export class Indexer {
     }
 
     private indexEnabled(): boolean {
-        return this.context.globalState.get<boolean>('indexingEnabled') ?? false;
+        return this.context.globalState.get<boolean>('indexEnabled') ?? false;
     }
 
     private async updateFileHeader(filePath: string): Promise<void> {
@@ -273,12 +273,12 @@ export class Indexer {
     }
 
     private async flushReindexQueue() {
-        const providerId = this.context.globalState.get<string>("selectedEmbeddingProvider");
-        const model = this.context.globalState.get<string>("selectedEmbeddingModel");
+        const providerId = this.context.globalState.get<string>("embedProvider");
+        const model = this.context.globalState.get<string>("embedModel");
         
         if (!providerId || !model) return;
         
-        const apiKey = await getEmbeddingAPIKey(this.context, providerId);
+        const apiKey = await getEmbedAPIKey(this.context, providerId);
         if (!apiKey) return;
         if (!this.dbConnected()) return;
 
@@ -297,7 +297,7 @@ export class Indexer {
         this.headerDirtyFiles.clear();
 
         this.emitter.fire({
-            type: 'indexingStatus',
+            type: 'updateIndexStatus',
             status: `Reindexing ${dirtyFiles.length + deletedFiles.length + headerDirtyFiles.length} file(s)...`,
             done: false
         });
@@ -311,7 +311,7 @@ export class Indexer {
             this.cc.clearNeighbourHoodCache();
 
             this.emitter.fire({
-                type: 'indexingStatus',
+                type: 'updateIndexStatus',
                 status: 'Ready',
                 done: true
             });
@@ -319,7 +319,7 @@ export class Indexer {
             console.error(`Failed to flush reindex queue: ${e}`);
 
             this.emitter.fire({
-                type: 'indexingError',
+                type: 'updateIndexStatus',
                 error: e instanceof Error ? e.message : String(e)
             });
         }
@@ -330,7 +330,7 @@ export class Indexer {
 
         this.reindexTimer = setTimeout(() => {
             void this.flushReindexQueue();
-        }, 1500);
+        }, 5000);
     }
 
     private static debugVector(label: string, vector: ArrayLike<number>, text: string) {

@@ -51753,15 +51753,16 @@ var OpenAIChatProvider = class extends ChatProvider {
 
 // src/apis/chat/chatFactory.ts
 var ChatFactory = class {
+  static providers = {
+    "OpenAI": OpenAIChatProvider,
+    "Gemini": GeminiChatProvider
+  };
+  static getAvailableProviders() {
+    return Object.keys(this.providers);
+  }
   static create(providerName, apiKey) {
-    switch (providerName.toLowerCase()) {
-      case "openai":
-        return new OpenAIChatProvider(apiKey);
-      case "gemini":
-        return new GeminiChatProvider(apiKey);
-      default:
-        throw new Error(`Unsupported api: ${providerName}`);
-    }
+    const ProviderClass = this.providers[providerName];
+    return new ProviderClass(apiKey);
   }
 };
 
@@ -51808,13 +51809,15 @@ var GeminiEmbedProvider = class extends EmbedProvider {
 
 // src/apis/embed/embedFactory.ts
 var EmbedFactory = class {
+  static providers = {
+    "Gemini": GeminiEmbedProvider
+  };
+  static getAvailableProviders() {
+    return Object.keys(this.providers);
+  }
   static create(providerName, apiKey) {
-    switch (providerName.toLowerCase()) {
-      case "gemini":
-        return new GeminiEmbedProvider(apiKey);
-      default:
-        throw new Error(`Unsupported api: ${providerName}`);
-    }
+    const ProviderClass = this.providers[providerName];
+    return new ProviderClass(apiKey);
   }
 };
 
@@ -62995,7 +62998,9 @@ var csharpChunkConfig = {
     "property_declaration"
   ]),
   importNodeTypes: /* @__PURE__ */ new Set([
-    "using_directive"
+    "using_directive",
+    "namespace_declaration",
+    "file_scoped_namespace_declaration"
   ]),
   getSymbolName(node) {
     return node.childForFieldName("name")?.text;
@@ -63024,7 +63029,8 @@ var javaChunkConfig = {
     "constructor_declaration"
   ]),
   importNodeTypes: /* @__PURE__ */ new Set([
-    "import_declaration"
+    "import_declaration",
+    "package_declaration"
   ]),
   getSymbolName(node) {
     return node.childForFieldName("name")?.text;
@@ -63457,12 +63463,12 @@ async function getEmbeddingModelsFromProvider(provider, apiKey) {
   const providerInstance = EmbedFactory.create(provider, apiKey);
   return await providerInstance.getModels();
 }
-async function getAPIKey(context, provider) {
-  const secretKey = `${provider.toUpperCase()}_API_KEY`;
+async function getChatAPIKey(context, provider) {
+  const secretKey = `${provider.toUpperCase()}_CHAT_API_KEY`;
   return await context.secrets.get(secretKey);
 }
-async function getEmbeddingAPIKey(context, provider) {
-  const secretKey = `${provider.toUpperCase()}_EMBEDDING_API_KEY`;
+async function getEmbedAPIKey(context, provider) {
+  const secretKey = `${provider.toUpperCase()}_EMBED_API_KEY`;
   return await context.secrets.get(secretKey);
 }
 
@@ -65278,21 +65284,21 @@ var Indexer = class _Indexer {
     const watchPattern = `**/*.{${extGlob}}`;
     const watcher = vscode6.workspace.createFileSystemWatcher(watchPattern);
     watcher.onDidChange(async (uri) => {
-      if (!this.indexEnabled) return;
+      if (!this.indexEnabled()) return;
       this.scheduleReindex([vscode6.workspace.asRelativePath(uri)]);
     });
     watcher.onDidCreate(async (uri) => {
-      if (!this.indexEnabled) return;
+      if (!this.indexEnabled()) return;
       this.scheduleReindex([vscode6.workspace.asRelativePath(uri)]);
       await this.scheduleNeighbourHoodUpdate(uri);
     });
     watcher.onDidDelete(async (uri) => {
-      if (!this.indexEnabled) return;
+      if (!this.indexEnabled()) return;
       this.scheduleDeleteFile([vscode6.workspace.asRelativePath(uri)]);
       await this.scheduleNeighbourHoodUpdate(uri);
     });
     vscode6.workspace.onDidRenameFiles(async (e2) => {
-      if (!this.indexEnabled) return;
+      if (!this.indexEnabled()) return;
       for (const file of e2.files) {
         const oldPath = vscode6.workspace.asRelativePath(file.oldUri);
         const newPath = vscode6.workspace.asRelativePath(file.newUri);
@@ -65424,7 +65430,7 @@ var Indexer = class _Indexer {
     return this.excludePattern.some((pattern) => minimatch(filePath, pattern, { dot: true }));
   }
   indexEnabled() {
-    return this.context.globalState.get("indexingEnabled") ?? false;
+    return this.context.globalState.get("indexEnabled") ?? false;
   }
   async updateFileHeader(filePath) {
     if (!this.db) throw new Error("Cannot update file: VectorDB is not connected");
@@ -65459,10 +65465,10 @@ var Indexer = class _Indexer {
     return Array.from(uniqueFiles);
   }
   async flushReindexQueue() {
-    const providerId = this.context.globalState.get("selectedEmbeddingProvider");
-    const model = this.context.globalState.get("selectedEmbeddingModel");
+    const providerId = this.context.globalState.get("embedProvider");
+    const model = this.context.globalState.get("embedModel");
     if (!providerId || !model) return;
-    const apiKey = await getEmbeddingAPIKey(this.context, providerId);
+    const apiKey = await getEmbedAPIKey(this.context, providerId);
     if (!apiKey) return;
     if (!this.dbConnected()) return;
     const deletedFiles = [...this.deletedFiles];
@@ -65474,7 +65480,7 @@ var Indexer = class _Indexer {
     this.deletedFiles.clear();
     this.headerDirtyFiles.clear();
     this.emitter.fire({
-      type: "indexingStatus",
+      type: "updateIndexStatus",
       status: `Reindexing ${dirtyFiles.length + deletedFiles.length + headerDirtyFiles.length} file(s)...`,
       done: false
     });
@@ -65485,14 +65491,14 @@ var Indexer = class _Indexer {
       for (const file of headerDirtyFiles) await this.updateFileHeader(file);
       this.cc.clearNeighbourHoodCache();
       this.emitter.fire({
-        type: "indexingStatus",
+        type: "updateIndexStatus",
         status: "Ready",
         done: true
       });
     } catch (e2) {
       console.error(`Failed to flush reindex queue: ${e2}`);
       this.emitter.fire({
-        type: "indexingError",
+        type: "updateIndexStatus",
         error: e2 instanceof Error ? e2.message : String(e2)
       });
     }
@@ -65501,7 +65507,7 @@ var Indexer = class _Indexer {
     if (this.reindexTimer) clearTimeout(this.reindexTimer);
     this.reindexTimer = setTimeout(() => {
       void this.flushReindexQueue();
-    }, 1500);
+    }, 5e3);
   }
   static debugVector(label, vector, text) {
     const values = Array.from(vector);
@@ -65518,7 +65524,7 @@ var Indexer = class _Indexer {
 var ChatApp = class {
   constructor(context) {
     this.context = context;
-    const savedHistory = context.workspaceState.get("agentChatHistory");
+    const savedHistory = context.workspaceState.get("chatHistory");
     if (savedHistory && savedHistory.length > 0) this.chatHistory = savedHistory;
     else this.chatHistory = this.getInitialChatMessages();
     this.indexLoadPromise = Indexer.create(this.context).then((indexer) => {
@@ -65528,10 +65534,10 @@ var ChatApp = class {
     });
     this.toolRegistry = createToolRegistry({
       createSearchCodebaseDeps: async () => {
-        const providerId = this.context.globalState.get("selectedEmbeddingProvider");
-        const model = this.context.globalState.get("selectedEmbeddingModel");
+        const providerId = this.context.globalState.get("embedProvider");
+        const model = this.context.globalState.get("embedModel");
         if (!providerId || !model) throw new Error("embedding provider/model is not configured");
-        const apiKey = await getEmbeddingAPIKey(this.context, providerId);
+        const apiKey = await getEmbedAPIKey(this.context, providerId);
         if (!apiKey) throw new Error("missing embedding API key");
         const indexer = await this.indexLoadPromise;
         return {
@@ -65563,10 +65569,10 @@ var ChatApp = class {
     this._view?.webview.postMessage(message);
   }
   async saveChatHistory() {
-    await this.context.workspaceState.update("agentChatHistory", this.chatHistory);
+    await this.context.workspaceState.update("chatHistory", this.chatHistory);
   }
   async runAgentTurn(provider, model, userMessage) {
-    const apiKey = await getAPIKey(this.context, provider);
+    const apiKey = await getChatAPIKey(this.context, provider);
     const indexer = await this.indexLoadPromise;
     if (!apiKey) {
       vscode7.window.showErrorMessage(`No API key for ${provider}`);
@@ -65652,82 +65658,115 @@ var ChatApp = class {
     webviewView.webview.onDidReceiveMessage(async (data) => {
       switch (data.type) {
         case "webviewReady": {
-          const savedProvider = this.context.globalState.get("selectedProvider");
-          const savedModel = this.context.globalState.get("selectedModel");
-          this.post({ type: "restoreHistory", history: this.chatHistory });
-          if (savedProvider) {
-            const apiKey = await getAPIKey(this.context, savedProvider);
+          this.post({
+            type: "initProviders",
+            chatProviders: ChatFactory.getAvailableProviders(),
+            embedProviders: EmbedFactory.getAvailableProviders()
+          });
+          const chatProvider = this.context.globalState.get("chatProvider");
+          const chatModel = this.context.globalState.get("chatModel");
+          this.post({ type: "restoreChatHistory", history: this.chatHistory });
+          if (chatProvider) {
+            const apiKey = await getChatAPIKey(this.context, chatProvider);
             if (apiKey) {
               try {
-                const models = await getModelsFromProvider(savedProvider, apiKey);
+                const chatModels = await getModelsFromProvider(chatProvider, apiKey);
                 this.post({
-                  type: "restoreState",
-                  provider: savedProvider,
-                  model: savedModel,
-                  models
+                  type: "restoreChatState",
+                  provider: chatProvider,
+                  choice: chatModel,
+                  models: chatModels
                 });
               } catch (e2) {
               }
             }
           }
-          const indexingEnabled = this.context.globalState.get("indexingEnabled") ?? false;
-          const savedEmbeddingProvider = this.context.globalState.get("selectedEmbeddingProvider");
-          const savedEmbeddingModel = this.context.globalState.get("selectedEmbeddingModel");
-          if (savedEmbeddingProvider) {
-            const indexer = await this.indexLoadPromise;
-            const embedApiKey = await getEmbeddingAPIKey(this.context, savedEmbeddingProvider);
-            const hasIndex = indexer.dbConnected();
-            if (embedApiKey) {
-              try {
-                const models = await getEmbeddingModelsFromProvider(savedEmbeddingProvider, embedApiKey);
+          const indexEnabled = this.context.globalState.get("indexEnabled") ?? false;
+          if (indexEnabled) {
+            const embedProvider = this.context.globalState.get("embedProvider");
+            const embedModel = this.context.globalState.get("embedModel");
+            if (embedProvider) {
+              const indexer = await this.indexLoadPromise;
+              const embedApiKey = await getEmbedAPIKey(this.context, embedProvider);
+              const hasIndex = indexer.dbConnected();
+              if (!embedApiKey) {
                 this.post({
-                  type: "restoreIndexingState",
-                  enabled: indexingEnabled,
-                  provider: savedEmbeddingProvider,
-                  model: savedEmbeddingModel,
-                  models,
-                  status: hasIndex ? "Ready" : indexingEnabled ? "Not Indexed" : "Disabled"
+                  type: "restoreIndexState",
+                  enabled: true,
+                  provider: embedProvider,
+                  needsAPIKey: true,
+                  status: "API key required"
                 });
-              } catch (e2) {
+              } else {
+                try {
+                  const embedModels = await getEmbeddingModelsFromProvider(embedProvider, embedApiKey);
+                  this.post({
+                    type: "restoreIndexState",
+                    enabled: true,
+                    provider: embedProvider,
+                    choice: embedModel,
+                    models: embedModels,
+                    status: hasIndex ? "Ready" : "Not Indexed"
+                  });
+                } catch (e2) {
+                  this.post({
+                    type: "restoreIndexState",
+                    enabled: true,
+                    provider: embedProvider,
+                    needsAPIKey: true,
+                    status: "Invalid API key"
+                  });
+                }
               }
+            } else {
+              this.post({
+                type: "restoreIndexState",
+                enabled: true,
+                status: "Select Provider"
+              });
             }
+          } else {
+            this.post({
+              type: "restoreIndexState",
+              enabled: false,
+              status: "Disabled"
+            });
           }
           break;
         }
-        case "fetchModels": {
+        case "fetchChatModels": {
           try {
-            await this.context.globalState.update("selectedProvider", data.provider);
-            const apiKey = await getAPIKey(this.context, data.provider);
+            await this.context.globalState.update("chatProvider", data.provider);
+            const apiKey = await getChatAPIKey(this.context, data.provider);
             if (!apiKey) {
-              this.post({ type: "requestApiKey", provider: data.provider });
+              this.post({ type: "requestChatAPIKey", provider: data.provider });
               return;
             }
             this.post({
-              type: "setModels",
+              type: "setChatModels",
               models: await getModelsFromProvider(data.provider, apiKey)
             });
           } catch (e2) {
             vscode7.window.showErrorMessage(`Failed to fetch models: ${e2}`);
-            this.post({ type: "error" });
           }
           break;
         }
-        case "saveApiKey": {
+        case "saveChatAPIKey": {
           try {
-            const secretKey = `${data.provider.toUpperCase()}_API_KEY`;
+            const secretKey = `${data.provider.toUpperCase()}_CHAT_API_KEY`;
             await this.context.secrets.store(secretKey, data.key);
             this.post({
-              type: "setModels",
+              type: "setChatModels",
               models: await getModelsFromProvider(data.provider, data.key)
             });
           } catch (e2) {
             vscode7.window.showErrorMessage(`Invalid key or Failed to fetch models: ${e2}`);
-            this.post({ type: "requestApiKey", provider: data.provider });
+            this.post({ type: "requestChatAPIKey", provider: data.provider });
           }
           break;
         }
-        case "saveModelPreference": {
-          await this.context.globalState.update("selectedModel", data.model);
+        case "saveChatModel": {
+          await this.context.globalState.update("chatModel", data.model);
           break;
         }
         case "askAgent": {
@@ -65739,50 +65778,50 @@ var ChatApp = class {
         }
         case "clearChat": {
           this.chatHistory = this.getInitialChatMessages();
-          await this.context.workspaceState.update("agentChatHistory", this.chatHistory);
+          await this.context.workspaceState.update("chatHistory", this.chatHistory);
           break;
         }
-        case "setIndexingEnabled": {
-          await this.context.globalState.update("indexingEnabled", data.enabled);
+        case "setIndexEnabled": {
+          await this.context.globalState.update("indexEnabled", data.enabled);
           break;
         }
-        case "fetchEmbeddingModels": {
+        case "fetchEmbedModels": {
           try {
-            await this.context.globalState.update("selectedEmbeddingProvider", data.provider);
-            const apiKey = await getEmbeddingAPIKey(this.context, data.provider);
+            await this.context.globalState.update("embedProvider", data.provider);
+            const apiKey = await getEmbedAPIKey(this.context, data.provider);
             if (!apiKey) {
-              this.post({ type: "requestEmbeddingApiKey", provider: data.provider });
+              this.post({ type: "requestEmbedAPIKey", provider: data.provider });
               return;
             }
             const models = await getEmbeddingModelsFromProvider(data.provider, apiKey);
-            this.post({ type: "setEmbeddingModels", models });
+            this.post({ type: "setEmbedModels", models });
           } catch (e2) {
             vscode7.window.showErrorMessage(`Failed to fetch embedding models: ${e2}`);
-            this.post({ type: "requestEmbeddingApiKey", provider: data.provider });
+            this.post({ type: "requestEmbedAPIKey", provider: data.provider });
           }
           break;
         }
-        case "saveEmbeddingApiKey": {
+        case "saveEmbedAPIKey": {
           try {
-            const secretKey = `${data.provider.toUpperCase()}_EMBEDDING_API_KEY`;
+            const secretKey = `${data.provider.toUpperCase()}_EMBED_API_KEY`;
             await this.context.secrets.store(secretKey, data.key);
             const models = await getEmbeddingModelsFromProvider(data.provider, data.key);
-            this.post({ type: "setEmbeddingModels", models });
+            this.post({ type: "setEmbedModels", models });
           } catch (e2) {
             vscode7.window.showErrorMessage(`Invalid embedding API key: ${e2}`);
-            this.post({ type: "requestEmbeddingApiKey", provider: data.provider });
+            this.post({ type: "requestEmbedAPIKey", provider: data.provider });
           }
           break;
         }
-        case "saveEmbeddingModelPreference": {
-          await this.context.globalState.update("selectedEmbeddingModel", data.model);
+        case "saveEmbedModel": {
+          await this.context.globalState.update("embedModel", data.model);
           break;
         }
         case "indexWorkspace": {
           try {
-            const apiKey = await getEmbeddingAPIKey(this.context, data.provider);
+            const apiKey = await getEmbedAPIKey(this.context, data.provider);
             if (!apiKey) {
-              this.post({ type: "requestEmbeddingApiKey", provider: data.provider });
+              this.post({ type: "requestEmbedAPIKey", provider: data.provider });
               return;
             }
             const indexer = await this.indexLoadPromise;
@@ -65790,23 +65829,31 @@ var ChatApp = class {
             const success = await indexer.indexWorkspace(embedProvider, data.model);
             if (success) {
               this.post({
-                type: "indexingStatus",
+                type: "updateIndexStatus",
                 status: "Indexed",
                 done: true,
+                error: false,
                 hasIndex: true
               });
             } else {
               this.post({
-                type: "indexingStatus",
+                type: "updateIndexStatus",
                 status: "No supported files found",
                 done: true,
+                error: false,
                 hasIndex: false
               });
               vscode7.window.showInformationMessage("No supported files found to index.");
             }
           } catch (e2) {
             vscode7.window.showErrorMessage(`Indexing failed: ${formatError(e2)}`);
-            this.post({ type: "indexingError" });
+            this.post({
+              type: "updateIndexStatus",
+              status: "Error",
+              done: false,
+              error: true,
+              hasIndex: false
+            });
           }
           break;
         }
@@ -65814,15 +65861,18 @@ var ChatApp = class {
     });
   }
   _getHtml() {
-    const htmlPath = vscode7.Uri.joinPath(this.context.extensionUri, "media", "sidebar.html");
-    const cssPath = vscode7.Uri.joinPath(this.context.extensionUri, "media", "sidebar.css");
+    const htmlPath = vscode7.Uri.joinPath(this.context.extensionUri, "media", "frontend.html");
+    const scriptPath = vscode7.Uri.joinPath(this.context.extensionUri, "dist", "webview.bundle.js");
+    const cssPath = vscode7.Uri.joinPath(this.context.extensionUri, "dist", "webview.bundle.css");
     try {
       let html = fs3.readFileSync(htmlPath.fsPath, "utf-8");
+      const scriptUri = this._view.webview.asWebviewUri(scriptPath);
       const styleUri = this._view.webview.asWebviewUri(cssPath);
       html = html.replace("{{styleUri}}", styleUri.toString());
+      html = html.replace("{{scriptUri}}", scriptUri.toString());
       return html;
     } catch (e2) {
-      vscode7.window.showErrorMessage(`Error loading sidebar html: ${e2}`);
+      vscode7.window.showErrorMessage(`Error loading frontend html: ${e2}`);
       return `<!DOCTYPE html><html><body>Error loading UI</body></html>`;
     }
   }

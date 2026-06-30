@@ -2,13 +2,22 @@ import { ChatProvider } from './chatProvider';
 import { GeminiChatProvider } from "./gemini";
 import { OpenAIChatProvider } from "./openai";
 
-export class ChatFactory {
-    static create(providerName: string, apiKey: string): ChatProvider {
-        switch(providerName.toLowerCase()) {
-            case 'openai': return new OpenAIChatProvider(apiKey);
-            case 'gemini': return new GeminiChatProvider(apiKey);
+type ChatProviderConstructor = new (apiKey: string) => ChatProvider;
 
-            default: throw new Error(`Unsupported api: ${providerName}`);
-        }
+export class ChatFactory {
+
+    private static readonly providers: Record<string, ChatProviderConstructor> = {
+        'OpenAI': OpenAIChatProvider,
+        'Gemini': GeminiChatProvider
+    };
+
+    static getAvailableProviders(): string[] {
+        return Object.keys(this.providers);
+    }
+
+    static create(providerName: string, apiKey: string): ChatProvider {
+        const ProviderClass = this.providers[providerName];
+
+        return new ProviderClass(apiKey);
     }
 }

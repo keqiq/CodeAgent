@@ -12,12 +12,12 @@ export async function getEmbeddingModelsFromProvider(provider: string, apiKey: s
     return await providerInstance.getModels();
 }
 
-export async function getAPIKey(context: vscode.ExtensionContext, provider: string) {
-    const secretKey = `${provider.toUpperCase()}_API_KEY`;
+export async function getChatAPIKey(context: vscode.ExtensionContext, provider: string) {
+    const secretKey = `${provider.toUpperCase()}_CHAT_API_KEY`;
     return await context.secrets.get(secretKey);
 }
 
-export async function getEmbeddingAPIKey(context: vscode.ExtensionContext, provider: string) {
-    const secretKey = `${provider.toUpperCase()}_EMBEDDING_API_KEY`;
+export async function getEmbedAPIKey(context: vscode.ExtensionContext, provider: string) {
+    const secretKey = `${provider.toUpperCase()}_EMBED_API_KEY`;
     return await context.secrets.get(secretKey);
 }

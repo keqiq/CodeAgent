@@ -1,12 +1,20 @@
 import { EmbedProvider } from "./embedProvider";
 import { GeminiEmbedProvider } from "./gemini";
 
-export class EmbedFactory {
-    static create(providerName: string, apiKey: string): EmbedProvider {
-        switch(providerName.toLowerCase()) {
-            case 'gemini': return new GeminiEmbedProvider(apiKey);
+type EmbedProviderConstructor = new (apiKey: string) => EmbedProvider;
 
-            default: throw new Error(`Unsupported api: ${providerName}`);
-        }
+export class EmbedFactory {
+    private static readonly providers: Record<string, EmbedProviderConstructor> = {
+        'Gemini': GeminiEmbedProvider
+    };
+
+    static getAvailableProviders(): string[] {
+        return Object.keys(this.providers);
+    }
+
+    static create(providerName: string, apiKey: string): EmbedProvider {
+        const ProviderClass = this.providers[providerName];
+
+        return new ProviderClass(apiKey);
     }
 }

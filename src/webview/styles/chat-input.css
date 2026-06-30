@@ -1,0 +1,65 @@
+/*input area containing api provider and model selector*/
+.chat-input {
+    padding: 10px;
+    background: var(--vscode-sideBar-background);
+}
+
+.unified-box {
+    display: flex;
+    flex-direction: column;
+    background: var(--vscode-input-background);
+    border: 1px solid var(--vscode-input-border);
+    border-radius: 12px; 
+    padding: 8px 12px;
+    transition: border-color 0.2s;
+}
+.unified-box:focus-within {
+    border-color: var(--vscode-focusBorder);
+}
+
+/* prompt area */
+textarea { 
+    width: 100%; 
+    box-sizing: border-box; 
+    background: transparent; 
+    color: var(--vscode-input-foreground); 
+    border: none; 
+    outline: none; 
+    resize: none; /* Disable the manual drag handle */
+    min-height: 20px; /* Base height for a single line */
+    max-height: 150px; /* The "sensible limit" before scrolling starts */
+    overflow-y: auto; /* Only show scrollbar when max-height is reached */
+    font-family: inherit;
+    font-size: 13px;
+    line-height: 1.5; /* Gives breathing room between wrapped lines */
+    padding: 0;
+    margin-bottom: 8px; 
+}
+
+/* bottom container */
+.box-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.action-group {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.send-btn {
+    background: var(--vscode-button-background);
+    color: var(--vscode-button-foreground);
+    border: none;
+    border-radius: 6px;
+    padding: 4px 12px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.send-btn:hover:not(:disabled) { background: var(--vscode-button-hoverBackground); }
+.send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
