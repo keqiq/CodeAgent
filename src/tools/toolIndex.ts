@@ -13,13 +13,12 @@ export interface ToolParameters {
     required?: string[];
 }
 
-export interface ToolFunction {
+export interface ToolSchema {
+    type: "function";
     name: string;
     description: string;
     parameters: ToolParameters;
-}
-export interface ToolSchema {
-    type: string, function: ToolFunction
+    strict?: boolean;
 }
 
 export interface ToolResult {

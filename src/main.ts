@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import { ChatFactory } from './apis/chat/chatFactory';
-import { ChatMessage } from './apis/chat/chatProvider';
+import { ChatItem, ChatResponse } from './apis/chat/chatProvider';
 import { createToolRegistry, ToolResult } from './tools/toolIndex';
 import { EmbedFactory } from './apis/embed/embedFactory';
 import { Indexer } from './indexing/indexer';
@@ -14,16 +14,22 @@ export class ChatApp implements vscode.WebviewViewProvider {
     private _view?: vscode.WebviewView;
     private MAX_TURN_COUNT = 15;
     
-    private chatHistory: ChatMessage[];
+    private chatHistory: ChatItem[];
     private toolRegistry: any;
     
     private indexer? : Indexer;
     private indexLoadPromise: Promise<Indexer>;
+
+    private previousTurnID: string | undefined = undefined;
     
     constructor(private readonly context: vscode.ExtensionContext) {
-        const savedHistory = context.workspaceState.get<ChatMessage[]>('chatHistory');
+        const savedHistory = context.workspaceState.get<ChatItem[]>('chatHistory');
         
-        if (savedHistory && savedHistory.length > 0) this.chatHistory = savedHistory;
+        if (savedHistory && savedHistory.length > 0) {
+            this.chatHistory = savedHistory;
+            const lastItemWithId = [...savedHistory].reverse().find(item => item.turnID);
+            if (lastItemWithId) this.previousTurnID = lastItemWithId.turnID;
+        }
         else this.chatHistory = this.getInitialChatMessages();
         
         this.indexLoadPromise = Indexer.create(this.context).then(indexer => {
@@ -53,13 +59,16 @@ export class ChatApp implements vscode.WebviewViewProvider {
         });
     }
 
-    private getInitialChatMessages(): ChatMessage[] {
+    private getInitialChatMessages(): ChatItem[] {
         return [{
-            role: 'system',
+            type: 'message',
+            role: 'developer',
             content: `You are an autonomous, expert software engineering agent integrated into VS Code. 
                       You have access to tools that can search, read, write, and edit files in the user's workspace.
                       When a user asks you to find a bug or fix a problem, DO NOT ask them for the file name if you can search for it yourself. 
-                      Proactively use your 'glob' and 'grep' tools to explore the workspace, find the relevant code, read it, and edit it to fix the issue. 
+                      Proactively use your semantic search tool 'searchCodebase' tool to search the workspace.
+                      Tools like 'glob' and 'grep' should be used as a fallback if semantic search failes to return relevant results, or if you need to view files in more detail. 
+                      Find the relevant code, read it, and edit it to fix the issue. 
                       Always explain your thought process before executing a tool.`
         }];
     }
@@ -77,7 +86,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
 
         try {
             const providerInstance = ChatFactory.create(provider, apiKey);
-            this.chatHistory.push({ role: 'user', content: userMessage });
+            this.chatHistory.push({ type: 'message', role: 'user', content: userMessage, turnID: this.previousTurnID });
             await this.saveChatHistory();
 
             let keepGoing = true;
@@ -88,8 +97,8 @@ export class ChatApp implements vscode.WebviewViewProvider {
 
             while (keepGoing && turnCount < this.MAX_TURN_COUNT) {
                 turnCount++;
-
-                const streamGenerator = providerInstance.fetchStream(model, this.chatHistory);
+                
+                const streamGenerator = providerInstance.fetchStream(model, this.chatHistory, this.previousTurnID);
                 let streamResult = await streamGenerator.next();
                 
                 while (!streamResult.done) {
@@ -100,45 +109,27 @@ export class ChatApp implements vscode.WebviewViewProvider {
                 }
                 
                 this.post({ type: 'streamEnd' });
-                const finalResponse = streamResult.value as { text?: string, tool_calls?: any[] };
+                const finalResponse = streamResult.value as ChatResponse;
                 
-                if (finalResponse && finalResponse.text) {
-                    this.chatHistory.push({ role: 'assistant', content: finalResponse.text });
-                }
-                
-                // // Text reply
-                // const llmResponse = await providerInstance.fetch(model, this.chatHistory);
-                // if (llmResponse.text) {
-                //     this.chatHistory.push({ role: 'assistant', content: llmResponse.text });
-                //     this.post({ type: 'streamStart'})
-                //     this.post({ type: 'receiveMessage', text: llmResponse.text });
-                // }
+                if (finalResponse && finalResponse.items.length > 0) this.chatHistory.push(...finalResponse.items);
 
-                // Tool calls
-                // if (llmResponse.tool_calls && llmResponse.tool_calls.length > 0) {
-                if (finalResponse && finalResponse.tool_calls) {
+                const functionCalls = finalResponse?.items.filter(item => item.type === 'function_call') || [];
+                const interactionID = finalResponse?.turnID;
+
+                if (functionCalls.length > 0) {
 
                     if (!hasStartedToolGroup) {
                         hasStartedToolGroup = true;
                         this.post({ type: 'startToolGroup' });
                     }
 
-                    this.chatHistory.push({
-                        role: 'assistant',
-                        content: JSON.stringify(finalResponse.tool_calls)
-                    });
-
-                    for (const toolCall of finalResponse.tool_calls) {
+                    for (const toolCall of functionCalls) {
                         toolsRunThisTurn++;
                         const toolName = toolCall.name;
                         const toolArgs = toolCall.arguments;
+                        const toolId = toolCall.id;
 
-                        this.post({
-                            type: 'updateTool',
-                            status: 'running',
-                            toolName: toolName,
-                            args: toolArgs
-                        });
+                        this.post({ type: 'updateTool', status: 'running', toolName: toolName, args: toolArgs });
 
                         let result: ToolResult;
 
@@ -157,12 +148,13 @@ export class ChatApp implements vscode.WebviewViewProvider {
                             this.post({ type: 'updateTool', status: 'error', error: "Invalid tool call" });
                         }
 
-                        this.chatHistory.push({ role: 'system', content: `${toolName} result: ${result.message}` });
+                        this.chatHistory.push({ type: 'function_result', id: toolId, name: toolName, result: result.message, turnID: interactionID });
                     }
 
                 } else {
                     keepGoing = false;
                 }
+                this.previousTurnID = interactionID;
             }
 
             if (hasStartedToolGroup) this.post({ type: 'endToolGroup', totalCount: toolsRunThisTurn });
@@ -329,6 +321,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
 
                 case 'clearChat': {
                     this.chatHistory = this.getInitialChatMessages();
+                    this.previousTurnID = undefined;
                     await this.context.workspaceState.update('chatHistory', this.chatHistory);
                     break;
                 }

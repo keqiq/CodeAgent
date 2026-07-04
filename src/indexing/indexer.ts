@@ -201,12 +201,12 @@ export class Indexer {
 
         await this.db.insertRows(rows);
 
-        const storedRows = await this.db.getRowsByFilePath(filePath);
+        // const storedRows = await this.db.getRowsByFilePath(filePath);
         // console.log(`[INDEX DEBUG] Stored row count after insert: ${storedRows.length}`);
 
-        for (let i = 0; i < Math.min(3, storedRows.length); i++) {
-            Indexer.debugVector(`stored vector ${i + 1} for ${filePath}`, storedRows[i].vector, storedRows[i].text);
-        }
+        // for (let i = 0; i < Math.min(3, storedRows.length); i++) {
+        //     Indexer.debugVector(`stored vector ${i + 1} for ${filePath}`, storedRows[i].vector, storedRows[i].text);
+        // }
     }
 
     private async deleteFile(filePath: string): Promise<void> {

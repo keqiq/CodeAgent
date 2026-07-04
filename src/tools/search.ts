@@ -13,48 +13,42 @@ export type SearchCodebaseDeps = {
 export const searchSchemas: ToolSchema[] = [
     {
         type: "function",
-        function: {
-            name: "glob",
-            description: "Find files in the current workspace matching a glob pattern.",
-            parameters: {
-                type: "object",
-                properties: {
-                    pattern: { type: "string", description: "Glob pattern (e.g., 'src/**/*.ts')."}
-                },
-                required: ["pattern"]
-            }
+        name: "glob",
+        description: "Find files in the current workspace matching a glob pattern.",
+        parameters: {
+            type: "object",
+            properties: {
+                pattern: { type: "string", description: "Glob pattern (e.g., 'src/**/*.ts')."}
+            },
+            required: ["pattern"]
         }
     },
     {
         type: "function",
-        function: {
-            name: "grep",
-            description: "Search for a regular expression pattern inside files.",
-            parameters: {
-                type: "object",
-                properties: {
-                    query: { type: "string", description: "The regex pattern to search for."},
-                    filePattern: { type: "string", description: "Optional glob pattern (default: '**/*')."}
-                },
-                required: ["query"]
-            }
+        name: "grep",
+        description: "Search for a regular expression pattern inside files.",
+        parameters: {
+            type: "object",
+            properties: {
+                query: { type: "string", description: "The regex pattern to search for."},
+                filePattern: { type: "string", description: "Optional glob pattern (default: '**/*')."}
+            },
+            required: ["query"]
         }
     },
     {
         type: "function",
-        function: {
-            name: "searchCodebase",
-            description: "Search indexed workspace code using a hybrid of semantic meaning and exact keyword matching. For best results, include specific code identifiers, variable names, or technical terms alongside the semantic intent.",
-            parameters: {
-                type: "object",
-                properties: {
-                    query: {
-                        type: "string",
-                        description: "A concise, keyword-rich search query. Avoid conversational sentences. Example: 'user authentication login auth' rather than 'where is the user login handled?'"
-                    }
-                },
-                required: ["query"]
-            }
+        name: "searchCodebase",
+        description: "Search indexed workspace code using a hybrid of semantic meaning and exact keyword matching. For best results, include specific code identifiers, variable names, or technical terms alongside the semantic intent.",
+        parameters: {
+            type: "object",
+            properties: {
+                query: {
+                    type: "string",
+                    description: "A concise, keyword-rich search query. Avoid conversational sentences. Example: 'user authentication login auth' rather than 'where is the user login handled?'"
+                }
+            },
+            required: ["query"]
         }
     }
 

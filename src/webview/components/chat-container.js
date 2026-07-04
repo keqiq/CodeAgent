@@ -37,13 +37,14 @@ export function restoreChatHistory(message) {
 // Add user and agent responses to chat window
 export function appendMessage(msg) {
     removeTypingIndicator();
-    const text = msg.content;
+    const text = msg.content || '';
     const role = msg.role;
 
     const msgDiv = document.createElement('div');
     msgDiv.classList.add('message', role);
 
-    
+    if (role === 'tool' || role === 'system') return;
+
     // Agent responses need markdown and code formatting
     if (role === 'assistant') {
         msgDiv.innerHTML = parseMarkdown(text);
@@ -54,7 +55,7 @@ export function appendMessage(msg) {
     } 
     
     // User prompts needs to be collapsable
-    else {
+    else if (role === 'user') {
         const textContainer = document.createElement('div');
         textContainer.classList.add('user-text-content');
         textContainer.textContent = text;
@@ -197,7 +198,7 @@ function parseMarkdown(text) {
     return marked.parse(text);
 }
 
-function showTypingIndicator() {
+export function showTypingIndicator() {
     const msgDiv = document.createElement('div');
     msgDiv.classList.add('message', 'agent');
     msgDiv.id = 'typingIndicator';

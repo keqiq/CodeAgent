@@ -41689,48 +41689,42 @@ async function getFileContent(uri) {
 var searchSchemas = [
   {
     type: "function",
-    function: {
-      name: "glob",
-      description: "Find files in the current workspace matching a glob pattern.",
-      parameters: {
-        type: "object",
-        properties: {
-          pattern: { type: "string", description: "Glob pattern (e.g., 'src/**/*.ts')." }
-        },
-        required: ["pattern"]
-      }
+    name: "glob",
+    description: "Find files in the current workspace matching a glob pattern.",
+    parameters: {
+      type: "object",
+      properties: {
+        pattern: { type: "string", description: "Glob pattern (e.g., 'src/**/*.ts')." }
+      },
+      required: ["pattern"]
     }
   },
   {
     type: "function",
-    function: {
-      name: "grep",
-      description: "Search for a regular expression pattern inside files.",
-      parameters: {
-        type: "object",
-        properties: {
-          query: { type: "string", description: "The regex pattern to search for." },
-          filePattern: { type: "string", description: "Optional glob pattern (default: '**/*')." }
-        },
-        required: ["query"]
-      }
+    name: "grep",
+    description: "Search for a regular expression pattern inside files.",
+    parameters: {
+      type: "object",
+      properties: {
+        query: { type: "string", description: "The regex pattern to search for." },
+        filePattern: { type: "string", description: "Optional glob pattern (default: '**/*')." }
+      },
+      required: ["query"]
     }
   },
   {
     type: "function",
-    function: {
-      name: "searchCodebase",
-      description: "Search indexed workspace code using a hybrid of semantic meaning and exact keyword matching. For best results, include specific code identifiers, variable names, or technical terms alongside the semantic intent.",
-      parameters: {
-        type: "object",
-        properties: {
-          query: {
-            type: "string",
-            description: "A concise, keyword-rich search query. Avoid conversational sentences. Example: 'user authentication login auth' rather than 'where is the user login handled?'"
-          }
-        },
-        required: ["query"]
-      }
+    name: "searchCodebase",
+    description: "Search indexed workspace code using a hybrid of semantic meaning and exact keyword matching. For best results, include specific code identifiers, variable names, or technical terms alongside the semantic intent.",
+    parameters: {
+      type: "object",
+      properties: {
+        query: {
+          type: "string",
+          description: "A concise, keyword-rich search query. Avoid conversational sentences. Example: 'user authentication login auth' rather than 'where is the user login handled?'"
+        }
+      },
+      required: ["query"]
     }
   }
 ];
@@ -41800,47 +41794,41 @@ var vscode3 = __toESM(require("vscode"));
 var fileSchemas = [
   {
     type: "function",
-    function: {
-      name: "read",
-      description: "Read the exact contents of a file.",
-      parameters: {
-        type: "object",
-        properties: {
-          filePath: { type: "string", description: "The relative path to the file in the worksapce." }
-        },
-        required: ["filePath"]
-      }
+    name: "read",
+    description: "Read the exact contents of a file.",
+    parameters: {
+      type: "object",
+      properties: {
+        filePath: { type: "string", description: "The relative path to the file in the worksapce." }
+      },
+      required: ["filePath"]
     }
   },
   {
     type: "function",
-    function: {
-      name: "write",
-      description: "Create a new file or completely overwrite an existing file.",
-      parameters: {
-        type: "object",
-        properties: {
-          filePath: { type: "string", description: "Path to the file." },
-          content: { type: "string", description: "The complete text content to write to the file." }
-        },
-        required: ["filePath", "content"]
-      }
+    name: "write",
+    description: "Create a new file or completely overwrite an existing file.",
+    parameters: {
+      type: "object",
+      properties: {
+        filePath: { type: "string", description: "Path to the file." },
+        content: { type: "string", description: "The complete text content to write to the file." }
+      },
+      required: ["filePath", "content"]
     }
   },
   {
     type: "function",
-    function: {
-      name: "edit",
-      description: "Edit a file by replacing exact oldText with newText. Use read first if you are not certain oldText exactly matches the current file.",
-      parameters: {
-        type: "object",
-        properties: {
-          filePath: { type: "string", description: "Path to the file." },
-          oldText: { type: "string", description: "The EXACT existing text to be replaced. Must match indentation perfectly." },
-          newText: { type: "string", description: "The new text that will replace the old text." }
-        },
-        required: ["filePath", "oldText", "newText"]
-      }
+    name: "edit",
+    description: "Edit a file by replacing exact oldText with newText. Use read first if you are not certain oldText exactly matches the current file.",
+    parameters: {
+      type: "object",
+      properties: {
+        filePath: { type: "string", description: "Path to the file." },
+        oldText: { type: "string", description: "The EXACT existing text to be replaced. Must match indentation perfectly." },
+        newText: { type: "string", description: "The new text that will replace the old text." }
+      },
+      required: ["filePath", "oldText", "newText"]
     }
   }
 ];
@@ -41918,7 +41906,7 @@ var GeminiChatProvider = class extends ChatProvider {
   constructor(apiKey) {
     super();
     this.client = new GoogleGenAI({ apiKey });
-    this.geminiTools = this.parseTools();
+    this.geminiTools = allToolSchemas;
   }
   async getModels() {
     const response = await this.client.models.list();
@@ -41933,78 +41921,152 @@ var GeminiChatProvider = class extends ChatProvider {
     }
     return modelNames.sort();
   }
-  parseTools() {
-    const declarations = allToolSchemas.map((t2) => ({
-      name: t2.function.name,
-      description: t2.function.description,
-      parameters: t2.function.parameters
-    }));
-    return [{ functionDeclarations: declarations }];
-  }
-  parseMessages(messages) {
-    return messages.map((msg) => {
-      return {
-        role: msg.role === "assistant" ? "model" : "user",
-        parts: [{ text: msg.content }]
-      };
-    });
-  }
-  async *fetchStream(model, history) {
-    const stream = await this.client.models.generateContentStream({
-      model,
-      contents: this.parseMessages(history),
-      config: {
-        tools: this.geminiTools,
-        systemInstruction: "You are an expert AI coding assistant inside VS Code."
+  // Not needed for Interactions api
+  // private parseTools() {}
+  formatMessages(items) {
+    return items.filter((item) => !(item.type === "message" && item.role === "developer")).map((item) => {
+      if (item.type === "message") {
+        return {
+          type: item.role === "user" ? "user_input" : "model_output",
+          content: [{ type: "text", text: item.content }]
+        };
+      } else if (item.type === "function_call") {
+        return {
+          type: "function_call",
+          id: item.id,
+          name: item.name,
+          arguments: typeof item.arguments === "string" ? item.arguments ? JSON.parse(item.arguments) : {} : item.arguments || {}
+        };
+      } else if (item.type === "function_result") {
+        return {
+          type: "function_result",
+          call_id: item.id,
+          name: item.name || "",
+          result: [{
+            type: "text",
+            text: JSON.stringify({ response: item.result })
+          }]
+        };
       }
     });
+  }
+  async *fetchStream(model, history, previousTurnID) {
     let fullText = "";
-    let toolCallsBuffer = [];
-    for await (const chunk of stream) {
-      if (chunk.functionCalls) {
-        for (const call of chunk.functionCalls) {
-          toolCallsBuffer.push({
-            name: call.name || "",
-            arguments: call.args
-          });
-        }
-        return { text: null, tool_calls: toolCallsBuffer };
+    try {
+      const sysMsg = history.find((i2) => i2.type === "message" && i2.role === "developer");
+      let currentInput;
+      if (previousTurnID) {
+        const newItemsToSubmit = history.filter(
+          (item) => item.turnID === previousTurnID && (item.type === "function_result" || item.type === "message" && item.role === "user")
+        );
+        currentInput = this.formatMessages(newItemsToSubmit);
+      } else {
+        currentInput = this.formatMessages(history);
       }
-      if (chunk.text) {
-        fullText += chunk.text;
-        yield chunk.text;
-      }
-    }
-    return {
-      text: fullText,
-      tool_calls: null
-    };
-  }
-  async fetch(model, messages) {
-    const response = await this.client.models.generateContent({
-      model,
-      contents: this.parseMessages(messages),
-      config: {
+      const stream = await this.client.interactions.create({
+        model,
+        input: currentInput,
         tools: this.geminiTools,
-        systemInstruction: "You are an expert AI coding assistant inside VS Code."
+        system_instruction: sysMsg && "content" in sysMsg ? sysMsg.content : "You are an expert AI coding assistant...",
+        stream: true,
+        ...previousTurnID && { previous_interaction_id: previousTurnID }
+      });
+      const currentCalls = /* @__PURE__ */ new Map();
+      let interactionId = null;
+      for await (const event of stream) {
+        const evType = event.event_type;
+        if (evType === "interaction.created") {
+          interactionId = event.interaction.id;
+        } else if (evType === "step.start") {
+          if (event.step.type === "function_call") {
+            currentCalls.set(event.index, {
+              id: event.step.id,
+              name: event.step.name,
+              arguments: ""
+            });
+          }
+        } else if (evType === "step.delta") {
+          if (event.delta.type === "arguments_delta") {
+            if (currentCalls.has(event.index)) {
+              currentCalls.get(event.index).arguments += event.delta.arguments;
+            }
+          } else if (event.delta.type === "text") {
+            fullText += event.delta.text;
+            yield event.delta.text;
+          }
+        }
       }
-    });
-    const calls = response.functionCalls;
-    if (calls && calls.length > 0) {
-      const parsedCalls = [];
-      for (const call of calls) {
-        parsedCalls.push({
-          name: call.name || "",
-          arguments: call.args
-        });
+      if (currentCalls.size > 0 || fullText.length > 0) {
+        const items = [];
+        if (fullText) {
+          items.push({ type: "message", role: "assistant", content: fullText, turnID: interactionId });
+        }
+        for (const call of Array.from(currentCalls.values())) {
+          items.push({ type: "function_call", id: call.id, name: call.name, arguments: call.arguments ? JSON.parse(call.arguments) : {}, turnID: interactionId });
+        }
+        return { items, turnID: interactionId };
       }
-      return {
-        text: null,
-        tool_calls: parsedCalls
-      };
+    } catch (e2) {
+      console.log(e2);
     }
-    return { text: response.text || "", tool_calls: null };
+    return { items: [] };
   }
+  // async *fetchStream(model: string, history: ChatMessage[]): AsyncGenerator<string, ChatResponse, unknown> {
+  //     const stream = await this.client.models.generateContentStream({
+  //         model: model,
+  //         contents: this.parseMessages(history),
+  //         config: {
+  //             tools: this.geminiTools,
+  //             systemInstruction: "You are an expert AI coding assistant inside VS Code."
+  //         }
+  //     });
+  //     let fullText = "";
+  //     let toolCallsBuffer: any[] = [];
+  //     for await (const chunk of stream) {
+  //         if (chunk.functionCalls) {
+  //             for (const call of chunk.functionCalls) {
+  //                 toolCallsBuffer.push({
+  //                     name: call.name || "",
+  //                     arguments: call.args
+  //                 });
+  //             }
+  //             return { text: null, tool_calls: toolCallsBuffer };
+  //         }
+  //         if (chunk.text) {
+  //             fullText += chunk.text;
+  //             yield chunk.text;
+  //         }
+  //     }
+  //     return {
+  //         text: fullText,
+  //         tool_calls: null
+  //     };
+  // }
+  // async fetch(model: string, messages: ChatMessage[]): Promise<ChatResponse> {
+  //     const response = await this.client.models.generateContent({
+  //         model: model,
+  //         contents: this.parseMessages(messages),
+  //         config: {
+  //             tools: this.geminiTools,
+  //             systemInstruction: "You are an expert AI coding assistant inside VS Code."
+  //         }
+  //     });
+  //     const calls = response.functionCalls;
+  //     if (calls && calls.length > 0) {
+  //         const parsedCalls = [];
+  //         for (const call of calls) {
+  //             parsedCalls.push({
+  //                 name: call.name || "",
+  //                 arguments: call.args
+  //             });
+  //         }
+  //         return {
+  //             text: null,
+  //             tool_calls: parsedCalls
+  //         };
+  //     }
+  //     return { text: response.text || "", tool_calls: null};
+  // }
 };
 
 // node_modules/openai/internal/tslib.mjs
@@ -51713,42 +51775,109 @@ var OpenAIChatProvider = class extends ChatProvider {
   }
   async getModels() {
     const response = await this.client.models.list();
-    return response.data.map((m2) => m2.id).filter((id) => id.startsWith("gpt")).sort();
+    return response.data.map((m2) => m2.id).filter((id) => id.startsWith("gpt") || id.startsWith("o1") || id.startsWith("o3")).sort();
   }
-  parseTools() {
-  }
-  //@ts-expect-error TODO: stub not implemented yet
-  async fetchStream(model, history) {
-  }
-  async fetch(model, messages) {
-    const response = await this.client.chat.completions.create({
-      model,
-      messages,
-      tools: this.GPTTools
+  // Not needed for Responses API
+  // private parseTools(tools: any[]): OpenAI.Responses.Tool[] | undefined {}
+  formatMessages(items) {
+    return items.map((item) => {
+      if (item.type === "message") {
+        return { role: item.role, content: item.content };
+      } else if (item.type === "function_call") {
+        return { type: "function_call", call_id: item.id, name: item.name, arguments: typeof item.arguments === "string" ? item.arguments : JSON.stringify(item.arguments) };
+      } else if (item.type === "function_result") {
+        return { type: "function_call_output", call_id: item.id, output: item.result };
+      }
     });
-    const action = response.choices[0];
-    const reason = action.finish_reason;
-    const msg = action.message;
-    const tools = msg.tool_calls;
-    if (reason === "tool_calls" && tools && tools.length > 0) {
-      const parsedCalls = [];
-      for (const tool of tools) {
-        if (tool.type === "function") {
-          const call = tool;
-          parsedCalls.push({
-            id: call.id,
-            name: call.function.name,
-            arguments: JSON.parse(call.function.arguments)
-          });
+  }
+  async *fetchStream(model, history, previousTurnID) {
+    let fullText = "";
+    const toolCallsContext = [];
+    let responseID = null;
+    let currentInput;
+    if (previousTurnID) {
+      const newItemsToSubmit = history.filter(
+        (item) => item.turnID === previousTurnID && (item.type === "function_result" || item.type === "message" && item.role === "user")
+      );
+      currentInput = this.formatMessages(newItemsToSubmit);
+    } else {
+      currentInput = this.formatMessages(history);
+    }
+    try {
+      const stream = await this.client.responses.create({
+        model,
+        input: currentInput,
+        tools: this.GPTTools,
+        stream: true,
+        ...previousTurnID && { previous_response_id: previousTurnID }
+      });
+      for await (const event of stream) {
+        if (event.type === "error") {
+          const errMsg = event.error?.message || "Unknown stream error";
+          throw new Error(`OpenAI API Error: ${errMsg}`);
+        }
+        if (event.type === "response.created") {
+          responseID = event.response.id;
+        } else if (event.type === "response.output_text.delta") {
+          const text = event.delta;
+          if (text) {
+            fullText += text;
+            yield text;
+          }
+        } else if (event.type === "response.output_item.added") {
+          const item = event.item;
+          if (item && item.type === "function_call") {
+            toolCallsContext.push({
+              itemId: item.id,
+              id: item.call_id,
+              name: item.name,
+              arguments: ""
+            });
+          }
+        } else if (event.type === "response.function_call_arguments.delta") {
+          const deltaEvent = event;
+          const currentTool = toolCallsContext.find((t2) => t2.itemId === deltaEvent.item_id) || toolCallsContext[toolCallsContext.length - 1];
+          if (currentTool && deltaEvent.delta) {
+            currentTool.arguments += deltaEvent.delta;
+          }
         }
       }
-      return {
-        text: null,
-        tool_calls: parsedCalls.length > 0 ? parsedCalls : null
-      };
+      if (toolCallsContext.length > 0 || fullText.length > 0) {
+        const items = [];
+        if (fullText) {
+          items.push({ type: "message", role: "assistant", content: fullText, turnID: responseID });
+        }
+        for (const call of toolCallsContext) {
+          items.push({ type: "function_call", id: call.id, name: call.name, arguments: call.arguments ? JSON.parse(call.arguments) : {}, turnID: responseID });
+        }
+        return { items, turnID: responseID };
+      }
+    } catch (e2) {
+      console.log(e2);
     }
-    return { text: msg.content, tool_calls: null };
+    return { items: [] };
   }
+  // UNUSED
+  // async fetch(model: string, messages: ChatItem[]): Promise<ChatResponse> {
+  //     const response = await this.client.responses.create({
+  //         model: model,
+  //         input: this.formatMessages(messages) as any,
+  //         tools: this.GPTTools
+  //     });
+  //     const toolCalls = response.output.filter((item: any) => item.type === "function_call");
+  //     if (toolCalls && toolCalls.length > 0) {
+  //         const parsedCalls = toolCalls.map((call: any) => ({
+  //             id: call.call_id,
+  //             name: call.name,
+  //             arguments: typeof call.arguments === "string" ? JSON.parse(call.arguments) : call.arguments
+  //         }));
+  //         return {
+  //             text: response.output_text || null,
+  //             tool_calls: parsedCalls
+  //         };
+  //     }
+  //     return { text: response.output_text || null, tool_calls: null };
+  // }
 };
 
 // src/apis/chat/chatFactory.ts
@@ -65414,10 +65543,6 @@ var Indexer = class _Indexer {
       ...chunk
     }));
     await this.db.insertRows(rows);
-    const storedRows = await this.db.getRowsByFilePath(filePath);
-    for (let i2 = 0; i2 < Math.min(3, storedRows.length); i2++) {
-      _Indexer.debugVector(`stored vector ${i2 + 1} for ${filePath}`, storedRows[i2].vector, storedRows[i2].text);
-    }
   }
   async deleteFile(filePath) {
     if (!this.db) throw new Error("Cannot delete file: VectorDB is not connected");
@@ -65525,8 +65650,11 @@ var ChatApp = class {
   constructor(context) {
     this.context = context;
     const savedHistory = context.workspaceState.get("chatHistory");
-    if (savedHistory && savedHistory.length > 0) this.chatHistory = savedHistory;
-    else this.chatHistory = this.getInitialChatMessages();
+    if (savedHistory && savedHistory.length > 0) {
+      this.chatHistory = savedHistory;
+      const lastItemWithId = [...savedHistory].reverse().find((item) => item.turnID);
+      if (lastItemWithId) this.previousTurnID = lastItemWithId.turnID;
+    } else this.chatHistory = this.getInitialChatMessages();
     this.indexLoadPromise = Indexer.create(this.context).then((indexer) => {
       this.indexer = indexer;
       indexer.onDidUpdateStatus((event) => this.post(event));
@@ -65555,13 +65683,17 @@ var ChatApp = class {
   toolRegistry;
   indexer;
   indexLoadPromise;
+  previousTurnID = void 0;
   getInitialChatMessages() {
     return [{
-      role: "system",
+      type: "message",
+      role: "developer",
       content: `You are an autonomous, expert software engineering agent integrated into VS Code. 
                       You have access to tools that can search, read, write, and edit files in the user's workspace.
                       When a user asks you to find a bug or fix a problem, DO NOT ask them for the file name if you can search for it yourself. 
-                      Proactively use your 'glob' and 'grep' tools to explore the workspace, find the relevant code, read it, and edit it to fix the issue. 
+                      Proactively use your semantic search tool 'searchCodebase' tool to search the workspace.
+                      Tools like 'glob' and 'grep' should be used as a fallback if semantic search failes to return relevant results, or if you need to view files in more detail. 
+                      Find the relevant code, read it, and edit it to fix the issue. 
                       Always explain your thought process before executing a tool.`
     }];
   }
@@ -65580,7 +65712,7 @@ var ChatApp = class {
     }
     try {
       const providerInstance = ChatFactory.create(provider, apiKey);
-      this.chatHistory.push({ role: "user", content: userMessage });
+      this.chatHistory.push({ type: "message", role: "user", content: userMessage, turnID: this.previousTurnID });
       await this.saveChatHistory();
       let keepGoing = true;
       let turnCount = 0;
@@ -65588,7 +65720,7 @@ var ChatApp = class {
       let toolsRunThisTurn = 0;
       while (keepGoing && turnCount < this.MAX_TURN_COUNT) {
         turnCount++;
-        const streamGenerator = providerInstance.fetchStream(model, this.chatHistory);
+        const streamGenerator = providerInstance.fetchStream(model, this.chatHistory, this.previousTurnID);
         let streamResult = await streamGenerator.next();
         while (!streamResult.done) {
           if (streamResult.value) {
@@ -65598,28 +65730,20 @@ var ChatApp = class {
         }
         this.post({ type: "streamEnd" });
         const finalResponse = streamResult.value;
-        if (finalResponse && finalResponse.text) {
-          this.chatHistory.push({ role: "assistant", content: finalResponse.text });
-        }
-        if (finalResponse && finalResponse.tool_calls) {
+        if (finalResponse && finalResponse.items.length > 0) this.chatHistory.push(...finalResponse.items);
+        const functionCalls = finalResponse?.items.filter((item) => item.type === "function_call") || [];
+        const interactionID = finalResponse?.turnID;
+        if (functionCalls.length > 0) {
           if (!hasStartedToolGroup) {
             hasStartedToolGroup = true;
             this.post({ type: "startToolGroup" });
           }
-          this.chatHistory.push({
-            role: "assistant",
-            content: JSON.stringify(finalResponse.tool_calls)
-          });
-          for (const toolCall of finalResponse.tool_calls) {
+          for (const toolCall of functionCalls) {
             toolsRunThisTurn++;
             const toolName = toolCall.name;
             const toolArgs = toolCall.arguments;
-            this.post({
-              type: "updateTool",
-              status: "running",
-              toolName,
-              args: toolArgs
-            });
+            const toolId = toolCall.id;
+            this.post({ type: "updateTool", status: "running", toolName, args: toolArgs });
             let result;
             if (this.toolRegistry[toolName]) {
               try {
@@ -65635,11 +65759,12 @@ var ChatApp = class {
               result = { message: `Error: Tool '${toolName}' is not registered` };
               this.post({ type: "updateTool", status: "error", error: "Invalid tool call" });
             }
-            this.chatHistory.push({ role: "system", content: `${toolName} result: ${result.message}` });
+            this.chatHistory.push({ type: "function_result", id: toolId, name: toolName, result: result.message, turnID: interactionID });
           }
         } else {
           keepGoing = false;
         }
+        this.previousTurnID = interactionID;
       }
       if (hasStartedToolGroup) this.post({ type: "endToolGroup", totalCount: toolsRunThisTurn });
       await this.saveChatHistory();
@@ -65778,6 +65903,7 @@ var ChatApp = class {
         }
         case "clearChat": {
           this.chatHistory = this.getInitialChatMessages();
+          this.previousTurnID = void 0;
           await this.context.workspaceState.update("chatHistory", this.chatHistory);
           break;
         }

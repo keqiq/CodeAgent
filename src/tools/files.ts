@@ -5,47 +5,41 @@ import { ToolResult, ToolSchema } from './toolIndex';
 export const fileSchemas: ToolSchema[] = [
     {
         type: "function",
-        function: {
-            name: "read",
-            description: "Read the exact contents of a file.",
-            parameters: {
-                type: "object",
-                properties: {
-                    filePath: { type: "string", description: "The relative path to the file in the worksapce." }
-                },
-                required: ["filePath"]
-            }
+        name: "read",
+        description: "Read the exact contents of a file.",
+        parameters: {
+            type: "object",
+            properties: {
+                filePath: { type: "string", description: "The relative path to the file in the worksapce." }
+            },
+            required: ["filePath"]
         }
     },
     {
         type: "function",
-        function: {
-            name: "write",
-            description: "Create a new file or completely overwrite an existing file.",
-            parameters: {
-                type: "object",
-                properties: {
-                    filePath: { type: "string", description: "Path to the file."},
-                    content:  { type: "string", description: "The complete text content to write to the file."}
-                },
-                required: ["filePath", "content"]
-            }
+        name: "write",
+        description: "Create a new file or completely overwrite an existing file.",
+        parameters: {
+            type: "object",
+            properties: {
+                filePath: { type: "string", description: "Path to the file."},
+                content:  { type: "string", description: "The complete text content to write to the file."}
+            },
+            required: ["filePath", "content"]
         }
     },
     {
         type: "function",
-        function: {
-            name: "edit",
-            description: "Edit a file by replacing exact oldText with newText. Use read first if you are not certain oldText exactly matches the current file.",
-            parameters: {
-                type: "object",
-                properties: {
-                    filePath: { type: "string", description: "Path to the file."},
-                    oldText:  { type: "string", description: "The EXACT existing text to be replaced. Must match indentation perfectly."},
-                    newText:  { type: "string", description: "The new text that will replace the old text."}
-                },
-                required: ["filePath", "oldText", "newText"]
-            }
+        name: "edit",
+        description: "Edit a file by replacing exact oldText with newText. Use read first if you are not certain oldText exactly matches the current file.",
+        parameters: {
+            type: "object",
+            properties: {
+                filePath: { type: "string", description: "Path to the file."},
+                oldText:  { type: "string", description: "The EXACT existing text to be replaced. Must match indentation perfectly."},
+                newText:  { type: "string", description: "The new text that will replace the old text."}
+            },
+            required: ["filePath", "oldText", "newText"]
         }
     }
 ];

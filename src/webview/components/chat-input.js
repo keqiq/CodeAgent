@@ -1,4 +1,4 @@
-import { appendMessage } from "./chat-container";
+import { appendMessage, showTypingIndicator } from "./chat-container";
 import { populateDropdown, populateModels } from "./ui_utils";
 
 let chatProviderSelect;
@@ -42,6 +42,7 @@ export function initInput(vscode) {
 
         if (text && provider && model) {
             appendMessage({ role: 'user', content: text });
+            showTypingIndicator();
             vscode.postMessage({ type: 'askAgent', provider: provider, model: model, value: text });
 
             promptInput.value = '';
