@@ -1,5 +1,5 @@
 import { GoogleGenAI, ThinkingLevel } from '@google/genai';
-import { ChatItem, ChatProvider, ChatResponse, ModelInfo } from './chatProvider';
+import { ChatItem, ChatProvider, ChatResponse, ModelInfo, StreamYield } from './chatProvider';
 import { allToolSchemas } from '../../tools/toolIndex';
 
 export class GeminiChatProvider extends ChatProvider {
@@ -101,7 +101,7 @@ export class GeminiChatProvider extends ChatProvider {
         });
     }
 
-    async *fetchStream(model: string, effort: string, history: ChatItem[], previousTurnID: string | undefined): AsyncGenerator<string, ChatResponse, unknown> {
+    async *fetchStream(model: string, effort: string, history: ChatItem[], previousTurnID: string | undefined): AsyncGenerator<StreamYield, ChatResponse, unknown> {
         let fullText = '';
         try {
             const sysMsg = history.find(i => i.type === 'message' && i.role === 'developer');
@@ -124,13 +124,13 @@ export class GeminiChatProvider extends ChatProvider {
                 tools: GeminiChatProvider.geminiTools,
                 system_instruction: sysMsg && 'content' in sysMsg ? sysMsg.content : "You are an expert AI coding assistant...",
                 stream: true,
-                generation_config: {thinking_level: effort as any},
+                generation_config: {thinking_level: effort as any, thinking_summaries: 'auto'},
                 ...(previousTurnID && { previous_interaction_id: previousTurnID })
             });
 
             const currentCalls = new Map();
             let interactionId = null;
-
+            
             for await (const event of stream) {
                 const evType = event.event_type;
 
@@ -156,9 +156,17 @@ export class GeminiChatProvider extends ChatProvider {
                             currentCalls.get(event.index).arguments += event.delta.arguments;
                         }
                     }
+                    
                     else if (event.delta.type === 'text') {
                         fullText += event.delta.text;
-                        yield event.delta.text;
+                        yield { type: 'text', content: event.delta.text };
+                    }
+
+                    else if (event.delta.type === 'thought_summary') {
+                        // SHUT UP COMPILER
+                        const deltaAny = event.delta as any;
+                        const summaryText = deltaAny.content?.text || "";
+                        if(summaryText) yield { type: 'thought', content: summaryText };
                     }
                 }
             }
@@ -180,44 +188,6 @@ export class GeminiChatProvider extends ChatProvider {
 
         return { items: [] };
     }
-
-    // async *fetchStream(model: string, history: ChatMessage[]): AsyncGenerator<string, ChatResponse, unknown> {
-    //     const stream = await this.client.models.generateContentStream({
-    //         model: model,
-    //         contents: this.parseMessages(history),
-    //         config: {
-    //             tools: this.geminiTools,
-    //             systemInstruction: "You are an expert AI coding assistant inside VS Code."
-    //         }
-    //     });
-
-        
-    //     let fullText = "";
-    //     let toolCallsBuffer: any[] = [];
-        
-    //     for await (const chunk of stream) {
-    //         if (chunk.functionCalls) {
-    //             for (const call of chunk.functionCalls) {
-    //                 toolCallsBuffer.push({
-    //                     name: call.name || "",
-    //                     arguments: call.args
-    //                 });
-    //             }
-
-    //             return { text: null, tool_calls: toolCallsBuffer };
-    //         }
-
-    //         if (chunk.text) {
-    //             fullText += chunk.text;
-    //             yield chunk.text;
-    //         }
-    //     }
-
-    //     return {
-    //         text: fullText,
-    //         tool_calls: null
-    //     };
-    // }
 
     // async fetch(model: string, messages: ChatMessage[]): Promise<ChatResponse> {
 

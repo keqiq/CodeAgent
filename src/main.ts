@@ -104,7 +104,10 @@ export class ChatApp implements vscode.WebviewViewProvider {
                 
                 while (!streamResult.done) {
                     if (streamResult.value) {
-                        this.post({ type: 'streamChunk', chunk: streamResult.value });
+                        const content = streamResult.value.content;
+
+                        if (streamResult.value.type === 'text') this.post({ type: 'streamChunk', chunk: content });
+                        else if (streamResult.value.type === 'thought') this.post({ type: 'streamThought', chunk: content });
                     }
                     streamResult = await streamGenerator.next();
                 }

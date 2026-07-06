@@ -1,5 +1,5 @@
 import OpenAI from 'openai';
-import { ChatItem, ChatProvider, ChatResponse, ModelInfo } from './chatProvider';
+import { ChatItem, ChatProvider, ChatResponse, ModelInfo, StreamYield } from './chatProvider';
 import { allToolSchemas } from '../../tools/toolIndex';
 declare const console: any;
 
@@ -119,7 +119,7 @@ export class OpenAIChatProvider extends ChatProvider {
         });
     }
 
-    async *fetchStream(model: string, effort: string, history: ChatItem[], previousTurnID: string | undefined): AsyncGenerator<string, ChatResponse, unknown> {
+    async *fetchStream(model: string, effort: string, history: ChatItem[], previousTurnID: string | undefined): AsyncGenerator<StreamYield, ChatResponse, unknown> {
 
         let fullText = "";
         const toolCallsContext: any[] = [];
@@ -142,7 +142,7 @@ export class OpenAIChatProvider extends ChatProvider {
                 input: currentInput,
                 tools: OpenAIChatProvider.GPTTools,
                 stream: true,
-                reasoning: {effort: effort as any},
+                reasoning: {effort: effort as any, summary: 'auto' },
 
                 ...(previousTurnID && { previous_response_id: previousTurnID })
             });
@@ -153,20 +153,25 @@ export class OpenAIChatProvider extends ChatProvider {
                     throw new Error(`OpenAI API Error: ${errMsg}`);
                 }
 
-                if (event.type === 'response.created') {
+                else if (event.type === 'response.created') {
                     responseID = event.response.id;
                 }
 
                 else if (event.type === 'response.output_text.delta') {
-                    const text = (event as any).delta;
+                    const text = event.delta;
                     if (text) {
                         fullText += text;
-                        yield text;
+                        yield { type: 'text', content: text };
                     }
                 }
 
+                else if (event.type === 'response.reasoning_text.delta') {
+                    const text = event.delta;
+                    if (text) yield { type: 'thought', content: text };
+                }
+
                 else if (event.type === 'response.output_item.added') {
-                    const item = (event as any).item;
+                    const item = event.item;
                     if (item && item.type === 'function_call') {
                         toolCallsContext.push({
                             itemId: item.id,

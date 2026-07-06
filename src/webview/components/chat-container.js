@@ -7,6 +7,11 @@ let activeToolLogs = null;
 let activeTool = null;
 let toolErrorCount = 0;
 
+let activeThoughtDetails = null;
+let activeThoughtContent = null;
+let activeThoughtRawText = '';
+let thoughtStartTime = 0;
+
 export function initChat(vscode) {
     chatContainer = document.getElementById('chatContainer');
     const scrollToBottomBtn = document.getElementById('scrollToBottomBtn');
@@ -25,10 +30,10 @@ export function initChat(vscode) {
 }
 
 // On extension reload, restore chat history (tool logs exluded)
-export function restoreChatHistory(message) {
+export function restoreChatHistory(msg) {
     clearChatUI();
 
-    message.history.forEach(msg => {
+    msg.history.forEach(msg => {
         // Do not add tool calls to the chat window, handled by tool group
         if (msg.role === 'user' || (msg.role === 'assistant' && !msg.content.startsWith('['))) appendMessage(msg);
     });
@@ -87,6 +92,9 @@ export function appendMessage(msg) {
 
 // Streaming response div creation and updates
 export function streamMessage(message) {
+
+    // I believe thought ends before the model resposne with messages
+    endThought();
     if (!activeStreamDiv) {
         removeTypingIndicator();
         activeStreamDiv = document.createElement('div');
@@ -107,6 +115,53 @@ export function endStream() {
 
     activeStreamDiv = null;
     activeStreamRawText = "";
+}
+
+// Streaming thought process
+export function streamThought(msg) {
+    removeTypingIndicator();
+    if (!activeThoughtDetails) {
+        thoughtStartTime = Date.now();
+
+        activeThoughtDetails = document.createElement('details');
+        activeThoughtDetails.classList.add('thought-group');
+
+        const summary = document.createElement('summary');
+        summary.innerHTML = `
+            <div class="typing-indicator" style="display:inline-flex; margin-right: 8px;">
+                <span></span><span></span><span></span>
+            </div> 
+            <span>Thinking...</span>
+        `;
+    
+        activeThoughtContent = document.createElement('div');
+        activeThoughtContent.classList.add('thought-content', 'message', 'agent');
+    
+        activeThoughtDetails.appendChild(summary);
+        activeThoughtDetails.appendChild(activeThoughtContent);
+        chatContainer.appendChild(activeThoughtDetails);
+    }
+
+    activeThoughtRawText += msg.chunk;
+    activeThoughtContent.innerHTML = parseMarkdown(activeThoughtRawText);
+    scrollToBottom();
+}
+
+function endThought () {
+    if (activeThoughtDetails) {
+        const duration = ((Date.now() - thoughtStartTime) / 1000).toFixed(1);
+
+        const summary = activeThoughtDetails.querySelector('summary');
+        if (summary) summary.innerHTML = `<span>Thought for ${duration} seconds</span>`;
+
+        activeThoughtDetails.querySelectorAll('pre code').forEach((block) => {
+            hljs.highlightElement(block);
+        });
+
+        activeThoughtDetails = null;
+        activeThoughtContent = null;
+        activeThoughtRawText = '';
+    }
 }
 // Tool groups are collapsable panels that show tool execution status, tool results
 export function makeCurrentToolGroup(message) {

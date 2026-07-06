@@ -2,7 +2,7 @@ import './styles/main.css';
 
 import { initHeader, populateEmbedProviders, requestEmbedAPIKey, restoreIndexState, updateEmbedModels, updateIndexStatus } from './components/chat-header.js';
 import { initInput, updateChatModel, requestChatAPIKey, updateChatProvider, populateChatProviders, updateChatModelInfo, populateChatModels } from './components/chat-input.js';
-import { initChat, appendMessage, clearChatUI, streamMessage, endStream, makeCurrentToolGroup, updateCurrentToolGroup, endCurrentToolGroup, restoreChatHistory } from './components/chat-container.js';
+import { initChat, appendMessage, clearChatUI, streamMessage, endStream, makeCurrentToolGroup, updateCurrentToolGroup, endCurrentToolGroup, restoreChatHistory, streamThought } from './components/chat-container.js';
 
 const vscode = acquireVsCodeApi();
 
@@ -36,6 +36,8 @@ document.addEventListener('DOMContentLoaded', () => {
         else if (message.type === 'receiveMessage') appendMessage(message);
 
         else if (message.type === 'streamChunk') streamMessage(message);
+
+        else if (message.type === 'streamThought') streamThought(message);
 
         else if (message.type === 'streamEnd') endStream();
 

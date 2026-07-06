@@ -1,5 +1,5 @@
 import OpenAI from 'openai';
-import { ChatItem, ChatProvider, ChatResponse, ModelInfo } from './chatProvider';
+import { ChatItem, ChatProvider, ChatResponse, ModelInfo, StreamYield } from './chatProvider';
 import { allToolSchemas } from '../../tools/toolIndex';
 
 export class DeepSeekChatProvider extends ChatProvider {
@@ -93,7 +93,7 @@ export class DeepSeekChatProvider extends ChatProvider {
     }
 
     // No provider state management available so send full chat history
-    async *fetchStream(model: string, effort: string, history: ChatItem[], previousTurnID: string | undefined): AsyncGenerator<string, ChatResponse, unknown> {
+    async *fetchStream(model: string, effort: string, history: ChatItem[], previousTurnID: string | undefined): AsyncGenerator<StreamYield, ChatResponse, unknown> {
         let fullText = '';
 
         try {
@@ -121,7 +121,12 @@ export class DeepSeekChatProvider extends ChatProvider {
 
                 if (delta.content) {
                     fullText += delta.content;
-                    yield delta.content;
+                    yield { type: 'text', content: delta.content};
+                }
+
+                if ((delta as any).reasoning_content) {
+                    const text = (delta as any).reasoning_content;
+                    yield { type : 'thought', content: text };
                 }
 
                 if (delta.tool_calls) {

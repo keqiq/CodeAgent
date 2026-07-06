@@ -33108,7 +33108,6 @@ var DeepSeekChatProvider = class _DeepSeekChatProvider extends ChatProvider {
   // No provider state management available so send full chat history
   async *fetchStream(model, effort, history, previousTurnID) {
     let fullText = "";
-    const thinking = effort !== "none";
     try {
       const formattedMessages = this.formatMessages(history);
       const stream = await this.client.chat.completions.create({
@@ -33127,7 +33126,11 @@ var DeepSeekChatProvider = class _DeepSeekChatProvider extends ChatProvider {
         if (!delta) continue;
         if (delta.content) {
           fullText += delta.content;
-          yield delta.content;
+          yield { type: "text", content: delta.content };
+        }
+        if (delta.reasoning_content) {
+          const text = delta.reasoning_content;
+          yield { type: "thought", content: text };
         }
         if (delta.tool_calls) {
           for (const toolCall of delta.tool_calls) {
@@ -51846,7 +51849,7 @@ var GeminiChatProvider = class _GeminiChatProvider extends ChatProvider {
         tools: _GeminiChatProvider.geminiTools,
         system_instruction: sysMsg && "content" in sysMsg ? sysMsg.content : "You are an expert AI coding assistant...",
         stream: true,
-        generation_config: { thinking_level: effort },
+        generation_config: { thinking_level: effort, thinking_summaries: "auto" },
         ...previousTurnID && { previous_interaction_id: previousTurnID }
       });
       const currentCalls = /* @__PURE__ */ new Map();
@@ -51870,7 +51873,11 @@ var GeminiChatProvider = class _GeminiChatProvider extends ChatProvider {
             }
           } else if (event.delta.type === "text") {
             fullText += event.delta.text;
-            yield event.delta.text;
+            yield { type: "text", content: event.delta.text };
+          } else if (event.delta.type === "thought_summary") {
+            const deltaAny = event.delta;
+            const summaryText = deltaAny.content?.text || "";
+            if (summaryText) yield { type: "thought", content: summaryText };
           }
         }
       }
@@ -51889,37 +51896,6 @@ var GeminiChatProvider = class _GeminiChatProvider extends ChatProvider {
     }
     return { items: [] };
   }
-  // async *fetchStream(model: string, history: ChatMessage[]): AsyncGenerator<string, ChatResponse, unknown> {
-  //     const stream = await this.client.models.generateContentStream({
-  //         model: model,
-  //         contents: this.parseMessages(history),
-  //         config: {
-  //             tools: this.geminiTools,
-  //             systemInstruction: "You are an expert AI coding assistant inside VS Code."
-  //         }
-  //     });
-  //     let fullText = "";
-  //     let toolCallsBuffer: any[] = [];
-  //     for await (const chunk of stream) {
-  //         if (chunk.functionCalls) {
-  //             for (const call of chunk.functionCalls) {
-  //                 toolCallsBuffer.push({
-  //                     name: call.name || "",
-  //                     arguments: call.args
-  //                 });
-  //             }
-  //             return { text: null, tool_calls: toolCallsBuffer };
-  //         }
-  //         if (chunk.text) {
-  //             fullText += chunk.text;
-  //             yield chunk.text;
-  //         }
-  //     }
-  //     return {
-  //         text: fullText,
-  //         tool_calls: null
-  //     };
-  // }
   // async fetch(model: string, messages: ChatMessage[]): Promise<ChatResponse> {
   //     const response = await this.client.models.generateContent({
   //         model: model,
@@ -52068,22 +52044,24 @@ var OpenAIChatProvider = class _OpenAIChatProvider extends ChatProvider {
         input: currentInput,
         tools: _OpenAIChatProvider.GPTTools,
         stream: true,
-        reasoning: { effort },
+        reasoning: { effort, summary: "auto" },
         ...previousTurnID && { previous_response_id: previousTurnID }
       });
       for await (const event of stream) {
         if (event.type === "error") {
           const errMsg = event.error?.message || "Unknown stream error";
           throw new Error(`OpenAI API Error: ${errMsg}`);
-        }
-        if (event.type === "response.created") {
+        } else if (event.type === "response.created") {
           responseID = event.response.id;
         } else if (event.type === "response.output_text.delta") {
           const text = event.delta;
           if (text) {
             fullText += text;
-            yield text;
+            yield { type: "text", content: text };
           }
+        } else if (event.type === "response.reasoning_text.delta") {
+          const text = event.delta;
+          if (text) yield { type: "thought", content: text };
         } else if (event.type === "response.output_item.added") {
           const item = event.item;
           if (item && item.type === "function_call") {
@@ -65986,7 +65964,9 @@ var ChatApp = class {
         let streamResult = await streamGenerator.next();
         while (!streamResult.done) {
           if (streamResult.value) {
-            this.post({ type: "streamChunk", chunk: streamResult.value });
+            const content = streamResult.value.content;
+            if (streamResult.value.type === "text") this.post({ type: "streamChunk", chunk: content });
+            else if (streamResult.value.type === "thought") this.post({ type: "streamThought", chunk: content });
           }
           streamResult = await streamGenerator.next();
         }
