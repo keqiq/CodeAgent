@@ -1,4 +1,4 @@
-export function populateDropdown(selectElement, items, defaultText = "Providers...") {
+export function populateDropdown(selectElement, items, defaultText) {
     selectElement.innerHTML = `<option value="" disabled selected>${defaultText}</option>`;
 
     items.forEach(item => {

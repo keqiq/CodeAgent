@@ -8,9 +8,22 @@ export interface ChatResponse {
     turnID?: string;
 }
 
+export interface StreamYield {
+    type: 'text' | 'thought';
+    content: string;
+}
+
+export interface ModelInfo {
+    id: string;
+    reason: boolean | undefined;
+    efforts: string[];
+    defaultEffort: string | null;
+}
+
 export abstract class ChatProvider {
-    abstract getModels(): Promise<string[]>;
+    public stateManagementSupport: boolean = true;
+    abstract getModels(fetchAll?: boolean): Promise<ModelInfo[]>;
     // abstract fetch(model: string, history?: ChatItem[]): Promise<ChatResponse>;
-    abstract fetchStream(model: string, history?: ChatItem[], previousTurnID?: string | undefined): AsyncGenerator<string, ChatResponse, unknown>;
+    abstract fetchStream(model: string, effort: string, history?: ChatItem[], previousTurnID?: string | undefined): AsyncGenerator<string, ChatResponse, unknown>;
 }
 

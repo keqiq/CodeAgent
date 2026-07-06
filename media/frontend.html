@@ -97,6 +97,35 @@
                 </div>
             </div>
 
+            <div id="chatSettingsPanel" class="settings-drawer hidden">
+                <div class="settings-row">
+                    <!-- <button id="chatAPIKeyBtn" class="action-btn-styled" disabled>Set API Key</button> -->
+                     <button id="chatAPIKeyBtn" class="icon-btn" title="Set API Key" disabled>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path
+                                d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4">
+                            </path>
+                        </svg>
+                    </button>
+
+                    <div class="toggles-container" style="display: flex; gap: 15px; align-items: center;">
+                        <label class="toggle-wrapper">
+                            <input type="checkbox" id="showAllModelsToggle" class="modern-toggle">
+                            <span class="toggle-slider"></span>
+                            <span class="toggle-label">All Models</span>
+                        </label>
+
+                        <label class="toggle-wrapper">
+                            <input type="checkbox" id="serverStateToggle" class="modern-toggle">
+                            <span class="toggle-slider"></span>
+                            <span class="toggle-label">Stateful</span>
+                        </label>
+                    </div>
+                </div>
+                
+            </div>
+
             <textarea id="prompt" rows="1" placeholder="Select Provider..."></textarea>
 
             <div class="box-actions">
@@ -108,15 +137,12 @@
                     <select id="chatModelSelect" class="dropdown-select" disabled>
                         <option value="">Models...</option>
                     </select>
-
-                    <button id="chatAPIKeyBtn" class="icon-btn" title="Set API Key" disabled>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path
-                                d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4">
-                            </path>
-                        </svg>
-                    </button>
+                    <select id="effortSelect" class="dropdown-select hidden" disabled>
+                        <option value="1"></option>
+                    </select>
+                    <button id="chatSettingsToggleBtn" class="icon-btn" title="Model Settings">⚙️</button>
+                    
+                   
                 </div>
 
                 <button id="sendBtn" class="send-btn" disabled>
@@ -125,6 +151,8 @@
                     </svg>
                 </button>
             </div>
+
+            
         </div>
     </div>
 

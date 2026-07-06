@@ -137,3 +137,6 @@ input[type="password"] {
     background: var(--vscode-list-hoverBackground);
     opacity: 1;
 }
+.hidden {
+    display: none !important;
+}

@@ -1,4 +1,5 @@
 import { ChatProvider } from './chatProvider';
+import { DeepSeekChatProvider } from './deepseek';
 import { GeminiChatProvider } from "./gemini";
 import { OpenAIChatProvider } from "./openai";
 
@@ -8,7 +9,8 @@ export class ChatFactory {
 
     private static readonly providers: Record<string, ChatProviderConstructor> = {
         'OpenAI': OpenAIChatProvider,
-        'Gemini': GeminiChatProvider
+        'Gemini': GeminiChatProvider,
+        'DeepSeek': DeepSeekChatProvider
     };
 
     static getAvailableProviders(): string[] {

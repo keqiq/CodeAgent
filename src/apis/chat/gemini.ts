@@ -1,32 +1,68 @@
-import { GoogleGenAI } from '@google/genai';
-import { ChatItem, ChatProvider, ChatResponse } from './chatProvider';
+import { GoogleGenAI, ThinkingLevel } from '@google/genai';
+import { ChatItem, ChatProvider, ChatResponse, ModelInfo } from './chatProvider';
 import { allToolSchemas } from '../../tools/toolIndex';
 
 export class GeminiChatProvider extends ChatProvider {
     private client: GoogleGenAI;
-    private geminiTools: any;
+    private static geminiTools: any = allToolSchemas;
+    private static cachedModelInfos: ModelInfo[] | null = null;
 
     constructor(apiKey: string) {
         super();
         this.client = new GoogleGenAI({ apiKey });
-        this.geminiTools = allToolSchemas;
     }
 
-    async getModels(): Promise<string[]> {
-        const response = await this.client.models.list();
-        const modelNames: string[] = [];
+    async getModels(fetchAll?: boolean): Promise<ModelInfo[]> {
+        if (!GeminiChatProvider.cachedModelInfos) await this.getModelInfos();
+        if(!GeminiChatProvider.cachedModelInfos) return [];
 
-        for await (const m of response) {
-            if (m.supportedActions && m.supportedActions.includes('generateContent')) {
-                if (m.name) {
-                    const cleanName = m.name.replace('models/', '');
-    
-                    modelNames.push(cleanName);
+        if (fetchAll) return GeminiChatProvider.cachedModelInfos;
+
+        // Non deprecated models
+        const featuredModels: string[] = [
+            'gemini-3.5-flash', 
+            'gemini-3.1-pro-preview', 'gemini-3.1-flash-lite',
+            'gemini-3-pro-preview', 'gemini-3-flash-preview',
+            'gemini-2.5-pro', 'gemini-2.5-flash', 'gemini-2.5-flash-lite'
+        ];
+
+        return GeminiChatProvider.cachedModelInfos.filter(info => featuredModels.includes(info.id));
+    }
+
+    private async getModelInfos(): Promise<void> {
+        const infos: ModelInfo[] = [];
+        try {
+            const response = await this.client.models.list();
+            const exclusionKeywords = [
+                'antigravity', 'research', 'computer', 'image',
+                'tts', 'omni', 'robotics', 'lyria', 'banana',
+                'veo', 'imagen', 'live', 'translate'
+            ];
+
+            for await (const m of response) {
+                const chatCapable = Array.isArray(m.supportedActions) && m.supportedActions.includes('generateContent');
+                
+                if (m.name && chatCapable) {
+                    const id = m.name.replace('models/', '');
+                    const exluded = exclusionKeywords.some(keyword => id.includes(keyword));
+                    if (exluded) continue;
+                    const reasonCapable = m.thinking;
+                    
+                    // Exception for 3.1-pro models
+                    const effortLevels = id.includes('gemini-3.1-pro') ? ['low', 'medium', 'high'] : ['minimal', 'low', 'medium', 'high'];
+                    infos.push({
+                        id: id,
+                        reason: reasonCapable,
+                        efforts: reasonCapable ? effortLevels: [],
+                        defaultEffort: reasonCapable ? 'medium' : null
+                    });
                 }
             }
-        }
+            GeminiChatProvider.cachedModelInfos = infos;
 
-        return modelNames.sort();
+        } catch (e) {
+            console.error("Failed to fetch Gemini models:", e);
+        }
     }
 
     // Not needed for Interactions api
@@ -65,7 +101,7 @@ export class GeminiChatProvider extends ChatProvider {
         });
     }
 
-    async *fetchStream(model: string, history: ChatItem[], previousTurnID: string | undefined): AsyncGenerator<string, ChatResponse, unknown> {
+    async *fetchStream(model: string, effort: string, history: ChatItem[], previousTurnID: string | undefined): AsyncGenerator<string, ChatResponse, unknown> {
         let fullText = '';
         try {
             const sysMsg = history.find(i => i.type === 'message' && i.role === 'developer');
@@ -85,10 +121,10 @@ export class GeminiChatProvider extends ChatProvider {
             const stream = await this.client.interactions.create({
                 model: model,
                 input: currentInput,
-                tools: this.geminiTools,
+                tools: GeminiChatProvider.geminiTools,
                 system_instruction: sysMsg && 'content' in sysMsg ? sysMsg.content : "You are an expert AI coding assistant...",
                 stream: true,
-
+                generation_config: {thinking_level: effort as any},
                 ...(previousTurnID && { previous_interaction_id: previousTurnID })
             });
 

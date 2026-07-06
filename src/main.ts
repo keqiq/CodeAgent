@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import { ChatFactory } from './apis/chat/chatFactory';
-import { ChatItem, ChatResponse } from './apis/chat/chatProvider';
+import { ChatItem, ChatResponse, ModelInfo } from './apis/chat/chatProvider';
 import { createToolRegistry, ToolResult } from './tools/toolIndex';
 import { EmbedFactory } from './apis/embed/embedFactory';
 import { Indexer } from './indexing/indexer';
@@ -16,6 +16,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
     
     private chatHistory: ChatItem[];
     private toolRegistry: any;
+    private chatModelInfo: Map<string, ModelInfo> = new Map();
     
     private indexer? : Indexer;
     private indexLoadPromise: Promise<Indexer>;
@@ -77,7 +78,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
 
     private async saveChatHistory() { await this.context.workspaceState.update('chatHistory', this.chatHistory); }
 
-    private async runAgentTurn(provider: string, model: string, userMessage: string,): Promise<void> {
+    private async runAgentTurn(provider: string, model: string, effort: string, userMessage: string,): Promise<void> {
         const apiKey = await getChatAPIKey(this.context, provider);
         const indexer = await this.indexLoadPromise;
 
@@ -98,7 +99,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
             while (keepGoing && turnCount < this.MAX_TURN_COUNT) {
                 turnCount++;
                 
-                const streamGenerator = providerInstance.fetchStream(model, this.chatHistory, this.previousTurnID);
+                const streamGenerator = providerInstance.fetchStream(model, effort, this.chatHistory, this.previousTurnID);
                 let streamResult = await streamGenerator.next();
                 
                 while (!streamResult.done) {
@@ -187,26 +188,12 @@ export class ChatApp implements vscode.WebviewViewProvider {
                         embedProviders: EmbedFactory.getAvailableProviders() 
                     });
 
-                    const chatProvider = this.context.globalState.get<string>('chatProvider');
-                    const chatModel = this.context.globalState.get<string>('chatModel');
-
                     this.post({ type: 'restoreChatHistory', history: this.chatHistory });
-
+                    
+                    const chatProvider = this.context.globalState.get<string>('chatProvider');
                     if (chatProvider) {
                         const apiKey = await getChatAPIKey(this.context, chatProvider);
-                        if (apiKey) {
-                            try {
-                                const chatModels = await getChatModelsFromProvider(chatProvider, apiKey);
-                                this.post({
-                                    type: 'restoreChatState',
-                                    provider: chatProvider,
-                                    choice: chatModel, 
-                                    models: chatModels
-                                });
-                            } catch (e) {
-
-                            }
-                        }
+                        if (apiKey) this.post({ type: 'updateChatProvider', provider: chatProvider });
                     }
 
                     const indexEnabled = this.context.globalState.get<boolean>('indexEnabled') ?? false;
@@ -271,9 +258,19 @@ export class ChatApp implements vscode.WebviewViewProvider {
                     break;
                 }
 
+                // Called after selecting provider from dropdown
+                case 'saveChatProvider': {
+                    await this.context.globalState.update('chatProvider', data.provider);
+                    this.post({ type: 'updateChatProvider', provider: data.provider });
+                    break;
+                }
+
+                // Called after updateChatProvider and having a valid API key
+                // Respond with curated list of models from provider, or all chat models if fetchall is set 
+                // If current saved chat Model is 
                 case 'fetchChatModels': {
                     try {
-                        await this.context.globalState.update('chatProvider', data.provider);
+                        // await this.context.globalState.update('chatProvider', data.provider);
 
                         const apiKey = await getChatAPIKey(this.context, data.provider);
 
@@ -281,9 +278,20 @@ export class ChatApp implements vscode.WebviewViewProvider {
                             this.post({ type: 'requestChatAPIKey', provider: data.provider });
                             return;
                         }
+
+                        const infos = await getChatModelsFromProvider(data.provider, apiKey);
+                        this.chatModelInfo.clear();
+                        infos.forEach((info: ModelInfo) => this.chatModelInfo.set(info.id, info));
+
                         this.post({
                             type: 'setChatModels',
-                            models: await getChatModelsFromProvider(data.provider, apiKey)
+                            models: infos.map((info: ModelInfo) => info.id)
+                        }); 
+
+                        const chatModel = this.context.globalState.get<string>(`${data.provider}_chatModel`);
+                        this.post({
+                            type: 'updateChatModel',
+                            model: chatModel
                         });
 
                     } catch (e) {
@@ -292,6 +300,36 @@ export class ChatApp implements vscode.WebviewViewProvider {
                     break;
                 }
 
+                // Called when selecting model from dropdown
+                case 'saveChatModel': {
+                    await this.context.globalState.update(`${data.provider}_chatModel`, data.model);
+                    this.post({ type: 'updateChatModel', model: data.model });
+                    break;
+                }
+
+                // Called after updateChatModel, fetch model information
+                case 'fetchChatModelInfo': {
+                    const info = this.chatModelInfo.get(data.model);
+                    const chatProvider = this.context.globalState.get<string>('chatProvider');
+                    const savedEffort = this.context.globalState.get<string>(`${chatProvider}_${data.model}_Effort`);
+                    if (info) {
+                        this.post({ 
+                            type: 'updateChatModelInfo', 
+                            reason: info.reason, 
+                            efforts: info.efforts, 
+                            defaultEffort: savedEffort ? savedEffort : info.defaultEffort 
+                        });
+                    }
+                    break;
+                }
+
+                case 'saveChatEffort': {
+                    await this.context.globalState.update(`${data.provider}_${data.model}_Effort`, data.effort);
+                    break;
+                }
+
+                // Called when pressing the key button or when provider is selected without valid API key
+                // Respond with list of models from provider if the key is valid
                 case 'saveChatAPIKey': {
                     try {
                         const secretKey = `${data.provider.toUpperCase()}_CHAT_API_KEY`;
@@ -308,14 +346,9 @@ export class ChatApp implements vscode.WebviewViewProvider {
                     break;
                 }
 
-                case 'saveChatModel': {
-                    await this.context.globalState.update('chatModel', data.model);
-                    break;
-                }
-
                 case 'askAgent': {
                     if (!data.value) { return; }
-                    this.runAgentTurn(data.provider, data.model, data.value);
+                    this.runAgentTurn(data.provider, data.model, data.effort, data.value);
                     break;
                 }
 
