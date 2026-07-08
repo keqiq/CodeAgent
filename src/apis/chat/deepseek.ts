@@ -7,7 +7,7 @@ export class DeepSeekChatProvider extends ChatProvider {
     private static deepseekTools: any = DeepSeekChatProvider.parseTools(allToolSchemas);
     private static cachedModelInfos: ModelInfo[] | null = null;
     
-    public stateManagementSupport: boolean = false;
+    public static stateManagementSupport: boolean = false;
     
     constructor(apiKey: string) {
         super();
@@ -31,24 +31,19 @@ export class DeepSeekChatProvider extends ChatProvider {
 
     async getModelInfos(): Promise<void> {
         const infos: ModelInfo[] = [];
+        const response = await this.client.models.list();
 
-        try {
-            const response = await this.client.models.list();
-
-            // DeepSeek only offers v4 models from their api docs and they have the same settings
-            for (const m of response.data) {
-                const id = m.id;
-                infos.push({
-                    id: id,
-                    reason: true,
-                    efforts: ['high', 'xhigh'],
-                    defaultEffort: 'high'
-                });
-            }
-            DeepSeekChatProvider.cachedModelInfos = infos;
-        } catch (e) {
-            console.log('Error fetching DeepSeek models', e);
+        // DeepSeek only offers v4 models from their api docs and they have the same settings
+        for (const m of response.data) {
+            const id = m.id;
+            infos.push({
+                id: id,
+                reason: true,
+                efforts: ['high', 'xhigh'],
+                defaultEffort: 'high'
+            });
         }
+        DeepSeekChatProvider.cachedModelInfos = infos;
     }
     
     // Deepseek still uses the legacy chat completion style messages

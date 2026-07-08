@@ -1,6 +1,6 @@
 {
-  "name": "codeagent",
-  "displayName": "CodeAgent",
+  "name": "vscodeagent",
+  "displayName": "VsCodeAgent",
   "description": "",
   "version": "0.0.1",
   "engines": {
@@ -16,7 +16,7 @@
       "activitybar": [
         {
           "id": "codeagent-container",
-          "title": "CodeAgent",
+          "title": "VsCodeAgent",
           "icon": "$(hubot)"
         }
       ]

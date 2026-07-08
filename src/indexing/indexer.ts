@@ -5,7 +5,6 @@ import * as vscode from 'vscode';
 import { getWorkspaceUri } from "../utils/workspace";
 import * as crypto from 'crypto';
 import { supportedExtensions, languageExcludePatterns, globalExcludePatterns} from "./languages/_languageIndex";
-import { getEmbedAPIKey } from "../utils/apiUtils";
 import { EmbedFactory } from "../apis/embed/embedFactory";
 import { minimatch } from "minimatch";
 
@@ -278,7 +277,9 @@ export class Indexer {
         
         if (!providerId || !model) return;
         
-        const apiKey = await getEmbedAPIKey(this.context, providerId);
+        // const apiKey = await getEmbedAPIKey(this.context, providerId);
+        // TODO: FIX THIS
+        const apiKey = this.context.globalState.get<string>(`${providerId.toUpperCase()}_EMBED_API_KEY`);
         if (!apiKey) return;
         if (!this.dbConnected()) return;
 

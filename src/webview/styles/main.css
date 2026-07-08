@@ -1,6 +1,8 @@
 @import url('./chat-header.css');
 @import url('./chat-container.css');
 @import url('./chat-input.css');
+@import url('./custom-dropdown.css');
+@import url('./chat-settings-menu.css');
 
 body { 
     font-family: var(--vscode-font-family); 
@@ -112,7 +114,7 @@ input[type="password"] {
 .scroll-bottom-btn {
     display: none; 
     position: absolute;
-    bottom: 90px; /* Sits right above the input box */
+    bottom: 120px; /* Sits right above the input box */
     right: 20px;
     z-index: 100;
     background: var(--vscode-editorWidget-background);
@@ -139,4 +141,58 @@ input[type="password"] {
 }
 .hidden {
     display: none !important;
+}
+
+/* Max Turns Number Control (Inline & Minimal) */
+.number-control {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+}
+
+.number-control input {
+    width: 28px; /* Slightly narrower for a tighter inline look */
+    text-align: center;
+    background: transparent;
+    border: 1px solid transparent; /* Invisible border prevents shifting on focus */
+    color: var(--vscode-input-foreground);
+    border-radius: 4px;
+    padding: 2px 0;
+    outline: none;
+    font-family: var(--vscode-editor-font-family);
+    
+    /* Remove default arrows */
+    appearance: textfield;
+    -moz-appearance: textfield; 
+}
+
+.number-control input::-webkit-outer-spin-button,
+.number-control input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+/* Show border only when the user is actively typing */
+.number-control input:focus {
+    border-color: var(--vscode-focusBorder);
+    background: color-mix(in srgb, var(--vscode-input-background) 50%, transparent);
+}
+
+.number-control .icon-btn {
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    background: transparent; /* Removed background */
+    color: var(--vscode-icon-foreground, var(--vscode-foreground));
+    border: none; /* Removed border */
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+/* Subtle background strictly on hover */
+.number-control .icon-btn:hover {
+    background: color-mix(in srgb, var(--vscode-toolbar-hoverBackground) 50%, transparent);
 }

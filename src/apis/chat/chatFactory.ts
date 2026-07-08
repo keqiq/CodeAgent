@@ -3,7 +3,10 @@ import { DeepSeekChatProvider } from './deepseek';
 import { GeminiChatProvider } from "./gemini";
 import { OpenAIChatProvider } from "./openai";
 
-type ChatProviderConstructor = new (apiKey: string) => ChatProvider;
+interface ChatProviderConstructor {
+    new (apiKey: string): ChatProvider;
+    stateManagementSupport: boolean;
+}
 
 export class ChatFactory {
 
@@ -13,6 +16,11 @@ export class ChatFactory {
         'DeepSeek': DeepSeekChatProvider
     };
 
+    static supportsStateManagement(providerName: string): boolean {
+        const ProviderClass = this.providers[providerName];
+        return ProviderClass.stateManagementSupport;
+    }
+
     static getAvailableProviders(): string[] {
         return Object.keys(this.providers);
     }
@@ -20,6 +28,6 @@ export class ChatFactory {
     static create(providerName: string, apiKey: string): ChatProvider {
         const ProviderClass = this.providers[providerName];
 
-        return new ProviderClass(apiKey);
+        return new (ProviderClass as any)(apiKey);
     }
 }

@@ -32795,7 +32795,7 @@ OpenAI.Videos = Videos;
 
 // src/apis/chat/chatProvider.ts
 var ChatProvider = class {
-  stateManagementSupport = true;
+  static stateManagementSupport = true;
 };
 
 // src/tools/search.ts
@@ -33033,7 +33033,7 @@ var DeepSeekChatProvider = class _DeepSeekChatProvider extends ChatProvider {
   client;
   static deepseekTools = _DeepSeekChatProvider.parseTools(allToolSchemas);
   static cachedModelInfos = null;
-  stateManagementSupport = false;
+  static stateManagementSupport = false;
   constructor(apiKey) {
     super();
     this.client = new OpenAI({
@@ -33050,21 +33050,17 @@ var DeepSeekChatProvider = class _DeepSeekChatProvider extends ChatProvider {
   }
   async getModelInfos() {
     const infos = [];
-    try {
-      const response = await this.client.models.list();
-      for (const m2 of response.data) {
-        const id = m2.id;
-        infos.push({
-          id,
-          reason: true,
-          efforts: ["high", "xhigh"],
-          defaultEffort: "high"
-        });
-      }
-      _DeepSeekChatProvider.cachedModelInfos = infos;
-    } catch (e2) {
-      console.log("Error fetching DeepSeek models", e2);
+    const response = await this.client.models.list();
+    for (const m2 of response.data) {
+      const id = m2.id;
+      infos.push({
+        id,
+        reason: true,
+        efforts: ["high", "xhigh"],
+        defaultEffort: "high"
+      });
     }
+    _DeepSeekChatProvider.cachedModelInfos = infos;
   }
   // Deepseek still uses the legacy chat completion style messages
   formatMessages(items) {
@@ -51763,43 +51759,39 @@ var GeminiChatProvider = class _GeminiChatProvider extends ChatProvider {
   }
   async getModelInfos() {
     const infos = [];
-    try {
-      const response = await this.client.models.list();
-      const exclusionKeywords = [
-        "antigravity",
-        "research",
-        "computer",
-        "image",
-        "tts",
-        "omni",
-        "robotics",
-        "lyria",
-        "banana",
-        "veo",
-        "imagen",
-        "live",
-        "translate"
-      ];
-      for await (const m2 of response) {
-        const chatCapable = Array.isArray(m2.supportedActions) && m2.supportedActions.includes("generateContent");
-        if (m2.name && chatCapable) {
-          const id = m2.name.replace("models/", "");
-          const exluded = exclusionKeywords.some((keyword) => id.includes(keyword));
-          if (exluded) continue;
-          const reasonCapable = m2.thinking;
-          const effortLevels = id.includes("gemini-3.1-pro") ? ["low", "medium", "high"] : ["minimal", "low", "medium", "high"];
-          infos.push({
-            id,
-            reason: reasonCapable,
-            efforts: reasonCapable ? effortLevels : [],
-            defaultEffort: reasonCapable ? "medium" : null
-          });
-        }
+    const response = await this.client.models.list();
+    const exclusionKeywords = [
+      "antigravity",
+      "research",
+      "computer",
+      "image",
+      "tts",
+      "omni",
+      "robotics",
+      "lyria",
+      "banana",
+      "veo",
+      "imagen",
+      "live",
+      "translate"
+    ];
+    for await (const m2 of response) {
+      const chatCapable = Array.isArray(m2.supportedActions) && m2.supportedActions.includes("generateContent");
+      if (m2.name && chatCapable) {
+        const id = m2.name.replace("models/", "");
+        const exluded = exclusionKeywords.some((keyword) => id.includes(keyword));
+        if (exluded) continue;
+        const reasonCapable = m2.thinking;
+        const effortLevels = id.includes("gemini-3.1-pro") ? ["low", "medium", "high"] : ["minimal", "low", "medium", "high"];
+        infos.push({
+          id,
+          reason: reasonCapable,
+          efforts: reasonCapable ? effortLevels : [],
+          defaultEffort: reasonCapable ? "medium" : null
+        });
       }
-      _GeminiChatProvider.cachedModelInfos = infos;
-    } catch (e2) {
-      console.error("Failed to fetch Gemini models:", e2);
     }
+    _GeminiChatProvider.cachedModelInfos = infos;
   }
   // Not needed for Interactions api
   // private parseTools() {}
@@ -51962,55 +51954,51 @@ var OpenAIChatProvider = class _OpenAIChatProvider extends ChatProvider {
   }
   async getModelInfos() {
     const infos = [];
-    try {
-      const response = await this.client.models.list();
-      const exclusionKeywords = [
-        "instruct",
-        "search",
-        "tts",
-        "transcribe",
-        "chat",
-        "audio",
-        "image",
-        "translate",
-        "whisper",
-        "realtime"
-      ];
-      for (const m2 of response.data) {
-        const id = m2.id;
-        const relevant = id.startsWith("gpt") || id.startsWith("o1") || id.startsWith("o3");
-        const exluded = exclusionKeywords.some((keyword) => id.includes(keyword));
-        if (relevant && !exluded) {
-          const reasonCapable = id.startsWith("o1") || id.startsWith("o3") || id.startsWith("gpt-5") || id.startsWith("gpt-oss");
-          let supportedEfforts = [];
-          let defaultEffort = null;
-          if (reasonCapable) {
-            defaultEffort = "medium";
-            const gpt5Match = id.match(/gpt-5\.(\d+)/);
-            const minorVersion = gpt5Match ? parseInt(gpt5Match[1], 10) : -1;
-            if (id.includes("gpt-5-pro")) {
-              supportedEfforts = ["high"];
-              defaultEffort = "high";
-            } else if (minorVersion > 1) {
-              supportedEfforts = ["none", "low", "medium", "high", "xhigh"];
-            } else if (minorVersion === 1) {
-              supportedEfforts = ["none", "low", "medium", "high"];
-            } else {
-              supportedEfforts = ["minimal", "low", "medium", "high"];
-            }
+    const response = await this.client.models.list();
+    const exclusionKeywords = [
+      "instruct",
+      "search",
+      "tts",
+      "transcribe",
+      "chat",
+      "audio",
+      "image",
+      "translate",
+      "whisper",
+      "realtime"
+    ];
+    for (const m2 of response.data) {
+      const id = m2.id;
+      const relevant = id.startsWith("gpt") || id.startsWith("o1") || id.startsWith("o3");
+      const exluded = exclusionKeywords.some((keyword) => id.includes(keyword));
+      if (relevant && !exluded) {
+        const reasonCapable = id.startsWith("o1") || id.startsWith("o3") || id.startsWith("gpt-5") || id.startsWith("gpt-oss");
+        let supportedEfforts = [];
+        let defaultEffort = null;
+        if (reasonCapable) {
+          defaultEffort = "medium";
+          const gpt5Match = id.match(/gpt-5\.(\d+)/);
+          const minorVersion = gpt5Match ? parseInt(gpt5Match[1], 10) : -1;
+          if (id.includes("gpt-5-pro")) {
+            supportedEfforts = ["high"];
+            defaultEffort = "high";
+          } else if (minorVersion > 1) {
+            supportedEfforts = ["none", "low", "medium", "high", "xhigh"];
+          } else if (minorVersion === 1) {
+            supportedEfforts = ["none", "low", "medium", "high"];
+          } else {
+            supportedEfforts = ["minimal", "low", "medium", "high"];
           }
-          infos.push({
-            id,
-            reason: reasonCapable,
-            efforts: supportedEfforts,
-            defaultEffort
-          });
         }
+        infos.push({
+          id,
+          reason: reasonCapable,
+          efforts: supportedEfforts,
+          defaultEffort
+        });
       }
-      _OpenAIChatProvider.cachedModelInfos = infos;
-    } catch (e2) {
-      console.log("Failed to fetch OpenAI models", e2);
     }
+    _OpenAIChatProvider.cachedModelInfos = infos;
   }
   // Not needed for Responses API
   // private parseTools(tools: any[]): OpenAI.Responses.Tool[] | undefined {}
@@ -52125,6 +52113,10 @@ var ChatFactory = class {
     "Gemini": GeminiChatProvider,
     "DeepSeek": DeepSeekChatProvider
   };
+  static supportsStateManagement(providerName) {
+    const ProviderClass = this.providers[providerName];
+    return ProviderClass.stateManagementSupport;
+  }
   static getAvailableProviders() {
     return Object.keys(this.providers);
   }
@@ -63822,24 +63814,6 @@ ${siblings.join("\n")}
 var vscode6 = __toESM(require("vscode"));
 var crypto2 = __toESM(require("crypto"));
 
-// src/utils/apiUtils.ts
-async function getModelsFromProvider(provider, apiKey) {
-  const providerInstance = ChatFactory.create(provider, apiKey);
-  return await providerInstance.getModels();
-}
-async function getEmbeddingModelsFromProvider(provider, apiKey) {
-  const providerInstance = EmbedFactory.create(provider, apiKey);
-  return await providerInstance.getModels();
-}
-async function getChatAPIKey(context, provider) {
-  const secretKey = `${provider.toUpperCase()}_CHAT_API_KEY`;
-  return await context.secrets.get(secretKey);
-}
-async function getEmbedAPIKey(context, provider) {
-  const secretKey = `${provider.toUpperCase()}_EMBED_API_KEY`;
-  return await context.secrets.get(secretKey);
-}
-
 // node_modules/brace-expansion/node_modules/balanced-match/dist/esm/index.js
 var balanced = (a, b, str2) => {
   const ma = a instanceof RegExp ? maybeMatch(a, str2) : a;
@@ -65832,7 +65806,7 @@ var Indexer = class _Indexer {
     const providerId = this.context.globalState.get("embedProvider");
     const model = this.context.globalState.get("embedModel");
     if (!providerId || !model) return;
-    const apiKey = await getEmbedAPIKey(this.context, providerId);
+    const apiKey = this.context.globalState.get(`${providerId.toUpperCase()}_EMBED_API_KEY`);
     if (!apiKey) return;
     if (!this.dbConnected()) return;
     const deletedFiles = [...this.deletedFiles];
@@ -65884,6 +65858,16 @@ var Indexer = class _Indexer {
   }
 };
 
+// src/utils/apiUtils.ts
+async function getModelsFromProvider(provider, apiKey, fetchAll) {
+  const providerInstance = ChatFactory.create(provider, apiKey);
+  return await providerInstance.getModels(fetchAll);
+}
+async function getEmbeddingModelsFromProvider(provider, apiKey) {
+  const providerInstance = EmbedFactory.create(provider, apiKey);
+  return await providerInstance.getModels();
+}
+
 // src/main.ts
 var ChatApp = class {
   constructor(context) {
@@ -65904,8 +65888,7 @@ var ChatApp = class {
         const providerId = this.context.globalState.get("embedProvider");
         const model = this.context.globalState.get("embedModel");
         if (!providerId || !model) throw new Error("embedding provider/model is not configured");
-        const apiKey = await getEmbedAPIKey(this.context, providerId);
-        if (!apiKey) throw new Error("missing embedding API key");
+        const apiKey = await this.getEmbedAPIKey(providerId);
         const indexer = await this.indexLoadPromise;
         return {
           indexer,
@@ -65917,7 +65900,6 @@ var ChatApp = class {
   }
   context;
   _view;
-  MAX_TURN_COUNT = 15;
   chatHistory;
   toolRegistry;
   chatModelInfo = /* @__PURE__ */ new Map();
@@ -65932,7 +65914,7 @@ var ChatApp = class {
                       You have access to tools that can search, read, write, and edit files in the user's workspace.
                       When a user asks you to find a bug or fix a problem, DO NOT ask them for the file name if you can search for it yourself. 
                       Proactively use your semantic search tool 'searchCodebase' tool to search the workspace.
-                      Tools like 'glob' and 'grep' should be used as a fallback if semantic search failes to return relevant results, or if you need to view files in more detail. 
+                      Tools like 'glob' and 'grep' should be used as a fallback if semantic search fails to return relevant results, or if you need to view files in more detail. 
                       Find the relevant code, read it, and edit it to fix the issue. 
                       Always explain your thought process before executing a tool.`
     }];
@@ -65943,24 +65925,58 @@ var ChatApp = class {
   async saveChatHistory() {
     await this.context.workspaceState.update("chatHistory", this.chatHistory);
   }
-  async runAgentTurn(provider, model, effort, userMessage) {
-    const apiKey = await getChatAPIKey(this.context, provider);
-    const indexer = await this.indexLoadPromise;
-    if (!apiKey) {
-      vscode7.window.showErrorMessage(`No API key for ${provider}`);
-      return;
+  async getChatAPIKey(provider) {
+    const secretKey = `${provider.toUpperCase()}_CHAT_API_KEY`;
+    const chatAPIKey = await this.context.secrets.get(secretKey);
+    if (!chatAPIKey) {
+      this.post({ type: "requestChatAPIKey", provider });
+      throw new Error(`Missing ${provider} API key`);
     }
+    return chatAPIKey;
+  }
+  async getEmbedAPIKey(provider) {
+    const secretKey = `${provider.toUpperCase()}_EMBED_API_KEY`;
+    const embedAPIKey = await this.context.secrets.get(secretKey);
+    if (!embedAPIKey) {
+      this.post({ type: "requestEmbedAPIKey", provider });
+      throw new Error(`Missing ${provider} API key`);
+    }
+    return embedAPIKey;
+  }
+  async refreshChatModels(provider) {
     try {
+      this.post({ type: "setChatModelsLoading", provider });
+      const apiKey = await this.getChatAPIKey(provider);
+      const fetchALL = this.context.globalState.get("showAllChatModels") ?? false;
+      const infos = await getModelsFromProvider(provider, apiKey, fetchALL);
+      this.chatModelInfo.clear();
+      infos.forEach((info) => this.chatModelInfo.set(info.id, info));
+      this.post({ type: "setChatModels", models: infos.map((info) => info.id) });
+      const chatModel = this.context.globalState.get(`${provider}_chatModel`);
+      const isValidModel = infos.some((info) => info.id === chatModel);
+      this.post({ type: "updateChatModel", model: isValidModel ? chatModel : void 0 });
+    } catch (e2) {
+      vscode7.window.showErrorMessage(`Failed to fetch chat models: ${e2}`);
+      this.post({ type: "requestChatAPIKey", provider });
+    }
+  }
+  async runAgentTurn(provider, model, effort, userMessage) {
+    const indexer = await this.indexLoadPromise;
+    try {
+      const apiKey = await this.getChatAPIKey(provider);
+      const serverStateManagment = this.context.globalState.get("serverStateManagement") ?? true;
       const providerInstance = ChatFactory.create(provider, apiKey);
       this.chatHistory.push({ type: "message", role: "user", content: userMessage, turnID: this.previousTurnID });
       await this.saveChatHistory();
       let keepGoing = true;
       let turnCount = 0;
+      const turnLimit = this.context.globalState.get("turnLimit") ?? 0;
       let hasStartedToolGroup = false;
       let toolsRunThisTurn = 0;
-      while (keepGoing && turnCount < this.MAX_TURN_COUNT) {
+      while (keepGoing && (turnLimit === 0 || turnCount < turnLimit)) {
         turnCount++;
-        const streamGenerator = providerInstance.fetchStream(model, effort, this.chatHistory, this.previousTurnID);
+        const turnID = serverStateManagment ? this.previousTurnID : void 0;
+        const streamGenerator = providerInstance.fetchStream(model, effort, this.chatHistory, turnID);
         let streamResult = await streamGenerator.next();
         while (!streamResult.done) {
           if (streamResult.value) {
@@ -65974,7 +65990,7 @@ var ChatApp = class {
         const finalResponse = streamResult.value;
         if (finalResponse && finalResponse.items.length > 0) this.chatHistory.push(...finalResponse.items);
         const functionCalls = finalResponse?.items.filter((item) => item.type === "function_call") || [];
-        const interactionID = finalResponse?.turnID;
+        const currentTurnID = finalResponse?.turnID;
         if (functionCalls.length > 0) {
           if (!hasStartedToolGroup) {
             hasStartedToolGroup = true;
@@ -66001,12 +66017,12 @@ var ChatApp = class {
               result = { message: `Error: Tool '${toolName}' is not registered` };
               this.post({ type: "updateTool", status: "error", error: "Invalid tool call" });
             }
-            this.chatHistory.push({ type: "function_result", id: toolId, name: toolName, result: result.message, turnID: interactionID });
+            this.chatHistory.push({ type: "function_result", id: toolId, name: toolName, result: result.message, turnID: currentTurnID });
           }
         } else {
           keepGoing = false;
         }
-        this.previousTurnID = interactionID;
+        this.previousTurnID = currentTurnID;
       }
       if (hasStartedToolGroup) this.post({ type: "endToolGroup", totalCount: toolsRunThisTurn });
       await this.saveChatHistory();
@@ -66025,101 +66041,104 @@ var ChatApp = class {
     webviewView.webview.onDidReceiveMessage(async (data) => {
       switch (data.type) {
         case "webviewReady": {
-          this.post({
-            type: "initProviders",
-            chatProviders: ChatFactory.getAvailableProviders(),
-            embedProviders: EmbedFactory.getAvailableProviders()
-          });
-          this.post({ type: "restoreChatHistory", history: this.chatHistory });
-          const chatProvider = this.context.globalState.get("chatProvider");
-          if (chatProvider) {
-            const apiKey = await getChatAPIKey(this.context, chatProvider);
-            if (apiKey) this.post({ type: "updateChatProvider", provider: chatProvider });
-          }
-          const indexEnabled = this.context.globalState.get("indexEnabled") ?? false;
-          if (indexEnabled) {
-            const embedProvider = this.context.globalState.get("embedProvider");
-            const embedModel = this.context.globalState.get("embedModel");
-            if (embedProvider) {
-              const indexer = await this.indexLoadPromise;
-              const embedApiKey = await getEmbedAPIKey(this.context, embedProvider);
-              const hasIndex = indexer.dbConnected();
-              if (!embedApiKey) {
-                this.post({
-                  type: "restoreIndexState",
-                  enabled: true,
-                  provider: embedProvider,
-                  needsAPIKey: true,
-                  status: "API key required"
-                });
-              } else {
-                try {
-                  const embedModels = await getEmbeddingModelsFromProvider(embedProvider, embedApiKey);
-                  this.post({
-                    type: "restoreIndexState",
-                    enabled: true,
-                    provider: embedProvider,
-                    choice: embedModel,
-                    models: embedModels,
-                    status: hasIndex ? "Ready" : "Not Indexed"
-                  });
-                } catch (e2) {
+          try {
+            const showAllChatModels = this.context.globalState.get("showAllChatModels") ?? false;
+            const serverStateManagement = this.context.globalState.get("serverStateManagement") ?? true;
+            const turnLimit = this.context.globalState.get("turnLimit") ?? 0;
+            this.post({
+              type: "restoreChatSettings",
+              showAll: showAllChatModels,
+              stateful: serverStateManagement,
+              turnLimit
+            });
+            this.post({
+              type: "initProviders",
+              chatProviders: ChatFactory.getAvailableProviders(),
+              embedProviders: EmbedFactory.getAvailableProviders()
+            });
+            this.post({ type: "restoreChatHistory", history: this.chatHistory });
+            const chatProvider = this.context.globalState.get("chatProvider");
+            if (chatProvider) {
+              const stateManagementSupport = ChatFactory.supportsStateManagement(chatProvider);
+              this.post({ type: "updateChatProvider", provider: chatProvider, stateful: stateManagementSupport });
+            }
+            const indexEnabled = this.context.globalState.get("indexEnabled") ?? false;
+            if (indexEnabled) {
+              const embedProvider = this.context.globalState.get("embedProvider");
+              const embedModel = this.context.globalState.get("embedModel");
+              if (embedProvider) {
+                const indexer = await this.indexLoadPromise;
+                const embedApiKey = await this.getEmbedAPIKey(embedProvider);
+                const hasIndex = indexer.dbConnected();
+                if (!embedApiKey) {
                   this.post({
                     type: "restoreIndexState",
                     enabled: true,
                     provider: embedProvider,
                     needsAPIKey: true,
-                    status: "Invalid API key"
+                    status: "API key required"
                   });
+                } else {
+                  try {
+                    const embedModels = await getEmbeddingModelsFromProvider(embedProvider, embedApiKey);
+                    this.post({
+                      type: "restoreIndexState",
+                      enabled: true,
+                      provider: embedProvider,
+                      choice: embedModel,
+                      models: embedModels,
+                      status: hasIndex ? "Ready" : "Not Indexed"
+                    });
+                  } catch (e2) {
+                    this.post({
+                      type: "restoreIndexState",
+                      enabled: true,
+                      provider: embedProvider,
+                      needsAPIKey: true,
+                      status: "Invalid API key"
+                    });
+                  }
                 }
+              } else {
+                this.post({
+                  type: "restoreIndexState",
+                  enabled: true,
+                  status: "Select Provider"
+                });
               }
             } else {
               this.post({
                 type: "restoreIndexState",
-                enabled: true,
-                status: "Select Provider"
+                enabled: false,
+                status: "Disabled"
               });
             }
-          } else {
-            this.post({
-              type: "restoreIndexState",
-              enabled: false,
-              status: "Disabled"
-            });
+          } catch (e2) {
+            vscode7.window.showErrorMessage(`Failed to restore state ${e2}`);
           }
           break;
         }
         // Called after selecting provider from dropdown
         case "saveChatProvider": {
           await this.context.globalState.update("chatProvider", data.provider);
-          this.post({ type: "updateChatProvider", provider: data.provider });
+          const serverStateManagement = this.context.globalState.get("serverStateManagement") ?? true;
+          this.post({ type: "restoreChatSettings", stateful: serverStateManagement });
+          const stateManagementSupport = ChatFactory.supportsStateManagement(data.provider);
+          this.post({ type: "updateChatProvider", provider: data.provider, stateful: stateManagementSupport });
+          break;
+        }
+        // Called when pressing the key button or when provider is selected without valid API key
+        // Respond with list of models from provider if the key is valid
+        case "saveChatAPIKey": {
+          const secretKey = `${data.provider.toUpperCase()}_CHAT_API_KEY`;
+          await this.context.secrets.store(secretKey, data.key);
+          this.refreshChatModels(data.provider);
           break;
         }
         // Called after updateChatProvider and having a valid API key
         // Respond with curated list of models from provider, or all chat models if fetchall is set 
-        // If current saved chat Model is 
         case "fetchChatModels": {
-          try {
-            const apiKey = await getChatAPIKey(this.context, data.provider);
-            if (!apiKey) {
-              this.post({ type: "requestChatAPIKey", provider: data.provider });
-              return;
-            }
-            const infos = await getModelsFromProvider(data.provider, apiKey);
-            this.chatModelInfo.clear();
-            infos.forEach((info) => this.chatModelInfo.set(info.id, info));
-            this.post({
-              type: "setChatModels",
-              models: infos.map((info) => info.id)
-            });
-            const chatModel = this.context.globalState.get(`${data.provider}_chatModel`);
-            this.post({
-              type: "updateChatModel",
-              model: chatModel
-            });
-          } catch (e2) {
-            vscode7.window.showErrorMessage(`Failed to fetch models: ${e2}`);
-          }
+          this.refreshChatModels(data.provider);
           break;
         }
         // Called when selecting model from dropdown
@@ -66143,24 +66162,26 @@ var ChatApp = class {
           }
           break;
         }
+        // Effort is save per provider per model, and selected by default on reload
         case "saveChatEffort": {
           await this.context.globalState.update(`${data.provider}_${data.model}_Effort`, data.effort);
           break;
         }
-        // Called when pressing the key button or when provider is selected without valid API key
-        // Respond with list of models from provider if the key is valid
-        case "saveChatAPIKey": {
-          try {
-            const secretKey = `${data.provider.toUpperCase()}_CHAT_API_KEY`;
-            await this.context.secrets.store(secretKey, data.key);
-            this.post({
-              type: "setChatModels",
-              models: await getModelsFromProvider(data.provider, data.key)
-            });
-          } catch (e2) {
-            vscode7.window.showErrorMessage(`Invalid key or Failed to fetch models: ${e2}`);
-            this.post({ type: "requestChatAPIKey", provider: data.provider });
-          }
+        // Switch between curated list of models or all chat models
+        case "setShowAllModels": {
+          await this.context.globalState.update("showAllChatModels", data.showAll);
+          const chatProvider = this.context.globalState.get("chatProvider");
+          if (chatProvider) await this.refreshChatModels(chatProvider);
+          break;
+        }
+        // Switch between server side or local context history
+        // Only for OpenAI's responses API or Gemini's interactions API
+        case "setStateManagement": {
+          await this.context.globalState.update("serverStateManagement", data.stateful);
+          break;
+        }
+        case "updateTurnLimit": {
+          await this.context.globalState.update("turnLimit", data.limit);
           break;
         }
         case "askAgent": {
@@ -66183,16 +66204,11 @@ var ChatApp = class {
         case "fetchEmbedModels": {
           try {
             await this.context.globalState.update("embedProvider", data.provider);
-            const apiKey = await getEmbedAPIKey(this.context, data.provider);
-            if (!apiKey) {
-              this.post({ type: "requestEmbedAPIKey", provider: data.provider });
-              return;
-            }
+            const apiKey = await this.getEmbedAPIKey(data.provider);
             const models = await getEmbeddingModelsFromProvider(data.provider, apiKey);
             this.post({ type: "setEmbedModels", models });
           } catch (e2) {
             vscode7.window.showErrorMessage(`Failed to fetch embedding models: ${e2}`);
-            this.post({ type: "requestEmbedAPIKey", provider: data.provider });
           }
           break;
         }
@@ -66214,11 +66230,7 @@ var ChatApp = class {
         }
         case "indexWorkspace": {
           try {
-            const apiKey = await getEmbedAPIKey(this.context, data.provider);
-            if (!apiKey) {
-              this.post({ type: "requestEmbedAPIKey", provider: data.provider });
-              return;
-            }
+            const apiKey = await this.getEmbedAPIKey(data.provider);
             const indexer = await this.indexLoadPromise;
             const embedProvider = EmbedFactory.create(data.provider, apiKey);
             const success = await indexer.indexWorkspace(embedProvider, data.model);

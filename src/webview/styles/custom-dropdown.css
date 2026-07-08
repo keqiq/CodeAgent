@@ -1,0 +1,85 @@
+/* Custom Dropdown Wrapper */
+.custom-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+/* The Trigger Button */
+.dropdown-trigger {
+    background: transparent;
+    color: var(--vscode-foreground);
+    border: none;
+    padding: 0;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    max-width: 115px;
+    display: inline-flex;
+    align-items: center;
+    transition: opacity 0.2s, color 0.2s;
+    font-family: inherit;
+}
+
+.dropdown-trigger .selected-text {
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.dropdown-trigger:hover:not(:disabled) {
+    opacity: 1;
+}
+
+.dropdown-trigger:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+/* The Opened Glassy List */
+.dropdown-list {
+    position: absolute;
+    bottom: calc(100% + 10px); /* Pops upwards */
+    left: 0;
+    min-width: 140px;
+    max-height: 250px;
+    overflow-y: auto;
+    z-index: 100;
+    
+    /* Glassmorphism Effect */
+    background-color: color-mix(in srgb, var(--vscode-editorWidget-background) 85%, transparent);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid color-mix(in srgb, var(--vscode-widget-border) 60%, transparent);
+    border-radius: 8px;
+    padding: 6px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+    
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.dropdown-list.hidden {
+    display: none; 
+}
+
+/* Individual Options */
+.dropdown-item {
+    padding: 8px 10px;
+    font-size: 12px;
+    color: var(--vscode-foreground);
+    border-radius: 4px;
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+    transition: background-color 0.1s;
+}
+
+.dropdown-item:hover {
+    background-color: var(--vscode-list-hoverBackground);
+}
+
+.dropdown-item.selected {
+    background-color: var(--vscode-list-activeSelectionBackground);
+    color: var(--vscode-list-activeSelectionForeground);
+}

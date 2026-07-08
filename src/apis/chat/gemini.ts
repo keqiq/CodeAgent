@@ -31,38 +31,33 @@ export class GeminiChatProvider extends ChatProvider {
 
     private async getModelInfos(): Promise<void> {
         const infos: ModelInfo[] = [];
-        try {
-            const response = await this.client.models.list();
-            const exclusionKeywords = [
-                'antigravity', 'research', 'computer', 'image',
-                'tts', 'omni', 'robotics', 'lyria', 'banana',
-                'veo', 'imagen', 'live', 'translate'
-            ];
+        const response = await this.client.models.list();
+        const exclusionKeywords = [
+            'antigravity', 'research', 'computer', 'image',
+            'tts', 'omni', 'robotics', 'lyria', 'banana',
+            'veo', 'imagen', 'live', 'translate'
+        ];
 
-            for await (const m of response) {
-                const chatCapable = Array.isArray(m.supportedActions) && m.supportedActions.includes('generateContent');
+        for await (const m of response) {
+            const chatCapable = Array.isArray(m.supportedActions) && m.supportedActions.includes('generateContent');
+            
+            if (m.name && chatCapable) {
+                const id = m.name.replace('models/', '');
+                const exluded = exclusionKeywords.some(keyword => id.includes(keyword));
+                if (exluded) continue;
+                const reasonCapable = m.thinking;
                 
-                if (m.name && chatCapable) {
-                    const id = m.name.replace('models/', '');
-                    const exluded = exclusionKeywords.some(keyword => id.includes(keyword));
-                    if (exluded) continue;
-                    const reasonCapable = m.thinking;
-                    
-                    // Exception for 3.1-pro models
-                    const effortLevels = id.includes('gemini-3.1-pro') ? ['low', 'medium', 'high'] : ['minimal', 'low', 'medium', 'high'];
-                    infos.push({
-                        id: id,
-                        reason: reasonCapable,
-                        efforts: reasonCapable ? effortLevels: [],
-                        defaultEffort: reasonCapable ? 'medium' : null
-                    });
-                }
+                // Exception for 3.1-pro models
+                const effortLevels = id.includes('gemini-3.1-pro') ? ['low', 'medium', 'high'] : ['minimal', 'low', 'medium', 'high'];
+                infos.push({
+                    id: id,
+                    reason: reasonCapable,
+                    efforts: reasonCapable ? effortLevels: [],
+                    defaultEffort: reasonCapable ? 'medium' : null
+                });
             }
-            GeminiChatProvider.cachedModelInfos = infos;
-
-        } catch (e) {
-            console.error("Failed to fetch Gemini models:", e);
         }
+        GeminiChatProvider.cachedModelInfos = infos;
     }
 
     // Not needed for Interactions api

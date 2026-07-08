@@ -37,71 +37,67 @@ export class OpenAIChatProvider extends ChatProvider {
 
     private async getModelInfos(): Promise<void> {
         const infos: ModelInfo[] = [];
-        try {
-            const response = await this.client.models.list();
-            const exclusionKeywords = [
-                'instruct', 'search', 'tts', 'transcribe', 
-                'chat', 'audio', 'image', 'translate', 
-                'whisper', 'realtime'
-            ];
+        const response = await this.client.models.list();
+        const exclusionKeywords = [
+            'instruct', 'search', 'tts', 'transcribe', 
+            'chat', 'audio', 'image', 'translate', 
+            'whisper', 'realtime'
+        ];
 
-            for (const m of response.data) {
-                // Filter out irrelevant models
-                const id = m.id;
-                const relevant = id.startsWith('gpt') || id.startsWith('o1') || id.startsWith('o3');
-                const exluded = exclusionKeywords.some(keyword => id.includes(keyword));
+        for (const m of response.data) {
+            // Filter out irrelevant models
+            const id = m.id;
+            const relevant = id.startsWith('gpt') || id.startsWith('o1') || id.startsWith('o3');
+            const exluded = exclusionKeywords.some(keyword => id.includes(keyword));
 
-                if (relevant && !exluded) {
-                    // Reasoning should be supported by all o-x models and gpt-5.x
-                    // THERE IS NO ENDPOINT I CAN FIND TO CHECK FOR THIS SO I WILL BE HARD CODING THIS
-                    const reasonCapable = 
-                        id.startsWith('o1') ||
-                        id.startsWith('o3') ||
-                        id.startsWith('gpt-5') ||
-                        id.startsWith('gpt-oss');
-                    
-                    // The different models even have different reasoning effort levels
-                    // So this will break with new models too
-                    let supportedEfforts: string[] = [];
-                    let defaultEffort: string | null = null;
+            if (relevant && !exluded) {
+                // Reasoning should be supported by all o-x models and gpt-5.x
+                // THERE IS NO ENDPOINT I CAN FIND TO CHECK FOR THIS SO I WILL BE HARD CODING THIS
+                const reasonCapable = 
+                    id.startsWith('o1') ||
+                    id.startsWith('o3') ||
+                    id.startsWith('gpt-5') ||
+                    id.startsWith('gpt-oss');
+                
+                // The different models even have different reasoning effort levels
+                // So this will break with new models too
+                let supportedEfforts: string[] = [];
+                let defaultEffort: string | null = null;
 
-                    if (reasonCapable) {
-                        defaultEffort = 'medium';
+                if (reasonCapable) {
+                    defaultEffort = 'medium';
 
-                        // Extract the minor version for the gpt-5.x series
-                        const gpt5Match = id.match(/gpt-5\.(\d+)/);
-                        const minorVersion = gpt5Match ? parseInt(gpt5Match[1], 10) : -1;
+                    // Extract the minor version for the gpt-5.x series
+                    const gpt5Match = id.match(/gpt-5\.(\d+)/);
+                    const minorVersion = gpt5Match ? parseInt(gpt5Match[1], 10) : -1;
 
-                        if (id.includes('gpt-5-pro')) {
-                            // gpt-5-pro only supports high
-                            supportedEfforts = ['high'];
-                            defaultEffort = 'high';
+                    if (id.includes('gpt-5-pro')) {
+                        // gpt-5-pro only supports high
+                        supportedEfforts = ['high'];
+                        defaultEffort = 'high';
 
-                        } else if (minorVersion > 1) {
-                            // models after gpt-5.1-codex-max (e.g., gpt-5.2, 5.3, 5.4, 5.5) support xhigh
-                            supportedEfforts = ['none', 'low', 'medium', 'high', 'xhigh'];
+                    } else if (minorVersion > 1) {
+                        // models after gpt-5.1-codex-max (e.g., gpt-5.2, 5.3, 5.4, 5.5) support xhigh
+                        supportedEfforts = ['none', 'low', 'medium', 'high', 'xhigh'];
 
-                        } else if (minorVersion === 1) {
-                            // gpt-5.1 supports none, low, medium, high
-                            supportedEfforts = ['none', 'low', 'medium', 'high'];
+                    } else if (minorVersion === 1) {
+                        // gpt-5.1 supports none, low, medium, high
+                        supportedEfforts = ['none', 'low', 'medium', 'high'];
 
-                        } else {
-                            // models before gpt-5.1 (e.g., o1, o3, gpt-5.0) do NOT support none
-                            supportedEfforts = ['minimal', 'low', 'medium', 'high'];
-                        }
+                    } else {
+                        // models before gpt-5.1 (e.g., o1, o3, gpt-5.0) do NOT support none
+                        supportedEfforts = ['minimal', 'low', 'medium', 'high'];
                     }
-                    infos.push({
-                        id: id,
-                        reason: reasonCapable,
-                        efforts: supportedEfforts,
-                        defaultEffort: defaultEffort
-                    });
                 }
+                infos.push({
+                    id: id,
+                    reason: reasonCapable,
+                    efforts: supportedEfforts,
+                    defaultEffort: defaultEffort
+                });
             }
-            OpenAIChatProvider.cachedModelInfos = infos;
-        } catch (e) {
-            console.log('Failed to fetch OpenAI models', e);
         }
+        OpenAIChatProvider.cachedModelInfos = infos;
     }
 
     // Not needed for Responses API

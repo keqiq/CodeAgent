@@ -242,6 +242,7 @@ export function endCurrentToolGroup(message) {
 
 export function clearChatUI() {
     chatContainer.innerHTML = '';
+    scrollToBottom();
 }
 
 function scrollToBottom() {
@@ -249,7 +250,7 @@ function scrollToBottom() {
 }
 
 function parseMarkdown(text) {
-    marked.setOptions({ gfm: true, breaks: true });
+    marked.setOptions({ gfm: true, breaks: false });
     return marked.parse(text);
 }
 

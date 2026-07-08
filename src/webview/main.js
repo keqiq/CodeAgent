@@ -1,8 +1,9 @@
 import './styles/main.css';
 
 import { initHeader, populateEmbedProviders, requestEmbedAPIKey, restoreIndexState, updateEmbedModels, updateIndexStatus } from './components/chat-header.js';
-import { initInput, updateChatModel, requestChatAPIKey, updateChatProvider, populateChatProviders, updateChatModelInfo, populateChatModels } from './components/chat-input.js';
+import { initInput, updateChatModel, requestChatAPIKey, updateChatProvider, populateChatProviders, updateChatModelInfo, populateChatModels, setChatModelsLoading } from './components/chat-input.js';
 import { initChat, appendMessage, clearChatUI, streamMessage, endStream, makeCurrentToolGroup, updateCurrentToolGroup, endCurrentToolGroup, restoreChatHistory, streamThought } from './components/chat-container.js';
+import { SettingsMenu } from './components/chat-settings-menu.js';
 
 const vscode = acquireVsCodeApi();
 
@@ -10,6 +11,9 @@ document.addEventListener('DOMContentLoaded', () => {
     initHeader(vscode);
     initChat(vscode);
     initInput(vscode);
+
+    
+    const settingsMenu = new SettingsMenu(vscode);
 
     window.addEventListener('message', event => {
         const message = event.data;
@@ -19,18 +23,28 @@ document.addEventListener('DOMContentLoaded', () => {
             populateEmbedProviders(message.embedProviders);
         }
 
-        if (message.type === 'restoreChatHistory') restoreChatHistory(message);
+        else if (message.type === 'restoreChatHistory') restoreChatHistory(message);
+
+        else if (message.type === 'restoreChatSettings') settingsMenu.restoreSettings(message);
 
         // Provider and model selection UI updates
-        else if (message.type === 'updateChatProvider') updateChatProvider(message);
+        else if (message.type === 'updateChatProvider') {
+            updateChatProvider(message);
+            settingsMenu.setProvider(message);
+        }
 
         else if (message.type === 'setChatModels') populateChatModels(message);
+
+        else if (message.type === 'setChatModelsLoading') setChatModelsLoading(message);
 
         else if (message.type === 'updateChatModel') updateChatModel(message);
 
         else if (message.type === 'updateChatModelInfo') updateChatModelInfo(message);
 
-        else if (message.type === 'requestChatAPIKey') requestChatAPIKey(message);
+        else if (message.type === 'requestChatAPIKey') {
+            requestChatAPIKey(message);
+            settingsMenu.showChatAPIKeyInput(message);
+        }
 
         // Agent text response UI updates
         else if (message.type === 'receiveMessage') appendMessage(message);

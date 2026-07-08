@@ -1,65 +1,96 @@
 /*input area containing api provider and model selector*/
 .chat-input {
-    padding: 10px;
+    position: relative;
+    padding: 0 15px 15px 15px;
     background: var(--vscode-sideBar-background);
+    z-index: 10;
 }
 
 .unified-box {
+    position: absolute;
+    bottom: 100%; /* Pushes the box entirely above the dropdown container */
+    left: 15px;
+    right: 15px;
+    margin-bottom: 3px; /* Space between the floating box and the dropdowns */
+    z-index: 50;
+
     display: flex;
     flex-direction: column;
-    background: var(--vscode-input-background);
-    border: 1px solid var(--vscode-input-border);
+    background-color: color-mix(in srgb, var(--vscode-editorWidget-background) 75%, transparent);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid color-mix(in srgb, var(--vscode-widget-border) 60%, transparent);
     border-radius: 12px; 
-    padding: 8px 12px;
+    padding: 10px 14px;
     transition: border-color 0.2s;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15); 
 }
 .unified-box:focus-within {
     border-color: var(--vscode-focusBorder);
 }
 
+.input-row {
+    display: flex;
+    align-items: flex-end; 
+    gap: 10px;
+    margin-bottom: 0; 
+}
+
 /* prompt area */
 textarea { 
-    width: 100%; 
+    flex: 1; /* Takes up remaining space */
     box-sizing: border-box; 
     background: transparent; 
     color: var(--vscode-input-foreground); 
     border: none; 
     outline: none; 
-    resize: none; /* Disable the manual drag handle */
-    min-height: 20px; /* Base height for a single line */
-    max-height: 150px; /* The "sensible limit" before scrolling starts */
-    overflow-y: auto; /* Only show scrollbar when max-height is reached */
+    resize: none; 
+    min-height: 20px; 
+    max-height: 150px; 
+    overflow-y: auto; 
     font-family: inherit;
     font-size: 13px;
-    line-height: 1.5; /* Gives breathing room between wrapped lines */
+    line-height: 1.5; 
     padding: 0;
-    margin-bottom: 8px; 
+    margin: 0;
 }
+
+.divider {opacity: 0.25;}
+.provider-op { opacity: 1.0; }
+.provider-op:hover { color: var(--vscode-focusBorder) }
+.model-op { opacity: 0.8; }
+.effort-op { opacity: 0.5; }
 
 /* bottom container */
 .box-actions {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    margin-top: 8px; /* Space between glass box and dropdowns */
+    padding: 0 4px; /* Aligns the text with the textarea inside the box above */
 }
 
 .action-group {
+    padding-left: 5px;
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 6px;
 }
 
+/* Send Button */
 .send-btn {
-    background: var(--vscode-button-background);
+    background: transparent;
     color: var(--vscode-button-foreground);
     border: none;
     border-radius: 6px;
-    padding: 4px 12px;
+    padding: 6px 10px;
     font-weight: bold;
     cursor: pointer;
     display: flex;
     align-items: center;
-    gap: 4px;
+    justify-content: center;
+    height: 28px;
+    margin-bottom: -2px;
 }
 .send-btn:hover:not(:disabled) { background: var(--vscode-button-hoverBackground); }
 .send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
