@@ -1,163 +1,201 @@
 .chat-header {
-    position: relative; 
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    justify-content: space-between;
     padding: 8px 12px;
-    border-bottom: 1px solid var(--vscode-widget-border);
+    background-color: var(--vscode-sideBar-background);
+    font-family: var(--vscode-font-family);
+    color: var(--vscode-foreground);
+    gap: 8px;
+    flex-shrink: 0;
+    z-index: 60;
+}
+
+.header-action-btn #indexStatus {
+    color: inherit;
     font-size: 11px;
     font-weight: 600;
-    color: var(--vscode-descriptionForeground);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-/* floating clear chat confirmation box */
-.floating-confirm {
-    display: none; 
-    position: absolute;
-    top: calc(100% + 4px); 
-    right: 8px; 
-    z-index: 1000;
-    width: 180px; 
-    padding: 10px;
-    background: var(--vscode-editorWidget-background);
-    border: 1px solid var(--vscode-widget-border);
-    border-radius: 6px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); 
-    flex-direction: column;
-    gap: 8px;
-}
-
-.floating-confirm.visible {
-    display: flex; 
-}
-
-/* Indexing group */
-.header-left {
-    display: flex;
-    align-items: center;
-    gap: 6px;
+    font-family: var(--vscode-font-family);
 }
 
 .header-action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
     background: transparent;
-    color: var(--vscode-descriptionForeground);
     border: 1px solid transparent;
     border-radius: 4px;
-    padding: 3px 6px;
+    padding: 4px 8px;
+    color: var(--vscode-descriptionForeground);
     cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    font-size: 11px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+    transition: background-color 0.15s, color 0.15s;
 }
 
 .header-action-btn:hover {
-    background: var(--vscode-toolbar-hoverBackground);
-    color: var(--vscode-foreground);
+    background-color: var(--vscode-toolbar-hoverBackground);
+    color: var(--vscode-foreground); /* Bright text color on hover */
 }
 
+/* --- Status Indicators --- */
 .status-dot {
-    width: 7px;
-    height: 7px;
+    width: 6px;
+    height: 6px;
     border-radius: 50%;
-    background: var(--vscode-descriptionForeground);
+    display: inline-block;
+    flex-shrink: 0;
+    transition: background-color 0.2s;
 }
 
-.status-dot.disabled {
-    opacity: 0.45;
-}
-
-.status-dot.ready {
-    background: var(--vscode-testing-iconPassed);
-}
-
-.status-dot.warning {
-    background: var(--vscode-charts-yellow);
-}
-
-.status-dot.error {
-    background: var(--vscode-testing-iconFailed);
-}
+.status-dot.disabled { background-color: color-mix(in srgb, var(--vscode-descriptionForeground) 50%, transparent); }
+.status-dot.ready    { background-color: var(--vscode-testing-iconPassed); }
+.status-dot.warning  { background-color: var(--vscode-charts-yellow); }
+.status-dot.error    { background-color: var(--vscode-testing-iconFailed); }
 
 .status-dot.spinning {
-    width: 10px;
-    height: 10px;
+    background-color: var(--vscode-charts-yellow);
+    animation: pulseGlow 1.5s infinite ease-in-out;
+}
+
+#indexStatus {
+    font-size: 11px;
+    font-weight: 500;
+}
+
+@keyframes pulseGlow {
+    0% { opacity: 0.3; transform: scale(0.9); }
+    50% { opacity: 1; transform: scale(1.1); }
+    100% { opacity: 0.3; transform: scale(0.9); }
+}
+
+
+/* Forces the header's option panels downward instead of popping upwards out of frame */
+.chat-header .custom-dropdown .dropdown-list {
+    top: calc(100% + 6px) !important;
+    bottom: auto !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.chat-header .dropdown-trigger {
+    /* background: color-mix(in srgb, var(--vscode-editorWidget-background) 60%, transparent); */
+    /* border: 1px solid var(--vscode-widget-border); */
+    border-radius: 4px;
+    padding: 3px 8px;
+    font-size: 13px;
+    font-weight: 600;
+    max-width: 130px;
+    color: var(--vscode-foreground);
+    transition: border-color 0.15s, background-color 0.15s;
+}
+
+.chat-header .dropdown-trigger:hover:not(:disabled) {
+    /* border-color: var(--vscode-focusBorder); */
+    background-color: var(--vscode-editorWidget-background);
+}
+
+.chat-header .dropdown-trigger:disabled {
+    opacity: 0.4;
     background: transparent;
-    border: 2px solid var(--vscode-charts-yellow);
-    border-top-color: transparent;
-    animation: spin 1s linear infinite;
-    opacity: 1;
+    /* border-color: color-mix(in srgb, var(--vscode-widget-border) 40%, transparent); */
 }
 
-.floating-index {
-    display: none;
-    position: absolute;
-    top: calc(100% + 4px);
-    z-index: 1000;
-    padding: 10px;
-    background: var(--vscode-editorWidget-background);
-    border: 1px solid var(--vscode-widget-border);
-    border-radius: 6px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-    flex-direction: column;
-    gap: 8px;
-    text-transform: none;
-    letter-spacing: normal;
-    font-weight: normal;
-}
 
-.floating-index.visible {
-    display: flex;
-}
-
-.index-panel {
-    left: 8px;
-    width: 260px;
-}
-
-.panel-title {
-    font-size: 11px;
-    font-weight: 700;
-    color: var(--vscode-foreground);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.index-toggle {
-    display: flex;
+.header-settings-btn {
+    display: inline-flex;
     align-items: center;
-    gap: 6px;
-    font-size: 11px;
+    justify-content: center;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    padding: 6px; 
+    color: var(--vscode-icon-foreground);
+    cursor: pointer;
+    transition: background-color 0.15s, color 0.15s;
+}
+
+.header-settings-btn:hover {
+    background-color: var(--vscode-toolbar-hoverBackground);
     color: var(--vscode-foreground);
-    user-select: none;
 }
 
-.index-toggle input {
-    margin: 0;
+#indexSettingsContainer .dropdown-list {
+    top: calc(100% + 8px);
+    bottom: auto !important;
+    right: 0;
+    left: auto;
+    min-width: 240px;
+    padding: 6px;
+    z-index: 100;
 }
 
-.header-api-key-container {
-    margin-bottom: 0;
-    padding-bottom: 0;
-    border-bottom: none;
-}
-
-.index-footer {
-    display: flex;
+/* Base style for the context indexing operation button */
+.action-index-btn {
+    display: inline-flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 8px;
+    justify-content: center;
+    gap: 6px;                  /* Space between icon and text */
+    font-size: 12px;           /* Larger text */
+    font-weight: 600;
+    padding: 5px 14px;         /* Taller and wider padding */
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: var(--vscode-font-family);
+    border: 1px solid transparent;
+    transition: background-color 0.15s, border-color 0.15s, opacity 0.15s, color 0.15s;
 }
 
-.index-status {
-    font-size: 11px;
+/* Prevent the SVG from squishing */
+.action-index-btn svg {
+    flex-shrink: 0;
+}
+
+/* State: Unindexed (Allows user to index) */
+.action-index-btn.state-unindexed {
+    background-color: var(--vscode-button-background);
+    color: var(--vscode-button-foreground);
+}
+.action-index-btn.state-unindexed:hover:not(:disabled) {
+    background-color: var(--vscode-button-hoverBackground);
+}
+
+.action-index-btn.state-indexed {
+    background-color: transparent;
+    border: 1px solid var(--vscode-descriptionForeground);
     color: var(--vscode-descriptionForeground);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
 }
+
+.action-index-btn.state-indexed:hover:not(:disabled) {
+    background-color: color-mix(in srgb, var(--vscode-foreground) 10%, transparent);
+    color: var(--vscode-foreground);
+    border-color: var(--vscode-foreground);
+}
+/* State: Disabled / Indexing Ongoing */
+.action-index-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background-color: color-mix(in srgb, var(--vscode-widget-border) 40%, transparent);
+    color: var(--vscode-descriptionForeground);
+    border-color: transparent;
+}
+
+/* State: Error (Allows user to retry) */
+.action-index-btn.state-error {
+    background-color: var(--vscode-errorForeground);
+    color: white; 
+}
+.action-index-btn.state-error:hover:not(:disabled) {
+    background-color: color-mix(in srgb, var(--vscode-errorForeground) 80%, black);
+}
+
+.action-index-btn.state-indexing {
+    /* Relying on the :disabled styles for background/text color */
+}
+
+.action-index-btn.state-indexing svg {
+    animation: actionBtnSpin 1s linear infinite;
+}
+
+@keyframes actionBtnSpin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+

@@ -1,7 +1,7 @@
 import { appendMessage, showTypingIndicator } from "./chat-container";
 import { populateDropdown, populateModels } from "./ui_utils";
 import { CustomDropdown } from './custom-dropdown';
-
+    
 let vscode;
 
 let sendBtn;
@@ -75,35 +75,6 @@ export function initInput(vscodeAPI) {
         }
     });
     
-    // chatAPIKeyBtn.addEventListener('click',  () => {
-    //     if (currentChatProvider) {
-            
-    //         const isNowVisible = chatAPIKeyContainer.classList.toggle('visible');
-    //         if (isNowVisible) {
-    //             // Only update text, clear, and focus if we are opening it
-    //             document.getElementById('chatAPIKeyLabel').innerText = `Update ${currentChatProvider} API Key:`;
-    //             chatAPIKeyInput.value = '';
-    //             chatAPIKeyInput.focus();
-    //         }
-    //     }
-    // });
-    
-    // chatSaveKeyBtn.addEventListener('click', () => {
-    //     const key = chatAPIKeyInput.value.trim();
-    //     if (key && currentChatProvider) {
-    //         promptInput.placeholder = `Verifying ${currentChatProvider} API key...`;
-    //         chatAPIKeyContainer.classList.remove('visible');
-    //         vscodeAPI.postMessage({ type: 'saveChatAPIKey', provider: currentChatProvider, key: key });
-    //     }
-    // });
-
-    // chatSettingsToggleBtn.addEventListener('click', () => {
-    //     chatSettingsPanel.classList.toggle('hidden');
-    // });
-
-    // showAllModelsToggle.addEventListener('change', (e) => {
-    //     vscodeAPI.postMessage({ type: 'toggleShowAllModels', showAll: e.target.checked });
-    // });
 }
 
 export function populateChatProviders(providers) {
@@ -140,8 +111,6 @@ export function updateChatProvider(msg) {
     providerDropdown.selectValue(msg.provider, false);
     currentChatProvider = msg.provider;
     
-    // chatAPIKeyBtn.disabled = false;
-    // chatAPIKeyContainer.classList.remove('visible');
     setChatModelsLoading(msg);
     
     vscode.postMessage({ type: 'fetchChatModels', provider: msg.provider });
@@ -215,104 +184,3 @@ function clearEffortSelect() {
     if (effortContainer) effortContainer.classList.add('hidden');
     if (effortDivider) effortDivider.classList.add('hidden');
 }
-
-// export function updateChatModelInfo(msg) {
-//     if (msg.reason) {
-//         effortSelect.innerHTML = '';
-
-//         if (msg.efforts) {
-//             msg.efforts.forEach(effort => {
-//                 const option = document.createElement('option');
-//                 option.value = effort;
-
-//                 const formattedText = effort.charAt(0).toUpperCase() + effort.slice(1);
-//                 option.textContent = `Effort: ${formattedText}`;
-
-//                 effortSelect.appendChild(option);
-//             });
-//         }
-        
-//         if (msg.defaultEffort) effortSelect.value = msg.defaultEffort;
-
-//         effortSelect.classList.remove('hidden');
-//         effortSelect.disabled = false;
-//     } 
-//     else clearEffortSelect();
-// }
-
-// function clearEffortSelect() {
-//         effortSelect.classList.add('hidden');
-//         effortSelect.disabled = true;
-//         effortSelect.innerHTML = '';
-//         effortSelect.value = 'none';
-// }
-
-// export function populateChatProviders(providers) {
-//     if (providers) populateDropdown(chatProviderSelect, providers, 'Providers...');
-// }
-
-// export function updateChatProvider(msg) {
-//     if (!msg.provider || msg.provider === currentChatProvider) return;
-//     chatProviderSelect.value = msg.provider;
-//     currentChatProvider = msg.provider;
-//     promptInput.placeholder = 'Select model...';
-//     chatAPIKeyBtn.disabled = false;
-//     chatModelSelect.innerHTML = '<option value="">Loading...</option>';
-//     chatModelSelect.disabled = true;
-//     sendBtn.disabled = true;
-//     chatAPIKeyContainer.classList.remove('visible');
-//     promptInput.placeholder = `Loading ${msg.provider} models...`;
-//     promptInput.disabled = true;
-//     clearEffortSelect();
-//     vscode.postMessage({ type: 'fetchChatModels', provider: msg.provider });
-
-// }
-// export function populateChatModels(msg) {
-//     if (msg.models) populateDropdown(chatModelSelect, msg.models, 'Models...');
-// }
-
-// export function updateChatModel(msg) {
-//     if (msg.model) {
-
-//         if (msg.model === currentChatModel) return;
-
-//         chatModelSelect.value = msg.model;
-//         currentChatModel = msg.model;
-//         promptInput.disabled = false;
-//         promptInput.placeholder = `Ask ${msg.model}...`;
-//         vscode.postMessage({ type: 'fetchChatModelInfo', model: msg.model });
-//     } else {
-
-//         promptInput.disabled = true;
-//         promptInput.placeholder = 'Select model...';
-//     }
-    
-//     chatModelSelect.disabled = false;
-    
-//     sendBtn.disabled = promptInput.value.trim() === '' || promptInput.disabled;
-// }
-
-    // chatProviderSelect.addEventListener('change', (e) => {
-    //     const provider = e.target.value;
-    //     vscodeAPI.postMessage({ type: 'saveChatProvider', provider: provider });
-    // });
-
-    // chatModelSelect.addEventListener('change', (e) => {
-    //     const model = e.target.value;
-    //     if (currentChatProvider) {
-    //         vscodeAPI.postMessage({ type: 'saveChatModel', provider: currentChatProvider, model: model });
-    //     }
-    // });
-
-    // effortSelect.addEventListener('change', (e) => {
-    //     const effort = e.target.value;
-
-    //     if (currentChatProvider && currentChatModel) {
-    //         vscodeAPI.postMessage({ 
-    //             type: 'saveChatEffort', 
-    //             provider: currentChatProvider, 
-    //             model: currentChatModel, 
-    //             effort: effort 
-    //         });
-    //     }
-    // });

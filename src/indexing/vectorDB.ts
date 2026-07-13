@@ -31,12 +31,13 @@ export class VectorDB {
     private constructor(private readonly dimension: number, 
         private readonly connection: lancedb.Connection, 
         private table: lancedb.Table,
-        private reranker: lancedb.rerankers.RRFReranker
+        private reranker: lancedb.rerankers.RRFReranker,
+        private readonly tableName:string
     ) {
 
     }
 
-    static async create(context: vscode.ExtensionContext, dimension: number | undefined = undefined): Promise<VectorDB> {
+    static async create(context: vscode.ExtensionContext, model: string, dimension: number | undefined = undefined): Promise<VectorDB> {
         if (!context.storageUri) throw new Error("Cannot initialze VectorDB: No active workspace");
 
         const dbUri = vscode.Uri.joinPath(context.storageUri, 'vector-db');
@@ -44,8 +45,9 @@ export class VectorDB {
         const dbPath = dbUri.fsPath;
 
         const connection = await lancedb.connect(dbPath);
-        
-        const tableName = 'workspace_chunks';
+
+        const sanitizedModel = model.replace(/[^a-zA-Z0-9]/g, '_');
+        const tableName = `workspace_chunks_${sanitizedModel}`;
         const tableNames = await connection.tableNames();
         // console.log(`Current tables in workspace: ${tableNames}`);
         const tableExists = tableNames.includes(tableName);
@@ -62,7 +64,7 @@ export class VectorDB {
 
             if (rows.length > 0) {
                 const existingDimension = rows[0].vector.length;
-                return new VectorDB(existingDimension, connection, table, reranker);
+                return new VectorDB(existingDimension, connection, table, reranker, tableName);
             }
         }
 
@@ -75,7 +77,7 @@ export class VectorDB {
         table = await connection.createTable(tableName, [], { schema: schema});
         await table.createIndex('text', { config: lancedb.Index.fts() });
 
-        return new VectorDB(dimension, connection, table, reranker);
+        return new VectorDB(dimension, connection, table, reranker, tableName);
     }
 
     public async insertRows(rows: VectorRow[]): Promise<void> {
@@ -110,7 +112,7 @@ export class VectorDB {
         const schema = getSchema(this.dimension);
 
         this.table = await this.connection.createTable(
-            'workspace_chunks',
+            this.tableName,
             [],
             { schema: schema, mode: 'overwrite' }
         );
@@ -134,4 +136,8 @@ export class VectorDB {
 
         return result;
     }
+
+    public async getVectorCount(): Promise<number> {
+        return await this.table.countRows();
+    } 
 }

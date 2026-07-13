@@ -8,13 +8,13 @@ import { supportedExtensions, languageExcludePatterns, globalExcludePatterns} fr
 import { EmbedFactory } from "../apis/embed/embedFactory";
 import { minimatch } from "minimatch";
 
-export interface IndexingStatusEvent {
-    type: 'updateIndexStatus',
-    status?: string;
-    done?: boolean;
-    hasIndex?: boolean;
-    error?: string;
-}
+export type IndexState = 'unindexed' | 'indexed' | 'indexing' | 'error';
+
+export type IndexStatusMessage = 
+    | { type: 'updateIndexStatus', state: 'unindexed', text?: string }
+    | { type: 'updateIndexStatus', state: 'indexing', text: string }
+    | { type: 'updateIndexStatus', state: 'error', text: string }
+    | { type: 'updateIndexStatus', state: 'indexed', vectorCount: number };
 
 export class Indexer {
 
@@ -25,7 +25,7 @@ export class Indexer {
     private headerDirtyFiles = new Set<string>();
     private reindexTimer?: NodeJS.Timeout;
 
-    private emitter = new vscode.EventEmitter<IndexingStatusEvent>();
+    private emitter = new vscode.EventEmitter<IndexStatusMessage>();
     public readonly onDidUpdateStatus = this.emitter.event;
 
     private readonly excludePattern = [...globalExcludePatterns, ...languageExcludePatterns];
@@ -87,12 +87,12 @@ export class Indexer {
         });
     }
 
-    static async create(context: vscode.ExtensionContext) {
+    static async create(context: vscode.ExtensionContext, model: string) {
         const cc = await CodeChunker.create(context.extensionUri);
 
         let db: VectorDB | undefined;
         try {
-            db = await VectorDB.create(context);
+            db = await VectorDB.create(context, model);
         } catch (e) {
             console.log(`Failed to connect to database: ${e}`);
             db = undefined;
@@ -101,33 +101,63 @@ export class Indexer {
         return new Indexer(context, cc, db);
     }
 
-    public dbConnected(): boolean {
-        return this.db !== undefined;
+    public async broadcastCurrentState(): Promise<void> {
+        if (this.db) {
+            const count = await this.db.getVectorCount();
+            this.emitter.fire({ 
+                type: 'updateIndexStatus', 
+                state: 'indexed', 
+                vectorCount: count 
+            });
+        } else {
+            this.emitter.fire({ 
+                type: 'updateIndexStatus', 
+                state: 'unindexed', 
+                text: 'Not Indexed' 
+            });
+        }
     }
 
     // Initial indexing of all relevant files in the workspace
-    public async indexWorkspace(embedProvider: EmbedProvider, model: string): Promise<boolean> {
-        const chunks = await this.cc.chunkWorkspace();
-        this.cc.clearNeighbourHoodCache();
-        if (chunks.length === 0) {
-            console.log("Workspace has no valid files to embed, skipping DB creation");
-            return false;
-        }
-        const texts = chunks.map(chunk => chunk.text);
+    public async indexWorkspace(embedProvider: EmbedProvider, model: string): Promise<void> {
 
-        const vectors = await embedProvider.embed(model, texts);
-        const dimension = vectors[0].length;
+        try {
+            this.emitter.fire({ type: 'updateIndexStatus', state: 'indexing', text: 'Reading workspace...' });
 
-        console.log('Embedding complete');
+            const chunks = await this.cc.chunkWorkspace();
+            this.cc.clearNeighbourHoodCache();
 
-        this.db = await VectorDB.create(this.context, dimension);
-        const rows = chunks.map((chunk, i) => ({
-            vector: vectors[i],
-            ...chunk
-        }));
+            if (chunks.length === 0) {
+                this.emitter.fire({ type: 'updateIndexStatus', state: 'unindexed', text: 'No supported files' });
+                return;
+            }
 
-        await this.db.insertRows(rows);
-        return true;
+            this.emitter.fire({ type: 'updateIndexStatus', state: 'indexing', text: `Embedding ${chunks.length} chunks...` });
+
+            const texts = chunks.map(chunk => chunk.text);
+    
+            const vectors = await embedProvider.embed(model, texts);
+            const dimension = vectors[0].length;
+
+            this.emitter.fire({ type: 'updateIndexStatus', state: 'indexing', text: 'Saving to database...' });
+    
+            this.db = await VectorDB.create(this.context, model, dimension);
+            const rows = chunks.map((chunk, i) => ({
+                vector: vectors[i],
+                ...chunk
+            }));
+    
+            await this.db.insertRows(rows);
+            const vectorCount = await this.db.getVectorCount();
+            this.emitter.fire({ type: 'updateIndexStatus', state: 'indexed', vectorCount: vectorCount });
+        } catch (e) {
+            console.error(`Workspace indexing failed: ${e}`);
+            this.emitter.fire({
+                    type: 'updateIndexStatus',
+                    state: 'error',
+                    text: e instanceof Error ? e.message : String(e)
+            });
+        } 
     }
     
     public scheduleReindex(filePaths: string[]) {
@@ -172,7 +202,8 @@ export class Indexer {
         }
     }
 
-    public async search(queryText: string, vector: number[], limit: number = 10): Promise<any[]> {
+    public async search(queryText: string, vector: number[]): Promise<any[]> {
+        const limit = this.context.globalState.get<number>('retrievalCount') ?? 10;
         return this.db!.hybridSearch(queryText, vector, limit);
     }
 
@@ -221,8 +252,8 @@ export class Indexer {
         return this.excludePattern.some(pattern => minimatch(filePath, pattern, { dot: true}));
     }
 
-    private indexEnabled(): boolean {
-        return this.context.globalState.get<boolean>('indexEnabled') ?? false;
+    public indexEnabled(): boolean {
+        return this.context.globalState.get<boolean>('indexEnabled') ?? true;
     }
 
     private async updateFileHeader(filePath: string): Promise<void> {
@@ -281,7 +312,7 @@ export class Indexer {
         // TODO: FIX THIS
         const apiKey = this.context.globalState.get<string>(`${providerId.toUpperCase()}_EMBED_API_KEY`);
         if (!apiKey) return;
-        if (!this.dbConnected()) return;
+        if (!this.db) return;
 
         const deletedFiles = [...this.deletedFiles];
 
@@ -299,8 +330,8 @@ export class Indexer {
 
         this.emitter.fire({
             type: 'updateIndexStatus',
-            status: `Reindexing ${dirtyFiles.length + deletedFiles.length + headerDirtyFiles.length} file(s)...`,
-            done: false
+            state: 'indexing',
+            text: `Reindexing ${dirtyFiles.length + deletedFiles.length + headerDirtyFiles.length} file(s)...`
         });
 
         const embedProvider = EmbedFactory.create(providerId, apiKey);
@@ -311,17 +342,19 @@ export class Indexer {
             for (const file of headerDirtyFiles) await this.updateFileHeader(file);
             this.cc.clearNeighbourHoodCache();
 
+            const vectorCount = await this.db!.getVectorCount();
             this.emitter.fire({
                 type: 'updateIndexStatus',
-                status: 'Ready',
-                done: true
+                state: 'indexed',
+                vectorCount: vectorCount,
             });
         } catch (e) {
             console.error(`Failed to flush reindex queue: ${e}`);
 
             this.emitter.fire({
                 type: 'updateIndexStatus',
-                error: e instanceof Error ? e.message : String(e)
+                state: 'error',
+                text: e instanceof Error ? e.message : String(e)
             });
         }
     }

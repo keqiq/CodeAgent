@@ -148,5 +148,4 @@ export class SettingsMenu {
         this.apiKeyInput.focus();
     }
 
-
 }

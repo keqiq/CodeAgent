@@ -51929,6 +51929,9 @@ var OpenAIChatProvider = class _OpenAIChatProvider extends ChatProvider {
     if (!_OpenAIChatProvider.cachedModelInfos) return [];
     if (fetchAll) return _OpenAIChatProvider.cachedModelInfos;
     const featuredModels = [
+      "gpt-5.6-sol",
+      "gpt-5.6-terra",
+      "gpt-5.6-luna",
       "gpt-5.5",
       "gpt-5.5-pro",
       "gpt-5.4",
@@ -51982,6 +51985,8 @@ var OpenAIChatProvider = class _OpenAIChatProvider extends ChatProvider {
           if (id.includes("gpt-5-pro")) {
             supportedEfforts = ["high"];
             defaultEffort = "high";
+          } else if (minorVersion === 6) {
+            supportedEfforts = ["none", "low", "medium", "high", "xhigh", "max"];
           } else if (minorVersion > 1) {
             supportedEfforts = ["none", "low", "medium", "high", "xhigh"];
           } else if (minorVersion === 1) {
@@ -63163,23 +63168,26 @@ function getSchema(dimension) {
   ]);
 }
 var VectorDB = class _VectorDB {
-  constructor(dimension, connection, table, reranker) {
+  constructor(dimension, connection, table, reranker, tableName) {
     this.dimension = dimension;
     this.connection = connection;
     this.table = table;
     this.reranker = reranker;
+    this.tableName = tableName;
   }
   dimension;
   connection;
   table;
   reranker;
-  static async create(context, dimension = void 0) {
+  tableName;
+  static async create(context, model, dimension = void 0) {
     if (!context.storageUri) throw new Error("Cannot initialze VectorDB: No active workspace");
     const dbUri = vscode4.Uri.joinPath(context.storageUri, "vector-db");
     await vscode4.workspace.fs.createDirectory(dbUri);
     const dbPath = dbUri.fsPath;
     const connection = await lancedb.connect(dbPath);
-    const tableName = "workspace_chunks";
+    const sanitizedModel = model.replace(/[^a-zA-Z0-9]/g, "_");
+    const tableName = `workspace_chunks_${sanitizedModel}`;
     const tableNames = await connection.tableNames();
     const tableExists = tableNames.includes(tableName);
     let table;
@@ -63189,7 +63197,7 @@ var VectorDB = class _VectorDB {
       const rows = await table.query().limit(1).toArray();
       if (rows.length > 0) {
         const existingDimension = rows[0].vector.length;
-        return new _VectorDB(existingDimension, connection, table, reranker);
+        return new _VectorDB(existingDimension, connection, table, reranker, tableName);
       }
     }
     if (dimension === void 0) throw new Error("Workspace has not been indexed yet.");
@@ -63197,7 +63205,7 @@ var VectorDB = class _VectorDB {
     const schema = getSchema(dimension);
     table = await connection.createTable(tableName, [], { schema });
     await table.createIndex("text", { config: lancedb.Index.fts() });
-    return new _VectorDB(dimension, connection, table, reranker);
+    return new _VectorDB(dimension, connection, table, reranker, tableName);
   }
   async insertRows(rows) {
     if (rows.length === 0) return;
@@ -63213,7 +63221,7 @@ var VectorDB = class _VectorDB {
   async clearAll() {
     const schema = getSchema(this.dimension);
     this.table = await this.connection.createTable(
-      "workspace_chunks",
+      this.tableName,
       [],
       { schema, mode: "overwrite" }
     );
@@ -63225,6 +63233,9 @@ var VectorDB = class _VectorDB {
   async getFilePathByImport(importName) {
     const result = await this.table.query().fullTextSearch(importName).select(["filePath"]).toArray();
     return result;
+  }
+  async getVectorCount() {
+    return await this.table.countRows();
   }
 };
 
@@ -65670,39 +65681,64 @@ var Indexer = class _Indexer {
   emitter = new vscode6.EventEmitter();
   onDidUpdateStatus = this.emitter.event;
   excludePattern = [...globalExcludePatterns, ...languageExcludePatterns];
-  static async create(context) {
+  static async create(context, model) {
     const cc = await CodeChunker.create(context.extensionUri);
     let db;
     try {
-      db = await VectorDB.create(context);
+      db = await VectorDB.create(context, model);
     } catch (e2) {
       console.log(`Failed to connect to database: ${e2}`);
       db = void 0;
     }
     return new _Indexer(context, cc, db);
   }
-  dbConnected() {
-    return this.db !== void 0;
+  async broadcastCurrentState() {
+    if (this.db) {
+      const count = await this.db.getVectorCount();
+      this.emitter.fire({
+        type: "updateIndexStatus",
+        state: "indexed",
+        vectorCount: count
+      });
+    } else {
+      this.emitter.fire({
+        type: "updateIndexStatus",
+        state: "unindexed",
+        text: "Not Indexed"
+      });
+    }
   }
   // Initial indexing of all relevant files in the workspace
   async indexWorkspace(embedProvider, model) {
-    const chunks = await this.cc.chunkWorkspace();
-    this.cc.clearNeighbourHoodCache();
-    if (chunks.length === 0) {
-      console.log("Workspace has no valid files to embed, skipping DB creation");
-      return false;
+    try {
+      this.emitter.fire({ type: "updateIndexStatus", state: "indexing", text: "Reading workspace..." });
+      const chunks = await this.cc.chunkWorkspace();
+      this.cc.clearNeighbourHoodCache();
+      if (chunks.length === 0) {
+        this.emitter.fire({ type: "updateIndexStatus", state: "unindexed", text: "No supported files" });
+        return;
+      }
+      this.emitter.fire({ type: "updateIndexStatus", state: "indexing", text: `Embedding ${chunks.length} chunks...` });
+      const texts = chunks.map((chunk) => chunk.text);
+      const vectors = await embedProvider.embed(model, texts);
+      const dimension = vectors[0].length;
+      this.emitter.fire({ type: "updateIndexStatus", state: "indexing", text: "Saving to database..." });
+      this.db = await VectorDB.create(this.context, model, dimension);
+      const rows = chunks.map((chunk, i2) => ({
+        vector: vectors[i2],
+        ...chunk
+      }));
+      await this.db.insertRows(rows);
+      const vectorCount = await this.db.getVectorCount();
+      this.emitter.fire({ type: "updateIndexStatus", state: "indexed", vectorCount });
+    } catch (e2) {
+      console.error(`Workspace indexing failed: ${e2}`);
+      this.emitter.fire({
+        type: "updateIndexStatus",
+        state: "error",
+        text: e2 instanceof Error ? e2.message : String(e2)
+      });
     }
-    const texts = chunks.map((chunk) => chunk.text);
-    const vectors = await embedProvider.embed(model, texts);
-    const dimension = vectors[0].length;
-    console.log("Embedding complete");
-    this.db = await VectorDB.create(this.context, dimension);
-    const rows = chunks.map((chunk, i2) => ({
-      vector: vectors[i2],
-      ...chunk
-    }));
-    await this.db.insertRows(rows);
-    return true;
   }
   scheduleReindex(filePaths) {
     for (const filePath of filePaths) {
@@ -65768,7 +65804,7 @@ var Indexer = class _Indexer {
     return this.excludePattern.some((pattern) => minimatch(filePath, pattern, { dot: true }));
   }
   indexEnabled() {
-    return this.context.globalState.get("indexEnabled") ?? false;
+    return this.context.globalState.get("indexEnabled") ?? true;
   }
   async updateFileHeader(filePath) {
     if (!this.db) throw new Error("Cannot update file: VectorDB is not connected");
@@ -65808,7 +65844,7 @@ var Indexer = class _Indexer {
     if (!providerId || !model) return;
     const apiKey = this.context.globalState.get(`${providerId.toUpperCase()}_EMBED_API_KEY`);
     if (!apiKey) return;
-    if (!this.dbConnected()) return;
+    if (!this.db) return;
     const deletedFiles = [...this.deletedFiles];
     const dirtyFiles = [...this.dirtyFiles].filter((f3) => !this.deletedFiles.has(f3));
     const headerDirtyFiles = [...this.headerDirtyFiles].filter(
@@ -65819,8 +65855,8 @@ var Indexer = class _Indexer {
     this.headerDirtyFiles.clear();
     this.emitter.fire({
       type: "updateIndexStatus",
-      status: `Reindexing ${dirtyFiles.length + deletedFiles.length + headerDirtyFiles.length} file(s)...`,
-      done: false
+      state: "indexing",
+      text: `Reindexing ${dirtyFiles.length + deletedFiles.length + headerDirtyFiles.length} file(s)...`
     });
     const embedProvider = EmbedFactory.create(providerId, apiKey);
     try {
@@ -65828,16 +65864,18 @@ var Indexer = class _Indexer {
       for (const file of dirtyFiles) await this.reindexFile(file, embedProvider, model);
       for (const file of headerDirtyFiles) await this.updateFileHeader(file);
       this.cc.clearNeighbourHoodCache();
+      const vectorCount = await this.db.getVectorCount();
       this.emitter.fire({
         type: "updateIndexStatus",
-        status: "Ready",
-        done: true
+        state: "indexed",
+        vectorCount
       });
     } catch (e2) {
       console.error(`Failed to flush reindex queue: ${e2}`);
       this.emitter.fire({
         type: "updateIndexStatus",
-        error: e2 instanceof Error ? e2.message : String(e2)
+        state: "error",
+        text: e2 instanceof Error ? e2.message : String(e2)
       });
     }
   }
@@ -65878,20 +65916,15 @@ var ChatApp = class {
       const lastItemWithId = [...savedHistory].reverse().find((item) => item.turnID);
       if (lastItemWithId) this.previousTurnID = lastItemWithId.turnID;
     } else this.chatHistory = this.getInitialChatMessages();
-    this.indexLoadPromise = Indexer.create(this.context).then((indexer) => {
-      this.indexer = indexer;
-      indexer.onDidUpdateStatus((event) => this.post(event));
-      return indexer;
-    });
     this.toolRegistry = createToolRegistry({
       createSearchCodebaseDeps: async () => {
         const providerId = this.context.globalState.get("embedProvider");
         const model = this.context.globalState.get("embedModel");
         if (!providerId || !model) throw new Error("embedding provider/model is not configured");
+        if (!this.indexer) throw new Error("Index is not loaded. Enable indexing first.");
         const apiKey = await this.getEmbedAPIKey(providerId);
-        const indexer = await this.indexLoadPromise;
         return {
-          indexer,
+          indexer: this.indexer,
           embedProvider: EmbedFactory.create(providerId, apiKey),
           model
         };
@@ -65904,7 +65937,6 @@ var ChatApp = class {
   toolRegistry;
   chatModelInfo = /* @__PURE__ */ new Map();
   indexer;
-  indexLoadPromise;
   previousTurnID = void 0;
   getInitialChatMessages() {
     return [{
@@ -65926,8 +65958,12 @@ var ChatApp = class {
     await this.context.workspaceState.update("chatHistory", this.chatHistory);
   }
   async getChatAPIKey(provider) {
-    const secretKey = `${provider.toUpperCase()}_CHAT_API_KEY`;
-    const chatAPIKey = await this.context.secrets.get(secretKey);
+    const chatSecretKey = `${provider.toUpperCase()}_CHAT_API_KEY`;
+    let chatAPIKey = await this.context.secrets.get(chatSecretKey);
+    if (!chatAPIKey) {
+      const embedSecretKey = `${provider.toUpperCase()}_EMBED_API_KEY`;
+      chatAPIKey = await this.context.secrets.get(embedSecretKey);
+    }
     if (!chatAPIKey) {
       this.post({ type: "requestChatAPIKey", provider });
       throw new Error(`Missing ${provider} API key`);
@@ -65935,8 +65971,12 @@ var ChatApp = class {
     return chatAPIKey;
   }
   async getEmbedAPIKey(provider) {
-    const secretKey = `${provider.toUpperCase()}_EMBED_API_KEY`;
-    const embedAPIKey = await this.context.secrets.get(secretKey);
+    const embedSecretKey = `${provider.toUpperCase()}_EMBED_API_KEY`;
+    let embedAPIKey = await this.context.secrets.get(embedSecretKey);
+    if (!embedAPIKey) {
+      const chatSecretKey = `${provider.toUpperCase()}_CHAT_API_KEY`;
+      embedAPIKey = await this.context.secrets.get(chatSecretKey);
+    }
     if (!embedAPIKey) {
       this.post({ type: "requestEmbedAPIKey", provider });
       throw new Error(`Missing ${provider} API key`);
@@ -65960,8 +66000,21 @@ var ChatApp = class {
       this.post({ type: "requestChatAPIKey", provider });
     }
   }
+  async refreshEmbedModels(provider) {
+    try {
+      this.post({ type: "setEmbedModelsLoading", provider });
+      const apiKey = await this.getEmbedAPIKey(provider);
+      const models = await getEmbeddingModelsFromProvider(provider, apiKey);
+      this.post({ type: "setEmbedModels", models });
+      const savedModel = this.context.globalState.get("embedModel");
+      const isValidModel = models.includes(savedModel);
+      this.post({ type: "updateEmbedModel", model: isValidModel ? savedModel : void 0 });
+    } catch (e2) {
+      vscode7.window.showErrorMessage(`Failed to fetch embed models: ${e2}`);
+      this.post({ type: "requestEmbedAPIKey", provider });
+    }
+  }
   async runAgentTurn(provider, model, effort, userMessage) {
-    const indexer = await this.indexLoadPromise;
     try {
       const apiKey = await this.getChatAPIKey(provider);
       const serverStateManagment = this.context.globalState.get("serverStateManagement") ?? true;
@@ -66007,7 +66060,7 @@ var ChatApp = class {
               try {
                 result = await this.toolRegistry[toolName](toolArgs);
                 this.post({ type: "updateTool", status: "success" });
-                if (result.changedFiles?.length) indexer.scheduleReindex(result.changedFiles);
+                if (result.changedFiles?.length) this.indexer.scheduleReindex(result.changedFiles);
               } catch (e2) {
                 const message = e2 instanceof Error ? e2.message : String(e2);
                 result = { message: `Error executing ${toolName}: ${message}` };
@@ -66051,11 +66104,17 @@ var ChatApp = class {
               stateful: serverStateManagement,
               turnLimit
             });
+            const retrievalCount = this.context.globalState.get("retrievalCount") ?? 10;
+            const debounceTime = this.context.globalState.get("debounceTime") ?? 10;
+            const enabledIndex = this.context.globalState.get("enableIndex") ?? true;
             this.post({
-              type: "initProviders",
-              chatProviders: ChatFactory.getAvailableProviders(),
-              embedProviders: EmbedFactory.getAvailableProviders()
+              type: "restoreIndexSettings",
+              retrievalCount,
+              debounceTime,
+              enabled: enabledIndex
             });
+            this.post({ type: "initChatProviders", providers: ChatFactory.getAvailableProviders() });
+            this.post({ type: "initEmbedProviders", providers: EmbedFactory.getAvailableProviders() });
             this.post({ type: "restoreChatHistory", history: this.chatHistory });
             const chatProvider = this.context.globalState.get("chatProvider");
             if (chatProvider) {
@@ -66065,60 +66124,14 @@ var ChatApp = class {
             const indexEnabled = this.context.globalState.get("indexEnabled") ?? false;
             if (indexEnabled) {
               const embedProvider = this.context.globalState.get("embedProvider");
-              const embedModel = this.context.globalState.get("embedModel");
-              if (embedProvider) {
-                const indexer = await this.indexLoadPromise;
-                const embedApiKey = await this.getEmbedAPIKey(embedProvider);
-                const hasIndex = indexer.dbConnected();
-                if (!embedApiKey) {
-                  this.post({
-                    type: "restoreIndexState",
-                    enabled: true,
-                    provider: embedProvider,
-                    needsAPIKey: true,
-                    status: "API key required"
-                  });
-                } else {
-                  try {
-                    const embedModels = await getEmbeddingModelsFromProvider(embedProvider, embedApiKey);
-                    this.post({
-                      type: "restoreIndexState",
-                      enabled: true,
-                      provider: embedProvider,
-                      choice: embedModel,
-                      models: embedModels,
-                      status: hasIndex ? "Ready" : "Not Indexed"
-                    });
-                  } catch (e2) {
-                    this.post({
-                      type: "restoreIndexState",
-                      enabled: true,
-                      provider: embedProvider,
-                      needsAPIKey: true,
-                      status: "Invalid API key"
-                    });
-                  }
-                }
-              } else {
-                this.post({
-                  type: "restoreIndexState",
-                  enabled: true,
-                  status: "Select Provider"
-                });
-              }
-            } else {
-              this.post({
-                type: "restoreIndexState",
-                enabled: false,
-                status: "Disabled"
-              });
+              this.post({ type: "updateEmbedProvider", provider: embedProvider });
             }
           } catch (e2) {
             vscode7.window.showErrorMessage(`Failed to restore state ${e2}`);
           }
           break;
         }
-        // Called after selecting provider from dropdown
+        // Called after selecting chat provider from dropdown
         case "saveChatProvider": {
           await this.context.globalState.update("chatProvider", data.provider);
           const serverStateManagement = this.context.globalState.get("serverStateManagement") ?? true;
@@ -66132,16 +66145,16 @@ var ChatApp = class {
         case "saveChatAPIKey": {
           const secretKey = `${data.provider.toUpperCase()}_CHAT_API_KEY`;
           await this.context.secrets.store(secretKey, data.key);
-          this.refreshChatModels(data.provider);
+          await this.refreshChatModels(data.provider);
           break;
         }
         // Called after updateChatProvider and having a valid API key
         // Respond with curated list of models from provider, or all chat models if fetchall is set 
         case "fetchChatModels": {
-          this.refreshChatModels(data.provider);
+          await this.refreshChatModels(data.provider);
           break;
         }
-        // Called when selecting model from dropdown
+        // Called when selecting a new chat model from dropdown
         case "saveChatModel": {
           await this.context.globalState.update(`${data.provider}_chatModel`, data.model);
           this.post({ type: "updateChatModel", model: data.model });
@@ -66150,9 +66163,9 @@ var ChatApp = class {
         // Called after updateChatModel, fetch model information
         case "fetchChatModelInfo": {
           const info = this.chatModelInfo.get(data.model);
-          const chatProvider = this.context.globalState.get("chatProvider");
-          const savedEffort = this.context.globalState.get(`${chatProvider}_${data.model}_Effort`);
           if (info) {
+            const chatProvider = this.context.globalState.get("chatProvider");
+            const savedEffort = this.context.globalState.get(`${chatProvider}_${data.model}_Effort`);
             this.post({
               type: "updateChatModelInfo",
               reason: info.reason,
@@ -66197,78 +66210,60 @@ var ChatApp = class {
           await this.context.workspaceState.update("chatHistory", this.chatHistory);
           break;
         }
-        case "setIndexEnabled": {
-          await this.context.globalState.update("indexEnabled", data.enabled);
+        // Called when selecting a new provider in embedding provider dropdown
+        case "saveEmbedProvider": {
+          await this.context.globalState.update("embedProvider", data.provider);
+          this.post({ type: "updateEmbedProvider", provider: data.provider });
           break;
         }
+        // Called after saveEmbedProvider and having a valid API key
+        // Respond with a list of embedding models from the provider
         case "fetchEmbedModels": {
-          try {
-            await this.context.globalState.update("embedProvider", data.provider);
-            const apiKey = await this.getEmbedAPIKey(data.provider);
-            const models = await getEmbeddingModelsFromProvider(data.provider, apiKey);
-            this.post({ type: "setEmbedModels", models });
-          } catch (e2) {
-            vscode7.window.showErrorMessage(`Failed to fetch embedding models: ${e2}`);
-          }
+          await this.refreshEmbedModels(data.provider);
+          break;
+        }
+        // Called when selecting a new embedding model from the dropdown
+        case "saveEmbedModel": {
+          await this.context.globalState.update(`${data.provider}_embedModel`, data.model);
+          this.post({ type: "updateEmbedModel", model: data.model });
           break;
         }
         case "saveEmbedAPIKey": {
-          try {
-            const secretKey = `${data.provider.toUpperCase()}_EMBED_API_KEY`;
-            await this.context.secrets.store(secretKey, data.key);
-            const models = await getEmbeddingModelsFromProvider(data.provider, data.key);
-            this.post({ type: "setEmbedModels", models });
-          } catch (e2) {
-            vscode7.window.showErrorMessage(`Invalid embedding API key: ${e2}`);
-            this.post({ type: "requestEmbedAPIKey", provider: data.provider });
-          }
+          const secretKey = `${data.provider.toUpperCase()}_EMBED_API_KEY`;
+          await this.context.secrets.store(secretKey, data.key);
+          await this.refreshEmbedModels(data.provider);
           break;
         }
-        case "saveEmbedModel": {
-          await this.context.globalState.update("embedModel", data.model);
+        case "loadVectorDB": {
+          this.indexer = await Indexer.create(this.context, data.model);
+          this.indexer.onDidUpdateStatus((event) => this.post(event));
+          await this.indexer.broadcastCurrentState();
+          break;
+        }
+        case "updateVectorCount": {
+          await this.context.globalState.update("retrievalCount", data.value);
+          break;
+        }
+        case "updateDebounceTime": {
+          await this.context.globalState.update("debounceTime", data.value);
+          break;
+        }
+        case "updateIndexEnabled": {
+          await this.context.globalState.update("indexEnabled", data.enabled);
           break;
         }
         case "indexWorkspace": {
-          try {
-            const apiKey = await this.getEmbedAPIKey(data.provider);
-            const indexer = await this.indexLoadPromise;
-            const embedProvider = EmbedFactory.create(data.provider, apiKey);
-            const success = await indexer.indexWorkspace(embedProvider, data.model);
-            if (success) {
-              this.post({
-                type: "updateIndexStatus",
-                status: "Indexed",
-                done: true,
-                error: false,
-                hasIndex: true
-              });
-            } else {
-              this.post({
-                type: "updateIndexStatus",
-                status: "No supported files found",
-                done: true,
-                error: false,
-                hasIndex: false
-              });
-              vscode7.window.showInformationMessage("No supported files found to index.");
-            }
-          } catch (e2) {
-            vscode7.window.showErrorMessage(`Indexing failed: ${formatError(e2)}`);
-            this.post({
-              type: "updateIndexStatus",
-              status: "Error",
-              done: false,
-              error: true,
-              hasIndex: false
-            });
-          }
+          if (!this.indexer) return;
+          const apiKey = await this.getEmbedAPIKey(data.provider);
+          const embedProvider = EmbedFactory.create(data.provider, apiKey);
+          await this.indexer.indexWorkspace(embedProvider, data.model);
           break;
         }
       }
     });
   }
   _getHtml() {
-    const htmlPath = vscode7.Uri.joinPath(this.context.extensionUri, "media", "frontend.html");
+    const htmlPath = vscode7.Uri.joinPath(this.context.extensionUri, "src/webview", "frontend.html");
     const scriptPath = vscode7.Uri.joinPath(this.context.extensionUri, "dist", "webview.bundle.js");
     const cssPath = vscode7.Uri.joinPath(this.context.extensionUri, "dist", "webview.bundle.css");
     try {
@@ -66284,12 +66279,6 @@ var ChatApp = class {
     }
   }
 };
-function formatError(e2) {
-  if (e2 instanceof Error) {
-    return e2.stack ?? e2.message;
-  }
-  return String(e2);
-}
 
 // src/extension.ts
 function activate(context) {

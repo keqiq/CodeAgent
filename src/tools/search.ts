@@ -103,9 +103,9 @@ export async function executeGrep(query: string, filePattern: string = '**/*'): 
 
 export async function executeSearchCodebase(query: string, deps: SearchCodebaseDeps ): Promise<ToolResult> {
     if (!query.trim()) throw new Error('Search query is emtpy');
-
+    if (!deps.indexer.indexEnabled()) throw new Error('Indexing is disabled cannot use semantic search');
     const [queryVector] = await deps.embedProvider.embed(deps.model, [query]);
-    const results = await deps.indexer.search(query, queryVector, 10);
+    const results = await deps.indexer.search(query, queryVector);
 
     // console.log(`[SEARCH DEBUG] Query: ${query}`);
     // console.log(`[SEARCH DEBUG] Result count: ${results.length}`);

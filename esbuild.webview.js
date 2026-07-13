@@ -6,7 +6,7 @@ const watch = process.argv.includes('--watch');
 async function main() {
 	const ctx = await esbuild.context({
 		entryPoints: [
-			'src/webview/main.js'
+			'src/webview/frontend.ts'
 		],
 		bundle: true,
 		format: 'iife', // Standard for browser scripts

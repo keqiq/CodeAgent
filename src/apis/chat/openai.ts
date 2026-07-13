@@ -21,6 +21,7 @@ export class OpenAIChatProvider extends ChatProvider {
         
         // Non deprecated models
         const featuredModels: string[] = [
+            'gpt-5.6-sol', 'gpt-5.6-terra', 'gpt-5.6-luna',
             'gpt-5.5', 'gpt-5.5-pro',
             'gpt-5.4', 'gpt-5.4-pro', 'gpt-5.4-mini', 'gpt-5.4-nano',
             'gpt-5.3-codex',
@@ -75,6 +76,10 @@ export class OpenAIChatProvider extends ChatProvider {
                         // gpt-5-pro only supports high
                         supportedEfforts = ['high'];
                         defaultEffort = 'high';
+
+                    } else if (minorVersion === 6) {
+                        // gpt-5.6 models support max mode
+                        supportedEfforts = ['none', 'low', 'medium', 'high', 'xhigh', 'max'];
 
                     } else if (minorVersion > 1) {
                         // models after gpt-5.1-codex-max (e.g., gpt-5.2, 5.3, 5.4, 5.5) support xhigh
