@@ -3,7 +3,7 @@ import { CodeChunker } from "./chunker";
 import { EmbedProvider } from "../apis/embed/embedProvider";
 import * as vscode from 'vscode';
 import { getWorkspaceUri } from "../utils/workspace";
-import * as crypto from 'crypto';
+// import * as crypto from 'crypto';
 import { supportedExtensions, languageExcludePatterns, globalExcludePatterns} from "./languages/_languageIndex";
 import { EmbedFactory } from "../apis/embed/embedFactory";
 import { minimatch } from "minimatch";
@@ -14,7 +14,9 @@ export type IndexStatusMessage =
     | { type: 'updateIndexStatus', state: 'unindexed', text?: string }
     | { type: 'updateIndexStatus', state: 'indexing', text: string }
     | { type: 'updateIndexStatus', state: 'error', text: string }
-    | { type: 'updateIndexStatus', state: 'indexed', vectorCount: number };
+    | { type: 'updateIndexStatus', state: 'indexed', vectorCount: number }
+    | { type: 'updateIndexStatus', state: 'queued', fileCount: number, delay: number }
+    | { type: 'updateIndexStatus', state: 'outdated', text: string };
 
 export class Indexer {
 
@@ -23,15 +25,20 @@ export class Indexer {
     private dirtyFiles = new Set<string>();
     private deletedFiles = new Set<string>();
     private headerDirtyFiles = new Set<string>();
-    private reindexTimer?: NodeJS.Timeout;
+    private debounceTimer?: NodeJS.Timeout;
 
     private emitter = new vscode.EventEmitter<IndexStatusMessage>();
     public readonly onDidUpdateStatus = this.emitter.event;
 
     private readonly excludePattern = [...globalExcludePatterns, ...languageExcludePatterns];
 
+    private watcher: vscode.FileSystemWatcher;
+    private renameDisposable: vscode.Disposable;
+
     private constructor(private readonly context: vscode.ExtensionContext,
+        private readonly model: string,
         private readonly cc: CodeChunker,
+        private readonly getApiKey: (provider: string) => Promise<string>,
         db?: VectorDB
     ) {
         this.db = db;
@@ -39,36 +46,41 @@ export class Indexer {
         const extGlob = supportedExtensions.map(ext => ext.replace(/^\./, '')).join(',');
         const watchPattern = `**/*.{${extGlob}}`;
 
-        const watcher = vscode.workspace.createFileSystemWatcher(watchPattern);
+        this.watcher = vscode.workspace.createFileSystemWatcher(watchPattern);
         
-        // Watch for file edits, add editted files to reindex queue
-        watcher.onDidChange(async uri => {
-            if (!this.indexEnabled()) return;
-            this.scheduleReindex([vscode.workspace.asRelativePath(uri)]);
+        // Watch for file edits, add editted files to index queue
+        this.watcher.onDidChange(async uri => {
+            this.markWorkspaceModified();
+            if (!this.indexEnabled() || !this.db) return;
+            this.scheduleIndex([vscode.workspace.asRelativePath(uri)]);
         });
 
-        // Watch for file creation, add created file to reindex queue and update neighbouring files' headers
-        watcher.onDidCreate(async uri => {
-            if (!this.indexEnabled()) return;
-            this.scheduleReindex([vscode.workspace.asRelativePath(uri)]);
+        // Watch for file creation, add created file to index queue and update neighbouring files' headers
+        this.watcher.onDidCreate(async uri => {
+            this.markWorkspaceModified();
+            if (!this.indexEnabled() || !this.db) return;
+            this.scheduleIndex([vscode.workspace.asRelativePath(uri)]);
             await this.scheduleNeighbourHoodUpdate(uri);
         });
 
         // Watch for file deletion, add deleted file to deletion queue and update neighbouring files' headers
-        watcher.onDidDelete(async uri => {
-            if (!this.indexEnabled()) return;
+        this.watcher.onDidDelete(async uri => {
+            this.markWorkspaceModified();
+            if (!this.indexEnabled() || !this.db) return;
             this.scheduleDeleteFile([vscode.workspace.asRelativePath(uri)]);
             await this.scheduleNeighbourHoodUpdate(uri);
         });
 
-        vscode.workspace.onDidRenameFiles(async (e) => {
-            if (!this.indexEnabled()) return;
+        // Watch for file file rename, update header for all neighbors and imports
+        this.renameDisposable = vscode.workspace.onDidRenameFiles(async (e) => {
+            this.markWorkspaceModified();
+            if (!this.indexEnabled() || !this.db) return;
             for (const file of e.files) {
                 const oldPath = vscode.workspace.asRelativePath(file.oldUri);
                 const newPath = vscode.workspace.asRelativePath(file.newUri);
 
                 if (this.isSupportedFile(newPath) && !this.isExcluded(newPath)) {
-                    this.scheduleReindex([newPath]);
+                    this.scheduleIndex([newPath]);
                 }
 
                 if (this.isSupportedFile(oldPath)) {
@@ -83,11 +95,11 @@ export class Indexer {
                 }
 
             }
-            this.resetReindexTimer();
+            this.resetDebounceTimer();
         });
     }
 
-    static async create(context: vscode.ExtensionContext, model: string) {
+    static async create(context: vscode.ExtensionContext, model: string, getAPIKey: (provider: string) => Promise<string>) {
         const cc = await CodeChunker.create(context.extensionUri);
 
         let db: VectorDB | undefined;
@@ -98,17 +110,40 @@ export class Indexer {
             db = undefined;
         }
 
-        return new Indexer(context, cc, db);
+        return new Indexer(context, model, cc, getAPIKey, db);
+    }
+
+    public dispose(): void {
+        this.watcher.dispose();
+        this.renameDisposable.dispose();
+        this.emitter.dispose();
+        if (this.debounceTimer) clearTimeout(this.debounceTimer);
     }
 
     public async broadcastCurrentState(): Promise<void> {
         if (this.db) {
+
+            const lastModified = this.context.workspaceState.get<number>('lastModified') || 0;
+            const dbTimestamps = this.context.workspaceState.get<Record<string, number>>('dbTimestamps') || {};
+            const tableTimeStamp = dbTimestamps[this.model] || 0;
+
             const count = await this.db.getVectorCount();
-            this.emitter.fire({ 
-                type: 'updateIndexStatus', 
-                state: 'indexed', 
-                vectorCount: count 
-            });
+
+            if (tableTimeStamp > 0 && lastModified > tableTimeStamp) {
+                this.emitter.fire({
+                    type: 'updateIndexStatus',
+                    state: 'outdated',
+                    text: 'Out of Sync'
+                });
+            }
+            else {
+                this.emitter.fire({ 
+                    type: 'updateIndexStatus', 
+                    state: 'indexed', 
+                    vectorCount: count 
+                });
+
+            }
         } else {
             this.emitter.fire({ 
                 type: 'updateIndexStatus', 
@@ -122,6 +157,7 @@ export class Indexer {
     public async indexWorkspace(embedProvider: EmbedProvider, model: string): Promise<void> {
 
         try {
+            const syncTime = this.context.workspaceState.get<number>('lastModified') || Date.now();
             this.emitter.fire({ type: 'updateIndexStatus', state: 'indexing', text: 'Reading workspace...' });
 
             const chunks = await this.cc.chunkWorkspace();
@@ -148,6 +184,8 @@ export class Indexer {
             }));
     
             await this.db.insertRows(rows);
+            await this.markDatabaseSynced(syncTime);
+
             const vectorCount = await this.db.getVectorCount();
             this.emitter.fire({ type: 'updateIndexStatus', state: 'indexed', vectorCount: vectorCount });
         } catch (e) {
@@ -160,24 +198,25 @@ export class Indexer {
         } 
     }
     
-    public scheduleReindex(filePaths: string[]) {
+    public scheduleIndex(filePaths: string[]): void {
         for (const filePath of filePaths) {
             this.dirtyFiles.add(filePath);
             this.headerDirtyFiles.delete(filePath);
+            this.deletedFiles.delete(filePath);
         }
-        this.resetReindexTimer();
+        this.resetDebounceTimer();
     }
 
-    public scheduleDeleteFile(filePaths: string[]) {
+    public scheduleDeleteFile(filePaths: string[]): void {
         for (const filePath of filePaths) {
             this.deletedFiles.add(filePath);
             this.dirtyFiles.delete(filePath);
             this.headerDirtyFiles.delete(filePath);
         }
-        this.resetReindexTimer();
+        this.resetDebounceTimer();
     }
 
-    public async scheduleNeighbourHoodUpdate(triggerUri: vscode.Uri) {
+    public async scheduleNeighbourHoodUpdate(triggerUri: vscode.Uri): Promise<void> {
         try {
             const parentUri = vscode.Uri.joinPath(triggerUri, '..');
             const entries = await vscode.workspace.fs.readDirectory(parentUri);
@@ -196,7 +235,7 @@ export class Indexer {
                 }
             }
 
-            this.resetReindexTimer();
+            this.resetDebounceTimer();
         } catch (e) {
             console.warn(`Failed to schedule neighbourhood update`, e);
         }
@@ -207,8 +246,8 @@ export class Indexer {
         return this.db!.hybridSearch(queryText, vector, limit);
     }
 
-    private async reindexFile(filePath: string, embedProvider: EmbedProvider, model: string): Promise<void> {
-        if (!this.db) throw new Error("Cannot reindex file: VectorDB is not connected");
+    private async indexFile(filePath: string, embedProvider: EmbedProvider, model: string): Promise<void> {
+        if (!this.db) throw new Error("Cannot index file: VectorDB is not connected");
 
         const workspaceUri = getWorkspaceUri(filePath);
         const chunks = await this.cc.chunkFile(workspaceUri);
@@ -282,6 +321,7 @@ export class Indexer {
 
             return {
                 ...row,
+                vector: Array.from(row.vector),
                 text: updatedText
             };
         });
@@ -302,45 +342,55 @@ export class Indexer {
         return Array.from(uniqueFiles);
     }
 
-    private async flushReindexQueue() {
-        const providerId = this.context.globalState.get<string>("embedProvider");
-        const model = this.context.globalState.get<string>("embedModel");
+    private async flushIndexQueue(): Promise<void> {
+        const provider = this.context.globalState.get<string>("embedProvider");
         
-        if (!providerId || !model) return;
+        if (!provider) return;
         
-        // const apiKey = await getEmbedAPIKey(this.context, providerId);
-        // TODO: FIX THIS
-        const apiKey = this.context.globalState.get<string>(`${providerId.toUpperCase()}_EMBED_API_KEY`);
-        if (!apiKey) return;
-        if (!this.db) return;
-
-        const deletedFiles = [...this.deletedFiles];
-
-        // Filter once more just in case
-        // Don't reindex files that are for deletion
-        // Don't update headers for files that are for deletion or for reindexing
-        const dirtyFiles = [...this.dirtyFiles].filter(f => !this.deletedFiles.has(f));
-        const headerDirtyFiles = [...this.headerDirtyFiles].filter(f =>
-            !this.dirtyFiles.has(f) && !this.deletedFiles.has(f)
-        );
-        
-        this.dirtyFiles.clear();
-        this.deletedFiles.clear();
-        this.headerDirtyFiles.clear();
-
-        this.emitter.fire({
-            type: 'updateIndexStatus',
-            state: 'indexing',
-            text: `Reindexing ${dirtyFiles.length + deletedFiles.length + headerDirtyFiles.length} file(s)...`
-        });
-
-        const embedProvider = EmbedFactory.create(providerId, apiKey);
-
         try {
-            for (const file of deletedFiles) await this.deleteFile(file);
-            for (const file of dirtyFiles) await this.reindexFile(file, embedProvider, model);
-            for (const file of headerDirtyFiles) await this.updateFileHeader(file);
+            const apiKey = await this.getApiKey(provider);
+            if (!apiKey) throw new Error(`${provider} API key missing`);
+        
+            if (!this.db) throw new Error(`Failed to flush queue: Database not connected`);
+
+            const syncTime = this.context.workspaceState.get<number>('lastModified') || Date.now();
+
+            const deletedFiles = [...this.deletedFiles];
+
+            // Filter once more just in case
+            // Don't reindex files that are for deletion
+            // Don't update headers for files that are for deletion or for indexing
+            const dirtyFiles = [...this.dirtyFiles].filter(f => !this.deletedFiles.has(f));
+            const headerDirtyFiles = [...this.headerDirtyFiles].filter(f =>
+                !this.dirtyFiles.has(f) && !this.deletedFiles.has(f)
+            );
+
+            if (deletedFiles.length === 0 && dirtyFiles.length === 0 && headerDirtyFiles.length === 0) return;
+            
+            this.dirtyFiles.clear();
+            this.deletedFiles.clear();
+            this.headerDirtyFiles.clear();
+
+            
+            const embedProvider = EmbedFactory.create(provider, apiKey);
+        
+            if (deletedFiles.length > 0) {
+                this.emitter.fire({ type: 'updateIndexStatus', state: 'indexing', text: `Deleting ${deletedFiles.length} file(s)...` });
+                for (const file of deletedFiles) await this.deleteFile(file);
+            }
+
+            if (dirtyFiles.length > 0) {
+                this.emitter.fire({ type: 'updateIndexStatus', state: 'indexing', text: `Indexing ${dirtyFiles.length} files(s)...`});
+                for (const file of dirtyFiles) await this.indexFile(file, embedProvider, this.model);
+            }
+
+            if (headerDirtyFiles.length > 0) {
+                this.emitter.fire({ type: 'updateIndexStatus', state: 'indexing', text: `Updating ${headerDirtyFiles.length} header(s)...`});
+                for (const file of headerDirtyFiles) await this.updateFileHeader(file);
+            }
             this.cc.clearNeighbourHoodCache();
+
+            await this.markDatabaseSynced(syncTime);
 
             const vectorCount = await this.db!.getVectorCount();
             this.emitter.fire({
@@ -349,7 +399,7 @@ export class Indexer {
                 vectorCount: vectorCount,
             });
         } catch (e) {
-            console.error(`Failed to flush reindex queue: ${e}`);
+            console.error(`Failed to flush index queue: ${e}`);
 
             this.emitter.fire({
                 type: 'updateIndexStatus',
@@ -359,28 +409,52 @@ export class Indexer {
         }
     }
 
-    private resetReindexTimer() {
-        if (this.reindexTimer) clearTimeout(this.reindexTimer);
+    private resetDebounceTimer(): void {
+        if (this.debounceTimer) clearTimeout(this.debounceTimer);
 
-        this.reindexTimer = setTimeout(() => {
-            void this.flushReindexQueue();
-        }, 5000);
+        const fileCount = this.dirtyFiles.size + this.deletedFiles.size + this.headerDirtyFiles.size;
+        const delay = this.context.globalState.get<number>('debounceTime') ?? 10;
+
+        if (fileCount > 0) {
+            this.emitter.fire({
+                type: 'updateIndexStatus',
+                state: 'queued',
+                fileCount: fileCount,
+                delay: delay
+            });
+        }
+        
+        this.debounceTimer = setTimeout(() => {
+            void this.flushIndexQueue();
+        }, delay * 1000);
     }
 
-    private static debugVector(label: string, vector: ArrayLike<number>, text: string) {
-        const values = Array.from(vector);
-
-        const textHash = crypto
-            .createHash('sha256')
-            .update(text)
-            .digest('hex')
-            .slice(0, 12);
-
-        console.log(`[INDEX DEBUG] ${label}`);
-        console.log(`  textHash: ${textHash}`);
-        console.log(`  dimension: ${values.length}`);
-        console.log(`  first10: ${values.slice(0, 10).map(n => Number(n).toFixed(5)).join(', ')}`);
-        console.log(`  preview: ${text.slice(0, 160).replace(/\s+/g, ' ')}`);
+    // After flushing queue, store the time stamp of the latest edits
+    private markWorkspaceModified(): void {
+        this.context.workspaceState.update('lastModified', Date.now());
     }
+
+    // Set the current table to the latest edit timestamp
+    private async markDatabaseSynced(syncTimestamp: number): Promise<void> {
+        const dbTimestamps = this.context.workspaceState.get<Record<string, number>>('dbTimestamps') || {};
+        dbTimestamps[this.model] = syncTimestamp;
+        await this.context.workspaceState.update('dbTimestamps', dbTimestamps);
+    }
+
+    // private static debugVector(label: string, vector: ArrayLike<number>, text: string) {
+    //     const values = Array.from(vector);
+
+    //     const textHash = crypto
+    //         .createHash('sha256')
+    //         .update(text)
+    //         .digest('hex')
+    //         .slice(0, 12);
+
+    //     console.log(`[INDEX DEBUG] ${label}`);
+    //     console.log(`  textHash: ${textHash}`);
+    //     console.log(`  dimension: ${values.length}`);
+    //     console.log(`  first10: ${values.slice(0, 10).map(n => Number(n).toFixed(5)).join(', ')}`);
+    //     console.log(`  preview: ${text.slice(0, 160).replace(/\s+/g, ' ')}`);
+    // }
 
 }

@@ -130,7 +130,7 @@ export class VectorDB {
     public async getFilePathByImport(importName: string): Promise<any[]>  {
         const result = await this.table
             .query()
-            .fullTextSearch(importName)
+            .fullTextSearch(`"${importName}"`)
             .select(['filePath'])
             .toArray();
 

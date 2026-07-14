@@ -40,7 +40,8 @@
     position: absolute;
     bottom: calc(100% + 10px); /* Pops upwards */
     left: 0;
-    min-width: 140px;
+    min-width: 100%;
+    width: max-content;
     max-height: 250px;
     overflow-y: auto;
     z-index: 100;

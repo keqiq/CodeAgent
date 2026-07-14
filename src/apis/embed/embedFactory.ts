@@ -1,11 +1,13 @@
 import { EmbedProvider } from "./embedProvider";
 import { GeminiEmbedProvider } from "./gemini";
+import { OpenAIEmbedProvider } from "./openai";
 
 type EmbedProviderConstructor = new (apiKey: string) => EmbedProvider;
 
 export class EmbedFactory {
     private static readonly providers: Record<string, EmbedProviderConstructor> = {
-        'Gemini': GeminiEmbedProvider
+        'Gemini': GeminiEmbedProvider,
+        'OpenAI': OpenAIEmbedProvider
     };
 
     static getAvailableProviders(): string[] {

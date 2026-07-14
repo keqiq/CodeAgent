@@ -62,33 +62,3 @@
     margin: 4px 0;
 }
 
-/* Inline API Key Input */
-#inlineAPIKeyContainer {
-    display: flex;
-    gap: 6px;
-    margin-top: 4px;
-    padding-top: 6px;
-    border-top: 1px dashed color-mix(in srgb, var(--vscode-widget-border) 60%, transparent);
-}
-
-#inlineAPIKeyContainer input {
-    flex: 1;
-    min-width: 0;
-    background: color-mix(in srgb, var(--vscode-input-background) 50%, transparent);
-    border: 1px solid var(--vscode-input-border);
-    color: var(--vscode-input-foreground);
-    border-radius: 4px;
-    padding: 4px 6px;
-    outline: none;
-    font-family: var(--vscode-editor-font-family);
-}
-
-#inlineAPIKeyContainer input:focus {
-    border-color: var(--vscode-focusBorder);
-}
-
-#inlineAPIKeyContainer .send-btn {
-    padding: 2px 8px;
-    font-size: 11px;
-    height: auto;
-}

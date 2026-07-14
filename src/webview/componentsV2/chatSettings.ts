@@ -70,7 +70,7 @@ export class ChatSettings {
         // Supported by OpenAI's responses API and Gemini's interactions API afaik
         this.toggleStateful.addEventListener('click', () => {
             if (this.toggleStateful.classList.contains('disabled')) return;
-            const isActive = this.toggleAllModels.classList.toggle('active');
+            const isActive = this.toggleStateful.classList.toggle('active');
             this.vscodeAPI.postMessage({ type: 'setStateManagement', stateful: isActive });
         });
 

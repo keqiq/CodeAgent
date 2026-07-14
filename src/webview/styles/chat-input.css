@@ -55,10 +55,7 @@ textarea {
     margin: 0;
 }
 
-.divider {opacity: 0.25;}
-.provider-op { opacity: 1.0; }
-.provider-op:hover { color: var(--vscode-focusBorder) }
-.model-op { opacity: 0.8; }
+
 .effort-op { opacity: 0.5; }
 
 /* bottom container */

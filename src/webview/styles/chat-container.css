@@ -269,3 +269,32 @@
     border: none;
     box-shadow: none;
 }
+
+.scroll-bottom-btn {
+    display: none; 
+    position: absolute;
+    bottom: 120px; /* Sits right above the input box */
+    right: 20px;
+    z-index: 100;
+    background: var(--vscode-editorWidget-background);
+    color: var(--vscode-foreground);
+    border: 1px solid var(--vscode-widget-border);
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    cursor: pointer;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.2s, background-color 0.2s;
+    opacity: 0.8;
+}
+
+.scroll-bottom-btn.visible {
+    display: flex;
+}
+
+.scroll-bottom-btn:hover {
+    background: var(--vscode-list-hoverBackground);
+    opacity: 1;
+}

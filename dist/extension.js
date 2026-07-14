@@ -11845,22 +11845,22 @@ var require_crypto2 = __commonJS({
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.NodeCrypto = void 0;
-    var crypto3 = require("crypto");
+    var crypto2 = require("crypto");
     var NodeCrypto = class {
       async sha256DigestBase64(str2) {
-        return crypto3.createHash("sha256").update(str2).digest("base64");
+        return crypto2.createHash("sha256").update(str2).digest("base64");
       }
       randomBytesBase64(count) {
-        return crypto3.randomBytes(count).toString("base64");
+        return crypto2.randomBytes(count).toString("base64");
       }
       async verify(pubkey, data, signature) {
-        const verifier = crypto3.createVerify("RSA-SHA256");
+        const verifier = crypto2.createVerify("RSA-SHA256");
         verifier.update(data);
         verifier.end();
         return verifier.verify(pubkey, signature, "base64");
       }
       async sign(privateKey, data) {
-        const signer = crypto3.createSign("RSA-SHA256");
+        const signer = crypto2.createSign("RSA-SHA256");
         signer.update(data);
         signer.end();
         return signer.sign(privateKey, "base64");
@@ -11878,7 +11878,7 @@ var require_crypto2 = __commonJS({
        *   string in hexadecimal encoding.
        */
       async sha256DigestHex(str2) {
-        return crypto3.createHash("sha256").update(str2).digest("hex");
+        return crypto2.createHash("sha256").update(str2).digest("hex");
       }
       /**
        * Computes the HMAC hash of a message using the provided crypto key and the
@@ -11890,7 +11890,7 @@ var require_crypto2 = __commonJS({
        */
       async signWithHmacSha256(key, msg) {
         const cryptoKey = typeof key === "string" ? key : toBuffer(key);
-        return toArrayBuffer(crypto3.createHmac("sha256", cryptoKey).update(msg).digest());
+        return toArrayBuffer(crypto2.createHmac("sha256", cryptoKey).update(msg).digest());
       }
     };
     exports2.NodeCrypto = NodeCrypto;
@@ -12804,10 +12804,10 @@ var require_oauth2client = __commonJS({
        * https://github.com/googleapis/google-auth-library-nodejs/blob/main/samples/oauth2-codeVerifier.js
        */
       async generateCodeVerifierAsync() {
-        const crypto3 = (0, crypto_1.createCrypto)();
-        const randomString = crypto3.randomBytesBase64(96);
+        const crypto2 = (0, crypto_1.createCrypto)();
+        const randomString = crypto2.randomBytesBase64(96);
         const codeVerifier = randomString.replace(/\+/g, "~").replace(/=/g, "_").replace(/\//g, "-");
-        const unencodedCodeChallenge = await crypto3.sha256DigestBase64(codeVerifier);
+        const unencodedCodeChallenge = await crypto2.sha256DigestBase64(codeVerifier);
         const codeChallenge = unencodedCodeChallenge.split("=")[0].replace(/\+/g, "-").replace(/\//g, "_");
         return { codeVerifier, codeChallenge };
       }
@@ -13248,7 +13248,7 @@ var require_oauth2client = __commonJS({
        * @return Returns a promise resolving to LoginTicket on verification.
        */
       async verifySignedJwtWithCertsAsync(jwt, certs, requiredAudience, issuers, maxExpiry) {
-        const crypto3 = (0, crypto_1.createCrypto)();
+        const crypto2 = (0, crypto_1.createCrypto)();
         if (!maxExpiry) {
           maxExpiry = _OAuth2Client.DEFAULT_MAX_TOKEN_LIFETIME_SECS_;
         }
@@ -13261,7 +13261,7 @@ var require_oauth2client = __commonJS({
         let envelope;
         let payload;
         try {
-          envelope = JSON.parse(crypto3.decodeBase64StringUtf8(segments[0]));
+          envelope = JSON.parse(crypto2.decodeBase64StringUtf8(segments[0]));
         } catch (err) {
           if (err instanceof Error) {
             err.message = `Can't parse token envelope: ${segments[0]}': ${err.message}`;
@@ -13272,7 +13272,7 @@ var require_oauth2client = __commonJS({
           throw new Error("Can't parse token envelope: " + segments[0]);
         }
         try {
-          payload = JSON.parse(crypto3.decodeBase64StringUtf8(segments[1]));
+          payload = JSON.parse(crypto2.decodeBase64StringUtf8(segments[1]));
         } catch (err) {
           if (err instanceof Error) {
             err.message = `Can't parse token payload '${segments[0]}`;
@@ -13289,7 +13289,7 @@ var require_oauth2client = __commonJS({
         if (envelope.alg === "ES256") {
           signature = formatEcdsa.joseToDer(signature, "ES256").toString("base64");
         }
-        const verified = await crypto3.verify(cert, signed, signature);
+        const verified = await crypto2.verify(cert, signed, signature);
         if (!verified) {
           throw new Error("Invalid token signature: " + jwt);
         }
@@ -13664,14 +13664,14 @@ var require_buffer_equal_constant_time = __commonJS({
 var require_jwa = __commonJS({
   "node_modules/jwa/index.js"(exports2, module2) {
     var Buffer5 = require_safe_buffer().Buffer;
-    var crypto3 = require("crypto");
+    var crypto2 = require("crypto");
     var formatEcdsa = require_ecdsa_sig_formatter();
     var util2 = require("util");
     var MSG_INVALID_ALGORITHM = '"%s" is not a valid algorithm.\n  Supported algorithms are:\n  "HS256", "HS384", "HS512", "RS256", "RS384", "RS512", "PS256", "PS384", "PS512", "ES256", "ES384", "ES512" and "none".';
     var MSG_INVALID_SECRET = "secret must be a string or buffer";
     var MSG_INVALID_VERIFIER_KEY = "key must be a string or a buffer";
     var MSG_INVALID_SIGNER_KEY = "key must be a string, a buffer or an object";
-    var supportsKeyObjects = typeof crypto3.createPublicKey === "function";
+    var supportsKeyObjects = typeof crypto2.createPublicKey === "function";
     if (supportsKeyObjects) {
       MSG_INVALID_VERIFIER_KEY += " or a KeyObject";
       MSG_INVALID_SECRET += "or a KeyObject";
@@ -13761,17 +13761,17 @@ var require_jwa = __commonJS({
       return function sign(thing, secret) {
         checkIsSecretKey(secret);
         thing = normalizeInput(thing);
-        var hmac = crypto3.createHmac("sha" + bits, secret);
+        var hmac = crypto2.createHmac("sha" + bits, secret);
         var sig = (hmac.update(thing), hmac.digest("base64"));
         return fromBase64(sig);
       };
     }
     var bufferEqual;
-    var timingSafeEqual = "timingSafeEqual" in crypto3 ? function timingSafeEqual2(a, b) {
+    var timingSafeEqual = "timingSafeEqual" in crypto2 ? function timingSafeEqual2(a, b) {
       if (a.byteLength !== b.byteLength) {
         return false;
       }
-      return crypto3.timingSafeEqual(a, b);
+      return crypto2.timingSafeEqual(a, b);
     } : function timingSafeEqual2(a, b) {
       if (!bufferEqual) {
         bufferEqual = require_buffer_equal_constant_time();
@@ -13788,7 +13788,7 @@ var require_jwa = __commonJS({
       return function sign(thing, privateKey) {
         checkIsPrivateKey(privateKey);
         thing = normalizeInput(thing);
-        var signer = crypto3.createSign("RSA-SHA" + bits);
+        var signer = crypto2.createSign("RSA-SHA" + bits);
         var sig = (signer.update(thing), signer.sign(privateKey, "base64"));
         return fromBase64(sig);
       };
@@ -13798,7 +13798,7 @@ var require_jwa = __commonJS({
         checkIsPublicKey(publicKey);
         thing = normalizeInput(thing);
         signature = toBase64(signature);
-        var verifier = crypto3.createVerify("RSA-SHA" + bits);
+        var verifier = crypto2.createVerify("RSA-SHA" + bits);
         verifier.update(thing);
         return verifier.verify(publicKey, signature, "base64");
       };
@@ -13807,11 +13807,11 @@ var require_jwa = __commonJS({
       return function sign(thing, privateKey) {
         checkIsPrivateKey(privateKey);
         thing = normalizeInput(thing);
-        var signer = crypto3.createSign("RSA-SHA" + bits);
+        var signer = crypto2.createSign("RSA-SHA" + bits);
         var sig = (signer.update(thing), signer.sign({
           key: privateKey,
-          padding: crypto3.constants.RSA_PKCS1_PSS_PADDING,
-          saltLength: crypto3.constants.RSA_PSS_SALTLEN_DIGEST
+          padding: crypto2.constants.RSA_PKCS1_PSS_PADDING,
+          saltLength: crypto2.constants.RSA_PSS_SALTLEN_DIGEST
         }, "base64"));
         return fromBase64(sig);
       };
@@ -13821,12 +13821,12 @@ var require_jwa = __commonJS({
         checkIsPublicKey(publicKey);
         thing = normalizeInput(thing);
         signature = toBase64(signature);
-        var verifier = crypto3.createVerify("RSA-SHA" + bits);
+        var verifier = crypto2.createVerify("RSA-SHA" + bits);
         verifier.update(thing);
         return verifier.verify({
           key: publicKey,
-          padding: crypto3.constants.RSA_PKCS1_PSS_PADDING,
-          saltLength: crypto3.constants.RSA_PSS_SALTLEN_DIGEST
+          padding: crypto2.constants.RSA_PKCS1_PSS_PADDING,
+          saltLength: crypto2.constants.RSA_PSS_SALTLEN_DIGEST
         }, signature, "base64");
       };
     }
@@ -16402,14 +16402,14 @@ var require_awsrequestsigner = __commonJS({
       }
     };
     exports2.AwsRequestSigner = AwsRequestSigner;
-    async function sign(crypto3, key, msg) {
-      return await crypto3.signWithHmacSha256(key, msg);
+    async function sign(crypto2, key, msg) {
+      return await crypto2.signWithHmacSha256(key, msg);
     }
-    async function getSigningKey(crypto3, key, dateStamp, region, serviceName) {
-      const kDate = await sign(crypto3, `AWS4${key}`, dateStamp);
-      const kRegion = await sign(crypto3, kDate, region);
-      const kService = await sign(crypto3, kRegion, serviceName);
-      const kSigning = await sign(crypto3, kService, "aws4_request");
+    async function getSigningKey(crypto2, key, dateStamp, region, serviceName) {
+      const kDate = await sign(crypto2, `AWS4${key}`, dateStamp);
+      const kRegion = await sign(crypto2, kDate, region);
+      const kService = await sign(crypto2, kRegion, serviceName);
+      const kSigning = await sign(crypto2, kService, "aws4_request");
       return kSigning;
     }
     async function generateAuthenticationHeaderMap(options) {
@@ -18128,24 +18128,24 @@ var require_googleauth = __commonJS({
           const signed = await client.sign(data);
           return signed.signedBlob;
         }
-        const crypto3 = (0, crypto_1.createCrypto)();
+        const crypto2 = (0, crypto_1.createCrypto)();
         if (client instanceof jwtclient_1.JWT && client.key) {
-          const sign = await crypto3.sign(client.key, data);
+          const sign = await crypto2.sign(client.key, data);
           return sign;
         }
         const creds = await this.getCredentials();
         if (!creds.client_email) {
           throw new Error("Cannot sign data without `client_email`.");
         }
-        return this.signBlob(crypto3, creds.client_email, data, endpoint);
+        return this.signBlob(crypto2, creds.client_email, data, endpoint);
       }
-      async signBlob(crypto3, emailOrUniqueId, data, endpoint) {
+      async signBlob(crypto2, emailOrUniqueId, data, endpoint) {
         const url = new URL(endpoint + `${emailOrUniqueId}:signBlob`);
         const res = await this.request({
           method: "POST",
           url: url.href,
           data: {
-            payload: crypto3.encodeBase64StringUtf8(data)
+            payload: crypto2.encodeBase64StringUtf8(data)
           },
           retry: true,
           retryConfig: {
@@ -20802,7 +20802,7 @@ var require_websocket = __commonJS({
     var http3 = require("http");
     var net = require("net");
     var tls = require("tls");
-    var { randomBytes, createHash: createHash2 } = require("crypto");
+    var { randomBytes, createHash } = require("crypto");
     var { Duplex, Readable: Readable2 } = require("stream");
     var { URL: URL2 } = require("url");
     var PerMessageDeflate2 = require_permessage_deflate();
@@ -21470,7 +21470,7 @@ var require_websocket = __commonJS({
           abortHandshake(websocket, socket, "Invalid Upgrade header");
           return;
         }
-        const digest = createHash2("sha1").update(key + GUID).digest("base64");
+        const digest = createHash("sha1").update(key + GUID).digest("base64");
         if (res.headers["sec-websocket-accept"] !== digest) {
           abortHandshake(websocket, socket, "Invalid Sec-WebSocket-Accept header");
           return;
@@ -21839,7 +21839,7 @@ var require_websocket_server = __commonJS({
     var EventEmitter2 = require("events");
     var http3 = require("http");
     var { Duplex } = require("stream");
-    var { createHash: createHash2 } = require("crypto");
+    var { createHash } = require("crypto");
     var extension2 = require_extension();
     var PerMessageDeflate2 = require_permessage_deflate();
     var subprotocol2 = require_subprotocol();
@@ -22146,7 +22146,7 @@ var require_websocket_server = __commonJS({
           );
         }
         if (this._state > RUNNING) return abortHandshake(socket, 503);
-        const digest = createHash2("sha1").update(key + GUID).digest("base64");
+        const digest = createHash("sha1").update(key + GUID).digest("base64");
         const headers = [
           "HTTP/1.1 101 Switching Protocols",
           "Upgrade: websocket",
@@ -23118,13 +23118,13 @@ function __classPrivateFieldGet(receiver, state, kind, f3) {
 
 // node_modules/openai/internal/utils/uuid.mjs
 var uuid4 = function() {
-  const { crypto: crypto3 } = globalThis;
-  if (crypto3?.randomUUID) {
-    uuid4 = crypto3.randomUUID.bind(crypto3);
-    return crypto3.randomUUID();
+  const { crypto: crypto2 } = globalThis;
+  if (crypto2?.randomUUID) {
+    uuid4 = crypto2.randomUUID.bind(crypto2);
+    return crypto2.randomUUID();
   }
   const u8 = new Uint8Array(1);
-  const randomByte = crypto3 ? () => crypto3.getRandomValues(u8)[0] : () => Math.random() * 255 & 255;
+  const randomByte = crypto2 ? () => crypto2.getRandomValues(u8)[0] : () => Math.random() * 255 & 255;
   return "10000000-1000-4000-8000-100000000000".replace(/[018]/g, (c) => (+c ^ randomByte() & 15 >> +c / 4).toString(16));
 };
 
@@ -32900,8 +32900,9 @@ async function executeGrep(query, filePattern = "**/*") {
 }
 async function executeSearchCodebase(query, deps) {
   if (!query.trim()) throw new Error("Search query is emtpy");
+  if (!deps.indexer.indexEnabled()) throw new Error("Indexing is disabled cannot use semantic search");
   const [queryVector] = await deps.embedProvider.embed(deps.model, [query]);
-  const results = await deps.indexer.search(query, queryVector, 10);
+  const results = await deps.indexer.search(query, queryVector);
   if (results.length === 0) {
     return {
       message: "No relevant code found"
@@ -48033,13 +48034,13 @@ var FileSearchStores = class extends BaseModule {
   }
 };
 var uuid4Internal = function() {
-  const { crypto: crypto3 } = globalThis;
-  if (crypto3 === null || crypto3 === void 0 ? void 0 : crypto3.randomUUID) {
-    uuid4Internal = crypto3.randomUUID.bind(crypto3);
-    return crypto3.randomUUID();
+  const { crypto: crypto2 } = globalThis;
+  if (crypto2 === null || crypto2 === void 0 ? void 0 : crypto2.randomUUID) {
+    uuid4Internal = crypto2.randomUUID.bind(crypto2);
+    return crypto2.randomUUID();
   }
   const u8 = new Uint8Array(1);
-  const randomByte = crypto3 ? () => crypto3.getRandomValues(u8)[0] : () => Math.random() * 255 & 255;
+  const randomByte = crypto2 ? () => crypto2.getRandomValues(u8)[0] : () => Math.random() * 255 & 255;
   return "10000000-1000-4000-8000-100000000000".replace(/[018]/g, (c) => (+c ^ randomByte() & 15 >> +c / 4).toString(16));
 };
 var uuid42 = () => uuid4Internal();
@@ -52172,10 +52173,41 @@ var GeminiEmbedProvider = class extends EmbedProvider {
   }
 };
 
+// src/apis/embed/openai.ts
+var OpenAIEmbedProvider = class extends EmbedProvider {
+  providerId = "OpenAI";
+  client;
+  constructor(apiKey) {
+    super();
+    this.client = new OpenAI({ apiKey });
+  }
+  async getModels() {
+    return [
+      "text-embedding-3-small",
+      "text-embedding-3-large",
+      "text-embedding-ada-002"
+    ];
+  }
+  async embed(model, texts) {
+    const vectors = [];
+    for (const text of texts) {
+      const result = await this.client.embeddings.create({
+        model,
+        input: text,
+        encoding_format: "float"
+      });
+      const vector = result.data[0].embedding;
+      vectors.push(vector);
+    }
+    return vectors;
+  }
+};
+
 // src/apis/embed/embedFactory.ts
 var EmbedFactory = class {
   static providers = {
-    "Gemini": GeminiEmbedProvider
+    "Gemini": GeminiEmbedProvider,
+    "OpenAI": OpenAIEmbedProvider
   };
   static getAvailableProviders() {
     return Object.keys(this.providers);
@@ -63231,7 +63263,7 @@ var VectorDB = class _VectorDB {
     return await this.table.query().where(`filePath = '${filePath.replace(/'/g, "''")}'`).toArray();
   }
   async getFilePathByImport(importName) {
-    const result = await this.table.query().fullTextSearch(importName).select(["filePath"]).toArray();
+    const result = await this.table.query().fullTextSearch(`"${importName}"`).select(["filePath"]).toArray();
     return result;
   }
   async getVectorCount() {
@@ -63823,7 +63855,6 @@ ${siblings.join("\n")}
 
 // src/indexing/indexer.ts
 var vscode6 = __toESM(require("vscode"));
-var crypto2 = __toESM(require("crypto"));
 
 // node_modules/brace-expansion/node_modules/balanced-match/dist/esm/index.js
 var balanced = (a, b, str2) => {
@@ -65629,34 +65660,40 @@ minimatch.unescape = unescape2;
 
 // src/indexing/indexer.ts
 var Indexer = class _Indexer {
-  constructor(context, cc, db) {
+  constructor(context, model, cc, getApiKey, db) {
     this.context = context;
+    this.model = model;
     this.cc = cc;
+    this.getApiKey = getApiKey;
     this.db = db;
     const extGlob = supportedExtensions.map((ext2) => ext2.replace(/^\./, "")).join(",");
     const watchPattern = `**/*.{${extGlob}}`;
-    const watcher = vscode6.workspace.createFileSystemWatcher(watchPattern);
-    watcher.onDidChange(async (uri) => {
-      if (!this.indexEnabled()) return;
-      this.scheduleReindex([vscode6.workspace.asRelativePath(uri)]);
+    this.watcher = vscode6.workspace.createFileSystemWatcher(watchPattern);
+    this.watcher.onDidChange(async (uri) => {
+      this.markWorkspaceModified();
+      if (!this.indexEnabled() || !this.db) return;
+      this.scheduleIndex([vscode6.workspace.asRelativePath(uri)]);
     });
-    watcher.onDidCreate(async (uri) => {
-      if (!this.indexEnabled()) return;
-      this.scheduleReindex([vscode6.workspace.asRelativePath(uri)]);
+    this.watcher.onDidCreate(async (uri) => {
+      this.markWorkspaceModified();
+      if (!this.indexEnabled() || !this.db) return;
+      this.scheduleIndex([vscode6.workspace.asRelativePath(uri)]);
       await this.scheduleNeighbourHoodUpdate(uri);
     });
-    watcher.onDidDelete(async (uri) => {
-      if (!this.indexEnabled()) return;
+    this.watcher.onDidDelete(async (uri) => {
+      this.markWorkspaceModified();
+      if (!this.indexEnabled() || !this.db) return;
       this.scheduleDeleteFile([vscode6.workspace.asRelativePath(uri)]);
       await this.scheduleNeighbourHoodUpdate(uri);
     });
-    vscode6.workspace.onDidRenameFiles(async (e2) => {
-      if (!this.indexEnabled()) return;
+    this.renameDisposable = vscode6.workspace.onDidRenameFiles(async (e2) => {
+      this.markWorkspaceModified();
+      if (!this.indexEnabled() || !this.db) return;
       for (const file of e2.files) {
         const oldPath = vscode6.workspace.asRelativePath(file.oldUri);
         const newPath = vscode6.workspace.asRelativePath(file.newUri);
         if (this.isSupportedFile(newPath) && !this.isExcluded(newPath)) {
-          this.scheduleReindex([newPath]);
+          this.scheduleIndex([newPath]);
         }
         if (this.isSupportedFile(oldPath)) {
           this.scheduleDeleteFile([oldPath]);
@@ -65668,20 +65705,24 @@ var Indexer = class _Indexer {
           }
         }
       }
-      this.resetReindexTimer();
+      this.resetDebounceTimer();
     });
   }
   context;
+  model;
   cc;
+  getApiKey;
   db;
   dirtyFiles = /* @__PURE__ */ new Set();
   deletedFiles = /* @__PURE__ */ new Set();
   headerDirtyFiles = /* @__PURE__ */ new Set();
-  reindexTimer;
+  debounceTimer;
   emitter = new vscode6.EventEmitter();
   onDidUpdateStatus = this.emitter.event;
   excludePattern = [...globalExcludePatterns, ...languageExcludePatterns];
-  static async create(context, model) {
+  watcher;
+  renameDisposable;
+  static async create(context, model, getAPIKey) {
     const cc = await CodeChunker.create(context.extensionUri);
     let db;
     try {
@@ -65690,16 +65731,33 @@ var Indexer = class _Indexer {
       console.log(`Failed to connect to database: ${e2}`);
       db = void 0;
     }
-    return new _Indexer(context, cc, db);
+    return new _Indexer(context, model, cc, getAPIKey, db);
+  }
+  dispose() {
+    this.watcher.dispose();
+    this.renameDisposable.dispose();
+    this.emitter.dispose();
+    if (this.debounceTimer) clearTimeout(this.debounceTimer);
   }
   async broadcastCurrentState() {
     if (this.db) {
+      const lastModified = this.context.workspaceState.get("lastModified") || 0;
+      const dbTimestamps = this.context.workspaceState.get("dbTimestamps") || {};
+      const tableTimeStamp = dbTimestamps[this.model] || 0;
       const count = await this.db.getVectorCount();
-      this.emitter.fire({
-        type: "updateIndexStatus",
-        state: "indexed",
-        vectorCount: count
-      });
+      if (tableTimeStamp > 0 && lastModified > tableTimeStamp) {
+        this.emitter.fire({
+          type: "updateIndexStatus",
+          state: "outdated",
+          text: "Out of Sync"
+        });
+      } else {
+        this.emitter.fire({
+          type: "updateIndexStatus",
+          state: "indexed",
+          vectorCount: count
+        });
+      }
     } else {
       this.emitter.fire({
         type: "updateIndexStatus",
@@ -65711,6 +65769,7 @@ var Indexer = class _Indexer {
   // Initial indexing of all relevant files in the workspace
   async indexWorkspace(embedProvider, model) {
     try {
+      const syncTime = this.context.workspaceState.get("lastModified") || Date.now();
       this.emitter.fire({ type: "updateIndexStatus", state: "indexing", text: "Reading workspace..." });
       const chunks = await this.cc.chunkWorkspace();
       this.cc.clearNeighbourHoodCache();
@@ -65729,6 +65788,7 @@ var Indexer = class _Indexer {
         ...chunk
       }));
       await this.db.insertRows(rows);
+      await this.markDatabaseSynced(syncTime);
       const vectorCount = await this.db.getVectorCount();
       this.emitter.fire({ type: "updateIndexStatus", state: "indexed", vectorCount });
     } catch (e2) {
@@ -65740,12 +65800,13 @@ var Indexer = class _Indexer {
       });
     }
   }
-  scheduleReindex(filePaths) {
+  scheduleIndex(filePaths) {
     for (const filePath of filePaths) {
       this.dirtyFiles.add(filePath);
       this.headerDirtyFiles.delete(filePath);
+      this.deletedFiles.delete(filePath);
     }
-    this.resetReindexTimer();
+    this.resetDebounceTimer();
   }
   scheduleDeleteFile(filePaths) {
     for (const filePath of filePaths) {
@@ -65753,7 +65814,7 @@ var Indexer = class _Indexer {
       this.dirtyFiles.delete(filePath);
       this.headerDirtyFiles.delete(filePath);
     }
-    this.resetReindexTimer();
+    this.resetDebounceTimer();
   }
   async scheduleNeighbourHoodUpdate(triggerUri) {
     try {
@@ -65771,16 +65832,17 @@ var Indexer = class _Indexer {
           }
         }
       }
-      this.resetReindexTimer();
+      this.resetDebounceTimer();
     } catch (e2) {
       console.warn(`Failed to schedule neighbourhood update`, e2);
     }
   }
-  async search(queryText, vector, limit2 = 10) {
+  async search(queryText, vector) {
+    const limit2 = this.context.globalState.get("retrievalCount") ?? 10;
     return this.db.hybridSearch(queryText, vector, limit2);
   }
-  async reindexFile(filePath, embedProvider, model) {
-    if (!this.db) throw new Error("Cannot reindex file: VectorDB is not connected");
+  async indexFile(filePath, embedProvider, model) {
+    if (!this.db) throw new Error("Cannot index file: VectorDB is not connected");
     const workspaceUri = getWorkspaceUri(filePath);
     const chunks = await this.cc.chunkFile(workspaceUri);
     await this.db.deleteByFilePath(filePath);
@@ -65824,6 +65886,7 @@ var Indexer = class _Indexer {
       }
       return {
         ...row,
+        vector: Array.from(row.vector),
         text: updatedText
       };
     });
@@ -65838,32 +65901,38 @@ var Indexer = class _Indexer {
     uniqueFiles.delete(oldFileName);
     return Array.from(uniqueFiles);
   }
-  async flushReindexQueue() {
-    const providerId = this.context.globalState.get("embedProvider");
-    const model = this.context.globalState.get("embedModel");
-    if (!providerId || !model) return;
-    const apiKey = this.context.globalState.get(`${providerId.toUpperCase()}_EMBED_API_KEY`);
-    if (!apiKey) return;
-    if (!this.db) return;
-    const deletedFiles = [...this.deletedFiles];
-    const dirtyFiles = [...this.dirtyFiles].filter((f3) => !this.deletedFiles.has(f3));
-    const headerDirtyFiles = [...this.headerDirtyFiles].filter(
-      (f3) => !this.dirtyFiles.has(f3) && !this.deletedFiles.has(f3)
-    );
-    this.dirtyFiles.clear();
-    this.deletedFiles.clear();
-    this.headerDirtyFiles.clear();
-    this.emitter.fire({
-      type: "updateIndexStatus",
-      state: "indexing",
-      text: `Reindexing ${dirtyFiles.length + deletedFiles.length + headerDirtyFiles.length} file(s)...`
-    });
-    const embedProvider = EmbedFactory.create(providerId, apiKey);
+  async flushIndexQueue() {
+    const provider = this.context.globalState.get("embedProvider");
+    if (!provider) return;
     try {
-      for (const file of deletedFiles) await this.deleteFile(file);
-      for (const file of dirtyFiles) await this.reindexFile(file, embedProvider, model);
-      for (const file of headerDirtyFiles) await this.updateFileHeader(file);
+      const apiKey = await this.getApiKey(provider);
+      if (!apiKey) throw new Error(`${provider} API key missing`);
+      if (!this.db) throw new Error(`Failed to flush queue: Database not connected`);
+      const syncTime = this.context.workspaceState.get("lastModified") || Date.now();
+      const deletedFiles = [...this.deletedFiles];
+      const dirtyFiles = [...this.dirtyFiles].filter((f3) => !this.deletedFiles.has(f3));
+      const headerDirtyFiles = [...this.headerDirtyFiles].filter(
+        (f3) => !this.dirtyFiles.has(f3) && !this.deletedFiles.has(f3)
+      );
+      if (deletedFiles.length === 0 && dirtyFiles.length === 0 && headerDirtyFiles.length === 0) return;
+      this.dirtyFiles.clear();
+      this.deletedFiles.clear();
+      this.headerDirtyFiles.clear();
+      const embedProvider = EmbedFactory.create(provider, apiKey);
+      if (deletedFiles.length > 0) {
+        this.emitter.fire({ type: "updateIndexStatus", state: "indexing", text: `Deleting ${deletedFiles.length} file(s)...` });
+        for (const file of deletedFiles) await this.deleteFile(file);
+      }
+      if (dirtyFiles.length > 0) {
+        this.emitter.fire({ type: "updateIndexStatus", state: "indexing", text: `Indexing ${dirtyFiles.length} files(s)...` });
+        for (const file of dirtyFiles) await this.indexFile(file, embedProvider, this.model);
+      }
+      if (headerDirtyFiles.length > 0) {
+        this.emitter.fire({ type: "updateIndexStatus", state: "indexing", text: `Updating ${headerDirtyFiles.length} header(s)...` });
+        for (const file of headerDirtyFiles) await this.updateFileHeader(file);
+      }
       this.cc.clearNeighbourHoodCache();
+      await this.markDatabaseSynced(syncTime);
       const vectorCount = await this.db.getVectorCount();
       this.emitter.fire({
         type: "updateIndexStatus",
@@ -65871,7 +65940,7 @@ var Indexer = class _Indexer {
         vectorCount
       });
     } catch (e2) {
-      console.error(`Failed to flush reindex queue: ${e2}`);
+      console.error(`Failed to flush index queue: ${e2}`);
       this.emitter.fire({
         type: "updateIndexStatus",
         state: "error",
@@ -65879,21 +65948,45 @@ var Indexer = class _Indexer {
       });
     }
   }
-  resetReindexTimer() {
-    if (this.reindexTimer) clearTimeout(this.reindexTimer);
-    this.reindexTimer = setTimeout(() => {
-      void this.flushReindexQueue();
-    }, 5e3);
+  resetDebounceTimer() {
+    if (this.debounceTimer) clearTimeout(this.debounceTimer);
+    const fileCount = this.dirtyFiles.size + this.deletedFiles.size + this.headerDirtyFiles.size;
+    const delay = this.context.globalState.get("debounceTime") ?? 10;
+    if (fileCount > 0) {
+      this.emitter.fire({
+        type: "updateIndexStatus",
+        state: "queued",
+        fileCount,
+        delay
+      });
+    }
+    this.debounceTimer = setTimeout(() => {
+      void this.flushIndexQueue();
+    }, delay * 1e3);
   }
-  static debugVector(label, vector, text) {
-    const values = Array.from(vector);
-    const textHash = crypto2.createHash("sha256").update(text).digest("hex").slice(0, 12);
-    console.log(`[INDEX DEBUG] ${label}`);
-    console.log(`  textHash: ${textHash}`);
-    console.log(`  dimension: ${values.length}`);
-    console.log(`  first10: ${values.slice(0, 10).map((n) => Number(n).toFixed(5)).join(", ")}`);
-    console.log(`  preview: ${text.slice(0, 160).replace(/\s+/g, " ")}`);
+  // After flushing queue, store the time stamp of the latest edits
+  markWorkspaceModified() {
+    this.context.workspaceState.update("lastModified", Date.now());
   }
+  // Set the current table to the latest edit timestamp
+  async markDatabaseSynced(syncTimestamp) {
+    const dbTimestamps = this.context.workspaceState.get("dbTimestamps") || {};
+    dbTimestamps[this.model] = syncTimestamp;
+    await this.context.workspaceState.update("dbTimestamps", dbTimestamps);
+  }
+  // private static debugVector(label: string, vector: ArrayLike<number>, text: string) {
+  //     const values = Array.from(vector);
+  //     const textHash = crypto
+  //         .createHash('sha256')
+  //         .update(text)
+  //         .digest('hex')
+  //         .slice(0, 12);
+  //     console.log(`[INDEX DEBUG] ${label}`);
+  //     console.log(`  textHash: ${textHash}`);
+  //     console.log(`  dimension: ${values.length}`);
+  //     console.log(`  first10: ${values.slice(0, 10).map(n => Number(n).toFixed(5)).join(', ')}`);
+  //     console.log(`  preview: ${text.slice(0, 160).replace(/\s+/g, ' ')}`);
+  // }
 };
 
 // src/utils/apiUtils.ts
@@ -65918,14 +66011,14 @@ var ChatApp = class {
     } else this.chatHistory = this.getInitialChatMessages();
     this.toolRegistry = createToolRegistry({
       createSearchCodebaseDeps: async () => {
-        const providerId = this.context.globalState.get("embedProvider");
-        const model = this.context.globalState.get("embedModel");
-        if (!providerId || !model) throw new Error("embedding provider/model is not configured");
+        const provider = this.context.globalState.get("embedProvider");
+        const model = this.context.globalState.get(`${provider}_embedModel`);
+        if (!provider || !model) throw new Error("embedding provider/model is not configured");
         if (!this.indexer) throw new Error("Index is not loaded. Enable indexing first.");
-        const apiKey = await this.getEmbedAPIKey(providerId);
+        const apiKey = await this.getEmbedAPIKey(provider);
         return {
           indexer: this.indexer,
-          embedProvider: EmbedFactory.create(providerId, apiKey),
+          embedProvider: EmbedFactory.create(provider, apiKey),
           model
         };
       }
@@ -66006,7 +66099,7 @@ var ChatApp = class {
       const apiKey = await this.getEmbedAPIKey(provider);
       const models = await getEmbeddingModelsFromProvider(provider, apiKey);
       this.post({ type: "setEmbedModels", models });
-      const savedModel = this.context.globalState.get("embedModel");
+      const savedModel = this.context.globalState.get(`${provider}_embedModel`);
       const isValidModel = models.includes(savedModel);
       this.post({ type: "updateEmbedModel", model: isValidModel ? savedModel : void 0 });
     } catch (e2) {
@@ -66060,7 +66153,7 @@ var ChatApp = class {
               try {
                 result = await this.toolRegistry[toolName](toolArgs);
                 this.post({ type: "updateTool", status: "success" });
-                if (result.changedFiles?.length) this.indexer.scheduleReindex(result.changedFiles);
+                if (result.changedFiles?.length) this.indexer.scheduleIndex(result.changedFiles);
               } catch (e2) {
                 const message = e2 instanceof Error ? e2.message : String(e2);
                 result = { message: `Error executing ${toolName}: ${message}` };
@@ -66234,8 +66327,11 @@ var ChatApp = class {
           await this.refreshEmbedModels(data.provider);
           break;
         }
+        // Called after selecting an embedding model
+        // Checks if a table for the model already exists and broadcast index status
         case "loadVectorDB": {
-          this.indexer = await Indexer.create(this.context, data.model);
+          if (this.indexer) this.indexer.dispose();
+          this.indexer = await Indexer.create(this.context, data.model, (provider) => this.getEmbedAPIKey(provider));
           this.indexer.onDidUpdateStatus((event) => this.post(event));
           await this.indexer.broadcastCurrentState();
           break;

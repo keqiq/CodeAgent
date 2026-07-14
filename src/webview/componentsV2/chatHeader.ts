@@ -30,6 +30,8 @@ export class ChatHeader {
     private toggleIndex: HTMLElement;
     private isIndexGloballyEnabled: boolean = true;
 
+    private countdownInterval?: number;
+
     constructor(private vscodeAPI: WebviewApi) {
         this.indexBtn = document.getElementById('indexBtn') as HTMLButtonElement;
         this.indexStatus = document.getElementById('indexStatus') as HTMLSpanElement;
@@ -43,7 +45,7 @@ export class ChatHeader {
         this.vectorCountInput = document.getElementById('vectorCountInput') as HTMLInputElement;
         this.debounceTimeInput = document.getElementById('debounceTimeInput') as HTMLInputElement;
         this.keyBtn = document.getElementById('menuEmbedKeyBtn') as HTMLElement;
-        this.keyContainer = document.getElementById('inlineAPIKeyContainer') as HTMLElement;
+        this.keyContainer = document.getElementById('embedKeyContainer') as HTMLElement;
         this.keyInput = document.getElementById('embedKeyInput') as HTMLInputElement;
         this.keySaveBtn = document.getElementById('embedKeySaveBtn') as HTMLElement;
         this.toggleIndex = document.getElementById('menuIndexToggle') as HTMLElement;
@@ -53,7 +55,7 @@ export class ChatHeader {
         });
 
         this.modelDropdown = new CustomDropdown('embedModelDropdown', 'Models', (val: string) => {
-            this.vscodeAPI.postMessage({ type: 'saveEmbedModel', model: val });
+            this.vscodeAPI.postMessage({ type: 'saveEmbedModel', provider: this.currentEmbedProvider, model: val });
         });
 
         this.initListeners();
@@ -200,6 +202,7 @@ export class ChatHeader {
         this.modelDropdown.textSpan.textContent = 'Loading...';
         this.modelDropdown.setDisabled(true);
         this.updateStatusText(`Loading ${provider} models...`, 'warning');
+        this.actionIndexBtn.disabled = true;
     }
 
     private updateStatusText(text: string, dotClass: 'ready' | 'warning' | 'error' | 'disabled' | 'spinning'): void {
@@ -262,47 +265,85 @@ export class ChatHeader {
     public updateIndexStatus(msg: IndexStatusMessage): void {
         if (!this.isIndexGloballyEnabled) return;
         this.actionIndexBtn.classList.remove('state-unindexed', 'state-indexed', 'state-indexing', 'state-error');
+
+        if (this.countdownInterval) {
+            window.clearInterval(this.countdownInterval);
+            this.countdownInterval = undefined;
+        }
+
+        const isProcessing = msg.state === 'indexing' || msg.state === 'queued';
+        this.toggleControls(isProcessing);
+
         switch (msg.state) {
             case 'indexed':
                 this.updateStatusText(`${msg.vectorCount} Vectors Loaded`, 'ready');
-                this.providerDropdown.setDisabled(false);
-                this.modelDropdown.setDisabled(false);
-                this.actionIndexBtn.disabled = false;
                 this.actionIndexBtnText.textContent = 'Reindex';
                 this.actionIndexBtn.classList.add('state-indexed');
                 break;
                 
             case 'unindexed':
                 this.updateStatusText(msg.text || 'Not Indexed', 'warning');
-                this.providerDropdown.setDisabled(false);
-                this.modelDropdown.setDisabled(false);
-                this.actionIndexBtn.disabled = false;
                 this.actionIndexBtnText.textContent = 'Index';
                 this.actionIndexBtn.classList.add('state-unindexed');
                 break;
                 
             case 'error':
                 this.updateStatusText(msg.text, 'error');
-                this.providerDropdown.setDisabled(false);
-                this.modelDropdown.setDisabled(false);
-                this.actionIndexBtn.disabled = false;
                 this.actionIndexBtnText.textContent = 'Index';
                 this.actionIndexBtn.classList.add('state-error');
+                break;
+
+            case 'outdated':
+                this.updateStatusText(msg.text, 'warning');
+                this.actionIndexBtnText.textContent = 'Reindex';
+                this.actionIndexBtn.classList.add('state-unindexed');
                 break;
                 
             case 'indexing':
                 this.updateStatusText(msg.text, 'spinning');
-                this.providerDropdown.setDisabled(true);
-                this.modelDropdown.setDisabled(true);
-                this.actionIndexBtn.disabled = true;
                 this.actionIndexBtnText.textContent = 'Indexing...';
                 this.actionIndexBtn.classList.add('state-indexing');
                 break;
+
+            case 'queued':
+                let timeLeft = msg.delay;
+
+                this.updateStatusText(`${msg.fileCount} queued (Reindex in ${timeLeft}s)`, 'spinning');
+                this.actionIndexBtn.classList.add('state-indexed');
+
+                this.countdownInterval = window.setInterval(() => {
+                    timeLeft -= 1;
+                    if (timeLeft > 0) {
+                        this.updateStatusText(`${msg.fileCount} queued (Reindex in ${timeLeft}s)`, 'spinning');
+                    }
+                    else {
+                        window.clearInterval(this.countdownInterval);
+                    }
+                }, 1000);
+                break;
+        }
+    }
+
+    // When the index state is busy ie indexing or queued, disabled all controls to not mess anything up
+    private toggleControls(isProcessing: boolean): void {
+        // Dropdowns and buttons
+        this.providerDropdown.setDisabled(isProcessing);
+        this.modelDropdown.setDisabled(isProcessing);
+        this.actionIndexBtn.disabled = isProcessing;
+
+        // Settings Menu 
+        this.indexSettingsBtn.disabled = isProcessing;
+        
+        // Only re-enable the key button if a provider is actually selected
+        if (isProcessing) {
+            this.indexSettingsDropdown.classList.add('hidden');
+            this.keyContainer.classList.add('hidden');
         }
     }
 
     // Open key input container in the settings dropdown
     public requestEmbedAPIKey(provider: string): void {
+        this.currentEmbedModel = '';
         this.updateStatusText(`${provider} API key required`, 'warning');
         
         // Unhide the dropdown and the input container

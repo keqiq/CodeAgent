@@ -10,23 +10,25 @@
 
 <body>
     <div class="chat-header">
-        <div class="header-left" style="display: flex; gap: 8px; align-items: center;">
+        <div class="header-left">
             <button id="indexBtn" class="header-action-btn" title="Toggle Index Controls">
                 <span id="indexDot" class="status-dot disabled"></span>
                 <span id="indexStatus">Disabled</span>
             </button>
 
-            <div id="indexControls" class="header-controls hidden"
-                style="display: flex; gap: 8px; align-items: center;">
+            <div id="indexControls" class="header-controls hidden">
+
                 <div class="custom-dropdown" id="embedProviderDropdown">
-                    <button class="dropdown-trigger" type="button" style="padding: 2px 8px; min-width: 100px;">
+                    <button class="dropdown-trigger provider-op" type="button">
                         <span class="selected-text">Provider...</span>
                     </button>
                     <div class="dropdown-list hidden"></div>
                 </div>
 
+                <span class="divider">|</span>
+
                 <div class="custom-dropdown" id="embedModelDropdown">
-                    <button class="dropdown-trigger" type="button" disabled style="padding: 2px 8px; min-width: 100px;">
+                    <button class="dropdown-trigger model-op" type="button" disabled>
                         <span class="selected-text">Models...</span>
                     </button>
                     <div class="dropdown-list hidden"></div>
@@ -34,7 +36,7 @@
             </div>
         </div>
 
-        <div class="header-right" style="display: flex; gap: 8px; align-items: center;">
+        <div class="header-right">
 
             <button id="actionIndexBtn" class="action-index-btn state-unindexed" disabled>
                 <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
@@ -53,8 +55,7 @@
                 </button>
 
                 <div class="dropdown-list hidden" id="indexSettingsDropdown">
-                    <div class="menu-item"
-                        style="cursor: default; display: flex; align-items: center; justify-content: space-between;">
+                    <div class="menu-item number-input">
                         <div class="menu-item-text">
                             <div class="menu-item-title">Retrieval Count</div>
                             <div class="menu-item-desc">Vectors per retrieval.</div>
@@ -79,8 +80,7 @@
 
                     <div class="menu-divider"></div>
 
-                    <div class="menu-item"
-                        style="cursor: default; display: flex; align-items: center; justify-content: space-between;">
+                    <div class="menu-item number-input">
                         <div class="menu-item-text">
                             <div class="menu-item-title">Debounce Time</div>
                             <div class="menu-item-desc">Reindexing timer (Seconds).</div>
@@ -109,7 +109,7 @@
                         Set API Key
                     </div>
 
-                    <div id="inlineAPIKeyContainer" class="hidden">
+                    <div class="inlineAPIKeyContainer hidden" id = "embedKeyContainer">
                         <input type="password" id="embedKeyInput" placeholder="sk-..." autocomplete="off">
                         <button id="embedKeySaveBtn" class="send-btn">Save</button>
                     </div>
@@ -194,8 +194,7 @@
                 <button id="chatSettingsToggleBtn" class="icon-btn" title="Model Settings">Settings</button>
 
                 <div class="dropdown-list hidden" id="chatSettingsDropdown">
-                    <div class="menu-item" id="menuMaxTurns"
-                        style="cursor: default; display: flex; align-items: center; justify-content: space-between;">
+                    <div class="menu-item number-input" id="menuMaxTurns">
                         <div class="menu-item-text">
                             <div class="menu-item-title">Max turns</div>
                             <div class="menu-item-desc">Set 0 to disable turn limit.</div>
@@ -236,7 +235,7 @@
                         Set API Key
                     </div>
 
-                    <div id="chatKeyContainer" class="hidden">
+                    <div class="inlineAPIKeyContainer hidden" id="chatKeyContainer">
                         <input type="password" id="chatKeyInput" placeholder="sk-..." autocomplete="off">
                         <button id="chatKeySaveBtn" class="send-btn">Save</button>
                     </div>

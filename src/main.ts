@@ -33,17 +33,17 @@ export class ChatApp implements vscode.WebviewViewProvider {
         
         this.toolRegistry = createToolRegistry({
             createSearchCodebaseDeps: async () => {
-                const providerId = this.context.globalState.get<string>('embedProvider');
-                const model = this.context.globalState.get<string>('embedModel');
+                const provider = this.context.globalState.get<string>('embedProvider');
+                const model = this.context.globalState.get<string>(`${provider}_embedModel`);
                 
-                if (!providerId || !model) throw new Error("embedding provider/model is not configured");
+                if (!provider || !model) throw new Error("embedding provider/model is not configured");
                 if (!this.indexer) throw new Error("Index is not loaded. Enable indexing first.");
 
-                const apiKey = await this.getEmbedAPIKey(providerId);
+                const apiKey = await this.getEmbedAPIKey(provider);
                 
                 return {
                     indexer: this.indexer,
-                    embedProvider: EmbedFactory.create(providerId, apiKey),
+                    embedProvider: EmbedFactory.create(provider, apiKey),
                     model
                 };
             }
@@ -120,6 +120,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
             
             const chatModel = this.context.globalState.get<string>(`${provider}_chatModel`);
             const isValidModel = infos.some((info: ModelInfo) => info.id === chatModel);
+
             this.post({ type: 'updateChatModel', model: isValidModel ? chatModel : undefined });
 
         } catch(e) {
@@ -133,14 +134,15 @@ export class ChatApp implements vscode.WebviewViewProvider {
             this.post({ type: 'setEmbedModelsLoading', provider: provider });
             
             const apiKey = await this.getEmbedAPIKey(provider);
-
             const models = await getEmbedModelsFromProvider(provider, apiKey);
+
             this.post({ type: 'setEmbedModels', models });
 
-            const savedModel = this.context.globalState.get<string>('embedModel');
+            const savedModel = this.context.globalState.get<string>(`${provider}_embedModel`);
             const isValidModel = models.includes(savedModel as any);
 
             this.post({ type: 'updateEmbedModel', model: isValidModel ? savedModel : undefined });
+
         } catch (e) {
             vscode.window.showErrorMessage(`Failed to fetch embed models: ${e}`);
             this.post({ type: 'requestEmbedAPIKey', provider: provider });
@@ -210,7 +212,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
                             try {
                                 result = await this.toolRegistry[toolName](toolArgs);
                                 this.post({ type: 'updateTool', status: 'success' });
-                                if (result.changedFiles?.length) this.indexer!.scheduleReindex(result.changedFiles);
+                                if (result.changedFiles?.length) this.indexer!.scheduleIndex(result.changedFiles);
                             } catch (e) {
                                 const message = e instanceof Error ? e.message : String(e);
                                 result = { message: `Error executing ${toolName}: ${message}`};
@@ -421,8 +423,13 @@ export class ChatApp implements vscode.WebviewViewProvider {
                     break;
                 }
                 
+                // Called after selecting an embedding model
+                // Checks if a table for the model already exists and broadcast index status
                 case 'loadVectorDB': {
-                    this.indexer = await Indexer.create(this.context, data.model);
+                    // Clear the old indexer if we have one
+                    if (this.indexer) this.indexer.dispose();
+
+                    this.indexer = await Indexer.create(this.context, data.model, (provider: string) => this.getEmbedAPIKey(provider));
                     this.indexer.onDidUpdateStatus(event => this.post(event));
                     await this.indexer.broadcastCurrentState();
                     break;

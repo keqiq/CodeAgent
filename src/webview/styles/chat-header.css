@@ -11,6 +11,39 @@
     z-index: 60;
 }
 
+.header-left {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+}
+
+.header-right {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.header-controls {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.chat-header .dropdown-trigger {
+    border: 1px solid var(--vscode-dropdown-border);
+    color: var(--vscode-dropdown-foreground);
+    border-radius: 4px;
+    padding: 4px 10px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    transition: background-color 0.15s;
+}
+
+.chat-header .dropdown-trigger:hover:not(:disabled) {
+    background-color: var(--vscode-list-hoverBackground);
+}
+
 .header-action-btn #indexStatus {
     color: inherit;
     font-size: 11px;
@@ -33,7 +66,7 @@
 
 .header-action-btn:hover {
     background-color: var(--vscode-toolbar-hoverBackground);
-    color: var(--vscode-foreground); /* Bright text color on hover */
+    color: var(--vscode-foreground);
 }
 
 /* --- Status Indicators --- */
@@ -74,30 +107,6 @@
     bottom: auto !important;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
-
-.chat-header .dropdown-trigger {
-    /* background: color-mix(in srgb, var(--vscode-editorWidget-background) 60%, transparent); */
-    /* border: 1px solid var(--vscode-widget-border); */
-    border-radius: 4px;
-    padding: 3px 8px;
-    font-size: 13px;
-    font-weight: 600;
-    max-width: 130px;
-    color: var(--vscode-foreground);
-    transition: border-color 0.15s, background-color 0.15s;
-}
-
-.chat-header .dropdown-trigger:hover:not(:disabled) {
-    /* border-color: var(--vscode-focusBorder); */
-    background-color: var(--vscode-editorWidget-background);
-}
-
-.chat-header .dropdown-trigger:disabled {
-    opacity: 0.4;
-    background: transparent;
-    /* border-color: color-mix(in srgb, var(--vscode-widget-border) 40%, transparent); */
-}
-
 
 .header-settings-btn {
     display: inline-flex;
@@ -186,8 +195,9 @@
     background-color: color-mix(in srgb, var(--vscode-errorForeground) 80%, black);
 }
 
+/* Relying on the :disabled styles for background/text color */
 .action-index-btn.state-indexing {
-    /* Relying on the :disabled styles for background/text color */
+    opacity: 0.5;
 }
 
 .action-index-btn.state-indexing svg {
