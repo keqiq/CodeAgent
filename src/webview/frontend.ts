@@ -97,6 +97,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 chatContainer.endToolGroup(msg);
                 break;
 
+            case 'agentRunComplete':
+                chatInput.setSendState();
+                chatContainer.cancelActiveUI();
+
             // --- INDEXING & HEADER ---
 
             case 'restoreIndexSettings': 
@@ -125,6 +129,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             case 'requestEmbedAPIKey':
                 chatHeader.requestEmbedAPIKey(msg.provider);
+                break;
+
+            case 'clearChatContainer':
+                chatContainer.clearChatUI();
                 break;
             
             default:

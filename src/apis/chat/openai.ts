@@ -120,8 +120,14 @@ export class OpenAIChatProvider extends ChatProvider {
         });
     }
 
-    async *fetchStream(model: string, effort: string, history: ChatItem[], previousTurnID: string | undefined): AsyncGenerator<StreamYield, ChatResponse, unknown> {
-
+    async *fetchStream(
+        model: string, 
+        effort: string, 
+        history: ChatItem[], 
+        previousTurnID: string | undefined,
+        abortSignal?: AbortSignal
+    ): AsyncGenerator<StreamYield, ChatResponse, unknown> {
+        
         let fullText = "";
         const toolCallsContext: any[] = [];
         let responseID = null;
@@ -137,80 +143,77 @@ export class OpenAIChatProvider extends ChatProvider {
             currentInput = this.formatMessages(history);
         }
 
-        try {
-            const stream = await this.client.responses.create({
-                model: model,
-                input: currentInput,
-                tools: OpenAIChatProvider.GPTTools,
-                stream: true,
-                reasoning: {effort: effort as any, summary: 'auto' },
+        const stream = await this.client.responses.create({
+            model: model,
+            input: currentInput,
+            tools: OpenAIChatProvider.GPTTools,
+            stream: true,
+            reasoning: {effort: effort as any, summary: 'auto' },
 
-                ...(previousTurnID && { previous_response_id: previousTurnID })
-            });
+            ...(previousTurnID && { previous_response_id: previousTurnID })
+        }, { signal: abortSignal });
 
-            for await (const event of stream) {
-                if (event.type === 'error') {
-                    const errMsg = (event as any).error?.message || 'Unknown stream error';
-                    throw new Error(`OpenAI API Error: ${errMsg}`);
-                }
+        for await (const event of stream) {
+            if (abortSignal?.aborted) throw new Error('AbortError');
+            if (event.type === 'error') {
+                const errMsg = (event as any).error?.message || 'Unknown stream error';
+                throw new Error(`OpenAI API Error: ${errMsg}`);
+            }
 
-                else if (event.type === 'response.created') {
-                    responseID = event.response.id;
-                }
+            else if (event.type === 'response.created') {
+                responseID = event.response.id;
+            }
 
-                else if (event.type === 'response.output_text.delta') {
-                    const text = event.delta;
-                    if (text) {
-                        fullText += text;
-                        yield { type: 'text', content: text };
-                    }
-                }
-
-                else if (event.type === 'response.reasoning_text.delta') {
-                    const text = event.delta;
-                    if (text) yield { type: 'thought', content: text };
-                }
-
-                else if (event.type === 'response.output_item.added') {
-                    const item = event.item;
-                    if (item && item.type === 'function_call') {
-                        toolCallsContext.push({
-                            itemId: item.id,
-                            id: item.call_id,
-                            name: item.name,
-                            arguments: ""
-                        });
-                    }
-                }
-
-                else if (event.type === 'response.function_call_arguments.delta') {
-                    const deltaEvent = event as any;
-
-                    // Match using itemId
-                    const currentTool = toolCallsContext.find(t => t.itemId === deltaEvent.item_id)
-                        || toolCallsContext[toolCallsContext.length - 1];
-
-                    if (currentTool && deltaEvent.delta) {
-                        currentTool.arguments += deltaEvent.delta;
-                    }
+            else if (event.type === 'response.output_text.delta') {
+                const text = event.delta;
+                if (text) {
+                    fullText += text;
+                    yield { type: 'text', content: text };
                 }
             }
 
-            if (toolCallsContext.length > 0 || fullText.length > 0) {
-                const items: ChatItem[] = [];
-                
-                if (fullText) {
-                    items.push({ type: 'message', role: 'assistant', content: fullText, turnID: responseID! });
-                }
-                for (const call of toolCallsContext) {
-                    items.push({ type: 'function_call', id: call.id, name: call.name, arguments: call.arguments ? JSON.parse(call.arguments) : {}, turnID: responseID! });
-                }
-                return { items, turnID: responseID! };
+            else if (event.type === 'response.reasoning_text.delta') {
+                const text = event.delta;
+                if (text) yield { type: 'thought', content: text };
             }
 
-        } catch (e) {
-            console.log(e);
+            else if (event.type === 'response.output_item.added') {
+                const item = event.item;
+                if (item && item.type === 'function_call') {
+                    toolCallsContext.push({
+                        itemId: item.id,
+                        id: item.call_id,
+                        name: item.name,
+                        arguments: ""
+                    });
+                }
+            }
+
+            else if (event.type === 'response.function_call_arguments.delta') {
+                const deltaEvent = event as any;
+
+                // Match using itemId
+                const currentTool = toolCallsContext.find(t => t.itemId === deltaEvent.item_id)
+                    || toolCallsContext[toolCallsContext.length - 1];
+
+                if (currentTool && deltaEvent.delta) {
+                    currentTool.arguments += deltaEvent.delta;
+                }
+            }
         }
+
+        if (toolCallsContext.length > 0 || fullText.length > 0) {
+            const items: ChatItem[] = [];
+            
+            if (fullText) {
+                items.push({ type: 'message', role: 'assistant', content: fullText, turnID: responseID! });
+            }
+            for (const call of toolCallsContext) {
+                items.push({ type: 'function_call', id: call.id, name: call.name, arguments: call.arguments ? JSON.parse(call.arguments) : {}, turnID: responseID! });
+            }
+            return { items, turnID: responseID! };
+        }
+
         return { items: [] };
     }
 

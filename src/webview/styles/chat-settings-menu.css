@@ -62,3 +62,24 @@
     margin: 4px 0;
 }
 
+.clear-chat-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-right: 6px; /* Slightly less padding to accommodate the button */
+}
+.clear-chat-item .icon-btn {
+    height: auto;
+    width: auto;
+    padding: 2px 8px;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    background-color: transparent;
+    transition: background-color 0.15s, color 0.15s;
+}
+
+.clear-chat-item .icon-btn:hover {
+    background-color: var(--vscode-errorForeground);
+    color: white !important;
+}

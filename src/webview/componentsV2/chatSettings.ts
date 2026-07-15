@@ -22,6 +22,9 @@ export class ChatSettings {
     private maxTurnMinus: HTMLElement;
     private maxTurnPlus: HTMLElement;
 
+    private clearChatBtn: HTMLElement;
+    private clearChatConfirmBtn: HTMLElement;
+
     constructor(private vscodeAPI: WebviewApi) {
         this.container = document.getElementById('chatSettingsContainer') as HTMLElement;
         this.toggleBtn = document.getElementById('chatSettingsToggleBtn') as HTMLElement;
@@ -40,6 +43,9 @@ export class ChatSettings {
         this.maxTurnInput = document.getElementById('maxTurnsInput') as HTMLInputElement;
         this.maxTurnMinus = document.getElementById('maxTurnsMinus') as HTMLElement;
         this.maxTurnPlus = document.getElementById('maxTurnsPlus') as HTMLElement;
+
+        this.clearChatBtn = document.getElementById('menuClearChatBtn') as HTMLElement;
+        this.clearChatConfirmBtn = document.getElementById('clearChatConfirmBtn') as HTMLElement;
 
         this.initListeners();
     }
@@ -116,6 +122,19 @@ export class ChatSettings {
 
         this.maxTurnInput.addEventListener('click', (e: MouseEvent) => {
             e.stopPropagation();
+        });
+
+        this.clearChatBtn.addEventListener('click', (e: MouseEvent) => {
+            e.stopPropagation();
+            this.clearChatConfirmBtn.classList.remove('hidden');
+        });
+
+        this.clearChatConfirmBtn.addEventListener('click', (e: MouseEvent) => {
+            e.stopPropagation();
+            this.vscodeAPI.postMessage({ type: 'clearChat' });
+
+            this.clearChatConfirmBtn.classList.add('hidden');
+            this.dropdown.classList.add('hidden');
         });
     }
 

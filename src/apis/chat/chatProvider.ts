@@ -24,6 +24,12 @@ export abstract class ChatProvider {
     public static stateManagementSupport: boolean = true;
     abstract getModels(fetchAll?: boolean): Promise<ModelInfo[]>;
     // abstract fetch(model: string, history?: ChatItem[]): Promise<ChatResponse>;
-    abstract fetchStream(model: string, effort: string, history?: ChatItem[], previousTurnID?: string | undefined): AsyncGenerator<StreamYield, ChatResponse, unknown>;
+    abstract fetchStream(
+        model: string, 
+        effort: string, 
+        history?: ChatItem[], 
+        previousTurnID?: string | undefined, 
+        abortSignal?: AbortSignal
+    ): AsyncGenerator<StreamYield, ChatResponse, unknown>;
 }
 

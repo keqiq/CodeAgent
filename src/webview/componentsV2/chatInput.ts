@@ -4,7 +4,7 @@ import { CustomDropdown } from "./customDropdown";
 
 export class ChatInput {
 
-    private sendBtn: HTMLButtonElement;
+    private actionBtn: HTMLButtonElement;
     private promptInput: HTMLTextAreaElement;
     private effortContainer: HTMLElement | null;
     private effortDivider: HTMLElement | null;
@@ -16,9 +16,12 @@ export class ChatInput {
     private modelDropdown: CustomDropdown;
     private effortDropdown: CustomDropdown;
 
+    private isGenerating: boolean = false;
+    private sendIcon = `<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1L1 8h5v7h4V8h5L8 1z" /></svg>`;
+    private stopIcon = `<svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><rect x="2" y="2" width="12" height="12" rx="2" /></svg>`;
 
     constructor(private vscodeAPI: WebviewApi, private chatContainer: ChatContainer) {
-        this.sendBtn = document.getElementById('sendBtn') as HTMLButtonElement;
+        this.actionBtn = document.getElementById('actionBtn') as HTMLButtonElement;
         this.promptInput = document.getElementById('prompt') as HTMLTextAreaElement;
         this.effortContainer = document.getElementById('effortDropdown');
         this.effortDivider = document.getElementById('effortDivider');
@@ -60,7 +63,7 @@ export class ChatInput {
 
             // Enabled the send button if we have a provider, model and some text
             const isModelDropdownDisabled = this.modelDropdown.trigger?.disabled ?? false;
-            this.sendBtn.disabled = this.promptInput.value.trim() === '' || isModelDropdownDisabled;
+            this.actionBtn.disabled = this.promptInput.value.trim() === '' || isModelDropdownDisabled;
         });
 
         // Allow user to press enter key to send prompt
@@ -68,15 +71,19 @@ export class ChatInput {
         this.promptInput.addEventListener('keydown', (e: KeyboardEvent) => {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
-                if (!this.sendBtn.disabled) this.sendBtn.click();
+                if (!this.actionBtn.disabled) this.actionBtn.click();
             }
         });
 
+        // User sends prompt or user cancels reponse
+        this.actionBtn.addEventListener('click', () => {
 
-        // User sends prompt
-        this.sendBtn.addEventListener('click', () => {
+            if (this.isGenerating) {
+                this.vscodeAPI.postMessage({ type: 'cancelGeneration' });
+                return;
+            }
+
             const text = this.promptInput.value;
-
             const effort = this.effortDropdown.value? this.effortDropdown.value.toLowerCase() : undefined;
 
             if (text && this.currentChatProvider && this.currentChatModel) {
@@ -94,9 +101,25 @@ export class ChatInput {
                 // Reset prompt
                 this.promptInput.value = '';
                 this.promptInput.style.height = '20px';
-                this.sendBtn.disabled = true;
+                this.setStopState();
             }
         });
+    }
+
+    // If we have sent a prompt and is waiting for the model to finish generating
+    // Change the action button into a stop button that interupts the response
+    public setStopState(): void {
+        this.isGenerating = true;
+        this.actionBtn.innerHTML = this.stopIcon;
+        this.actionBtn.disabled = false;
+    }
+
+    // Default state where there is no ongoing response
+    // Change the action button into a send button
+    public setSendState(): void {
+        this.isGenerating = false;
+        this.actionBtn.innerHTML = this.sendIcon;
+        this.actionBtn.disabled = this.promptInput.value.trim() === '';
     }
 
     public waitForChatAPIKey(provider: string): void {
@@ -116,7 +139,7 @@ export class ChatInput {
     // There is an inital delay when fetching models from provider
     // Don't let the user operate the elements during the loading phase
     public setChatModelsLoading(): void {
-        this.sendBtn.disabled = true;
+        this.actionBtn.disabled = true;
         this.currentChatModel = '';
 
         this.modelDropdown.setOptions([]);
@@ -166,7 +189,7 @@ export class ChatInput {
         }
 
         this.modelDropdown.setDisabled(false);
-        this.sendBtn.disabled = this.promptInput.value.trim() === '' || this.promptInput.disabled;
+        this.actionBtn.disabled = this.promptInput.value.trim() === '' || this.promptInput.disabled;
     }
 
     // Get model information

@@ -109,7 +109,7 @@
                         Set API Key
                     </div>
 
-                    <div class="inlineAPIKeyContainer hidden" id = "embedKeyContainer">
+                    <div class="inlineAPIKeyContainer hidden" id="embedKeyContainer">
                         <input type="password" id="embedKeyInput" placeholder="sk-..." autocomplete="off">
                         <button id="embedKeySaveBtn" class="send-btn">Save</button>
                     </div>
@@ -154,7 +154,7 @@
 
             <div class="input-row">
                 <textarea id="prompt" rows="1" placeholder="Select Provider..."></textarea>
-                <button id="sendBtn" class="send-btn" disabled>
+                <button id="actionBtn" class="send-btn" disabled>
                     <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
                         <path d="M8 1L1 8h5v7h4V8h5L8 1z" />
                     </svg>
@@ -238,6 +238,20 @@
                     <div class="inlineAPIKeyContainer hidden" id="chatKeyContainer">
                         <input type="password" id="chatKeyInput" placeholder="sk-..." autocomplete="off">
                         <button id="chatKeySaveBtn" class="send-btn">Save</button>
+                    </div>
+
+                    <div class="menu-divider"></div>
+
+                    <div class="menu-item clear-chat-item" id="menuClearChatBtn">
+                        <div class="menu-item-title" style="color: var(--vscode-errorForeground);">Clear Chat</div>
+                        <button id="clearChatConfirmBtn" class="icon-btn hidden" title="Confirm Clear"
+                            style="color: var(--vscode-errorForeground); border: 1px solid var(--vscode-errorForeground);">
+                            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+                                <path fill-rule="evenodd" clip-rule="evenodd"
+                                    d="M10 3h3v1h-1v9l-1 1H4l-1-1V4H2V3h3V2a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v1zM9 2H6v1h3V2zM4 13h7V4H4v9zm2-8H5v7h1V5zm1 0h1v7H7V5zm2 0h1v7H9V5z" />
+                            </svg>
+                            <span>Confirm</span>
+                        </button>
                     </div>
                 </div>
             </div>

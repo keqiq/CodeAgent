@@ -5,13 +5,18 @@ import { ChatItem, ChatResponse, ModelInfo } from './apis/chat/chatProvider';
 import { createToolRegistry, ToolResult } from './tools/toolIndex';
 import { EmbedFactory } from './apis/embed/embedFactory';
 import { Indexer } from './indexing/indexer';
-import { getEmbeddingModelsFromProvider as getEmbedModelsFromProvider, getModelsFromProvider as getChatModelsFromProvider } from './utils/apiUtils';
+import { getEmbedModelsFromProvider, getChatModelsFromProvider } from './utils/apiUtils';
 
 declare const console: any;
 
+interface ActiveTurnState {
+    provider: string;
+    turnID: string | undefined;
+}
+
 export class ChatApp implements vscode.WebviewViewProvider {
 
-    private _view?: vscode.WebviewView;
+    private view?: vscode.WebviewView;
     
     private chatHistory: ChatItem[];
     private toolRegistry: any;
@@ -19,7 +24,10 @@ export class ChatApp implements vscode.WebviewViewProvider {
     
     private indexer? : Indexer;
 
-    private previousTurnID: string | undefined = undefined;
+    private activeTurn: ActiveTurnState = { provider: '', turnID: undefined};
+
+
+    private aborter: AbortController | null = null;
     
     constructor(private readonly context: vscode.ExtensionContext) {
         const savedHistory = context.workspaceState.get<ChatItem[]>('chatHistory');
@@ -27,7 +35,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
         if (savedHistory && savedHistory.length > 0) {
             this.chatHistory = savedHistory;
             const lastItemWithId = [...savedHistory].reverse().find(item => item.turnID);
-            if (lastItemWithId) this.previousTurnID = lastItemWithId.turnID;
+            if (lastItemWithId) this.activeTurn.turnID = lastItemWithId.turnID;
         }
         else this.chatHistory = this.getInitialChatMessages();
         
@@ -64,7 +72,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
         }];
     }
 
-    private post(message: any) { this._view?.webview.postMessage(message); }
+    private post(message: any) { this.view?.webview.postMessage(message); }
 
     private async saveChatHistory() { await this.context.workspaceState.update('chatHistory', this.chatHistory); }
 
@@ -151,12 +159,14 @@ export class ChatApp implements vscode.WebviewViewProvider {
 
     private async runAgentTurn(provider: string, model: string, effort: string, userMessage: string,): Promise<void> {
         
+        this.aborter = new AbortController();
+        const lastValidTurnState: ActiveTurnState = { ...this.activeTurn };
         try {
             const apiKey = await this.getChatAPIKey(provider); 
             const serverStateManagment = this.context.globalState.get<boolean>('serverStateManagement') ?? true;
             
             const providerInstance = ChatFactory.create(provider, apiKey);
-            this.chatHistory.push({ type: 'message', role: 'user', content: userMessage, turnID: this.previousTurnID });
+            this.chatHistory.push({ type: 'message', role: 'user', content: userMessage, turnID: this.activeTurn.turnID });
             await this.saveChatHistory();
             
             let keepGoing = true;
@@ -167,10 +177,11 @@ export class ChatApp implements vscode.WebviewViewProvider {
             let toolsRunThisTurn = 0;
             
             while (keepGoing && (turnLimit === 0 || turnCount < turnLimit)) {
+                if (this.aborter.signal.aborted) throw new Error('AbortError');
                 turnCount++;
-                
-                const turnID = serverStateManagment ? this.previousTurnID : undefined;
-                const streamGenerator = providerInstance.fetchStream(model, effort, this.chatHistory, turnID);
+                // Use the ID ONLY if the provider hasn't changed
+                const turnID = (this.activeTurn.provider === provider && serverStateManagment) ? this.activeTurn.turnID : undefined;
+                const streamGenerator = providerInstance.fetchStream(model, effort, this.chatHistory, turnID, this.aborter.signal);
                 let streamResult = await streamGenerator.next();
                 
                 while (!streamResult.done) {
@@ -183,6 +194,8 @@ export class ChatApp implements vscode.WebviewViewProvider {
                     streamResult = await streamGenerator.next();
                 }
                 
+                // Can't catch the abort error during streaming for some reason so we have to catch it here again
+                if (this.aborter.signal.aborted) throw new Error('AbortError');
                 this.post({ type: 'streamEnd' });
                 const finalResponse = streamResult.value as ChatResponse;
                 
@@ -199,6 +212,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
                     }
 
                     for (const toolCall of functionCalls) {
+                        if (this.aborter?.signal.aborted) throw new Error('AbortError');
                         toolsRunThisTurn++;
                         const toolName = toolCall.name;
                         const toolArgs = toolCall.arguments;
@@ -229,27 +243,39 @@ export class ChatApp implements vscode.WebviewViewProvider {
                 } else {
                     keepGoing = false;
                 }
-                this.previousTurnID = currentTurnID;
+                this.activeTurn = { provider: provider, turnID: currentTurnID };
             }
 
             if (hasStartedToolGroup) this.post({ type: 'endToolGroup', totalCount: toolsRunThisTurn });
             await this.saveChatHistory();
 
-        } catch (e) {
-            this.post({ type: 'receiveMessage', text: `❌ Error: ${e}` });
-            this.post({ type: 'streamEnd' });
+        } catch (e: any) {
+            if (e.name === 'AbortError' || e.message?.toLowerCase().includes('abort')) {
+                // If we aborted the response, roll back to previous turnID
+                this.activeTurn = lastValidTurnState;
+                this.chatHistory.push({ type: 'message', role: 'assistant', content: '🛑 *You stopped this response.*' });
+                this.post({ type: 'receiveMessage', text: '🛑 *You stopped this response.*' });
+            } else {
+                this.chatHistory.push({ type: 'message', role: 'assistant', content: `❌ *Error: ${e.message || String(e)}*` });
+                this.post({ type: 'receiveMessage', text: `❌ *Error: ${e.message || String(e)}*` });
+            }
+            this.saveChatHistory();
+            this.post({ type: 'agentRunComplete' });
+        } finally {
+            this.aborter = null;
+            this.post({ type: 'agentRunComplete' });
         }
     }
 
     public resolveWebviewView(webviewView: vscode.WebviewView, ctx: vscode.WebviewViewResolveContext, token: vscode.CancellationToken): Thenable<void> | void {
-        this._view = webviewView;
+        this.view = webviewView;
 
         webviewView.webview.options = {
             enableScripts: true,
             localResourceRoots: [this.context.extensionUri]
         };
 
-        webviewView.webview.html = this._getHtml();
+        webviewView.webview.html = this.getHTML();
 
 
         webviewView.webview.onDidReceiveMessage(async (data) => {
@@ -388,10 +414,17 @@ export class ChatApp implements vscode.WebviewViewProvider {
                     break;
                 }
 
+                // Cancel ongoing response
+                case 'cancelGeneration': {
+                    if (this.aborter) this.aborter.abort();
+                    break;
+                }
+
                 case 'clearChat': {
+                    this.activeTurn = {provider: '', turnID: undefined};
                     this.chatHistory = this.getInitialChatMessages();
-                    this.previousTurnID = undefined;
                     await this.context.workspaceState.update('chatHistory', this.chatHistory);
+                    this.post({ type: 'clearChatContainer' });
                     break;
                 }
                 
@@ -463,7 +496,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
         });
     }
 
-    private _getHtml(): string {
+    private getHTML(): string {
         const htmlPath = vscode.Uri.joinPath(this.context.extensionUri, 'src/webview', 'frontend.html');
         const scriptPath = vscode.Uri.joinPath(this.context.extensionUri, 'dist', 'webview.bundle.js');
         const cssPath = vscode.Uri.joinPath(this.context.extensionUri, 'dist', 'webview.bundle.css');
@@ -471,8 +504,8 @@ export class ChatApp implements vscode.WebviewViewProvider {
         try {
             let html = fs.readFileSync(htmlPath.fsPath, 'utf-8');
             
-            const scriptUri = this._view!.webview.asWebviewUri(scriptPath);
-            const styleUri = this._view!.webview.asWebviewUri(cssPath);
+            const scriptUri = this.view!.webview.asWebviewUri(scriptPath);
+            const styleUri = this.view!.webview.asWebviewUri(cssPath);
 
             html = html.replace('{{styleUri}}', styleUri.toString());
             html = html.replace('{{scriptUri}}', scriptUri.toString());

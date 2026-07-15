@@ -61,6 +61,7 @@ export class ChatContainer {
     }
 
     // Used only during restoreChatHistory and for posting user messages
+    // Also for error and abort messages!
     // Agent responses are streamed which uses streamMessage
     // Tool calls are contained inside tool groups so not here either
     public appendMessage(msg: Extract<ChatItem, { type: 'message' }>): void {
@@ -264,11 +265,29 @@ export class ChatContainer {
         this.scrollToBottom();
     }
 
-    public endToolGroup(msg: { totalCount: number }): void {
+    public endToolGroup(msg: { totalCount: number, interrupted?: boolean }): void {
         if (!this.activeToolGroup || !this.activeToolSummary) return;
 
-        if (this.toolErrorCount > 0) this.activeToolSummary.textContent = `⚠️ Completed with ${this.toolErrorCount} error(s)`;
-        else this.activeToolSummary.textContent = `✅ ${msg.totalCount} tool(s) executed successfully`;
+        // If tool calls were interrupted by user
+        if (msg.interrupted) {
+            // Handle the actively running tool that got cut off
+            if (this.activeTool) {
+                this.activeTool.classList.add('log-error');
+                const icon = this.activeTool.querySelector('.tool-icon');
+                if (icon) {
+                    icon.classList.replace('log-running', 'log-error');
+                    icon.textContent = '🛑';
+                }
+                this.activeTool.innerHTML += `<div style="margin-left: 18px; margin-top: 4px; opacity: 0.9;">Halted</div>`;
+            }
+            this.activeToolSummary.innerHTML = '⚠️ Execution halted';
+        } 
+        
+        // Tool calls all completed
+        else {
+            if (this.toolErrorCount > 0) this.activeToolSummary.textContent = `⚠️ Completed with ${this.toolErrorCount} error(s)`;
+            else this.activeToolSummary.textContent = `✅ ${msg.totalCount} tool(s) executed successfully`;
+        }
 
         // clear tool references
         this.activeToolGroup = null;
@@ -331,6 +350,14 @@ export class ChatContainer {
             gfm: true, 
             breaks: false 
         }) as string;
+    }
+
+    public cancelActiveUI(): void {
+        this.removeTypingIndicator();
+        this.endStream();
+        this.endThought();
+        this.endToolGroup({ totalCount: 0, interrupted: true });
+        this.scrollToBottom();
     }
 
 }

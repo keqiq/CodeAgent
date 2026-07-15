@@ -88,80 +88,83 @@ export class DeepSeekChatProvider extends ChatProvider {
     }
 
     // No provider state management available so send full chat history
-    async *fetchStream(model: string, effort: string, history: ChatItem[], previousTurnID: string | undefined): AsyncGenerator<StreamYield, ChatResponse, unknown> {
+    async *fetchStream(
+        model: string, 
+        effort: string, 
+        history: ChatItem[], 
+        previousTurnID: string | undefined,
+        abortSignal?: AbortSignal
+    ): AsyncGenerator<StreamYield, ChatResponse, unknown> {
         let fullText = '';
 
-        try {
-            const formattedMessages = this.formatMessages(history);
+        const formattedMessages = this.formatMessages(history);
 
-            const stream = await this.client.chat.completions.create({
-                model: model,
-                messages: formattedMessages,
-                tools: DeepSeekChatProvider.deepseekTools,
-                stream: true,
-                
-                reasoning_effort: effort as any,
+        const stream = await this.client.chat.completions.create({
+            model: model,
+            messages: formattedMessages,
+            tools: DeepSeekChatProvider.deepseekTools,
+            stream: true,
+            
+            reasoning_effort: effort as any,
 
-                // This DOESNT WORK
-                // thinking: {"type": "enabled"}
-                // extra_body: {"thinking": {"type": "disabled"}}
-            });
+            // This DOESNT WORK
+            // thinking: {"type": "enabled"}
+            // extra_body: {"thinking": {"type": "disabled"}}
+        }, { signal: abortSignal });
 
-            const currentCalls = new Map();
+        const currentCalls = new Map();
 
-            for await (const event of stream) {
-                const delta = event.choices[0]?.delta;
+        for await (const event of stream) {
+            if (abortSignal?.aborted) throw new Error('AbortError');
+            const delta = event.choices[0]?.delta;
 
-                if (!delta) continue;
+            if (!delta) continue;
 
-                if (delta.content) {
-                    fullText += delta.content;
-                    yield { type: 'text', content: delta.content};
-                }
+            if (delta.content) {
+                fullText += delta.content;
+                yield { type: 'text', content: delta.content};
+            }
 
-                if ((delta as any).reasoning_content) {
-                    const text = (delta as any).reasoning_content;
-                    yield { type : 'thought', content: text };
-                }
+            if ((delta as any).reasoning_content) {
+                const text = (delta as any).reasoning_content;
+                yield { type : 'thought', content: text };
+            }
 
-                if (delta.tool_calls) {
-                    for (const toolCall of delta.tool_calls) {
-                        const index = toolCall.index;
+            if (delta.tool_calls) {
+                for (const toolCall of delta.tool_calls) {
+                    const index = toolCall.index;
 
-                        if (!currentCalls.has(index)) {
-                            currentCalls.set(index, {
-                                id: toolCall.id || '',
-                                name: toolCall.function?.name || '',
-                                arguments: ''
-                            });
-                        }
-
-                        const existing = currentCalls.get(index);
-                        if (toolCall.id) existing.id = toolCall.id;
-                        if (toolCall.function?.name) existing.name = toolCall.function.name;
-                        if (toolCall.function?.arguments) existing.arguments += toolCall.function.arguments;
+                    if (!currentCalls.has(index)) {
+                        currentCalls.set(index, {
+                            id: toolCall.id || '',
+                            name: toolCall.function?.name || '',
+                            arguments: ''
+                        });
                     }
+
+                    const existing = currentCalls.get(index);
+                    if (toolCall.id) existing.id = toolCall.id;
+                    if (toolCall.function?.name) existing.name = toolCall.function.name;
+                    if (toolCall.function?.arguments) existing.arguments += toolCall.function.arguments;
                 }
             }
+        }
 
-            if (currentCalls.size > 0 || fullText.length > 0) {
-                const items: ChatItem[] = [];
+        if (currentCalls.size > 0 || fullText.length > 0) {
+            const items: ChatItem[] = [];
 
-                if (fullText) items.push({ type: 'message', role: 'assistant', content: fullText });
+            if (fullText) items.push({ type: 'message', role: 'assistant', content: fullText });
 
-                for (const call of Array.from(currentCalls.values())) {
-                    items.push({
-                        type: 'function_call',
-                        id: call.id,
-                        name: call.name,
-                        arguments: call.arguments ? JSON.parse(call.arguments) : {}
-                    });
-                }
-
-                return { items };
+            for (const call of Array.from(currentCalls.values())) {
+                items.push({
+                    type: 'function_call',
+                    id: call.id,
+                    name: call.name,
+                    arguments: call.arguments ? JSON.parse(call.arguments) : {}
+                });
             }
-        } catch (e) {
-            console.error(e);
+
+            return { items };
         }
 
         return {items: [] };

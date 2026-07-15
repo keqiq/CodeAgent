@@ -33103,64 +33103,61 @@ var DeepSeekChatProvider = class _DeepSeekChatProvider extends ChatProvider {
     });
   }
   // No provider state management available so send full chat history
-  async *fetchStream(model, effort, history, previousTurnID) {
+  async *fetchStream(model, effort, history, previousTurnID, abortSignal) {
     let fullText = "";
-    try {
-      const formattedMessages = this.formatMessages(history);
-      const stream = await this.client.chat.completions.create({
-        model,
-        messages: formattedMessages,
-        tools: _DeepSeekChatProvider.deepseekTools,
-        stream: true,
-        reasoning_effort: effort
-        // This DOESNT WORK
-        // thinking: {"type": "enabled"}
-        // extra_body: {"thinking": {"type": "disabled"}}
-      });
-      const currentCalls = /* @__PURE__ */ new Map();
-      for await (const event of stream) {
-        const delta = event.choices[0]?.delta;
-        if (!delta) continue;
-        if (delta.content) {
-          fullText += delta.content;
-          yield { type: "text", content: delta.content };
-        }
-        if (delta.reasoning_content) {
-          const text = delta.reasoning_content;
-          yield { type: "thought", content: text };
-        }
-        if (delta.tool_calls) {
-          for (const toolCall of delta.tool_calls) {
-            const index = toolCall.index;
-            if (!currentCalls.has(index)) {
-              currentCalls.set(index, {
-                id: toolCall.id || "",
-                name: toolCall.function?.name || "",
-                arguments: ""
-              });
-            }
-            const existing = currentCalls.get(index);
-            if (toolCall.id) existing.id = toolCall.id;
-            if (toolCall.function?.name) existing.name = toolCall.function.name;
-            if (toolCall.function?.arguments) existing.arguments += toolCall.function.arguments;
+    const formattedMessages = this.formatMessages(history);
+    const stream = await this.client.chat.completions.create({
+      model,
+      messages: formattedMessages,
+      tools: _DeepSeekChatProvider.deepseekTools,
+      stream: true,
+      reasoning_effort: effort
+      // This DOESNT WORK
+      // thinking: {"type": "enabled"}
+      // extra_body: {"thinking": {"type": "disabled"}}
+    }, { signal: abortSignal });
+    const currentCalls = /* @__PURE__ */ new Map();
+    for await (const event of stream) {
+      if (abortSignal?.aborted) throw new Error("AbortError");
+      const delta = event.choices[0]?.delta;
+      if (!delta) continue;
+      if (delta.content) {
+        fullText += delta.content;
+        yield { type: "text", content: delta.content };
+      }
+      if (delta.reasoning_content) {
+        const text = delta.reasoning_content;
+        yield { type: "thought", content: text };
+      }
+      if (delta.tool_calls) {
+        for (const toolCall of delta.tool_calls) {
+          const index = toolCall.index;
+          if (!currentCalls.has(index)) {
+            currentCalls.set(index, {
+              id: toolCall.id || "",
+              name: toolCall.function?.name || "",
+              arguments: ""
+            });
           }
+          const existing = currentCalls.get(index);
+          if (toolCall.id) existing.id = toolCall.id;
+          if (toolCall.function?.name) existing.name = toolCall.function.name;
+          if (toolCall.function?.arguments) existing.arguments += toolCall.function.arguments;
         }
       }
-      if (currentCalls.size > 0 || fullText.length > 0) {
-        const items = [];
-        if (fullText) items.push({ type: "message", role: "assistant", content: fullText });
-        for (const call of Array.from(currentCalls.values())) {
-          items.push({
-            type: "function_call",
-            id: call.id,
-            name: call.name,
-            arguments: call.arguments ? JSON.parse(call.arguments) : {}
-          });
-        }
-        return { items };
+    }
+    if (currentCalls.size > 0 || fullText.length > 0) {
+      const items = [];
+      if (fullText) items.push({ type: "message", role: "assistant", content: fullText });
+      for (const call of Array.from(currentCalls.values())) {
+        items.push({
+          type: "function_call",
+          id: call.id,
+          name: call.name,
+          arguments: call.arguments ? JSON.parse(call.arguments) : {}
+        });
       }
-    } catch (e2) {
-      console.error(e2);
+      return { items };
     }
     return { items: [] };
   }
@@ -51823,69 +51820,66 @@ var GeminiChatProvider = class _GeminiChatProvider extends ChatProvider {
       }
     });
   }
-  async *fetchStream(model, effort, history, previousTurnID) {
+  async *fetchStream(model, effort, history, previousTurnID, abortSignal) {
     let fullText = "";
-    try {
-      const sysMsg = history.find((i2) => i2.type === "message" && i2.role === "developer");
-      let currentInput;
-      if (previousTurnID) {
-        const newItemsToSubmit = history.filter(
-          (item) => item.turnID === previousTurnID && (item.type === "function_result" || item.type === "message" && item.role === "user")
-        );
-        currentInput = this.formatMessages(newItemsToSubmit);
-      } else {
-        currentInput = this.formatMessages(history);
-      }
-      const stream = await this.client.interactions.create({
-        model,
-        input: currentInput,
-        tools: _GeminiChatProvider.geminiTools,
-        system_instruction: sysMsg && "content" in sysMsg ? sysMsg.content : "You are an expert AI coding assistant...",
-        stream: true,
-        generation_config: { thinking_level: effort, thinking_summaries: "auto" },
-        ...previousTurnID && { previous_interaction_id: previousTurnID }
-      });
-      const currentCalls = /* @__PURE__ */ new Map();
-      let interactionId = null;
-      for await (const event of stream) {
-        const evType = event.event_type;
-        if (evType === "interaction.created") {
-          interactionId = event.interaction.id;
-        } else if (evType === "step.start") {
-          if (event.step.type === "function_call") {
-            currentCalls.set(event.index, {
-              id: event.step.id,
-              name: event.step.name,
-              arguments: ""
-            });
+    const sysMsg = history.find((i2) => i2.type === "message" && i2.role === "developer");
+    let currentInput;
+    if (previousTurnID) {
+      const newItemsToSubmit = history.filter(
+        (item) => item.turnID === previousTurnID && (item.type === "function_result" || item.type === "message" && item.role === "user")
+      );
+      currentInput = this.formatMessages(newItemsToSubmit);
+    } else {
+      currentInput = this.formatMessages(history);
+    }
+    const stream = await this.client.interactions.create({
+      model,
+      input: currentInput,
+      tools: _GeminiChatProvider.geminiTools,
+      system_instruction: sysMsg && "content" in sysMsg ? sysMsg.content : "You are an expert AI coding assistant...",
+      stream: true,
+      generation_config: { thinking_level: effort, thinking_summaries: "auto" },
+      ...previousTurnID && { previous_interaction_id: previousTurnID }
+    }, { signal: abortSignal });
+    const currentCalls = /* @__PURE__ */ new Map();
+    let interactionId = null;
+    for await (const event of stream) {
+      if (abortSignal?.aborted) throw new Error("AbortError");
+      const evType = event.event_type;
+      if (evType === "interaction.created") {
+        interactionId = event.interaction.id;
+      } else if (evType === "step.start") {
+        if (event.step.type === "function_call") {
+          currentCalls.set(event.index, {
+            id: event.step.id,
+            name: event.step.name,
+            arguments: ""
+          });
+        }
+      } else if (evType === "step.delta") {
+        if (event.delta.type === "arguments_delta") {
+          if (currentCalls.has(event.index)) {
+            currentCalls.get(event.index).arguments += event.delta.arguments;
           }
-        } else if (evType === "step.delta") {
-          if (event.delta.type === "arguments_delta") {
-            if (currentCalls.has(event.index)) {
-              currentCalls.get(event.index).arguments += event.delta.arguments;
-            }
-          } else if (event.delta.type === "text") {
-            fullText += event.delta.text;
-            yield { type: "text", content: event.delta.text };
-          } else if (event.delta.type === "thought_summary") {
-            const deltaAny = event.delta;
-            const summaryText = deltaAny.content?.text || "";
-            if (summaryText) yield { type: "thought", content: summaryText };
-          }
+        } else if (event.delta.type === "text") {
+          fullText += event.delta.text;
+          yield { type: "text", content: event.delta.text };
+        } else if (event.delta.type === "thought_summary") {
+          const deltaAny = event.delta;
+          const summaryText = deltaAny.content?.text || "";
+          if (summaryText) yield { type: "thought", content: summaryText };
         }
       }
-      if (currentCalls.size > 0 || fullText.length > 0) {
-        const items = [];
-        if (fullText) {
-          items.push({ type: "message", role: "assistant", content: fullText, turnID: interactionId });
-        }
-        for (const call of Array.from(currentCalls.values())) {
-          items.push({ type: "function_call", id: call.id, name: call.name, arguments: call.arguments ? JSON.parse(call.arguments) : {}, turnID: interactionId });
-        }
-        return { items, turnID: interactionId };
+    }
+    if (currentCalls.size > 0 || fullText.length > 0) {
+      const items = [];
+      if (fullText) {
+        items.push({ type: "message", role: "assistant", content: fullText, turnID: interactionId });
       }
-    } catch (e2) {
-      console.log(e2);
+      for (const call of Array.from(currentCalls.values())) {
+        items.push({ type: "function_call", id: call.id, name: call.name, arguments: call.arguments ? JSON.parse(call.arguments) : {}, turnID: interactionId });
+      }
+      return { items, turnID: interactionId };
     }
     return { items: [] };
   }
@@ -52019,7 +52013,7 @@ var OpenAIChatProvider = class _OpenAIChatProvider extends ChatProvider {
       }
     });
   }
-  async *fetchStream(model, effort, history, previousTurnID) {
+  async *fetchStream(model, effort, history, previousTurnID, abortSignal) {
     let fullText = "";
     const toolCallsContext = [];
     let responseID = null;
@@ -52032,60 +52026,57 @@ var OpenAIChatProvider = class _OpenAIChatProvider extends ChatProvider {
     } else {
       currentInput = this.formatMessages(history);
     }
-    try {
-      const stream = await this.client.responses.create({
-        model,
-        input: currentInput,
-        tools: _OpenAIChatProvider.GPTTools,
-        stream: true,
-        reasoning: { effort, summary: "auto" },
-        ...previousTurnID && { previous_response_id: previousTurnID }
-      });
-      for await (const event of stream) {
-        if (event.type === "error") {
-          const errMsg = event.error?.message || "Unknown stream error";
-          throw new Error(`OpenAI API Error: ${errMsg}`);
-        } else if (event.type === "response.created") {
-          responseID = event.response.id;
-        } else if (event.type === "response.output_text.delta") {
-          const text = event.delta;
-          if (text) {
-            fullText += text;
-            yield { type: "text", content: text };
-          }
-        } else if (event.type === "response.reasoning_text.delta") {
-          const text = event.delta;
-          if (text) yield { type: "thought", content: text };
-        } else if (event.type === "response.output_item.added") {
-          const item = event.item;
-          if (item && item.type === "function_call") {
-            toolCallsContext.push({
-              itemId: item.id,
-              id: item.call_id,
-              name: item.name,
-              arguments: ""
-            });
-          }
-        } else if (event.type === "response.function_call_arguments.delta") {
-          const deltaEvent = event;
-          const currentTool = toolCallsContext.find((t2) => t2.itemId === deltaEvent.item_id) || toolCallsContext[toolCallsContext.length - 1];
-          if (currentTool && deltaEvent.delta) {
-            currentTool.arguments += deltaEvent.delta;
-          }
+    const stream = await this.client.responses.create({
+      model,
+      input: currentInput,
+      tools: _OpenAIChatProvider.GPTTools,
+      stream: true,
+      reasoning: { effort, summary: "auto" },
+      ...previousTurnID && { previous_response_id: previousTurnID }
+    }, { signal: abortSignal });
+    for await (const event of stream) {
+      if (abortSignal?.aborted) throw new Error("AbortError");
+      if (event.type === "error") {
+        const errMsg = event.error?.message || "Unknown stream error";
+        throw new Error(`OpenAI API Error: ${errMsg}`);
+      } else if (event.type === "response.created") {
+        responseID = event.response.id;
+      } else if (event.type === "response.output_text.delta") {
+        const text = event.delta;
+        if (text) {
+          fullText += text;
+          yield { type: "text", content: text };
+        }
+      } else if (event.type === "response.reasoning_text.delta") {
+        const text = event.delta;
+        if (text) yield { type: "thought", content: text };
+      } else if (event.type === "response.output_item.added") {
+        const item = event.item;
+        if (item && item.type === "function_call") {
+          toolCallsContext.push({
+            itemId: item.id,
+            id: item.call_id,
+            name: item.name,
+            arguments: ""
+          });
+        }
+      } else if (event.type === "response.function_call_arguments.delta") {
+        const deltaEvent = event;
+        const currentTool = toolCallsContext.find((t2) => t2.itemId === deltaEvent.item_id) || toolCallsContext[toolCallsContext.length - 1];
+        if (currentTool && deltaEvent.delta) {
+          currentTool.arguments += deltaEvent.delta;
         }
       }
-      if (toolCallsContext.length > 0 || fullText.length > 0) {
-        const items = [];
-        if (fullText) {
-          items.push({ type: "message", role: "assistant", content: fullText, turnID: responseID });
-        }
-        for (const call of toolCallsContext) {
-          items.push({ type: "function_call", id: call.id, name: call.name, arguments: call.arguments ? JSON.parse(call.arguments) : {}, turnID: responseID });
-        }
-        return { items, turnID: responseID };
+    }
+    if (toolCallsContext.length > 0 || fullText.length > 0) {
+      const items = [];
+      if (fullText) {
+        items.push({ type: "message", role: "assistant", content: fullText, turnID: responseID });
       }
-    } catch (e2) {
-      console.log(e2);
+      for (const call of toolCallsContext) {
+        items.push({ type: "function_call", id: call.id, name: call.name, arguments: call.arguments ? JSON.parse(call.arguments) : {}, turnID: responseID });
+      }
+      return { items, turnID: responseID };
     }
     return { items: [] };
   }
@@ -65990,11 +65981,11 @@ var Indexer = class _Indexer {
 };
 
 // src/utils/apiUtils.ts
-async function getModelsFromProvider(provider, apiKey, fetchAll) {
+async function getChatModelsFromProvider(provider, apiKey, fetchAll) {
   const providerInstance = ChatFactory.create(provider, apiKey);
   return await providerInstance.getModels(fetchAll);
 }
-async function getEmbeddingModelsFromProvider(provider, apiKey) {
+async function getEmbedModelsFromProvider(provider, apiKey) {
   const providerInstance = EmbedFactory.create(provider, apiKey);
   return await providerInstance.getModels();
 }
@@ -66007,7 +65998,7 @@ var ChatApp = class {
     if (savedHistory && savedHistory.length > 0) {
       this.chatHistory = savedHistory;
       const lastItemWithId = [...savedHistory].reverse().find((item) => item.turnID);
-      if (lastItemWithId) this.previousTurnID = lastItemWithId.turnID;
+      if (lastItemWithId) this.activeTurn.turnID = lastItemWithId.turnID;
     } else this.chatHistory = this.getInitialChatMessages();
     this.toolRegistry = createToolRegistry({
       createSearchCodebaseDeps: async () => {
@@ -66025,12 +66016,13 @@ var ChatApp = class {
     });
   }
   context;
-  _view;
+  view;
   chatHistory;
   toolRegistry;
   chatModelInfo = /* @__PURE__ */ new Map();
   indexer;
-  previousTurnID = void 0;
+  activeTurn = { provider: "", turnID: void 0 };
+  aborter = null;
   getInitialChatMessages() {
     return [{
       type: "message",
@@ -66045,7 +66037,7 @@ var ChatApp = class {
     }];
   }
   post(message) {
-    this._view?.webview.postMessage(message);
+    this.view?.webview.postMessage(message);
   }
   async saveChatHistory() {
     await this.context.workspaceState.update("chatHistory", this.chatHistory);
@@ -66081,7 +66073,7 @@ var ChatApp = class {
       this.post({ type: "setChatModelsLoading", provider });
       const apiKey = await this.getChatAPIKey(provider);
       const fetchALL = this.context.globalState.get("showAllChatModels") ?? false;
-      const infos = await getModelsFromProvider(provider, apiKey, fetchALL);
+      const infos = await getChatModelsFromProvider(provider, apiKey, fetchALL);
       this.chatModelInfo.clear();
       infos.forEach((info) => this.chatModelInfo.set(info.id, info));
       this.post({ type: "setChatModels", models: infos.map((info) => info.id) });
@@ -66097,7 +66089,7 @@ var ChatApp = class {
     try {
       this.post({ type: "setEmbedModelsLoading", provider });
       const apiKey = await this.getEmbedAPIKey(provider);
-      const models = await getEmbeddingModelsFromProvider(provider, apiKey);
+      const models = await getEmbedModelsFromProvider(provider, apiKey);
       this.post({ type: "setEmbedModels", models });
       const savedModel = this.context.globalState.get(`${provider}_embedModel`);
       const isValidModel = models.includes(savedModel);
@@ -66108,11 +66100,13 @@ var ChatApp = class {
     }
   }
   async runAgentTurn(provider, model, effort, userMessage) {
+    this.aborter = new AbortController();
+    const lastValidTurnState = { ...this.activeTurn };
     try {
       const apiKey = await this.getChatAPIKey(provider);
       const serverStateManagment = this.context.globalState.get("serverStateManagement") ?? true;
       const providerInstance = ChatFactory.create(provider, apiKey);
-      this.chatHistory.push({ type: "message", role: "user", content: userMessage, turnID: this.previousTurnID });
+      this.chatHistory.push({ type: "message", role: "user", content: userMessage, turnID: this.activeTurn.turnID });
       await this.saveChatHistory();
       let keepGoing = true;
       let turnCount = 0;
@@ -66120,9 +66114,10 @@ var ChatApp = class {
       let hasStartedToolGroup = false;
       let toolsRunThisTurn = 0;
       while (keepGoing && (turnLimit === 0 || turnCount < turnLimit)) {
+        if (this.aborter.signal.aborted) throw new Error("AbortError");
         turnCount++;
-        const turnID = serverStateManagment ? this.previousTurnID : void 0;
-        const streamGenerator = providerInstance.fetchStream(model, effort, this.chatHistory, turnID);
+        const turnID = this.activeTurn.provider === provider && serverStateManagment ? this.activeTurn.turnID : void 0;
+        const streamGenerator = providerInstance.fetchStream(model, effort, this.chatHistory, turnID, this.aborter.signal);
         let streamResult = await streamGenerator.next();
         while (!streamResult.done) {
           if (streamResult.value) {
@@ -66132,6 +66127,7 @@ var ChatApp = class {
           }
           streamResult = await streamGenerator.next();
         }
+        if (this.aborter.signal.aborted) throw new Error("AbortError");
         this.post({ type: "streamEnd" });
         const finalResponse = streamResult.value;
         if (finalResponse && finalResponse.items.length > 0) this.chatHistory.push(...finalResponse.items);
@@ -66143,6 +66139,7 @@ var ChatApp = class {
             this.post({ type: "startToolGroup" });
           }
           for (const toolCall of functionCalls) {
+            if (this.aborter?.signal.aborted) throw new Error("AbortError");
             toolsRunThisTurn++;
             const toolName = toolCall.name;
             const toolArgs = toolCall.arguments;
@@ -66168,22 +66165,33 @@ var ChatApp = class {
         } else {
           keepGoing = false;
         }
-        this.previousTurnID = currentTurnID;
+        this.activeTurn = { provider, turnID: currentTurnID };
       }
       if (hasStartedToolGroup) this.post({ type: "endToolGroup", totalCount: toolsRunThisTurn });
       await this.saveChatHistory();
     } catch (e2) {
-      this.post({ type: "receiveMessage", text: `\u274C Error: ${e2}` });
-      this.post({ type: "streamEnd" });
+      if (e2.name === "AbortError" || e2.message?.toLowerCase().includes("abort")) {
+        this.activeTurn = lastValidTurnState;
+        this.chatHistory.push({ type: "message", role: "assistant", content: "\u{1F6D1} *You stopped this response.*" });
+        this.post({ type: "receiveMessage", text: "\u{1F6D1} *You stopped this response.*" });
+      } else {
+        this.chatHistory.push({ type: "message", role: "assistant", content: `\u274C *Error: ${e2.message || String(e2)}*` });
+        this.post({ type: "receiveMessage", text: `\u274C *Error: ${e2.message || String(e2)}*` });
+      }
+      this.saveChatHistory();
+      this.post({ type: "agentRunComplete" });
+    } finally {
+      this.aborter = null;
+      this.post({ type: "agentRunComplete" });
     }
   }
   resolveWebviewView(webviewView, ctx, token) {
-    this._view = webviewView;
+    this.view = webviewView;
     webviewView.webview.options = {
       enableScripts: true,
       localResourceRoots: [this.context.extensionUri]
     };
-    webviewView.webview.html = this._getHtml();
+    webviewView.webview.html = this.getHTML();
     webviewView.webview.onDidReceiveMessage(async (data) => {
       switch (data.type) {
         case "webviewReady": {
@@ -66297,10 +66305,16 @@ var ChatApp = class {
           this.runAgentTurn(data.provider, data.model, data.effort, data.value);
           break;
         }
+        // Cancel ongoing response
+        case "cancelGeneration": {
+          if (this.aborter) this.aborter.abort();
+          break;
+        }
         case "clearChat": {
+          this.activeTurn = { provider: "", turnID: void 0 };
           this.chatHistory = this.getInitialChatMessages();
-          this.previousTurnID = void 0;
           await this.context.workspaceState.update("chatHistory", this.chatHistory);
+          this.post({ type: "clearChatContainer" });
           break;
         }
         // Called when selecting a new provider in embedding provider dropdown
@@ -66358,14 +66372,14 @@ var ChatApp = class {
       }
     });
   }
-  _getHtml() {
+  getHTML() {
     const htmlPath = vscode7.Uri.joinPath(this.context.extensionUri, "src/webview", "frontend.html");
     const scriptPath = vscode7.Uri.joinPath(this.context.extensionUri, "dist", "webview.bundle.js");
     const cssPath = vscode7.Uri.joinPath(this.context.extensionUri, "dist", "webview.bundle.css");
     try {
       let html = fs3.readFileSync(htmlPath.fsPath, "utf-8");
-      const scriptUri = this._view.webview.asWebviewUri(scriptPath);
-      const styleUri = this._view.webview.asWebviewUri(cssPath);
+      const scriptUri = this.view.webview.asWebviewUri(scriptPath);
+      const styleUri = this.view.webview.asWebviewUri(cssPath);
       html = html.replace("{{styleUri}}", styleUri.toString());
       html = html.replace("{{scriptUri}}", scriptUri.toString());
       return html;

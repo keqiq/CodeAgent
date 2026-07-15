@@ -96,89 +96,93 @@ export class GeminiChatProvider extends ChatProvider {
         });
     }
 
-    async *fetchStream(model: string, effort: string, history: ChatItem[], previousTurnID: string | undefined): AsyncGenerator<StreamYield, ChatResponse, unknown> {
+    async *fetchStream(
+        model: string, 
+        effort: string, 
+        history: ChatItem[], 
+        previousTurnID: string | undefined,
+        abortSignal?: AbortSignal
+    ): AsyncGenerator<StreamYield, ChatResponse, unknown> {
+        
         let fullText = '';
-        try {
-            const sysMsg = history.find(i => i.type === 'message' && i.role === 'developer');
-            
-            // OK if we are doing stateful multi turn conversation we need to send back only the previous tool result or the user's new prompt
-            let currentInput;
-            if (previousTurnID) {
-                const newItemsToSubmit = history.filter(item => 
-                    item.turnID === previousTurnID && (item.type === 'function_result' || (item.type === 'message' && item.role === 'user'))
-                );
+        const sysMsg = history.find(i => i.type === 'message' && i.role === 'developer');
+        
+        // OK if we are doing stateful multi turn conversation we need to send back only the previous tool result or the user's new prompt
+        let currentInput;
+        if (previousTurnID) {
+            const newItemsToSubmit = history.filter(item => 
+                item.turnID === previousTurnID && (item.type === 'function_result' || (item.type === 'message' && item.role === 'user'))
+            );
 
-                currentInput = this.formatMessages(newItemsToSubmit);
-            } else {
-                currentInput = this.formatMessages(history);
+            currentInput = this.formatMessages(newItemsToSubmit);
+        } else {
+            currentInput = this.formatMessages(history);
+        }
+
+        const stream = await this.client.interactions.create({
+            model: model,
+            input: currentInput,
+            tools: GeminiChatProvider.geminiTools,
+            system_instruction: sysMsg && 'content' in sysMsg ? sysMsg.content : "You are an expert AI coding assistant...",
+            stream: true,
+            generation_config: {thinking_level: effort as any, thinking_summaries: 'auto'},
+            ...(previousTurnID && { previous_interaction_id: previousTurnID })
+        }, { signal: abortSignal });
+
+        const currentCalls = new Map();
+        let interactionId = null;
+        
+        for await (const event of stream) {
+            if (abortSignal?.aborted) throw new Error('AbortError');
+            const evType = event.event_type;
+
+            // Gemini's streaming with tool calls needs multi turn conversation implementation
+            // Grab the current call's interaction id which we will need to keep track of for the next turn
+            if (evType === 'interaction.created') {
+                interactionId = event.interaction.id;
             }
 
-            const stream = await this.client.interactions.create({
-                model: model,
-                input: currentInput,
-                tools: GeminiChatProvider.geminiTools,
-                system_instruction: sysMsg && 'content' in sysMsg ? sysMsg.content : "You are an expert AI coding assistant...",
-                stream: true,
-                generation_config: {thinking_level: effort as any, thinking_summaries: 'auto'},
-                ...(previousTurnID && { previous_interaction_id: previousTurnID })
-            });
-
-            const currentCalls = new Map();
-            let interactionId = null;
-            
-            for await (const event of stream) {
-                const evType = event.event_type;
-
-                // Gemini's streaming with tool calls needs multi turn conversation implementation
-                // Grab the current call's interaction id which we will need to keep track of for the next turn
-                if (evType === 'interaction.created') {
-                    interactionId = event.interaction.id;
-                }
-
-                else if (evType === 'step.start') {
-                    if (event.step.type === 'function_call') {
-                        currentCalls.set(event.index, {
-                            id: event.step.id,
-                            name: event.step.name,
-                            arguments: ''
-                        });
-                    }
-                }
-
-                else if (evType === 'step.delta') {
-                    if (event.delta.type === 'arguments_delta') {
-                        if (currentCalls.has(event.index)) {
-                            currentCalls.get(event.index).arguments += event.delta.arguments;
-                        }
-                    }
-                    
-                    else if (event.delta.type === 'text') {
-                        fullText += event.delta.text;
-                        yield { type: 'text', content: event.delta.text };
-                    }
-
-                    else if (event.delta.type === 'thought_summary') {
-                        // SHUT UP COMPILER
-                        const deltaAny = event.delta as any;
-                        const summaryText = deltaAny.content?.text || "";
-                        if(summaryText) yield { type: 'thought', content: summaryText };
-                    }
+            else if (evType === 'step.start') {
+                if (event.step.type === 'function_call') {
+                    currentCalls.set(event.index, {
+                        id: event.step.id,
+                        name: event.step.name,
+                        arguments: ''
+                    });
                 }
             }
 
-           if (currentCalls.size > 0 || fullText.length > 0) {
-                const items: ChatItem[] = [];
+            else if (evType === 'step.delta') {
+                if (event.delta.type === 'arguments_delta') {
+                    if (currentCalls.has(event.index)) {
+                        currentCalls.get(event.index).arguments += event.delta.arguments;
+                    }
+                }
                 
-                if (fullText) {
-                    items.push({ type: 'message', role: 'assistant', content: fullText, turnID: interactionId! });
+                else if (event.delta.type === 'text') {
+                    fullText += event.delta.text;
+                    yield { type: 'text', content: event.delta.text };
                 }
-                for (const call of Array.from(currentCalls.values())) {
-                    items.push({ type: 'function_call', id: call.id, name: call.name, arguments: call.arguments ? JSON.parse(call.arguments) : {}, turnID: interactionId! });
+
+                else if (event.delta.type === 'thought_summary') {
+                    // SHUT UP COMPILER
+                    const deltaAny = event.delta as any;
+                    const summaryText = deltaAny.content?.text || "";
+                    if(summaryText) yield { type: 'thought', content: summaryText };
                 }
-                return { items, turnID: interactionId! };
             }
-        } catch (e) {
-            console.log(e);
+        }
+
+        if (currentCalls.size > 0 || fullText.length > 0) {
+            const items: ChatItem[] = [];
+            
+            if (fullText) {
+                items.push({ type: 'message', role: 'assistant', content: fullText, turnID: interactionId! });
+            }
+            for (const call of Array.from(currentCalls.values())) {
+                items.push({ type: 'function_call', id: call.id, name: call.name, arguments: call.arguments ? JSON.parse(call.arguments) : {}, turnID: interactionId! });
+            }
+            return { items, turnID: interactionId! };
         }
 
         return { items: [] };
