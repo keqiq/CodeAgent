@@ -1,5 +1,5 @@
 export type ChatItem =
-    | { type: 'message'; role: 'developer' | 'user' | 'assistant'; content: string, turnID?: string }
+    | { type: 'message'; role: 'developer' | 'user' | 'assistant'; content: string, turnID?: string, isHidden?: boolean }
     | { type: 'function_call'; id: string; name: string; arguments: any, turnID?: string}
     | { type: 'function_result'; id: string; name: string; result: string, turnID?: string }
 

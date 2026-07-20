@@ -68,7 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 chatSettings.showChatAPIKeyInput(msg.provider);
                 break;
 
-            // --- CHAT STREAMING & TOOLS ---
+            // --- CHAT STREAMING & TOOLS & PATCH ---
             case 'receiveMessage':
                 chatContainer.appendMessage({ type: 'message', role: 'assistant', content: msg.text });
                 break;
@@ -100,6 +100,15 @@ document.addEventListener('DOMContentLoaded', () => {
             case 'agentRunComplete':
                 chatInput.setSendState();
                 chatContainer.cancelActiveUI();
+                break;
+
+            case 'reviewPatch':
+                chatContainer.makePatchReview(msg.patch);
+                break;
+
+            case 'updatePatchStatus':
+                chatContainer.updatePatchStatus(msg.status);
+                break;
 
             // --- INDEXING & HEADER ---
 

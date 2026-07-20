@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { getWorkspaceUri, getFileContent } from '../utils/workspace';
+import { resolveUri, getFileContent } from '../utils/workspace';
 import { ToolResult, ToolSchema } from './toolIndex';
 
 export const fileSchemas: ToolSchema[] = [
@@ -47,18 +47,16 @@ export const fileSchemas: ToolSchema[] = [
 const textDecoder = new TextDecoder('utf-8');
 const textEncoder = new TextEncoder();
 
-export async function executeRead(filePath: string): Promise<ToolResult> {
-    const fileUri = getWorkspaceUri(filePath);
+export async function executeRead(filePath: string, cwd: string): Promise<ToolResult> {
+    const fileUri = resolveUri(cwd, filePath);
 
     const uint8Array = await vscode.workspace.fs.readFile(fileUri);
 
-    return {
-        message: textDecoder.decode(uint8Array)
-    };
+    return { message: textDecoder.decode(uint8Array) };
 }
 
-export async function executeWrite(filePath: string, content: string): Promise<ToolResult> {
-    const fileUri = getWorkspaceUri(filePath);
+export async function executeWrite(filePath: string, content: string, cwd: string): Promise<ToolResult> {
+    const fileUri = resolveUri(cwd, filePath);
     const uint8Array = textEncoder.encode(content);
     await vscode.workspace.fs.writeFile(fileUri, uint8Array);
     return {
@@ -68,9 +66,11 @@ export async function executeWrite(filePath: string, content: string): Promise<T
 }
 
 const normalize = (str: string) => str.replace(/\r\n/g, '\n').replace(/[ \t]+/g, ' ').trim();
-export async function executeEdit(filePath: string, oldText: string, newText: string): Promise<ToolResult> {
-    const fileUri = getWorkspaceUri(filePath);
+export async function executeEdit(filePath: string, oldText: string, newText: string, cwd: string): Promise<ToolResult> {
+    const fileUri = resolveUri(cwd, filePath);
     const rawFileContent = await getFileContent(fileUri);
+
+    const hasCRLF = rawFileContent.includes('\r\n');
 
     const fileContent = rawFileContent.replace(/\r\n/g, '\n');
     const searchOldText = oldText.replace(/\r\n/g, '\n');
@@ -78,7 +78,9 @@ export async function executeEdit(filePath: string, oldText: string, newText: st
 
     // Try stict matching first
     if (fileContent.includes(searchOldText)) {
-        const updatedContent = fileContent.replace(searchOldText, applyNewText);
+        let updatedContent = fileContent.replace(searchOldText, applyNewText);
+        if (hasCRLF) updatedContent = updatedContent.replace(/\n/g, '\r\n');
+
         await vscode.workspace.fs.writeFile(fileUri, textEncoder.encode(updatedContent));
 
         return {

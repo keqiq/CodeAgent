@@ -1,11 +1,13 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
+import * as path from 'path';
 import { ChatFactory } from './apis/chat/chatFactory';
 import { ChatItem, ChatResponse, ModelInfo } from './apis/chat/chatProvider';
 import { createToolRegistry, ToolResult } from './tools/toolIndex';
 import { EmbedFactory } from './apis/embed/embedFactory';
 import { Indexer } from './indexing/indexer';
 import { getEmbedModelsFromProvider, getChatModelsFromProvider } from './utils/apiUtils';
+import { WorktreeManager } from './worktreeManager';
 
 declare const console: any;
 
@@ -26,6 +28,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
 
     private activeTurn: ActiveTurnState = { provider: '', turnID: undefined};
 
+    private activeWorktree? : WorktreeManager;
 
     private aborter: AbortController | null = null;
     
@@ -38,8 +41,26 @@ export class ChatApp implements vscode.WebviewViewProvider {
             if (lastItemWithId) this.activeTurn.turnID = lastItemWithId.turnID;
         }
         else this.chatHistory = this.getInitialChatMessages();
+
+        const activeWorktreeID = context.workspaceState.get<string>('activeWorktreeID');
+        if (activeWorktreeID) {
+            const workspaceRoot = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
+            if (workspaceRoot) this.activeWorktree = new WorktreeManager(workspaceRoot, activeWorktreeID);
+        }
         
         this.toolRegistry = createToolRegistry({
+            getCwd: () => {
+                if (this.activeWorktree) return this.activeWorktree.worktreePath;
+                const root = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
+                if (!root) throw new Error('No active workspace');
+                return root;
+            },
+
+            getSignal: () => {
+                if (!this.aborter) throw new Error('No active turn to get signal from');
+                return this.aborter.signal;
+            },
+
             createSearchCodebaseDeps: async () => {
                 const provider = this.context.globalState.get<string>('embedProvider');
                 const model = this.context.globalState.get<string>(`${provider}_embedModel`);
@@ -157,10 +178,59 @@ export class ChatApp implements vscode.WebviewViewProvider {
         }
     }
 
+    private async clearActiveWorktree(): Promise<void> {
+        if (this.activeWorktree) {
+            await this.activeWorktree.cleanup();
+            this.activeWorktree = undefined;
+            await this.context.workspaceState.update('activeWorktreeID', undefined);
+            await this.context.workspaceState.update('patchStatus', undefined);
+        }
+    }
+
     private async runAgentTurn(provider: string, model: string, effort: string, userMessage: string,): Promise<void> {
-        
+        const workspaceRoot = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
+        if (!workspaceRoot) throw new Error("No active workspace");
+
+        if (!this.activeWorktree) {
+
+            // Check for git, this is a hard requirement
+            const gitInstalled = await WorktreeManager.isGitInstalled();
+            if (!gitInstalled) {
+                vscode.window.showErrorMessage('Install Git on your system and restart VS Code.', 'Understood' );
+                return;
+            }
+
+            // Check if workspace has version control initialized
+            const isRepo = await WorktreeManager.isGitRepo(workspaceRoot);
+            if (!isRepo) {
+                const userChoice = await vscode.window.showWarningMessage(
+                    'Git repository required for file edits. Initialize now?',
+                    'Initialize',
+                    'Cancel'
+                );
+
+                if (userChoice === 'Initialize') {
+                    try {
+                        await WorktreeManager.initGitRepo(workspaceRoot);
+                        vscode.window.showInformationMessage('Git repository initialized successfully.');
+                    } catch (e) {
+                        vscode.window.showErrorMessage(`Failed to initialize Git: ${e}`);
+                        return;
+                    }
+                } else {
+                    throw new Error("Agent execution cancelled. A Git repository is required.");
+                }
+            }
+            const runID = this.activeTurn.turnID || Date.now().toString();
+            this.activeWorktree = new WorktreeManager(workspaceRoot, runID);
+            await this.activeWorktree.setup();
+
+            await this.context.workspaceState.update('activeWorktreeID', runID);
+        }
+
         this.aborter = new AbortController();
         const lastValidTurnState: ActiveTurnState = { ...this.activeTurn };
+
         try {
             const apiKey = await this.getChatAPIKey(provider); 
             const serverStateManagment = this.context.globalState.get<boolean>('serverStateManagement') ?? true;
@@ -226,7 +296,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
                             try {
                                 result = await this.toolRegistry[toolName](toolArgs);
                                 this.post({ type: 'updateTool', status: 'success' });
-                                if (result.changedFiles?.length) this.indexer!.scheduleIndex(result.changedFiles);
+                                // if (result.changedFiles?.length) this.indexer!.scheduleIndex(result.changedFiles);
                             } catch (e) {
                                 const message = e instanceof Error ? e.message : String(e);
                                 result = { message: `Error executing ${toolName}: ${message}`};
@@ -248,6 +318,20 @@ export class ChatApp implements vscode.WebviewViewProvider {
 
             if (hasStartedToolGroup) this.post({ type: 'endToolGroup', totalCount: toolsRunThisTurn });
             await this.saveChatHistory();
+
+            // Run complete review any changes
+            if (!this.aborter.signal.aborted) {
+                const patchString = await this.activeWorktree.getPatch();
+
+                if (patchString.trim()) {
+                    this.post({ type: 'reviewPatch', patch: patchString });
+                }
+
+                // No changes close worktree
+                else {
+                    await this.clearActiveWorktree();
+                }
+            }
 
         } catch (e: any) {
             if (e.name === 'AbortError' || e.message?.toLowerCase().includes('abort')) {
@@ -323,6 +407,18 @@ export class ChatApp implements vscode.WebviewViewProvider {
                         if (indexEnabled) {
                             const embedProvider = this.context.globalState.get<string>('embedProvider');
                             this.post({ type: 'updateEmbedProvider', provider: embedProvider });
+                        }
+
+                        if (this.activeWorktree) {
+                            const patchString = await this.activeWorktree.getPatch();
+                            
+                            if (patchString.trim()){
+                                this.post({ type: 'reviewPatch', patch: patchString});
+                                const currentStatus = this.context.workspaceState.get<string>('patchStatus');
+                                if (currentStatus) this.post({ type: 'updatePatchStatus', status: currentStatus }); 
+                            }
+                            else await this.clearActiveWorktree();
+
                         }
                     
                     } catch (e) {
@@ -422,8 +518,14 @@ export class ChatApp implements vscode.WebviewViewProvider {
 
                 case 'clearChat': {
                     this.activeTurn = {provider: '', turnID: undefined};
+
+                    // Restore system prompt and nothing else
                     this.chatHistory = this.getInitialChatMessages();
                     await this.context.workspaceState.update('chatHistory', this.chatHistory);
+
+                    // Close active work tree
+                    if  (this.activeWorktree)  await this.clearActiveWorktree();
+
                     this.post({ type: 'clearChatContainer' });
                     break;
                 }
@@ -490,6 +592,109 @@ export class ChatApp implements vscode.WebviewViewProvider {
                     const embedProvider = EmbedFactory.create(data.provider, apiKey);
                     
                     await this.indexer.indexWorkspace(embedProvider, data.model);
+                    break;
+                }
+
+                // Take the changes from worktree and apply to main workspace
+                case 'applyChanges': {
+                    if (this.activeWorktree) {
+                        try {
+                            await this.activeWorktree.applyPatch();
+
+                            this.chatHistory.push({ 
+                                type: 'message', 
+                                role: 'user', 
+                                content: '[System: The user applied your proposed changes to the workspace.]',
+                                turnID: this.activeTurn.turnID,
+                                isHidden: true // Hidden message just for the agent
+                            });
+                            await this.saveChatHistory();
+                            await this.clearActiveWorktree();
+                            this.post({ type: 'updatePatchStatus', status: 'accepted' });
+
+                        // Probably merge conflicts
+                        } catch (e: any) {
+                            if (e.message === 'MERGE_CONFLICT') {
+                                await this.context.workspaceState.update('patchStatus', 'conflict');
+                                this.post({ type: 'updatePatchStatus', status: 'conflict' });
+                            } else {
+                                vscode.window.showErrorMessage(`Failed to apply patch: ${e.message || String(e)}`);
+                            }
+                        }
+                    }
+                    break;
+                }
+
+                // Discard worktree
+                case 'discardChanges': {
+                    if (this.activeWorktree) {
+                        await this.clearActiveWorktree();
+
+                        this.chatHistory.push({ 
+                            type: 'message', 
+                            role: 'user', 
+                            content: '[System: The user discarded your proposed changes. The workspace was reverted to its original state.]',
+                            turnID: this.activeTurn.turnID,
+                            isHidden: true
+                        });
+                        await this.saveChatHistory();
+                        this.post({ type: 'updatePatchStatus', status: 'rejected' });
+                    }
+                    break;
+                }
+
+                // After resolving merge conflicts
+                case 'markResolved': {
+                    if (this.activeWorktree) {
+                        await this.clearActiveWorktree();
+
+                        this.chatHistory.push({ 
+                            type: 'message', 
+                            role: 'user', 
+                            content: '[System: The user resolved merge conflicts and applied the changes.]', 
+                            turnID: this.activeTurn.turnID, 
+                            isHidden: true 
+                        });
+                        await this.saveChatHistory();
+                        this.post({ type: 'updatePatchStatus', status: 'accepted' });
+                    }
+                    break;
+                }
+                
+                // Forcing the patch by replacing the files in the main workspace
+                case 'forceApplyPatch': {
+                    if (this.activeWorktree) {
+                        try {
+                            await this.activeWorktree.forceApply();
+
+                            await this.clearActiveWorktree();
+                            this.chatHistory.push({ 
+                                type: 'message', 
+                                role: 'user', 
+                                content: '[System: The user force-applied your changes, overwriting their local edits.]', 
+                                turnID: this.activeTurn.turnID, 
+                                isHidden: true 
+                            });
+                            await this.saveChatHistory();
+                            this.post({ type: 'updatePatchStatus', status: 'accepted' });
+                        } catch (e) {
+                            vscode.window.showErrorMessage(`Failed to force apply: ${e}`);
+                        }
+                    }
+                    break;
+                }
+
+                case 'openDiffView': {
+                    if (this.activeWorktree) {
+                        const workspaceRoot = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
+                        if (!workspaceRoot) return;
+
+                        const originalUri = vscode.Uri.file(path.join(workspaceRoot, data.file));
+                        const worktreeUri = vscode.Uri.file(path.join(this.activeWorktree.worktreePath, data.file));
+
+                        const title = `${data.file} (Agent Proposal)`;
+                        vscode.commands.executeCommand('vscode.diff', originalUri, worktreeUri, title);
+                    }
                     break;
                 }
             }

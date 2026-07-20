@@ -1,8 +1,10 @@
 import * as vscode from 'vscode';
+import * as path from 'path';
 import { getFileContent } from '../utils/workspace';
 import { ToolResult, ToolSchema } from './toolIndex';
 import { EmbedProvider } from '../apis/embed/embedProvider';
 import { Indexer } from '../indexing/indexer';
+import { excludePattern } from '../indexing/languages/_languageIndex';
 
 export type SearchCodebaseDeps = {
     indexer: Indexer,
@@ -51,75 +53,94 @@ export const searchSchemas: ToolSchema[] = [
             required: ["query"]
         }
     }
-
 ];
 
-export async function executeGlob(pattern: string): Promise<ToolResult> {
-    const excludePattern = '{**/node_modules/**,**/.git/**,**/dist/**}';
-    const uris = await vscode.workspace.findFiles(pattern, excludePattern, 1000);
+export async function executeGlob(pattern: string, cwd: string, signal: AbortSignal): Promise<ToolResult> {
 
-    if (uris.length === 0) {
-        return {
-            message: 'No files found in workspace'
-        };
+    const baseUri = vscode.Uri.file(cwd);
+    const searchPattern = new vscode.RelativePattern(baseUri, pattern);
+    const relativeExlude = new vscode.RelativePattern(baseUri, excludePattern);
+
+    const cancelTokenSource = new vscode.CancellationTokenSource();
+    const abortListener = () => cancelTokenSource.cancel();
+    signal.addEventListener('abort', abortListener);
+
+    try {
+        const uris = await vscode.workspace.findFiles(searchPattern, relativeExlude, 1000, cancelTokenSource.token);
+
+        if (signal.aborted) throw new Error('AbortError');
+
+        if (uris.length === 0) return { message: 'No files found in workspace' };
+
+        return { message: uris.map(uri => path.relative(cwd, uri.fsPath)).join('\n') };
+    } 
+
+    finally {
+        signal.removeEventListener('abort', abortListener);
+        cancelTokenSource.dispose();
     }
-
-    return {
-        message: uris.map(uri => vscode.workspace.asRelativePath(uri)).join('\n')
-    };
 };
 
 
 const textDecoder = new TextDecoder('utf-8');
 
-export async function executeGrep(query: string, filePattern: string = '**/*'): Promise<ToolResult> {
+export async function executeGrep(query: string, filePattern: string = '**/*', cwd: string, signal: AbortSignal): Promise<ToolResult> {
     let regex: RegExp;
     try { regex = new RegExp(query); }
-    catch(e) { 
-        throw new Error(`Invalid regex: ${e}`);
-    }
+    catch(e) { throw new Error(`Invalid regex: ${e}`); } 
 
-    const excludePattern = '{**/node_modules/**,**/.git/**,**/dist/**,**/*.{png,jpg,jpeg,ico,bin}}';
-    const uris = await vscode.workspace.findFiles(filePattern, excludePattern, 1000);
-    const results: string[] = [];
+    const baseUri = vscode.Uri.file(cwd);
+    const searchPattern = new vscode.RelativePattern(baseUri, filePattern);
+    const relativeExlude = new vscode.RelativePattern(baseUri, excludePattern);
 
-    for (const uri of uris) {
-        try {
-            const content = await getFileContent(uri);
-            const lines = content.split('\n');
+    const cancelTokenSource = new vscode.CancellationTokenSource();
+    const abortListener = () => cancelTokenSource.cancel();
+    signal.addEventListener('abort', abortListener);
 
-            for (let i = 0; i < lines.length; i++) {
-                if (regex.test(lines[i])) {
-                    results.push(`${vscode.workspace.asRelativePath(uri)}:${i + 1}:${lines[i].trim()}`);
+    try {
+        const uris = await vscode.workspace.findFiles(searchPattern, relativeExlude, 1000, cancelTokenSource.token);
+        const results: string[] = [];
+
+        for (const uri of uris) {
+            if (signal.aborted) throw new Error('AbortError');
+
+            try {
+                const content = await getFileContent(uri);
+                const lines = content.split('\n');
+
+                const relativePath = path.relative(cwd, uri.fsPath);
+
+                for (let i = 0; i< lines.length; i++) {
+                    if (regex.test(lines[i])) {
+                        results.push(`${relativePath}:${i + 1}:${lines[i].trim()}`);
+                    }
                 }
-            };
-        } catch(e) { continue; }
+            } catch (e) { continue; }
+        }
 
+        if (signal.aborted) throw new Error('AbortError');
+
+        return { message: results.length > 0 ? results.slice(0, 500).join('\n') : "No matches found." };
     }
-    return {
-        message: results.length > 0 ? results.slice(0, 500).join('\n') : "No matches found." 
-    };
+
+    finally {
+        signal.removeEventListener('abort', abortListener);
+        cancelTokenSource.dispose();
+    }
 };
 
-export async function executeSearchCodebase(query: string, deps: SearchCodebaseDeps ): Promise<ToolResult> {
+export async function executeSearchCodebase(query: string, deps: SearchCodebaseDeps, signal: AbortSignal ): Promise<ToolResult> {
+    if (signal.aborted) throw new Error('AbortError');
     if (!query.trim()) throw new Error('Search query is emtpy');
     if (!deps.indexer.indexEnabled()) throw new Error('Indexing is disabled cannot use semantic search');
     const [queryVector] = await deps.embedProvider.embed(deps.model, [query]);
     const results = await deps.indexer.search(query, queryVector);
-
-    // console.log(`[SEARCH DEBUG] Query: ${query}`);
-    // console.log(`[SEARCH DEBUG] Result count: ${results.length}`);
 
     if (results.length === 0){
         return {
             message: 'No relevant code found'
         };
     }
-
-    // for (const r of results.slice(0, 5)) {
-    //     console.log(`[SEARCH DEBUG] ${r.filePath}:${r.startLine}-${r.endLine}`);
-    //     console.log(`[SEARCH DEBUG] preview: ${String(r.text).slice(0, 160).replace(/\s+/g, ' ')}`);
-    // }
 
     // TODO: add distance
     return {

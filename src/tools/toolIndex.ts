@@ -32,34 +32,28 @@ export const allToolSchemas: ToolSchema[] = [
     ...fileSchemas,
 ];
 
-// export const toolRegistry: Record<string, (args: any) => Promise<string>> = {
-//     "glob":     async (args) => await executeGlob(args.pattern),
-//     "grep":     async (args) => await executeGrep(args.query, args.filePattern),
-//     "read":     async (args) => await executeRead(args.filePath),
-//     "write":    async (args) => await executeWrite(args.filePath, args.content),
-//     "edit":     async (args) => await executeEdit(args.filePath, args.oldText, args.newText)
-// };
-
 export type ToolDeps = {
     createSearchCodebaseDeps: () => Promise<SearchCodebaseDeps>;
+    getCwd: () => string;
+    getSignal: () => AbortSignal;
 };
 
 export function createToolRegistry(deps: ToolDeps): Record<string, (args: any) => Promise<ToolResult>> {
     return {
-        glob: async (args) => await executeGlob(args.pattern),
+        glob: async (args) => await executeGlob(args.pattern, deps.getCwd(), deps.getSignal()),
 
-        grep: async (args) => await executeGrep(args.query, args.filePattern),
+        grep: async (args) => await executeGrep(args.query, args.filePattern, deps.getCwd(), deps.getSignal()),
 
-        read: async (args) => await executeRead(args.filePath),
+        read: async (args) => await executeRead(args.filePath, deps.getCwd()),
 
-        write: async (args) => await executeWrite(args.filePath, args.content),
+        write: async (args) => await executeWrite(args.filePath, args.content, deps.getCwd()),
 
-        edit: async (args) => await executeEdit(args.filePath, args.oldText, args.newText),
+        edit: async (args) => await executeEdit(args.filePath, args.oldText, args.newText, deps.getCwd()),
 
         searchCodebase: async (args) => {
             try {
                 const searchDeps = await deps.createSearchCodebaseDeps();
-                return await executeSearchCodebase(args.query, searchDeps);
+                return await executeSearchCodebase(args.query, searchDeps, deps.getSignal());
             } catch (e) {
                 return {
                     ok: false,
