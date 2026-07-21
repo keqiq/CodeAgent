@@ -3,33 +3,23 @@ import { ChatItem, ChatProvider, ChatResponse, ModelInfo, StreamYield } from './
 import { allToolSchemas } from '../../tools/toolIndex';
 
 export class GeminiChatProvider extends ChatProvider {
+    public static stateManagementSupport: boolean = true;
     private client: GoogleGenAI;
     private static geminiTools: any = allToolSchemas;
-    private static cachedModelInfos: ModelInfo[] | null = null;
 
-    constructor(apiKey: string) {
-        super();
-        this.client = new GoogleGenAI({ apiKey });
-    }
-
-    async getModels(fetchAll?: boolean): Promise<ModelInfo[]> {
-        if (!GeminiChatProvider.cachedModelInfos) await this.getModelInfos();
-        if(!GeminiChatProvider.cachedModelInfos) return [];
-
-        if (fetchAll) return GeminiChatProvider.cachedModelInfos;
-
-        // Non deprecated models
-        const featuredModels: string[] = [
+    protected featuredModels: string[] = [
             'gemini-3.5-flash', 
             'gemini-3.1-pro-preview', 'gemini-3.1-flash-lite',
             'gemini-3-pro-preview', 'gemini-3-flash-preview',
             'gemini-2.5-pro', 'gemini-2.5-flash', 'gemini-2.5-flash-lite'
-        ];
+    ];
 
-        return GeminiChatProvider.cachedModelInfos.filter(info => featuredModels.includes(info.id));
+    constructor(apiKey: string) {
+        super();
+        this.client = new GoogleGenAI({ apiKey: apiKey });
     }
 
-    private async getModelInfos(): Promise<void> {
+    protected async getModelInfos(): Promise<ModelInfo[]> {
         const infos: ModelInfo[] = [];
         const response = await this.client.models.list();
         const exclusionKeywords = [
@@ -57,7 +47,7 @@ export class GeminiChatProvider extends ChatProvider {
                 });
             }
         }
-        GeminiChatProvider.cachedModelInfos = infos;
+        return infos;
     }
 
     // Not needed for Interactions api
@@ -101,7 +91,8 @@ export class GeminiChatProvider extends ChatProvider {
         effort: string, 
         history: ChatItem[], 
         previousTurnID: string | undefined,
-        abortSignal?: AbortSignal
+        useCache: boolean,
+        abortSignal: AbortSignal
     ): AsyncGenerator<StreamYield, ChatResponse, unknown> {
         
         let fullText = '';
@@ -109,7 +100,7 @@ export class GeminiChatProvider extends ChatProvider {
         
         // OK if we are doing stateful multi turn conversation we need to send back only the previous tool result or the user's new prompt
         let currentInput;
-        if (previousTurnID) {
+        if (previousTurnID && useCache) {
             const newItemsToSubmit = history.filter(item => 
                 item.turnID === previousTurnID && (item.type === 'function_result' || (item.type === 'message' && item.role === 'user'))
             );
@@ -174,49 +165,9 @@ export class GeminiChatProvider extends ChatProvider {
         }
 
         if (currentCalls.size > 0 || fullText.length > 0) {
-            const items: ChatItem[] = [];
-            
-            if (fullText) {
-                items.push({ type: 'message', role: 'assistant', content: fullText, turnID: interactionId! });
-            }
-            for (const call of Array.from(currentCalls.values())) {
-                items.push({ type: 'function_call', id: call.id, name: call.name, arguments: call.arguments ? JSON.parse(call.arguments) : {}, turnID: interactionId! });
-            }
-            return { items, turnID: interactionId! };
+            return ChatProvider.formatResponse(fullText, currentCalls, interactionId!);
         }
 
         return { items: [] };
     }
-
-    // async fetch(model: string, messages: ChatMessage[]): Promise<ChatResponse> {
-
-    //     const response = await this.client.models.generateContent({
-    //         model: model,
-    //         contents: this.parseMessages(messages),
-    //         config: {
-    //             tools: this.geminiTools,
-    //             systemInstruction: "You are an expert AI coding assistant inside VS Code."
-    //         }
-    //     });
-
-    //     const calls = response.functionCalls;
-
-    //     if (calls && calls.length > 0) {
-    //         const parsedCalls = [];
-
-    //         for (const call of calls) {
-    //             parsedCalls.push({
-    //                 name: call.name || "",
-    //                 arguments: call.args
-    //             });
-    //         }
-
-    //         return {
-    //             text: null,
-    //             tool_calls: parsedCalls
-    //         };
-    //     }
-
-    //     return { text: response.text || "", tool_calls: null};
-    // }
 }

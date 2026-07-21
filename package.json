@@ -65,6 +65,7 @@
     "typescript-eslint": "^8.56.1"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.112.4",
     "@google/genai": "^2.6.0",
     "@lancedb/lancedb": "^0.30.0",
     "apache-arrow": "^18.1.0",

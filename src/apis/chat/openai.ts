@@ -1,42 +1,25 @@
 import OpenAI from 'openai';
 import { ChatItem, ChatProvider, ChatResponse, ModelInfo, StreamYield } from './chatProvider';
 import { allToolSchemas } from '../../tools/toolIndex';
-declare const console: any;
 
 export class OpenAIChatProvider extends ChatProvider {
+    public static stateManagementSupport: boolean = true;
     private client: OpenAI;
     private static GPTTools: any = allToolSchemas;
-    private static cachedModelInfos: ModelInfo[] | null = null;
+
+    protected featuredModels: string[] = [
+            'gpt-5.6-sol', 'gpt-5.6-terra', 'gpt-5.6-luna',
+            'gpt-5.5', 'gpt-5.5-pro',
+            'gpt-5.4', 'gpt-5.4-pro', 'gpt-5.4-mini', 'gpt-5.4-nano',
+            'gpt-5.3-codex',
+    ];
 
     constructor(apiKey: string) {
         super();
         this.client = new OpenAI({ apiKey });
     }
 
-    async getModels(fetchAll?: boolean): Promise<ModelInfo[]> {
-        if (!OpenAIChatProvider.cachedModelInfos) await this.getModelInfos();
-        if (!OpenAIChatProvider.cachedModelInfos) return [];
-
-        if (fetchAll) return OpenAIChatProvider.cachedModelInfos;
-        
-        // Non deprecated models
-        const featuredModels: string[] = [
-            'gpt-5.6-sol', 'gpt-5.6-terra', 'gpt-5.6-luna',
-            'gpt-5.5', 'gpt-5.5-pro',
-            'gpt-5.4', 'gpt-5.4-pro', 'gpt-5.4-mini', 'gpt-5.4-nano',
-            'gpt-5.3-codex',
-            'gpt-5.2', 'gpt-5.2-pro',
-            'gpt-5.1', 'gpt-5-pro', 'gpt-5-mini', 'gpt-5-nano',
-            'gpt-4.1', 'gpt-4.1-mini',
-            'gpt-4o-mini',
-            'o3', 'o3-pro',
-            'gpt-oss-120b', 'gpt-oss-20b',
-        ];
-
-        return OpenAIChatProvider.cachedModelInfos.filter(infos => featuredModels.includes(infos.id));
-    }
-
-    private async getModelInfos(): Promise<void> {
+    protected async getModelInfos(): Promise<ModelInfo[]> {
         const infos: ModelInfo[] = [];
         const response = await this.client.models.list();
         const exclusionKeywords = [
@@ -102,7 +85,7 @@ export class OpenAIChatProvider extends ChatProvider {
                 });
             }
         }
-        OpenAIChatProvider.cachedModelInfos = infos;
+        return infos;
     }
 
     // Not needed for Responses API
@@ -125,15 +108,16 @@ export class OpenAIChatProvider extends ChatProvider {
         effort: string, 
         history: ChatItem[], 
         previousTurnID: string | undefined,
-        abortSignal?: AbortSignal
+        useCache: boolean,
+        abortSignal: AbortSignal
     ): AsyncGenerator<StreamYield, ChatResponse, unknown> {
         
         let fullText = "";
-        const toolCallsContext: any[] = [];
+        const currentCalls = new Map();
         let responseID = null;
 
         let currentInput;
-        if (previousTurnID) {
+        if (previousTurnID && useCache) {
             const newItemsToSubmit = history.filter(item => 
                 item.turnID === previousTurnID && (item.type === 'function_result' || (item.type === 'message' && item.role === 'user'))
             );
@@ -180,66 +164,148 @@ export class OpenAIChatProvider extends ChatProvider {
             else if (event.type === 'response.output_item.added') {
                 const item = event.item;
                 if (item && item.type === 'function_call') {
-                    toolCallsContext.push({
-                        itemId: item.id,
+                    currentCalls.set(item.id, {
                         id: item.call_id,
                         name: item.name,
-                        arguments: ""
+                        arguments: ''
                     });
                 }
             }
 
             else if (event.type === 'response.function_call_arguments.delta') {
-                const deltaEvent = event as any;
 
-                // Match using itemId
-                const currentTool = toolCallsContext.find(t => t.itemId === deltaEvent.item_id)
-                    || toolCallsContext[toolCallsContext.length - 1];
-
-                if (currentTool && deltaEvent.delta) {
-                    currentTool.arguments += deltaEvent.delta;
+                if (currentCalls.has(event.item_id)) {
+                    currentCalls.get(event.item_id).arguments += event.delta;
                 }
             }
         }
 
-        if (toolCallsContext.length > 0 || fullText.length > 0) {
-            const items: ChatItem[] = [];
-            
-            if (fullText) {
-                items.push({ type: 'message', role: 'assistant', content: fullText, turnID: responseID! });
-            }
-            for (const call of toolCallsContext) {
-                items.push({ type: 'function_call', id: call.id, name: call.name, arguments: call.arguments ? JSON.parse(call.arguments) : {}, turnID: responseID! });
-            }
-            return { items, turnID: responseID! };
+        if (currentCalls.size > 0 || fullText.length > 0) {
+            return ChatProvider.formatResponse(fullText, currentCalls, responseID!);
         }
 
         return { items: [] };
     }
+}
 
-    // UNUSED
-    // async fetch(model: string, messages: ChatItem[]): Promise<ChatResponse> {
-    //     const response = await this.client.responses.create({
-    //         model: model,
-    //         input: this.formatMessages(messages) as any,
-    //         tools: this.GPTTools
-    //     });
+// For other providers using OpenAI SDK
+export abstract class OpenAICompatibleProvider extends ChatProvider {
+    protected client: OpenAI;
+    protected static tools: any = OpenAICompatibleProvider.parseTools(allToolSchemas);
+    
+    constructor(apiKey: string, baseURL: string) {
+        super();
+        this.client = new OpenAI({
+            baseURL: baseURL,
+            apiKey: apiKey
+        });
+    }
+    
+    protected formatMessages(items: ChatItem[]): any[] {
+        return items.map(item => {
+            if (item.type === 'message') {
+                const mappedRole = item.role === 'developer' ? 'system' : item.role;
+                return { role: mappedRole, content: item.content };
+            } else if (item.type === 'function_call') {
+                return {
+                    role: 'assistant',
+                    tool_calls: [{
+                        id: item.id,
+                        type: 'function',
+                        function: {
+                            name: item.name,
+                            arguments: typeof item.arguments === 'string' ? item.arguments : JSON.stringify(item.arguments)
+                        }
+                    }]
+                };
+            } else if (item.type === 'function_result') {
+                return {
+                    role: 'tool',
+                    tool_call_id: item.id,
+                    content: item.result
+                };
+            }
+        });
+    }
 
-    //     const toolCalls = response.output.filter((item: any) => item.type === "function_call");
+    protected static parseTools(flatTools: any[]): any[] {
+        return flatTools.map(tool => {
+            return {
+                type: 'function',
+                function: {
+                    name: tool.name,
+                    description: tool.description,
+                    parameters: tool.parameters
+                }
+            };
+        });
+    }
 
-    //     if (toolCalls && toolCalls.length > 0) {
-    //         const parsedCalls = toolCalls.map((call: any) => ({
-    //             id: call.call_id,
-    //             name: call.name,
-    //             arguments: typeof call.arguments === "string" ? JSON.parse(call.arguments) : call.arguments
-    //         }));
+    async *fetchStream(
+        model: string, 
+        effort: string, 
+        history: ChatItem[], 
+        previousTurnID: string | undefined,
+        useCache: boolean,
+        abortSignal: AbortSignal
+    ): AsyncGenerator<StreamYield, ChatResponse, unknown> {
+        let fullText = '';
+        const formattedMessages = this.formatMessages(history);
 
-    //         return {
-    //             text: response.output_text || null,
-    //             tool_calls: parsedCalls
-    //         };
-    //     }
+        // I don't think any of the third party provider support the responses api
+        // Just use the old chat.completions, ignore previousTurnID
+        const stream = await this.client.chat.completions.create({
+            model: model,
+            messages: formattedMessages,
+            tools: OpenAICompatibleProvider.tools,
+            stream: true,
 
-    //     return { text: response.output_text || null, tool_calls: null };
-    // }
+            reasoning_effort: effort as any
+        }, { signal: abortSignal });
+
+        const currentCalls = new Map();
+
+        for await (const event of stream) {
+            if (abortSignal?.aborted) throw new Error('AbortError');
+            const delta = event.choices[0]?.delta;
+
+            if (!delta) continue;
+
+            if (delta.content) {
+                fullText += delta.content;
+                yield { type: 'text', content: delta.content };
+            }
+
+            // Safely parse reasoning content if the model provides it
+            if ((delta as any).reasoning_content) {
+                const text = (delta as any).reasoning_content;
+                yield { type : 'thought', content: text };
+            }
+
+            if (delta.tool_calls) {
+                for (const toolCall of delta.tool_calls) {
+                    const index = toolCall.index;
+
+                    if (!currentCalls.has(index)) {
+                        currentCalls.set(index, {
+                            id: toolCall.id || '',
+                            name: toolCall.function?.name || '',
+                            arguments: ''
+                        });
+                    }
+
+                    const existing = currentCalls.get(index);
+                    if (toolCall.id) existing.id = toolCall.id;
+                    if (toolCall.function?.name) existing.name = toolCall.function.name;
+                    if (toolCall.function?.arguments) existing.arguments += toolCall.function.arguments;
+                }
+            }
+        }
+
+        if (currentCalls.size > 0 || fullText.length > 0) {
+            return ChatProvider.formatResponse(fullText, currentCalls);
+        }
+
+        return { items: [] };
+    }
 }

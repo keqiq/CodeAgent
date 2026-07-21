@@ -251,7 +251,14 @@ export class ChatApp implements vscode.WebviewViewProvider {
                 turnCount++;
                 // Use the ID ONLY if the provider hasn't changed
                 const turnID = (this.activeTurn.provider === provider && serverStateManagment) ? this.activeTurn.turnID : undefined;
-                const streamGenerator = providerInstance.fetchStream(model, effort, this.chatHistory, turnID, this.aborter.signal);
+                const streamGenerator = providerInstance.fetchStream(
+                    model, 
+                    effort, 
+                    this.chatHistory, 
+                    turnID,
+                    serverStateManagment,
+                    this.aborter.signal
+                );
                 let streamResult = await streamGenerator.next();
                 
                 while (!streamResult.done) {
