@@ -98,6 +98,8 @@ export class ChatApp implements vscode.WebviewViewProvider {
     private async saveChatHistory() { await this.context.workspaceState.update('chatHistory', this.chatHistory); }
 
     private async getChatAPIKey(provider: string): Promise<string> {
+        if (provider.toLowerCase() === 'ollama') return 'local-no-key-required'; 
+        
         const chatSecretKey = `${provider.toUpperCase()}_CHAT_API_KEY`;
         let chatAPIKey = await this.context.secrets.get(chatSecretKey);
 
@@ -116,6 +118,8 @@ export class ChatApp implements vscode.WebviewViewProvider {
     }
 
     private async getEmbedAPIKey(provider: string): Promise<string> {
+        if (provider.toLowerCase() === 'ollama') return 'local-no-key-required'; 
+        
         const embedSecretKey = `${provider.toUpperCase()}_EMBED_API_KEY`;
         let embedAPIKey =  await this.context.secrets.get(embedSecretKey);
 

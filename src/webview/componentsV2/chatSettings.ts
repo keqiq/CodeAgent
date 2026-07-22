@@ -143,9 +143,17 @@ export class ChatSettings {
         if (!msg.provider) return;
 
         this.currentProvider = msg.provider;
-        this.keyBtn.classList.remove('disabled');
-        this.keyBtn.innerHTML = `Set ${msg.provider} API Key`;
         
+        if (msg.provider.toLowerCase() === 'ollama') {
+            this.keyBtn.classList.add('disabled');
+            this.keyBtn.innerHTML = `No Key Required (Local)`;
+            this.keyContainer.classList.add('hidden');
+        }
+        else {
+            this.keyBtn.classList.remove('disabled');
+            this.keyBtn.innerHTML = `Set ${msg.provider} API Key`;
+        }
+
         if (!msg.stateful) {
             this.toggleStateful.classList.remove('active');
             this.toggleStateful.classList.add('disabled');
@@ -160,9 +168,9 @@ export class ChatSettings {
         }
     }
 
-    public restoreSettings(msg: {showALl?: boolean, stateful?: boolean, turnLimit?: number}): void {
-        if (msg.showALl !== undefined) {
-            if (msg.showALl) this.toggleAllModels.classList.add('active');
+    public restoreSettings(msg: {showAll?: boolean, stateful?: boolean, turnLimit?: number}): void {
+        if (msg.showAll !== undefined) {
+            if (msg.showAll) this.toggleAllModels.classList.add('active');
             else this.toggleAllModels.classList.remove('active');
         }
 

@@ -65007,6 +65007,34 @@ var KimiChatProvider = class extends OpenAICompatibleProvider {
   }
 };
 
+// src/apis/chat/ollama.ts
+var OllamaChatProvider = class extends OpenAICompatibleProvider {
+  featuredModels = [];
+  constructor(apiKey) {
+    super(apiKey, "http://127.0.0.1:11434/v1");
+  }
+  async getModelInfos() {
+    try {
+      const response = await this.client.models.list();
+      const infos = [];
+      for (const m2 of response.data) {
+        const id = m2.id;
+        infos.push({
+          id,
+          reason: false,
+          efforts: [],
+          defaultEffort: null
+        });
+      }
+      this.featuredModels = infos.map((info) => info.id);
+      return infos;
+    } catch (error) {
+      console.error("Failed to fetch local models. Is Ollama running?", error);
+      return [];
+    }
+  }
+};
+
 // src/apis/chat/chatFactory.ts
 var ChatFactory = class {
   static register(providerName, providerClass) {
@@ -65017,7 +65045,8 @@ var ChatFactory = class {
     "Gemini": GeminiChatProvider,
     "Claude": ClaudeChatProvider,
     "DeepSeek": DeepSeekChatProvider,
-    "Kimi": KimiChatProvider
+    "Kimi": KimiChatProvider,
+    "Ollama": OllamaChatProvider
   };
   static supportsStateManagement(providerName) {
     const ProviderClass = this.providers[providerName];
@@ -65038,7 +65067,6 @@ var EmbedProvider = class {
 
 // src/apis/embed/gemini.ts
 var GeminiEmbedProvider = class extends EmbedProvider {
-  providerId = "Gemini";
   client;
   constructor(apiKey) {
     super();
@@ -65074,19 +65102,20 @@ var GeminiEmbedProvider = class extends EmbedProvider {
 };
 
 // src/apis/embed/openai.ts
-var OpenAIEmbedProvider = class extends EmbedProvider {
-  providerId = "OpenAI";
+var OpenAICompatibleEmbedProvider = class extends EmbedProvider {
   client;
-  constructor(apiKey) {
+  constructor(apiKey, baseURL) {
     super();
-    this.client = new OpenAI({ apiKey });
+    this.client = new OpenAI({ apiKey, baseURL });
   }
   async getModels() {
-    return [
-      "text-embedding-3-small",
-      "text-embedding-3-large",
-      "text-embedding-ada-002"
-    ];
+    try {
+      const response = await this.client.models.list();
+      return response.data.map((m2) => m2.id);
+    } catch (e2) {
+      console.error("Failed to fetch embed models.", e2);
+      return [];
+    }
   }
   async embed(model, texts) {
     const vectors = [];
@@ -65102,12 +65131,32 @@ var OpenAIEmbedProvider = class extends EmbedProvider {
     return vectors;
   }
 };
+var OpenAIEmbedProvider = class extends OpenAICompatibleEmbedProvider {
+  constructor(apiKey) {
+    super(apiKey);
+  }
+  async getModels() {
+    return [
+      "text-embedding-3-small",
+      "text-embedding-3-large",
+      "text-embedding-ada-002"
+    ];
+  }
+};
+
+// src/apis/embed/ollama.ts
+var ollamaEmbedProvider = class extends OpenAICompatibleEmbedProvider {
+  constructor(apiKey) {
+    super(apiKey, "http://127.0.0.1:11434/v1");
+  }
+};
 
 // src/apis/embed/embedFactory.ts
 var EmbedFactory = class {
   static providers = {
     "Gemini": GeminiEmbedProvider,
-    "OpenAI": OpenAIEmbedProvider
+    "OpenAI": OpenAIEmbedProvider,
+    "Ollama": ollamaEmbedProvider
   };
   static getAvailableProviders() {
     return Object.keys(this.providers);
@@ -78723,6 +78772,7 @@ var ChatApp = class {
     await this.context.workspaceState.update("chatHistory", this.chatHistory);
   }
   async getChatAPIKey(provider) {
+    if (provider.toLowerCase() === "ollama") return "local-no-key-required";
     const chatSecretKey = `${provider.toUpperCase()}_CHAT_API_KEY`;
     let chatAPIKey = await this.context.secrets.get(chatSecretKey);
     if (!chatAPIKey) {
@@ -78736,6 +78786,7 @@ var ChatApp = class {
     return chatAPIKey;
   }
   async getEmbedAPIKey(provider) {
+    if (provider.toLowerCase() === "ollama") return "local-no-key-required";
     const embedSecretKey = `${provider.toUpperCase()}_EMBED_API_KEY`;
     let embedAPIKey = await this.context.secrets.get(embedSecretKey);
     if (!embedAPIKey) {

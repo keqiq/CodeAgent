@@ -224,8 +224,14 @@ export class ChatHeader {
         this.providerDropdown.selectValue(provider, false);
         this.currentEmbedProvider = provider;
 
-        this.keyBtn.classList.remove('disabled');
-        this.keyBtn.innerHTML = `Set ${provider} Embedding API Key`;
+        if (provider.toLowerCase() === 'ollama') {
+            this.keyBtn.classList.add('disabled');
+            this.keyBtn.innerHTML = `No Key Required (Local)`;
+            this.keyContainer.classList.add('hidden');
+        } else {
+            this.keyBtn.classList.remove('disabled');
+            this.keyBtn.innerHTML = `Set ${provider} Embedding API Key`;
+        }
         this.setEmbedModelsLoading(provider);
         this.vscodeAPI.postMessage({ type: 'fetchEmbedModels', provider: provider });
     }

@@ -1,5 +1,6 @@
 import { EmbedProvider } from "./embedProvider";
 import { GeminiEmbedProvider } from "./gemini";
+import { ollamaEmbedProvider } from "./ollama";
 import { OpenAIEmbedProvider } from "./openai";
 
 type EmbedProviderConstructor = new (apiKey: string) => EmbedProvider;
@@ -7,7 +8,8 @@ type EmbedProviderConstructor = new (apiKey: string) => EmbedProvider;
 export class EmbedFactory {
     private static readonly providers: Record<string, EmbedProviderConstructor> = {
         'Gemini': GeminiEmbedProvider,
-        'OpenAI': OpenAIEmbedProvider
+        'OpenAI': OpenAIEmbedProvider,
+        'Ollama': ollamaEmbedProvider
     };
 
     static getAvailableProviders(): string[] {

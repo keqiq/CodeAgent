@@ -2,8 +2,6 @@ import { GoogleGenAI } from "@google/genai";
 import { EmbedProvider } from "./embedProvider";
 
 export class GeminiEmbedProvider extends EmbedProvider {
-    providerId: string = 'Gemini';
-
     private client: GoogleGenAI;
 
     constructor(apiKey: string) {

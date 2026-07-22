@@ -1,22 +1,22 @@
 import OpenAI from 'openai';
 import { EmbedProvider } from './embedProvider';
 
-export class OpenAIEmbedProvider extends EmbedProvider {
-    providerId: string = 'OpenAI';
+export class OpenAICompatibleEmbedProvider extends EmbedProvider {
+    protected client: OpenAI;
 
-    private client: OpenAI;
-
-    constructor(apiKey: string) {
+    constructor(apiKey: string, baseURL?: string) {
         super();
-        this.client = new OpenAI({ apiKey });
+        this.client = new OpenAI({ apiKey, baseURL });
     }
 
     async getModels(): Promise<string[]> {
-        return [
-            'text-embedding-3-small',
-            'text-embedding-3-large',
-            'text-embedding-ada-002'
-        ];
+        try {
+            const response = await this.client.models.list();
+            return response.data.map(m => m.id);
+        } catch (e) {
+            console.error('Failed to fetch embed models.', e);
+            return [];
+        }
     }
 
     async embed(model: string, texts: string[]): Promise<number[][]> {
@@ -35,4 +35,21 @@ export class OpenAIEmbedProvider extends EmbedProvider {
 
         return vectors;
     }
+}
+
+export class OpenAIEmbedProvider extends OpenAICompatibleEmbedProvider {
+
+    constructor(apiKey: string) {
+        super(apiKey);
+    }
+
+    async getModels(): Promise<string[]> {
+        return [
+            'text-embedding-3-small',
+            'text-embedding-3-large',
+            'text-embedding-ada-002'
+        ];
+    }
+
+
 }

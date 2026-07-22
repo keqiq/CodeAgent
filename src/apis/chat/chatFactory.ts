@@ -3,6 +3,7 @@ import { ClaudeChatProvider } from './claude';
 import { DeepSeekChatProvider } from './deepseek';
 import { GeminiChatProvider } from "./gemini";
 import { KimiChatProvider } from './kimi';
+import { OllamaChatProvider } from './ollama';
 import { OpenAIChatProvider } from "./openai";
 
 interface ChatProviderConstructor {
@@ -21,7 +22,8 @@ export class ChatFactory {
         'Gemini': GeminiChatProvider,
         'Claude': ClaudeChatProvider,
         'DeepSeek': DeepSeekChatProvider,
-        'Kimi': KimiChatProvider
+        'Kimi': KimiChatProvider,
+        'Ollama': OllamaChatProvider
     };
 
     static supportsStateManagement(providerName: string): boolean {
