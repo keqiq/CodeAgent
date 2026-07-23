@@ -29,8 +29,7 @@
     border-radius: 8px;
     max-width: 85%;
     word-wrap: break-word;
-    white-space: pre-wrap; 
-    font-size: 11px;
+    font-size: 12px;
     line-height: 1.2;
     box-shadow: 0 1px 2px rgba(0,0,0,0.1);
 }
@@ -107,6 +106,18 @@
     margin-bottom: 8px;
 }
 
+.message.agent.status-ok,
+.message.agent.status-error,
+.message.agent.status-warning {
+    width: fit-content;        /* Shrinks the div to fit the text exactly */
+    padding: 6px 12px;         /* Restores horizontal padding */
+    border-radius: 6px;
+    margin-bottom: 8px;
+    font-weight: 600;
+    border: solid 1px;
+}
+
+
 /* --- MARKDOWN FORMATTING --- */
 .md-code-block {
     border-radius: 4px;
@@ -165,6 +176,8 @@
 }
 
 .tool-group summary {
+    display: flex;
+    align-items: center;
     padding: 8px 10px;
     cursor: pointer;
     font-weight: 500;
@@ -184,7 +197,6 @@
     border-top: 1px solid var(--vscode-widget-border);
     background: var(--vscode-editor-background);
     font-family: var(--vscode-editor-font-family);
-    white-space: pre-wrap;
     word-wrap: break-word;
     max-height: 250px;
     overflow-y: auto;
@@ -192,23 +204,84 @@
     border-bottom-right-radius: 6px;
 }
 
-.tool-log-entry { margin-bottom: 6px; opacity: 0.9; }
+.tool-log-entry { 
+    margin-bottom: 8px; 
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    opacity: 0.9;
+}
 .tool-log-entry:last-child { margin-bottom: 0; }
 
-.log-running { color: var(--vscode-charts-yellow); }
-.log-success { color: var(--vscode-testing-iconPassed); }
-.log-error { color: var(--vscode-testing-iconFailed); }
+.tool-name-badge-container {
+    flex-shrink: 0;
+    padding-top: 3px;
+}
+
+.tool-args-container {
+    flex: 1; 
+    min-width: 0; /* Prevents overflow pushing the flex boundary */
+}
+
+.tool-name-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    text-transform: none !important;
+    font-family: var(--vscode-editor-font-family);
+    font-size: 11px; 
+    padding: 3px 8px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+}
+
+.tool-badge-running {
+    background: color-mix(in srgb, var(--vscode-descriptionForeground) 15%, transparent);
+    color: var(--vscode-descriptionForeground);
+    border-color: color-mix(in srgb, var(--vscode-descriptionForeground) 30%, transparent); 
+}
+
+.tool-badge-running .vscode-spinner {
+    margin: 0;
+    width: 10px;
+    height: 10px;
+    border-width: 1.5px;
+    border-color: var(--vscode-descriptionForeground);
+    border-top-color: transparent;
+}
+
+.tool-summary-content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+}
+
+.tool-summary-badges {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: auto;
+}
+
+.tool-error-text {
+    margin-left: 0;
+    margin-top: 6px;
+    color: var(--vscode-testing-iconFailed);
+    opacity: 0.9;
+}
 
 .arg-block {
     display: block;
-    margin-top: 4px;
-    margin-left: 20px;
+    margin-top: 0;  /* Flush with the top */
+    margin-left: 0; /* Flush to the left of its column */
     padding: 6px;
     background: rgba(0, 0, 0, 0.1);
     border: 1px solid var(--vscode-widget-border);
     border-radius: 4px;
     font-family: var(--vscode-editor-font-family);
     font-size: 11px;
+    box-sizing: border-box;
 }
 
 .arg-row {
@@ -364,23 +437,26 @@
 }
 .discard-btn:hover { background: var(--vscode-button-secondaryHoverBackground); }
 
-/* Status Badges (after clicking apply/discard) */
-.patch-status-badge {
+/* --- Universal Status Highlights (Messages, Tools, Patches) --- */
+.status-highlight {
     padding: 2px 8px;
     border-radius: 4px;
     font-weight: bold;
     font-size: 10px;
     text-transform: uppercase;
 }
-.patch-status-badge.accepted {
+
+.status-ok, .message.status-ok {
     background: color-mix(in srgb, var(--vscode-testing-iconPassed) 20%, transparent);
     color: var(--vscode-testing-iconPassed);
 }
-.patch-status-badge.rejected {
+
+.status-error, .message.status-error {
     background: color-mix(in srgb, var(--vscode-testing-iconFailed) 20%, transparent);
     color: var(--vscode-testing-iconFailed);
 }
-.patch-status-badge.conflict {
+
+.status-warning, .message.status-warning {
     background: color-mix(in srgb, var(--vscode-charts-yellow) 20%, transparent);
     color: var(--vscode-charts-yellow);
 }

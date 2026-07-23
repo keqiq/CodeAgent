@@ -6,7 +6,7 @@ import { EmbedProvider } from '../apis/embed/embedProvider';
 import { Indexer } from '../indexing/indexer';
 import { excludePattern } from '../indexing/languages/_languageIndex';
 
-export type SearchCodebaseDeps = {
+export type findDeps = {
     indexer: Indexer,
     embedProvider: EmbedProvider,
     model: string
@@ -40,7 +40,7 @@ export const searchSchemas: ToolSchema[] = [
     },
     {
         type: "function",
-        name: "searchCodebase",
+        name: "find",
         description: "Search indexed workspace code using a hybrid of semantic meaning and exact keyword matching. For best results, include specific code identifiers, variable names, or technical terms alongside the semantic intent.",
         parameters: {
             type: "object",
@@ -129,7 +129,7 @@ export async function executeGrep(query: string, filePattern: string = '**/*', c
     }
 };
 
-export async function executeSearchCodebase(query: string, deps: SearchCodebaseDeps, signal: AbortSignal ): Promise<ToolResult> {
+export async function executeFind(query: string, deps: findDeps, signal: AbortSignal ): Promise<ToolResult> {
     if (signal.aborted) throw new Error('AbortError');
     if (!query.trim()) throw new Error('Search query is emtpy');
     if (!deps.indexer.indexEnabled()) throw new Error('Indexing is disabled cannot use semantic search');

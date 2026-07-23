@@ -17,7 +17,7 @@ const vscodeAPI: WebviewApi = acquireVsCodeApi();
 document.addEventListener('DOMContentLoaded', () => {
     const chatContainer = new ChatContainer(vscodeAPI);
     const chatSettings = new ChatSettings(vscodeAPI);
-    const chatInput = new ChatInput(vscodeAPI, chatContainer);
+    const chatInput = new ChatInput(vscodeAPI, chatContainer, chatSettings);
     const chatHeader = new ChatHeader(vscodeAPI);
 
     window.addEventListener('message', (event: MessageEvent) => {
@@ -39,6 +39,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             case 'restoreChatHistory':
                 chatContainer.restoreChatHistory(msg.history);
+                const visibleMessages = msg.history.filter((m: any) => m.role !== 'developer');
+                chatSettings.toggleClearChatBtn(visibleMessages.length > 0);
                 break;
 
             // --- CHAT PROVIDER & MODELS ---
@@ -70,7 +72,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // --- CHAT STREAMING & TOOLS & PATCH ---
             case 'receiveMessage':
-                chatContainer.appendMessage({ type: 'message', role: 'assistant', content: msg.text });
+                chatContainer.appendMessage({ type: 'message', role: 'assistant', content: msg.text, style: msg.style });
                 break;
             
             case 'streamChunk':
@@ -100,6 +102,7 @@ document.addEventListener('DOMContentLoaded', () => {
             case 'agentRunComplete':
                 chatInput.setSendState();
                 chatContainer.cancelActiveUI();
+                chatSettings.toggleClearChatBtn(true);
                 break;
 
             case 'reviewPatch':
@@ -142,6 +145,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             case 'clearChatContainer':
                 chatContainer.clearChatUI();
+                chatSettings.toggleClearChatBtn(false);
                 break;
             
             default:

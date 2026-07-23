@@ -139,5 +139,10 @@ export class VectorDB {
 
     public async getVectorCount(): Promise<number> {
         return await this.table.countRows();
-    } 
+    }
+
+    public async dropTable(): Promise<void> {
+        const tableName = await this.connection.tableNames();
+        if (tableName.includes(this.tableName)) await this.connection.dropTable(this.tableName);
+    }
 }

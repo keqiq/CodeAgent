@@ -1,4 +1,4 @@
-import { GoogleGenAI, ThinkingLevel } from '@google/genai';
+import { GoogleGenAI } from '@google/genai';
 import { ChatItem, ChatProvider, ChatResponse, ModelInfo, StreamYield } from './chatProvider';
 import { allToolSchemas } from '../../tools/toolIndex';
 
@@ -8,10 +8,9 @@ export class GeminiChatProvider extends ChatProvider {
     private static geminiTools: any = allToolSchemas;
 
     protected featuredModels: string[] = [
-            'gemini-3.5-flash', 
-            'gemini-3.1-pro-preview', 'gemini-3.1-flash-lite',
-            'gemini-3-pro-preview', 'gemini-3-flash-preview',
-            'gemini-2.5-pro', 'gemini-2.5-flash', 'gemini-2.5-flash-lite'
+            'gemini-3.6-flash',
+            'gemini-3.5-flash', 'gemini-3.5-flash-lite',
+            'gemini-3.1-pro', 'gemini-3.1-flash-lite'
     ];
 
     constructor(apiKey: string) {
@@ -38,12 +37,24 @@ export class GeminiChatProvider extends ChatProvider {
                 const reasonCapable = m.thinking;
                 
                 // Exception for 3.1-pro models
-                const effortLevels = id.includes('gemini-3.1-pro') ? ['low', 'medium', 'high'] : ['minimal', 'low', 'medium', 'high'];
+                let effortLevels: string[];
+                let defaultEffort = 'medium';
+                if (id.includes('gemini-3.1-pro')) effortLevels = ['low', 'medium', 'high'];
+
+                // On their docs it says medium is supported but thats not true at the time of writing
+                // Only low and high are supported for the newest model
+                else if (id.includes('gemini-3.5-flash-lite') || id.includes('gemini-3.6-flash')) {
+                    effortLevels = ['low', 'high'];
+                    defaultEffort = 'low';
+                }
+                else effortLevels = ['minimal', 'low', 'medium', 'high'];
+
+                // const effortLevels = id.includes('gemini-3.1-pro') ? ['low', 'medium', 'high'] : ['minimal', 'low', 'medium', 'high'];
                 infos.push({
                     id: id,
                     reason: reasonCapable,
                     efforts: reasonCapable ? effortLevels: [],
-                    defaultEffort: reasonCapable ? 'medium' : null
+                    defaultEffort: reasonCapable ? defaultEffort : null
                 });
             }
         }
@@ -99,6 +110,8 @@ export class GeminiChatProvider extends ChatProvider {
         const sysMsg = history.find(i => i.type === 'message' && i.role === 'developer');
         
         // OK if we are doing stateful multi turn conversation we need to send back only the previous tool result or the user's new prompt
+        // Gemini just updated their interactions API 
+        // TODO: changes may be needed
         let currentInput;
         if (previousTurnID && useCache) {
             const newItemsToSubmit = history.filter(item => 
@@ -124,7 +137,10 @@ export class GeminiChatProvider extends ChatProvider {
         let interactionId = null;
         
         for await (const event of stream) {
-            if (abortSignal?.aborted) throw new Error('AbortError');
+            if (abortSignal?.aborted) {
+                if (interactionId) await this.client.interactions.cancel(interactionId);
+                throw new Error('AbortError');
+            }
             const evType = event.event_type;
 
             // Gemini's streaming with tool calls needs multi turn conversation implementation
@@ -161,6 +177,15 @@ export class GeminiChatProvider extends ChatProvider {
                     const summaryText = deltaAny.content?.text || "";
                     if(summaryText) yield { type: 'thought', content: summaryText };
                 }
+            }
+
+            else if (evType === 'interaction.completed') {
+                const usage = event.interaction.usage;
+                if (usage) {
+
+
+                }
+
             }
         }
 

@@ -30,6 +30,9 @@ export class ChatHeader {
     private toggleIndex: HTMLElement;
     private isIndexGloballyEnabled: boolean = true;
 
+    private clearIndexBtn: HTMLElement;
+    private clearIndexConfirmBtn: HTMLButtonElement;
+
     private countdownInterval?: number;
 
     constructor(private vscodeAPI: WebviewApi) {
@@ -49,6 +52,8 @@ export class ChatHeader {
         this.keyInput = document.getElementById('embedKeyInput') as HTMLInputElement;
         this.keySaveBtn = document.getElementById('embedKeySaveBtn') as HTMLElement;
         this.toggleIndex = document.getElementById('menuIndexToggle') as HTMLElement;
+        this.clearIndexBtn = document.getElementById('menuClearIndexBtn') as HTMLElement;
+        this.clearIndexConfirmBtn = document.getElementById('clearIndexConfirmBtn') as HTMLButtonElement;
 
         this.providerDropdown = new CustomDropdown('embedProviderDropdown', 'Providers', (val: string) => {
             this.vscodeAPI.postMessage({ type: 'saveEmbedProvider', provider: val });
@@ -78,6 +83,7 @@ export class ChatHeader {
             if (e.target instanceof Node && !this.indexSettingsContainer.contains(e.target)) {
                 this.keyContainer.classList.add('hidden');
                 this.indexSettingsDropdown.classList.add('hidden');
+                this.clearIndexConfirmBtn.classList.add('hidden');
             }
         });
 
@@ -146,6 +152,22 @@ export class ChatHeader {
             this.setGlobalIndexState(isActive);
             this.vscodeAPI.postMessage({ type: 'updateIndexEnabled', enabled: isActive });
         });
+
+        // Delete table confirmation show
+        this.clearIndexBtn.addEventListener('click', (e) => {
+            if (this.clearIndexBtn.classList.contains('disabled')) return;
+            e.stopPropagation();
+            this.clearIndexConfirmBtn.classList.remove('hidden');
+        });
+
+        // Delete table
+        this.clearIndexConfirmBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.clearIndexConfirmBtn.classList.add('hidden');
+            this.indexSettingsDropdown.classList.add('hidden');
+            
+            this.vscodeAPI.postMessage({ type: 'deleteIndex' });
+        });
     }
 
     public restoreSettings(msg: { retrievalCount?: number, debounceTime?: number, enabled?: boolean }): void {
@@ -175,6 +197,8 @@ export class ChatHeader {
             this.actionIndexBtn.classList.remove('state-indexed', 'state-indexing', 'state-error');
             this.actionIndexBtn.classList.add('state-unindexed');
             this.actionIndexBtnText.textContent = 'Index';
+            this.clearIndexBtn.classList.add('disabled');
+            this.clearIndexConfirmBtn.classList.add('hidden');
         } else {
             // Unlock the UI
             this.providerDropdown.setDisabled(false);
@@ -285,24 +309,29 @@ export class ChatHeader {
                 this.updateStatusText(`${msg.vectorCount} Vectors Loaded`, 'ready');
                 this.actionIndexBtnText.textContent = 'Reindex';
                 this.actionIndexBtn.classList.add('state-indexed');
+                this.clearIndexBtn.classList.remove('disabled');
                 break;
                 
             case 'unindexed':
                 this.updateStatusText(msg.text || 'Not Indexed', 'warning');
                 this.actionIndexBtnText.textContent = 'Index';
                 this.actionIndexBtn.classList.add('state-unindexed');
+                this.clearIndexBtn.classList.add('disabled');
+                this.clearIndexConfirmBtn.classList.add('hidden');
                 break;
                 
             case 'error':
                 this.updateStatusText(msg.text, 'error');
                 this.actionIndexBtnText.textContent = 'Index';
                 this.actionIndexBtn.classList.add('state-error');
+                this.clearIndexBtn.classList.remove('disabled');
                 break;
 
             case 'outdated':
                 this.updateStatusText(msg.text, 'warning');
                 this.actionIndexBtnText.textContent = 'Reindex';
                 this.actionIndexBtn.classList.add('state-unindexed');
+                this.clearIndexBtn.classList.remove('disabled');
                 break;
                 
             case 'indexing':

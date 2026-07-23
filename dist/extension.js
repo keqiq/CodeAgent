@@ -35559,7 +35559,7 @@ var ChatProvider = class _ChatProvider {
       _ChatProvider.modelCache[providerName] = await this.getModelInfos();
     }
     const cachedModels = _ChatProvider.modelCache[providerName];
-    if (fetchAll) return cachedModels;
+    if (fetchAll || this.featuredModels.length === 0) return cachedModels;
     return cachedModels.filter((info) => this.featuredModels.includes(info.id));
   }
   static formatResponse(text, toolCalls, turnID) {
@@ -35987,7 +35987,7 @@ var searchSchemas = [
   },
   {
     type: "function",
-    name: "searchCodebase",
+    name: "find",
     description: "Search indexed workspace code using a hybrid of semantic meaning and exact keyword matching. For best results, include specific code identifiers, variable names, or technical terms alongside the semantic intent.",
     parameters: {
       type: "object",
@@ -36057,7 +36057,7 @@ async function executeGrep(query, filePattern = "**/*", cwd, signal) {
     cancelTokenSource.dispose();
   }
 }
-async function executeSearchCodebase(query, deps, signal) {
+async function executeFind(query, deps, signal) {
   if (signal.aborted) throw new Error("AbortError");
   if (!query.trim()) throw new Error("Search query is emtpy");
   if (!deps.indexer.indexEnabled()) throw new Error("Indexing is disabled cannot use semantic search");
@@ -36175,10 +36175,10 @@ function createToolRegistry(deps) {
     read: async (args) => await executeRead(args.filePath, deps.getCwd()),
     write: async (args) => await executeWrite(args.filePath, args.content, deps.getCwd()),
     edit: async (args) => await executeEdit(args.filePath, args.oldText, args.newText, deps.getCwd()),
-    searchCodebase: async (args) => {
+    find: async (args) => {
       try {
-        const searchDeps = await deps.createSearchCodebaseDeps();
-        return await executeSearchCodebase(args.query, searchDeps, deps.getSignal());
+        const searchDeps = await deps.createFindDeps();
+        return await executeFind(args.query, searchDeps, deps.getSignal());
       } catch (e2) {
         return {
           ok: false,
@@ -46864,12 +46864,12 @@ var FunctionCallingConfigMode;
   FunctionCallingConfigMode2["VALIDATED"] = "VALIDATED";
 })(FunctionCallingConfigMode || (FunctionCallingConfigMode = {}));
 var ThinkingLevel;
-(function(ThinkingLevel3) {
-  ThinkingLevel3["THINKING_LEVEL_UNSPECIFIED"] = "THINKING_LEVEL_UNSPECIFIED";
-  ThinkingLevel3["MINIMAL"] = "MINIMAL";
-  ThinkingLevel3["LOW"] = "LOW";
-  ThinkingLevel3["MEDIUM"] = "MEDIUM";
-  ThinkingLevel3["HIGH"] = "HIGH";
+(function(ThinkingLevel2) {
+  ThinkingLevel2["THINKING_LEVEL_UNSPECIFIED"] = "THINKING_LEVEL_UNSPECIFIED";
+  ThinkingLevel2["MINIMAL"] = "MINIMAL";
+  ThinkingLevel2["LOW"] = "LOW";
+  ThinkingLevel2["MEDIUM"] = "MEDIUM";
+  ThinkingLevel2["HIGH"] = "HIGH";
 })(ThinkingLevel || (ThinkingLevel = {}));
 var PersonGeneration;
 (function(PersonGeneration2) {
@@ -64847,14 +64847,11 @@ var GeminiChatProvider = class _GeminiChatProvider extends ChatProvider {
   client;
   static geminiTools = allToolSchemas;
   featuredModels = [
+    "gemini-3.6-flash",
     "gemini-3.5-flash",
-    "gemini-3.1-pro-preview",
-    "gemini-3.1-flash-lite",
-    "gemini-3-pro-preview",
-    "gemini-3-flash-preview",
-    "gemini-2.5-pro",
-    "gemini-2.5-flash",
-    "gemini-2.5-flash-lite"
+    "gemini-3.5-flash-lite",
+    "gemini-3.1-pro",
+    "gemini-3.1-flash-lite"
   ];
   constructor(apiKey) {
     super();
@@ -64885,12 +64882,18 @@ var GeminiChatProvider = class _GeminiChatProvider extends ChatProvider {
         const exluded = exclusionKeywords.some((keyword) => id.includes(keyword));
         if (exluded) continue;
         const reasonCapable = m2.thinking;
-        const effortLevels = id.includes("gemini-3.1-pro") ? ["low", "medium", "high"] : ["minimal", "low", "medium", "high"];
+        let effortLevels;
+        let defaultEffort = "medium";
+        if (id.includes("gemini-3.1-pro")) effortLevels = ["low", "medium", "high"];
+        else if (id.includes("gemini-3.5-flash-lite") || id.includes("gemini-3.6-flash")) {
+          effortLevels = ["low", "high"];
+          defaultEffort = "low";
+        } else effortLevels = ["minimal", "low", "medium", "high"];
         infos.push({
           id,
           reason: reasonCapable,
           efforts: reasonCapable ? effortLevels : [],
-          defaultEffort: reasonCapable ? "medium" : null
+          defaultEffort: reasonCapable ? defaultEffort : null
         });
       }
     }
@@ -76218,6 +76221,10 @@ var VectorDB = class _VectorDB {
   async getVectorCount() {
     return await this.table.countRows();
   }
+  async dropTable() {
+    const tableName = await this.connection.tableNames();
+    if (tableName.includes(this.tableName)) await this.connection.dropTable(this.tableName);
+  }
 };
 
 // src/indexing/chunker.ts
@@ -78562,6 +78569,24 @@ var Indexer = class _Indexer {
     dbTimestamps[this.model] = syncTimestamp;
     await this.context.workspaceState.update("dbTimestamps", dbTimestamps);
   }
+  async deleteIndex() {
+    if (this.db) {
+      await this.db.dropTable();
+      this.db = void 0;
+    }
+    this.dirtyFiles.clear();
+    this.deletedFiles.clear();
+    this.headerDirtyFiles.clear();
+    if (this.debounceTimer) clearTimeout(this.debounceTimer);
+    const dbTimestamps = this.context.workspaceState.get("dbTimestamps") || {};
+    delete dbTimestamps[this.model];
+    await this.context.workspaceState.update("dbTimestamps", dbTimestamps);
+    this.emitter.fire({
+      type: "updateIndexStatus",
+      state: "unindexed",
+      text: "Not Indexed"
+    });
+  }
   // private static debugVector(label: string, vector: ArrayLike<number>, text: string) {
   //     const values = Array.from(vector);
   //     const textHash = crypto
@@ -78729,7 +78754,7 @@ var ChatApp = class {
         if (!this.aborter) throw new Error("No active turn to get signal from");
         return this.aborter.signal;
       },
-      createSearchCodebaseDeps: async () => {
+      createFindDeps: async () => {
         const provider = this.context.globalState.get("embedProvider");
         const model = this.context.globalState.get(`${provider}_embedModel`);
         if (!provider || !model) throw new Error("embedding provider/model is not configured");
@@ -78957,11 +78982,11 @@ var ChatApp = class {
     } catch (e2) {
       if (e2.name === "AbortError" || e2.message?.toLowerCase().includes("abort")) {
         this.activeTurn = lastValidTurnState;
-        this.chatHistory.push({ type: "message", role: "assistant", content: "\u{1F6D1} *You stopped this response.*" });
-        this.post({ type: "receiveMessage", text: "\u{1F6D1} *You stopped this response.*" });
+        this.chatHistory.push({ type: "message", role: "assistant", content: "Execution halted manually.", style: "status-warning" });
+        this.post({ type: "receiveMessage", text: "Execution halted manually.", style: "status-warning" });
       } else {
-        this.chatHistory.push({ type: "message", role: "assistant", content: `\u274C *Error: ${e2.message || String(e2)}*` });
-        this.post({ type: "receiveMessage", text: `\u274C *Error: ${e2.message || String(e2)}*` });
+        this.chatHistory.push({ type: "message", role: "assistant", content: `Error: ${e2.message || String(e2)}`, style: "status-error" });
+        this.post({ type: "receiveMessage", text: `Error: ${e2.message || String(e2)}`, style: "status-error" });
       }
       this.saveChatHistory();
       this.post({ type: "agentRunComplete" });
@@ -79161,6 +79186,11 @@ var ChatApp = class {
           const apiKey = await this.getEmbedAPIKey(data.provider);
           const embedProvider = EmbedFactory.create(data.provider, apiKey);
           await this.indexer.indexWorkspace(embedProvider, data.model);
+          break;
+        }
+        case "deleteIndex": {
+          if (!this.indexer) return;
+          await this.indexer.deleteIndex();
           break;
         }
         // Take the changes from worktree and apply to main workspace

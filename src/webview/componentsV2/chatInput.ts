@@ -1,5 +1,7 @@
 import { WebviewApi } from "../frontend";
+import { PROVIDER_ICONS } from "../providerIcons";
 import { ChatContainer } from "./chatContainer";
+import { ChatSettings } from "./chatSettings";
 import { CustomDropdown } from "./customDropdown";
 
 export class ChatInput {
@@ -20,7 +22,7 @@ export class ChatInput {
     private sendIcon = `<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1L1 8h5v7h4V8h5L8 1z" /></svg>`;
     private stopIcon = `<svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><rect x="2" y="2" width="12" height="12" rx="2" /></svg>`;
 
-    constructor(private vscodeAPI: WebviewApi, private chatContainer: ChatContainer) {
+    constructor(private vscodeAPI: WebviewApi, private chatContainer: ChatContainer, private chatSettings: ChatSettings) {
         this.actionBtn = document.getElementById('actionBtn') as HTMLButtonElement;
         this.promptInput = document.getElementById('prompt') as HTMLTextAreaElement;
         this.effortContainer = document.getElementById('effortDropdown');
@@ -112,6 +114,13 @@ export class ChatInput {
         this.isGenerating = true;
         this.actionBtn.innerHTML = this.stopIcon;
         this.actionBtn.disabled = false;
+
+        // Disable UI inputs
+        this.promptInput.disabled = true;
+        this.providerDropdown.setDisabled(true);
+        this.modelDropdown.setDisabled(true);
+        this.effortDropdown.setDisabled(true);
+        this.chatSettings.setDisabled(true);
     }
 
     // Default state where there is no ongoing response
@@ -120,6 +129,21 @@ export class ChatInput {
         this.isGenerating = false;
         this.actionBtn.innerHTML = this.sendIcon;
         this.actionBtn.disabled = this.promptInput.value.trim() === '';
+
+        // Only re-enable the prompt and button if a model is currently selected
+        this.promptInput.disabled = !this.currentChatModel;
+        this.actionBtn.disabled = this.promptInput.value.trim() === '' || this.promptInput.disabled;
+
+        // Re-enable Dropdowns
+        this.providerDropdown.setDisabled(false);
+        if (this.currentChatProvider) this.modelDropdown.setDisabled(false);
+        
+        
+        // Only re-enable effort if it is actively being shown for this model
+        if (this.effortContainer && !this.effortContainer.classList.contains('hidden')) this.effortDropdown.setDisabled(false);
+
+        // Re-enable settings menu
+        this.chatSettings.setDisabled(false);
     }
 
     public waitForChatAPIKey(provider: string): void {
@@ -163,6 +187,9 @@ export class ChatInput {
 
         this.setChatModelsLoading();
 
+        this.sendIcon = PROVIDER_ICONS[provider.toLocaleLowerCase()] || PROVIDER_ICONS['default'];
+        this.actionBtn.innerHTML = this.sendIcon;
+
         this.vscodeAPI.postMessage({ type: 'fetchChatModels', provider: provider });
     }
 
@@ -176,7 +203,7 @@ export class ChatInput {
             this.currentChatModel = model;
             
             this.promptInput.disabled = false;
-            this.promptInput.placeholder = `Ask ${model}...`;
+            this.promptInput.placeholder = `Prompt ${model}...`;
             
             this.vscodeAPI.postMessage({ type: 'fetchChatModelInfo', model: model });
         } 

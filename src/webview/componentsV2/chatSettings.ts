@@ -5,7 +5,7 @@ export class ChatSettings {
     public currentProvider: string = '';
 
     private container: HTMLElement;
-    private toggleBtn: HTMLElement;
+    private toggleBtn: HTMLButtonElement;
     private dropdown: HTMLElement;
 
     private toggleAllModels: HTMLElement;
@@ -27,7 +27,7 @@ export class ChatSettings {
 
     constructor(private vscodeAPI: WebviewApi) {
         this.container = document.getElementById('chatSettingsContainer') as HTMLElement;
-        this.toggleBtn = document.getElementById('chatSettingsToggleBtn') as HTMLElement;
+        this.toggleBtn = document.getElementById('chatSettingsToggleBtn') as HTMLButtonElement;
         this.dropdown = document.getElementById('chatSettingsDropdown') as HTMLElement;
 
         this.toggleAllModels = document.getElementById('menuAllModelsToggle') as HTMLElement;
@@ -62,6 +62,7 @@ export class ChatSettings {
         document.addEventListener('click', (e: MouseEvent) => {
             if (e.target instanceof Node && !this.container.contains(e.target)) {
                 this.dropdown.classList.add('hidden');
+                this.clearChatConfirmBtn.classList.add('hidden');
             }
         });
 
@@ -196,5 +197,23 @@ export class ChatSettings {
 
     private notifyMaxTurnChange(): void {
         this.vscodeAPI.postMessage({ type: 'updateTurnLimit', limit: parseInt(this.maxTurnInput.value, 10) || 0 });
+    }
+
+    public toggleClearChatBtn(hasMessages: boolean): void {
+        if (hasMessages) this.clearChatBtn.classList.remove('disabled');
+        else {
+            this.clearChatBtn.classList.add('disabled');
+            this.clearChatConfirmBtn.classList.add('hidden');
+        }
+    }
+
+    public setDisabled(disabled: boolean): void {
+        this.toggleBtn.disabled = disabled;
+
+        if (disabled) {
+            this.dropdown.classList.add('hidden');
+            this.keyContainer.classList.add('hidden');
+            this.clearChatConfirmBtn.classList.add('hidden');
+        }
     }
 }

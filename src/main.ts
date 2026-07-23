@@ -61,7 +61,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
                 return this.aborter.signal;
             },
 
-            createSearchCodebaseDeps: async () => {
+            createFindDeps: async () => {
                 const provider = this.context.globalState.get<string>('embedProvider');
                 const model = this.context.globalState.get<string>(`${provider}_embedModel`);
                 
@@ -348,11 +348,11 @@ export class ChatApp implements vscode.WebviewViewProvider {
             if (e.name === 'AbortError' || e.message?.toLowerCase().includes('abort')) {
                 // If we aborted the response, roll back to previous turnID
                 this.activeTurn = lastValidTurnState;
-                this.chatHistory.push({ type: 'message', role: 'assistant', content: '🛑 *You stopped this response.*' });
-                this.post({ type: 'receiveMessage', text: '🛑 *You stopped this response.*' });
+                this.chatHistory.push({ type: 'message', role: 'assistant', content: 'Execution halted manually.', style: 'status-warning' } as any);
+                this.post({ type: 'receiveMessage', text: 'Execution halted manually.', style: 'status-warning' });
             } else {
-                this.chatHistory.push({ type: 'message', role: 'assistant', content: `❌ *Error: ${e.message || String(e)}*` });
-                this.post({ type: 'receiveMessage', text: `❌ *Error: ${e.message || String(e)}*` });
+                this.chatHistory.push({ type: 'message', role: 'assistant', content: `Error: ${e.message || String(e)}`, style: 'status-error' } as any);
+                this.post({ type: 'receiveMessage', text: `Error: ${e.message || String(e)}`, style: 'status-error' });
             }
             this.saveChatHistory();
             this.post({ type: 'agentRunComplete' });
@@ -603,6 +603,12 @@ export class ChatApp implements vscode.WebviewViewProvider {
                     const embedProvider = EmbedFactory.create(data.provider, apiKey);
                     
                     await this.indexer.indexWorkspace(embedProvider, data.model);
+                    break;
+                }
+
+                case 'deleteIndex': {
+                    if (!this.indexer) return;
+                    await this.indexer.deleteIndex();
                     break;
                 }
 

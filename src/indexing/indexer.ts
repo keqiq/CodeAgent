@@ -441,6 +441,28 @@ export class Indexer {
         await this.context.workspaceState.update('dbTimestamps', dbTimestamps);
     }
 
+    public async deleteIndex(): Promise<void> {
+        if (this.db) {
+            await this.db.dropTable();
+            this.db = undefined;
+        }
+
+        this.dirtyFiles.clear();
+        this.deletedFiles.clear();
+        this.headerDirtyFiles.clear();
+        if (this.debounceTimer) clearTimeout(this.debounceTimer);
+
+        const dbTimestamps = this.context.workspaceState.get<Record<string, number>>('dbTimestamps') || {};
+        delete dbTimestamps[this.model];
+        await this.context.workspaceState.update('dbTimestamps', dbTimestamps);
+
+        this.emitter.fire({
+            type: 'updateIndexStatus',
+            state: 'unindexed',
+            text: 'Not Indexed'
+        });
+    }
+
     // private static debugVector(label: string, vector: ArrayLike<number>, text: string) {
     //     const values = Array.from(vector);
 

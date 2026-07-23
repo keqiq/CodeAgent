@@ -1,4 +1,4 @@
-import { searchSchemas, executeGlob, executeGrep, SearchCodebaseDeps, executeSearchCodebase } from "./search";
+import { searchSchemas, executeGlob, executeGrep, findDeps as findDeps, executeFind as executeFind } from "./search";
 import { fileSchemas, executeRead, executeWrite, executeEdit } from "./files";
 
 export interface ToolProperty {
@@ -33,7 +33,7 @@ export const allToolSchemas: ToolSchema[] = [
 ];
 
 export type ToolDeps = {
-    createSearchCodebaseDeps: () => Promise<SearchCodebaseDeps>;
+    createFindDeps: () => Promise<findDeps>;
     getCwd: () => string;
     getSignal: () => AbortSignal;
 };
@@ -50,10 +50,10 @@ export function createToolRegistry(deps: ToolDeps): Record<string, (args: any) =
 
         edit: async (args) => await executeEdit(args.filePath, args.oldText, args.newText, deps.getCwd()),
 
-        searchCodebase: async (args) => {
+        find: async (args) => {
             try {
-                const searchDeps = await deps.createSearchCodebaseDeps();
-                return await executeSearchCodebase(args.query, searchDeps, deps.getSignal());
+                const searchDeps = await deps.createFindDeps();
+                return await executeFind(args.query, searchDeps, deps.getSignal());
             } catch (e) {
                 return {
                     ok: false,

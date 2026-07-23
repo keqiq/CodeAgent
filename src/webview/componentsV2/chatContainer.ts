@@ -50,7 +50,7 @@ export class ChatContainer {
 
         // Toggle scroll to bottom button based on container scroll distance to bottom
         this.container.addEventListener('scroll', () => {
-            const distanceToBottom = this.container.scrollHeight - this.container.scrollTop + this.container.clientHeight;
+            const distanceToBottom = this.container.scrollHeight - this.container.scrollTop - this.container.clientHeight;
             if (distanceToBottom > 50) this.scrollToBottomBtn.classList.add('visible');
             else this.scrollToBottomBtn.classList.remove('visible');
         });
@@ -80,7 +80,7 @@ export class ChatContainer {
     // Also for error and abort messages!
     // Agent responses are streamed which uses streamMessage
     // Tool calls are contained inside tool groups so not here either
-    public appendMessage(msg: Extract<ChatItem, { type: 'message' }>): void {
+    public appendMessage(msg: Extract<ChatItem, { type: 'message' }> & { style?: string }): void {
         this.removeTypingIndicator();
         this.removeActivePatchUI();
 
@@ -90,7 +90,15 @@ export class ChatContainer {
         const role = msg.role;
 
         const msgDiv = document.createElement('div');
-        msgDiv.classList.add('message', role);
+        
+        // Map 'assistant' role to 'agent' class for CSS consistency
+        const cssClass = role === 'assistant' ? 'agent' : role;
+        msgDiv.classList.add('message', cssClass);
+
+        // Apply optional style class for interrupt/error messages
+        if (msg.style) {
+            msgDiv.classList.add(msg.style);
+        }
 
         // Do not add system messages to the chat window
         if (role === 'developer') return;
@@ -166,6 +174,10 @@ export class ChatContainer {
         this.activeStreamRawText = "";
     }
 
+    // -----------------------------------------------------------------------------
+    // ------------------------------ THOUGHT SECTION ------------------------------
+    // -----------------------------------------------------------------------------
+
     public streamThought(chunk: string): void {
         this.removeTypingIndicator();
 
@@ -218,6 +230,10 @@ export class ChatContainer {
         this.activeStreamRawText = "";
     }
 
+    // -----------------------------------------------------------------------------
+    // ------------------------------- TOOLS SECTION -------------------------------
+    // -----------------------------------------------------------------------------
+
     // Make new tool group, one tool group is assigned per response
     // All tool calls in a response will have 1 tool group
     public makeToolGroup(): void {
@@ -243,7 +259,9 @@ export class ChatContainer {
 
         // Tool running
         if (msg.status === 'running') {
-            if (this.activeToolSummary) this.activeToolSummary.innerHTML = `<div class="vscode-spinner"></div> Running <b>${msg.toolName}</b>...`;
+            if (this.activeToolSummary) {
+                this.activeToolSummary.innerHTML = `<div class="tool-summary-content"><div class="vscode-spinner"></div> <span>Running <b>${msg.toolName}</b>...</span></div>`;
+            }
             
             this.activeTool = document.createElement('div');
             this.activeTool.classList.add('tool-log-entry');
@@ -251,21 +269,26 @@ export class ChatContainer {
             const displayArgs = this.formatToolArgs(msg.args);
 
             this.activeTool.innerHTML = `
-                <div style="display: flex; align-items: center;">
-                    <span class="tool-icon log-running" style="margin-right: 4px;">⏳</span> 
-                    <b>${msg.toolName}</b>
+                <div class="tool-name-badge-container">
+                    <span class="status-highlight tool-name-badge tool-badge-running">
+                        <div class="vscode-spinner"></div>
+                        ${msg.toolName}
+                    </span>
                 </div>
-                ${displayArgs}
+                <div class="tool-args-container">
+                    ${displayArgs}
+                </div>
             `;
             this.activeToolLogs!.appendChild(this.activeTool);
         }
         // Tool completion
         else if (msg.status === 'success') {
             if (this.activeTool) {
-                const icon = this.activeTool.querySelector('.tool-icon');
-                if (icon) {
-                    icon.classList.replace('log-running', 'log-success');
-                    icon.textContent = '✔';
+                const badge = this.activeTool.querySelector('.status-highlight') as HTMLElement;
+                if (badge) {
+                    badge.className = 'status-highlight tool-name-badge status-ok'; // Turns it green
+                    const spinner = badge.querySelector('.vscode-spinner');
+                    if (spinner) spinner.remove(); // Remove spinner
                 }
             }
         }
@@ -273,13 +296,17 @@ export class ChatContainer {
         else if (msg.status === 'error') {
             this.toolErrorCount++;
             if (this.activeTool) {
-                this.activeTool.classList.add('log-error');
-                const icon = this.activeTool.querySelector('.tool-icon');
-                if (icon) {
-                    icon.classList.replace('log-running', 'log-error');
-                    icon.textContent = '✖';
+                const badge = this.activeTool.querySelector('.status-highlight') as HTMLElement;
+                if (badge) {
+                    badge.className = 'status-highlight tool-name-badge status-error'; // Turns it red
+                    const spinner = badge.querySelector('.vscode-spinner');
+                    if (spinner) spinner.remove();
                 }
-                this.activeTool.innerHTML += `<div style="margin-left: 18px; margin-top: 4px; opacity: 0.9;">${msg.error}</div>`;
+                
+                const argsContainer = this.activeTool.querySelector('.tool-args-container');
+                if (argsContainer) {
+                    argsContainer.innerHTML += `<div class="tool-error-text">${msg.error}</div>`;
+                }
             }
         }
         this.scrollToBottom();
@@ -290,23 +317,44 @@ export class ChatContainer {
 
         // If tool calls were interrupted by user
         if (msg.interrupted) {
-            // Handle the actively running tool that got cut off
             if (this.activeTool) {
-                this.activeTool.classList.add('log-error');
-                const icon = this.activeTool.querySelector('.tool-icon');
-                if (icon) {
-                    icon.classList.replace('log-running', 'log-error');
-                    icon.textContent = '🛑';
+                const badge = this.activeTool.querySelector('.status-highlight') as HTMLElement;
+                if (badge) {
+                    badge.className = 'status-highlight tool-name-badge status-error';
+                    const spinner = badge.querySelector('.vscode-spinner');
+                    if (spinner) spinner.remove();
                 }
-                this.activeTool.innerHTML += `<div style="margin-left: 18px; margin-top: 4px; opacity: 0.9;">Halted</div>`;
+                const argsContainer = this.activeTool.querySelector('.tool-args-container');
+                if (argsContainer) {
+                    argsContainer.innerHTML += `<div class="tool-error-text">Halted manually</div>`;
+                }
             }
-            this.activeToolSummary.innerHTML = '⚠️ Execution halted';
-        } 
+            
+            this.activeToolSummary.innerHTML = `
+                <div class="tool-summary-content">
+                    <span>Execution Halted</span>
+                    <div class="tool-summary-badges">
+                        <span class="status-highlight status-error">Halted</span>
+                    </div>
+                </div>`;
+        }
         
         // Tool calls all completed
         else {
-            if (this.toolErrorCount > 0) this.activeToolSummary.textContent = `⚠️ Completed with ${this.toolErrorCount} error(s)`;
-            else this.activeToolSummary.textContent = `✅ ${msg.totalCount} tool(s) executed successfully`;
+            const successCount = msg.totalCount - this.toolErrorCount;
+            
+            let summaryHTML = `
+                <div class="tool-summary-content">
+                    <span>Executed ${msg.totalCount} tool${msg.totalCount === 1 ? '' : 's'}</span>
+                    <div class="tool-summary-badges">
+                        <span class="status-highlight status-ok">${successCount} Success</span>`;
+            
+            if (this.toolErrorCount > 0) {
+                summaryHTML += `<span class="status-highlight status-error">${this.toolErrorCount} Failed</span>`;
+            }
+            
+            summaryHTML += `</div></div>`;
+            this.activeToolSummary.innerHTML = summaryHTML;
         }
 
         // clear tool references
@@ -317,19 +365,33 @@ export class ChatContainer {
         this.toolErrorCount = 0;
     }
 
-    public clearChatUI(): void {
-        this.container.innerHTML = '';
-        this.scrollToBottom();
+    private formatToolArgs(args: any): string {
+        try {
+            const parsed = typeof args === 'string' ? JSON.parse(args) : args;
+
+            if (!parsed || Object.keys(parsed).length === 0) return '<span style="opacity: 0.5; padding-top: 1px; display: inline-block;">(No arguments)</span>';
+
+            let html = '<div class="arg-block">';
+            for (const [key, value] of Object.entries(parsed)) {
+                let displayValue = '';
+
+                if (typeof value === 'string' && value.includes('\n')) {
+                    const safeValue = value.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                    displayValue = `<div class="arg-multiline">${safeValue}</div>`;
+                } else {
+                    displayValue = `<span class="arg-string">"${value}"</span>`;
+                }
+                html += `<div class="arg-row"><span class="arg-key">${key}:</span> ${displayValue}</div>`;
+            }
+            html += '</div>';
+            return html;
+        } catch (e) {
+            return `<span style="opacity: 0.8; margin-left: 6px;">(${JSON.stringify(args)})</span>`;
+        }
     }
-    
-    public showTypingIndicator(): void {
-        const msgDiv = document.createElement('div');
-        msgDiv.classList.add('message', 'agent');
-        msgDiv.id = 'typingIndicator';
-        msgDiv.innerHTML = '<div class="typing-indicator"><span></span><span></span><span></span></div>';
-        this.container.appendChild(msgDiv);
-        this.scrollToBottom();
-    }
+    // -----------------------------------------------------------------------------
+    // ------------------------------- PATCH SECTION -------------------------------
+    // -----------------------------------------------------------------------------
 
     public makePatchReview(patchString: string): void {
         this.removeTypingIndicator();
@@ -474,7 +536,9 @@ export class ChatContainer {
             actionsContainer.innerHTML = '';
 
             const badge = document.createElement('span');
-            badge.classList.add('patch-status-badge', status);
+            
+            const cssStatus = status === 'accepted' ? 'status-ok' : 'status-error';
+            badge.classList.add('status-highlight', cssStatus);
             badge.textContent = status === 'accepted' ? 'Applied' : 'Discarded';
 
             actionsContainer.appendChild(badge);
@@ -493,7 +557,7 @@ export class ChatContainer {
         actionsContainer.innerHTML = '';
 
         const badge = document.createElement('span');
-        badge.classList.add('patch-status-badge', 'conflict');
+        badge.classList.add('status-highlight', 'status-warning');
         badge.textContent = 'Merge Conflict';
         
         const forceBtn = document.createElement('button');
@@ -522,35 +586,28 @@ export class ChatContainer {
         actionsContainer.appendChild(discardBtn);
     }
 
+    // -----------------------------------------------------------------------------
+    // ------------------------------- UTILS SECTION -------------------------------
+    // -----------------------------------------------------------------------------
+
+    public clearChatUI(): void {
+        this.container.innerHTML = '';
+        this.scrollToBottom();
+    }
+    
+    public showTypingIndicator(): void {
+        const msgDiv = document.createElement('div');
+        msgDiv.classList.add('message', 'agent');
+        msgDiv.id = 'typingIndicator';
+        msgDiv.innerHTML = '<div class="typing-indicator"><span></span><span></span><span></span></div>';
+        this.container.appendChild(msgDiv);
+        this.scrollToBottom();
+    }
+
     public removeActivePatchUI(): void {
         if (this.activePatchContainer) {
             this.activePatchContainer.remove();
             this.activePatchContainer = null;
-        }
-    }
-
-    private formatToolArgs(args: any): string {
-        try {
-            const parsed = typeof args === 'string' ? JSON.parse(args) : args;
-
-            if (!parsed || Object.keys(parsed).length === 0) return '';
-
-            let html = '<div class="arg-block">';
-            for (const [key, value] of Object.entries(parsed)) {
-                let displayValue = '';
-
-                if (typeof value === 'string' && value.includes('\n')) {
-                    const safeValue = value.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-                    displayValue = `<div class="arg-multiline">${safeValue}</div>`;
-                } else {
-                    displayValue = `<span class="arg-string">"${value}"</span>`;
-                }
-                html += `<div class="arg-row"><span class="arg-key">${key}:</span> ${displayValue}</div>`;
-            }
-            html += '</div>';
-            return html;
-        } catch (e) {
-            return `<span style="opacity: 0.8; margin-left: 6px;">(${JSON.stringify(args)})</span>`;
         }
     }
 

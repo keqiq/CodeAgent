@@ -39,7 +39,7 @@ export abstract class ChatProvider {
 
         const cachedModels = ChatProvider.modelCache[providerName];
 
-        if (fetchAll) return cachedModels;
+        if (fetchAll || this.featuredModels.length === 0) return cachedModels;
 
         // Filter based on the subclass's featuredModels array
         return cachedModels.filter(info => this.featuredModels.includes(info.id));
