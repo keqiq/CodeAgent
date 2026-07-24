@@ -35562,7 +35562,7 @@ var ChatProvider = class _ChatProvider {
     if (fetchAll || this.featuredModels.length === 0) return cachedModels;
     return cachedModels.filter((info) => this.featuredModels.includes(info.id));
   }
-  static formatResponse(text, toolCalls, turnID) {
+  static formatResponse(text, toolCalls, tokenUsage, turnID) {
     const items = [];
     if (text) items.push({ type: "message", role: "assistant", content: text });
     for (const call of Array.from(toolCalls.values())) {
@@ -35574,7 +35574,7 @@ var ChatProvider = class _ChatProvider {
         turnID: call.turnID
       });
     }
-    return { items, ...turnID && { turnID } };
+    return { items, tokenUsage, ...turnID && { turnID } };
   }
 };
 
@@ -36275,6 +36275,12 @@ var ClaudeChatProvider = class _ClaudeChatProvider extends ChatProvider {
     let fullText = "";
     const currentCalls = /* @__PURE__ */ new Map();
     const { system, messages } = this.formatMessages(history);
+    let tokenUsage = {
+      totalTokens: 0,
+      inputTokens: 0,
+      outputTokens: 0,
+      thoughtTokens: 0
+    };
     const stream = await this.client.messages.create({
       model,
       system: system ? system : void 0,
@@ -36311,12 +36317,22 @@ var ClaudeChatProvider = class _ClaudeChatProvider extends ChatProvider {
         } else if (event.delta.type === "thinking_delta") {
           yield { type: "thought", content: event.delta.thinking };
         }
+      } else if (event.type === "message_start") {
+        if (event.message.usage) tokenUsage.inputTokens = event.message.usage.input_tokens || 0;
+      } else if (event.type === "message_delta") {
+        if (event.usage) {
+          const thinkingTokens = event.usage.output_tokens_details?.thinking_tokens || 0;
+          if (event.usage.input_tokens) tokenUsage.inputTokens = event.usage.input_tokens;
+          tokenUsage.outputTokens = event.usage.output_tokens - thinkingTokens;
+          tokenUsage.thoughtTokens = thinkingTokens;
+        }
       }
     }
+    tokenUsage.totalTokens = tokenUsage.inputTokens + tokenUsage.outputTokens;
     if (currentCalls.size > 0 || fullText.length > 0) {
-      return ChatProvider.formatResponse(fullText, currentCalls);
+      return ChatProvider.formatResponse(fullText, currentCalls, tokenUsage);
     }
-    return { items: [] };
+    return { items: [], tokenUsage };
   }
 };
 
@@ -46103,6 +46119,7 @@ var OpenAIChatProvider = class _OpenAIChatProvider extends ChatProvider {
     let fullText = "";
     const currentCalls = /* @__PURE__ */ new Map();
     let responseID = null;
+    let tokenUsage = void 0;
     let currentInput;
     if (previousTurnID && useCache) {
       const newItemsToSubmit = history.filter(
@@ -46149,12 +46166,22 @@ var OpenAIChatProvider = class _OpenAIChatProvider extends ChatProvider {
         if (currentCalls.has(event.item_id)) {
           currentCalls.get(event.item_id).arguments += event.delta;
         }
+      } else if (event.type === "response.completed") {
+        const usage = event.response.usage;
+        if (usage) {
+          tokenUsage = {
+            totalTokens: usage.total_tokens,
+            inputTokens: usage.input_tokens,
+            outputTokens: usage.output_tokens - usage.output_tokens_details.reasoning_tokens,
+            thoughtTokens: usage.output_tokens_details.reasoning_tokens
+          };
+        }
       }
     }
     if (currentCalls.size > 0 || fullText.length > 0) {
-      return ChatProvider.formatResponse(fullText, currentCalls, responseID);
+      return ChatProvider.formatResponse(fullText, currentCalls, tokenUsage, responseID);
     }
-    return { items: [] };
+    return { items: [], tokenUsage };
   }
 };
 var OpenAICompatibleProvider = class _OpenAICompatibleProvider extends ChatProvider {
@@ -46213,9 +46240,11 @@ var OpenAICompatibleProvider = class _OpenAICompatibleProvider extends ChatProvi
       messages: formattedMessages,
       tools: _OpenAICompatibleProvider.tools,
       stream: true,
+      stream_options: { include_usage: true },
       reasoning_effort: effort
     }, { signal: abortSignal });
     const currentCalls = /* @__PURE__ */ new Map();
+    let tokenUsage = void 0;
     for await (const event of stream) {
       if (abortSignal?.aborted) throw new Error("AbortError");
       const delta = event.choices[0]?.delta;
@@ -46244,11 +46273,21 @@ var OpenAICompatibleProvider = class _OpenAICompatibleProvider extends ChatProvi
           if (toolCall.function?.arguments) existing.arguments += toolCall.function.arguments;
         }
       }
+      if (event.usage) {
+        const usage = event.usage;
+        const reasoningTokens = usage.completion_tokens_details?.reasoning_tokens || 0;
+        tokenUsage = {
+          totalTokens: usage.total_tokens,
+          inputTokens: usage.prompt_tokens,
+          outputTokens: usage.completion_tokens - reasoningTokens,
+          thoughtTokens: reasoningTokens
+        };
+      }
     }
     if (currentCalls.size > 0 || fullText.length > 0) {
-      return ChatProvider.formatResponse(fullText, currentCalls);
+      return ChatProvider.formatResponse(fullText, currentCalls, tokenUsage);
     }
-    return { items: [] };
+    return { items: [], tokenUsage };
   }
 };
 
@@ -64951,8 +64990,12 @@ var GeminiChatProvider = class _GeminiChatProvider extends ChatProvider {
     }, { signal: abortSignal });
     const currentCalls = /* @__PURE__ */ new Map();
     let interactionId = null;
+    let tokenUsage = void 0;
     for await (const event of stream) {
-      if (abortSignal?.aborted) throw new Error("AbortError");
+      if (abortSignal?.aborted) {
+        if (interactionId) await this.client.interactions.cancel(interactionId);
+        throw new Error("AbortError");
+      }
       const evType = event.event_type;
       if (evType === "interaction.created") {
         interactionId = event.interaction.id;
@@ -64977,12 +65020,22 @@ var GeminiChatProvider = class _GeminiChatProvider extends ChatProvider {
           const summaryText = deltaAny.content?.text || "";
           if (summaryText) yield { type: "thought", content: summaryText };
         }
+      } else if (evType === "interaction.completed") {
+        const usage = event.interaction.usage;
+        if (usage) {
+          tokenUsage = {
+            totalTokens: usage.total_tokens,
+            inputTokens: usage.total_input_tokens,
+            outputTokens: usage.total_output_tokens,
+            thoughtTokens: usage.total_thought_tokens
+          };
+        }
       }
     }
     if (currentCalls.size > 0 || fullText.length > 0) {
-      return ChatProvider.formatResponse(fullText, currentCalls, interactionId);
+      return ChatProvider.formatResponse(fullText, currentCalls, tokenUsage, interactionId);
     }
-    return { items: [] };
+    return { items: [], tokenUsage };
   }
 };
 
@@ -78784,7 +78837,7 @@ var ChatApp = class {
       content: `You are an autonomous, expert software engineering agent integrated into VS Code. 
                       You have access to tools that can search, read, write, and edit files in the user's workspace.
                       When a user asks you to find a bug or fix a problem, DO NOT ask them for the file name if you can search for it yourself. 
-                      Proactively use your semantic search tool 'searchCodebase' tool to search the workspace.
+                      Proactively use your semantic search tool 'find' tool to search the workspace.
                       Tools like 'glob' and 'grep' should be used as a fallback if semantic search fails to return relevant results, or if you need to view files in more detail. 
                       Find the relevant code, read it, and edit it to fix the issue. 
                       Always explain your thought process before executing a tool.`
@@ -78898,6 +78951,14 @@ var ChatApp = class {
     }
     this.aborter = new AbortController();
     const lastValidTurnState = { ...this.activeTurn };
+    let runTokenUsage = {
+      totalTokens: 0,
+      inputTokens: 0,
+      outputTokens: 0,
+      thoughtTokens: 0
+    };
+    let runStatus = "ok";
+    let statusMessage = void 0;
     try {
       const apiKey = await this.getChatAPIKey(provider);
       const serverStateManagment = this.context.globalState.get("serverStateManagement") ?? true;
@@ -78934,6 +78995,13 @@ var ChatApp = class {
         this.post({ type: "streamEnd" });
         const finalResponse = streamResult.value;
         if (finalResponse && finalResponse.items.length > 0) this.chatHistory.push(...finalResponse.items);
+        if (finalResponse?.tokenUsage) {
+          runTokenUsage.totalTokens += finalResponse.tokenUsage.totalTokens || 0;
+          runTokenUsage.inputTokens += finalResponse.tokenUsage.inputTokens || 0;
+          runTokenUsage.outputTokens += finalResponse.tokenUsage.outputTokens || 0;
+          runTokenUsage.thoughtTokens += finalResponse.tokenUsage.thoughtTokens || 0;
+          this.post({ type: "updateTokenUsage", usage: runTokenUsage });
+        }
         const functionCalls = finalResponse?.items.filter((item) => item.type === "function_call") || [];
         const currentTurnID = finalResponse?.turnID;
         if (functionCalls.length > 0) {
@@ -78969,6 +79037,7 @@ var ChatApp = class {
         }
         this.activeTurn = { provider, turnID: currentTurnID };
       }
+      this.post({ type: "updateTokenUsage", usage: runTokenUsage });
       if (hasStartedToolGroup) this.post({ type: "endToolGroup", totalCount: toolsRunThisTurn });
       await this.saveChatHistory();
       if (!this.aborter.signal.aborted) {
@@ -78980,19 +79049,28 @@ var ChatApp = class {
         }
       }
     } catch (e2) {
+      this.activeTurn = lastValidTurnState;
       if (e2.name === "AbortError" || e2.message?.toLowerCase().includes("abort")) {
-        this.activeTurn = lastValidTurnState;
-        this.chatHistory.push({ type: "message", role: "assistant", content: "Execution halted manually.", style: "status-warning" });
-        this.post({ type: "receiveMessage", text: "Execution halted manually.", style: "status-warning" });
+        runStatus = "aborted";
+        statusMessage = "Execution halted manually";
+        this.chatHistory.push({ type: "message", role: "user", content: "[System: The response was canceled by the user.]", isHidden: true });
       } else {
-        this.chatHistory.push({ type: "message", role: "assistant", content: `Error: ${e2.message || String(e2)}`, style: "status-error" });
-        this.post({ type: "receiveMessage", text: `Error: ${e2.message || String(e2)}`, style: "status-error" });
+        runStatus = "error";
+        statusMessage = `Error: ${e2.message || String(e2)}`;
+        console.log(e2.message || String(e2));
       }
-      this.saveChatHistory();
-      this.post({ type: "agentRunComplete" });
     } finally {
       this.aborter = null;
-      this.post({ type: "agentRunComplete" });
+      this.chatHistory.push({
+        type: "run_summary",
+        provider,
+        status: runStatus,
+        ...statusMessage && { message: statusMessage },
+        ...runTokenUsage && { tokenUsage: runTokenUsage },
+        ...this.activeTurn.turnID && { turnID: this.activeTurn.turnID }
+      });
+      await this.saveChatHistory();
+      this.post({ type: "agentRunComplete", status: runStatus, text: statusMessage });
     }
   }
   resolveWebviewView(webviewView, ctx, token) {
@@ -79120,6 +79198,7 @@ var ChatApp = class {
           if (!data.value) {
             return;
           }
+          this.post({ type: "startRun" });
           this.runAgentTurn(data.provider, data.model, data.effort, data.value);
           break;
         }

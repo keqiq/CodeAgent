@@ -1,5 +1,5 @@
 import { GoogleGenAI } from '@google/genai';
-import { ChatItem, ChatProvider, ChatResponse, ModelInfo, StreamYield } from './chatProvider';
+import { ChatItem, ChatProvider, ChatResponse, ModelInfo, StreamYield, TokenUsage } from './chatProvider';
 import { allToolSchemas } from '../../tools/toolIndex';
 
 export class GeminiChatProvider extends ChatProvider {
@@ -135,6 +135,7 @@ export class GeminiChatProvider extends ChatProvider {
 
         const currentCalls = new Map();
         let interactionId = null;
+        let tokenUsage: TokenUsage | undefined = undefined;
         
         for await (const event of stream) {
             if (abortSignal?.aborted) {
@@ -182,17 +183,20 @@ export class GeminiChatProvider extends ChatProvider {
             else if (evType === 'interaction.completed') {
                 const usage = event.interaction.usage;
                 if (usage) {
-
-
+                    tokenUsage = {
+                        totalTokens: usage.total_tokens,
+                        inputTokens: usage.total_input_tokens,
+                        outputTokens: usage.total_output_tokens,
+                        thoughtTokens: usage.total_thought_tokens
+                    };
                 }
-
             }
         }
 
         if (currentCalls.size > 0 || fullText.length > 0) {
-            return ChatProvider.formatResponse(fullText, currentCalls, interactionId!);
+            return ChatProvider.formatResponse(fullText, currentCalls, tokenUsage!, interactionId!);
         }
 
-        return { items: [] };
+        return { items: [], tokenUsage: tokenUsage };
     }
 }

@@ -70,7 +70,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 chatSettings.showChatAPIKeyInput(msg.provider);
                 break;
 
-            // --- CHAT STREAMING & TOOLS & PATCH ---
+            // --- CHAT STREAMING & TOOLS & PATCH & TOKEN ---
+            case 'startRun':
+                chatContainer.startRun();
+                break;
+                
             case 'receiveMessage':
                 chatContainer.appendMessage({ type: 'message', role: 'assistant', content: msg.text, style: msg.style });
                 break;
@@ -101,6 +105,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             case 'agentRunComplete':
                 chatInput.setSendState();
+                chatContainer.endRun(msg.status, msg.text);
                 chatContainer.cancelActiveUI();
                 chatSettings.toggleClearChatBtn(true);
                 break;
@@ -111,6 +116,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             case 'updatePatchStatus':
                 chatContainer.updatePatchStatus(msg.status);
+                break;
+
+            case 'updateTokenUsage':
+                chatContainer.updateTokenUsage(msg.usage);
                 break;
 
             // --- INDEXING & HEADER ---

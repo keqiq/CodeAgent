@@ -1,4 +1,4 @@
-import { ChatItem } from "../../apis/chat/chatProvider";
+import { ChatItem, TokenUsage } from "../../apis/chat/chatProvider";
 import { WebviewApi } from "../frontend";
 import { marked } from 'marked';
 import hljs from 'highlight.js';
@@ -39,6 +39,12 @@ export class ChatContainer {
 
     private activePatchContainer: HTMLElement | null = null;
 
+    private activeRunContainer: HTMLElement | null = null;
+    private activeRunContent: HTMLElement | null = null;
+    private activeRunFooter: HTMLElement | null = null;
+    private tokenUsageElement: HTMLElement | null = null;
+    private runStatusElement: HTMLElement | null = null;
+
     constructor(private vscodeAPI: WebviewApi) {
         this.container = document.getElementById('chatContainer') as HTMLElement;
         this.scrollToBottomBtn = document.getElementById('scrollToBottomBtn') as HTMLButtonElement;
@@ -59,6 +65,78 @@ export class ChatContainer {
             this.scrollToBottom();
         });
     }
+        
+    // -----------------------------------------------------------------------------
+    // -------------------------- RUN CONTAINER SECTION ----------------------------
+    // -----------------------------------------------------------------------------
+
+    public startRun(): void {
+        this.activeRunContainer = document.createElement('div');
+        this.activeRunContainer.classList.add('run-container');
+
+        // The content container has all the messages, thoughts, tools, patches
+        this.activeRunContent = document.createElement('div');
+        this.activeRunContent.classList.add('run-content');
+
+        // The footer contains token usage and abort and error indicators
+        this.activeRunFooter = document.createElement('div');
+        this.activeRunFooter.classList.add('run-footer', 'footer-normal');
+
+        // token usage display on the left
+        this.tokenUsageElement = document.createElement('div');
+        this.tokenUsageElement.classList.add('token-usage-container');
+        this.tokenUsageElement.innerHTML = `
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
+                <path d="M8 2a6 6 0 1 0 0 12A6 6 0 0 0 8 2zm0 11a5 5 0 1 1 0-10 5 5 0 0 1 0 10zm.5-7.5h-1v4h1v-4zm0 5h-1v1h1v-1z"/>
+            </svg>
+            <span class="token-total-text">0 Tokens</span>
+        `;
+        this.tokenUsageElement.style.display = 'none'; // hide on init until we have data
+
+        // status like user interrupt or error
+        this.runStatusElement = document.createElement('div');
+        this.runStatusElement.classList.add('run-status');
+
+        this.activeRunFooter.appendChild(this.tokenUsageElement);
+        this.activeRunFooter.appendChild(this.runStatusElement);
+
+        this.activeRunContainer.appendChild(this.activeRunContent);
+        this.activeRunContainer.appendChild(this.activeRunFooter);
+
+        this.container.appendChild(this.activeRunContainer);
+    }
+
+    public updateTokenUsage(usage: TokenUsage): void {
+        if (!this.tokenUsageElement || !usage) return;
+
+        this.tokenUsageElement.style.display = 'flex';
+
+        const textSpan = this.tokenUsageElement.querySelector('.token-total-text');
+        if (textSpan) textSpan.textContent = `${usage.totalTokens || 0} Tokens`;
+
+        this.tokenUsageElement.title = `Input: ${usage.inputTokens || 0}\nOutput: ${usage.outputTokens || 0}\nThought: ${usage.thoughtTokens || 0}`;
+    }
+
+    public endRun(status: 'ok' | 'aborted' | 'error', message?: string): void {
+        if (!this.activeRunFooter || !this.runStatusElement) return;
+
+        if (status === 'aborted') {
+            this.activeRunFooter.classList.replace('footer-normal', 'footer-aborted');
+            this.runStatusElement.textContent = message || 'Aborted';
+        } 
+        else if (status === 'error') {
+            this.activeRunFooter.classList.replace('footer-normal', 'footer-error');
+            this.runStatusElement.textContent = message || 'Error';
+        } else {
+            this.runStatusElement.textContent = '';
+        }
+
+        this.activeRunContainer = null;
+        this.activeRunContent = null;
+        this.activeRunFooter = null;
+        this.tokenUsageElement = null;
+        this.runStatusElement = null;
+    }
 
     // On extension reload, restore chat messages
     public restoreChatHistory(history: ChatItem[]): void {
@@ -69,10 +147,27 @@ export class ChatContainer {
 
                 // I chose to only restore messages on extension reload to reduce clutter (and simpler)
                 // So tool results and thought process will not persist on reload
-                if (m.type === 'message') {
-                    if (m.role === 'user' || m.role === 'assistant') this.appendMessage(m);
+                if (m.type === 'message' && !m.isHidden) {
+                    
+                    // User messages are the start of a new interaction cycle
+                    if (m.role === 'user') {
+                        if (this.activeRunContainer) this.endRun('ok'); // this may be a redundant check
+                        this.appendMessage(m);
+                        this.startRun();
+                    }
+
+                    else if (m.role === 'assistant') this.appendMessage(m);
+
+                    // if (m.role === 'user' || m.role === 'assistant') this.appendMessage(m);
+                }
+
+                else if (m.type === 'run_summary') {
+                    if (m.tokenUsage) this.updateTokenUsage(m.tokenUsage);
+                    this.endRun(m.status, m.message);
                 }
             });
+
+            if (this.activeRunContainer) this.endRun('ok'); // In case a run_summary wasn't saved due to crash
         }
     }
 
@@ -109,7 +204,7 @@ export class ChatContainer {
             msgDiv.querySelectorAll('pre code').forEach((block) => {
                 hljs.highlightElement(block as HTMLElement);
             });
-            this.container.appendChild(msgDiv);
+            (this.activeRunContent || this.container).appendChild(msgDiv);
         }
 
         // User messages need to be collapsable
@@ -139,12 +234,13 @@ export class ChatContainer {
                 });
                 msgDiv.appendChild(toggleBtn);
             }
-            this.container.appendChild(msgDiv);
+            (this.activeRunContent || this.container).appendChild(msgDiv);
         }
         this.scrollToBottom();
     }
 
     public streamMessage(chunk: string): void {
+        if (!this.activeRunContent) return;
         // I believe thought ends before the model responds with messages
         this.endThought();
         
@@ -153,7 +249,7 @@ export class ChatContainer {
             this.removeTypingIndicator();
             this.activeStreamDiv = document.createElement('div');
             this.activeStreamDiv.classList.add('message', 'agent');
-            this.container.appendChild(this.activeStreamDiv);
+            this.activeRunContent.appendChild(this.activeStreamDiv);
         }
 
         this.activeStreamRawText += chunk;
@@ -179,6 +275,7 @@ export class ChatContainer {
     // -----------------------------------------------------------------------------
 
     public streamThought(chunk: string): void {
+        if (!this.activeRunContent) return;
         this.removeTypingIndicator();
 
         // Create new streaming details panel
@@ -203,7 +300,7 @@ export class ChatContainer {
 
             this.activeThoughtDetails.appendChild(summary);
             this.activeThoughtDetails.appendChild(this.activeThoughtContent);
-            this.container.appendChild(this.activeThoughtDetails);
+            this.activeRunContent.appendChild(this.activeThoughtDetails);
         }
 
         this.activeThoughtRawText += chunk;
@@ -237,6 +334,7 @@ export class ChatContainer {
     // Make new tool group, one tool group is assigned per response
     // All tool calls in a response will have 1 tool group
     public makeToolGroup(): void {
+        if (!this.activeRunContent) return;
         this.removeTypingIndicator();
         this.activeToolGroup = document.createElement('details');
         this.activeToolGroup.classList.add('tool-group');
@@ -249,7 +347,7 @@ export class ChatContainer {
 
         this.activeToolGroup.appendChild(this.activeToolSummary);
         this.activeToolGroup.appendChild(this.activeToolLogs);
-        this.container.appendChild(this.activeToolGroup);
+        this.activeRunContent.appendChild(this.activeToolGroup);
         this.scrollToBottom();
     }
 
@@ -394,6 +492,7 @@ export class ChatContainer {
     // -----------------------------------------------------------------------------
 
     public makePatchReview(patchString: string): void {
+        if (!this.activeRunContent) return;
         this.removeTypingIndicator();
 
         const {files, totalAdditions, totalDeletions} = this.parsePatch(patchString);
@@ -479,7 +578,7 @@ export class ChatContainer {
         this.activePatchContainer.appendChild(summaryHeader);
         this.activePatchContainer.appendChild(fileList);
 
-        this.container.appendChild(this.activePatchContainer);
+        this.activeRunContent.appendChild(this.activePatchContainer);
         this.scrollToBottom();
     }
 
@@ -596,11 +695,12 @@ export class ChatContainer {
     }
     
     public showTypingIndicator(): void {
+        if (!this.activeRunContent) return;
         const msgDiv = document.createElement('div');
         msgDiv.classList.add('message', 'agent');
         msgDiv.id = 'typingIndicator';
         msgDiv.innerHTML = '<div class="typing-indicator"><span></span><span></span><span></span></div>';
-        this.container.appendChild(msgDiv);
+        this.activeRunContent.appendChild(msgDiv);
         this.scrollToBottom();
     }
 

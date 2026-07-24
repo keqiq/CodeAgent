@@ -2,9 +2,11 @@ export type ChatItem =
     | { type: 'message'; role: 'developer' | 'user' | 'assistant'; content: string, turnID?: string, isHidden?: boolean }
     | { type: 'function_call'; id: string; name: string; arguments: any, turnID?: string}
     | { type: 'function_result'; id: string; name: string; result: string, turnID?: string }
+    | { type: 'run_summary'; provider: string, status: 'ok' | 'aborted' | 'error'; tokenUsage?: TokenUsage; message?: string; turnID?: string}
 
 export interface ChatResponse {
     items: ChatItem[];
+    tokenUsage: TokenUsage | undefined;
     turnID?: string;
 }
 
@@ -18,6 +20,13 @@ export interface ModelInfo {
     reason: boolean | undefined;
     efforts: string[];
     defaultEffort: string | null;
+}
+
+export interface TokenUsage {
+    totalTokens: number | undefined,
+    inputTokens: number | undefined,
+    outputTokens: number | undefined,
+    thoughtTokens: number | undefined
 }
 
 export abstract class ChatProvider {
@@ -54,7 +63,7 @@ export abstract class ChatProvider {
         abortSignal: AbortSignal
     ): AsyncGenerator<StreamYield, ChatResponse, unknown>;
 
-    public static formatResponse(text: string, toolCalls: Map<any, any>, turnID?: string): ChatResponse {
+    public static formatResponse(text: string, toolCalls: Map<any, any>, tokenUsage: TokenUsage, turnID?: string): ChatResponse {
         const items: ChatItem[] = [];
 
         if (text) items.push({ type: 'message', role: 'assistant', content: text });
@@ -69,6 +78,6 @@ export abstract class ChatProvider {
             });
         }
 
-        return { items, ...(turnID && {turnID}) };
+        return { items, tokenUsage, ...(turnID && {turnID}) };
     }
 }

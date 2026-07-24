@@ -1,5 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { ChatItem, ChatProvider, ChatResponse, ModelInfo, StreamYield } from './chatProvider';
+import { ChatItem, ChatProvider, ChatResponse, ModelInfo, StreamYield, TokenUsage } from './chatProvider';
 import { allToolSchemas, ToolSchema } from '../../tools/toolIndex';
 
 export class ClaudeChatProvider extends ChatProvider {
@@ -111,6 +111,12 @@ export class ClaudeChatProvider extends ChatProvider {
         let fullText = '';
         const currentCalls = new Map();
         const { system, messages } = this.formatMessages(history);
+        let tokenUsage: TokenUsage = {
+            totalTokens: 0,
+            inputTokens: 0,
+            outputTokens: 0,
+            thoughtTokens: 0
+        };
         
         const stream = await this.client.messages.create({
             model: model as any,
@@ -163,12 +169,31 @@ export class ClaudeChatProvider extends ChatProvider {
                     yield { type: 'thought', content: event.delta.thinking };
                 }
             }
+
+            // Apparently input tokens are accessible only in this message
+            else if (event.type === 'message_start') {
+                if (event.message.usage) tokenUsage.inputTokens = event.message.usage.input_tokens || 0;
+            }
+            // Similarly for output tokens, though it is cumulative everytime we receive delta
+            else if (event.type === 'message_delta') {
+                if (event.usage) {
+                    const thinkingTokens = event.usage.output_tokens_details?.thinking_tokens || 0;
+                    
+                    // Input token usage is off, ill see if this works
+                    if (event.usage.input_tokens) tokenUsage.inputTokens = event.usage.input_tokens;
+                    
+                    tokenUsage.outputTokens = event.usage.output_tokens - thinkingTokens;
+                    tokenUsage.thoughtTokens = thinkingTokens;
+                }
+            }
+
         }
 
+        tokenUsage.totalTokens = tokenUsage.inputTokens! + tokenUsage.outputTokens!;
         if (currentCalls.size > 0 || fullText.length > 0) {
-            return ChatProvider.formatResponse(fullText, currentCalls);
+            return ChatProvider.formatResponse(fullText, currentCalls, tokenUsage);
         }
 
-        return { items: [] };
+        return { items: [], tokenUsage };
     }
 }

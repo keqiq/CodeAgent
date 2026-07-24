@@ -1,5 +1,5 @@
 import OpenAI from 'openai';
-import { ChatItem, ChatProvider, ChatResponse, ModelInfo, StreamYield } from './chatProvider';
+import { ChatItem, ChatProvider, ChatResponse, ModelInfo, StreamYield, TokenUsage } from './chatProvider';
 import { allToolSchemas } from '../../tools/toolIndex';
 
 export class OpenAIChatProvider extends ChatProvider {
@@ -115,6 +115,7 @@ export class OpenAIChatProvider extends ChatProvider {
         let fullText = "";
         const currentCalls = new Map();
         let responseID = null;
+        let tokenUsage: TokenUsage | undefined = undefined;
 
         let currentInput;
         if (previousTurnID && useCache) {
@@ -178,13 +179,25 @@ export class OpenAIChatProvider extends ChatProvider {
                     currentCalls.get(event.item_id).arguments += event.delta;
                 }
             }
+
+            else if (event.type === 'response.completed') {
+                const usage = event.response.usage;
+                if (usage) {
+                    tokenUsage = {
+                        totalTokens: usage.total_tokens,
+                        inputTokens: usage.input_tokens,
+                        outputTokens: usage.output_tokens - usage.output_tokens_details.reasoning_tokens,
+                        thoughtTokens: usage.output_tokens_details.reasoning_tokens
+                    };
+                }
+            }
         }
 
         if (currentCalls.size > 0 || fullText.length > 0) {
-            return ChatProvider.formatResponse(fullText, currentCalls, responseID!);
+            return ChatProvider.formatResponse(fullText, currentCalls, tokenUsage!, responseID!);
         }
 
-        return { items: [] };
+        return { items: [], tokenUsage };
     }
 }
 
@@ -259,11 +272,13 @@ export abstract class OpenAICompatibleProvider extends ChatProvider {
             messages: formattedMessages,
             tools: OpenAICompatibleProvider.tools,
             stream: true,
+            stream_options: { include_usage: true },
 
             reasoning_effort: effort as any
         }, { signal: abortSignal });
 
         const currentCalls = new Map();
+        let tokenUsage: TokenUsage | undefined = undefined;
 
         for await (const event of stream) {
             if (abortSignal?.aborted) throw new Error('AbortError');
@@ -300,12 +315,27 @@ export abstract class OpenAICompatibleProvider extends ChatProvider {
                     if (toolCall.function?.arguments) existing.arguments += toolCall.function.arguments;
                 }
             }
+
+            if (event.usage) {
+                const usage = event.usage;
+                const reasoningTokens = usage.completion_tokens_details?.reasoning_tokens || 0;
+
+                tokenUsage = {
+                    totalTokens: usage.total_tokens,
+                    inputTokens: usage.prompt_tokens,
+                    outputTokens: usage.completion_tokens - reasoningTokens,
+                    thoughtTokens: reasoningTokens
+
+                };
+            }
+
+
         }
 
         if (currentCalls.size > 0 || fullText.length > 0) {
-            return ChatProvider.formatResponse(fullText, currentCalls);
+            return ChatProvider.formatResponse(fullText, currentCalls, tokenUsage!);
         }
 
-        return { items: [] };
+        return { items: [], tokenUsage };
     }
 }

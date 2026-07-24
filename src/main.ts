@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import { ChatFactory } from './apis/chat/chatFactory';
-import { ChatItem, ChatResponse, ModelInfo } from './apis/chat/chatProvider';
+import { ChatItem, ChatResponse, ModelInfo, TokenUsage } from './apis/chat/chatProvider';
 import { createToolRegistry, ToolResult } from './tools/toolIndex';
 import { EmbedFactory } from './apis/embed/embedFactory';
 import { Indexer } from './indexing/indexer';
@@ -86,7 +86,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
             content: `You are an autonomous, expert software engineering agent integrated into VS Code. 
                       You have access to tools that can search, read, write, and edit files in the user's workspace.
                       When a user asks you to find a bug or fix a problem, DO NOT ask them for the file name if you can search for it yourself. 
-                      Proactively use your semantic search tool 'searchCodebase' tool to search the workspace.
+                      Proactively use your semantic search tool 'find' tool to search the workspace.
                       Tools like 'glob' and 'grep' should be used as a fallback if semantic search fails to return relevant results, or if you need to view files in more detail. 
                       Find the relevant code, read it, and edit it to fix the issue. 
                       Always explain your thought process before executing a tool.`
@@ -235,6 +235,16 @@ export class ChatApp implements vscode.WebviewViewProvider {
         this.aborter = new AbortController();
         const lastValidTurnState: ActiveTurnState = { ...this.activeTurn };
 
+        let runTokenUsage: TokenUsage = {
+            totalTokens: 0,
+            inputTokens: 0,
+            outputTokens: 0,
+            thoughtTokens: 0
+        };
+
+        let runStatus: 'ok' | 'aborted' | 'error' = 'ok';
+        let statusMessage: string | undefined = undefined;
+
         try {
             const apiKey = await this.getChatAPIKey(provider); 
             const serverStateManagment = this.context.globalState.get<boolean>('serverStateManagement') ?? true;
@@ -282,6 +292,15 @@ export class ChatApp implements vscode.WebviewViewProvider {
                 
                 if (finalResponse && finalResponse.items.length > 0) this.chatHistory.push(...finalResponse.items);
 
+                if (finalResponse?.tokenUsage) {
+                    runTokenUsage.totalTokens! += finalResponse.tokenUsage.totalTokens || 0;
+                    runTokenUsage.inputTokens! += finalResponse.tokenUsage.inputTokens || 0;
+                    runTokenUsage.outputTokens! += finalResponse.tokenUsage.outputTokens || 0;
+                    runTokenUsage.thoughtTokens! += finalResponse.tokenUsage.thoughtTokens || 0;
+
+                    this.post({ type: 'updateTokenUsage', usage: runTokenUsage });
+                }
+
                 const functionCalls = finalResponse?.items.filter(item => item.type === 'function_call') || [];
                 const currentTurnID = finalResponse?.turnID;
 
@@ -324,9 +343,11 @@ export class ChatApp implements vscode.WebviewViewProvider {
                 } else {
                     keepGoing = false;
                 }
+                
                 this.activeTurn = { provider: provider, turnID: currentTurnID };
             }
 
+            this.post({ type: 'updateTokenUsage', usage: runTokenUsage });
             if (hasStartedToolGroup) this.post({ type: 'endToolGroup', totalCount: toolsRunThisTurn });
             await this.saveChatHistory();
 
@@ -345,20 +366,33 @@ export class ChatApp implements vscode.WebviewViewProvider {
             }
 
         } catch (e: any) {
+            // roll back to previous turnID
+            // the idea is to revert back to the previous completed state if the current run was not completed
+            this.activeTurn = lastValidTurnState;
+
             if (e.name === 'AbortError' || e.message?.toLowerCase().includes('abort')) {
-                // If we aborted the response, roll back to previous turnID
-                this.activeTurn = lastValidTurnState;
-                this.chatHistory.push({ type: 'message', role: 'assistant', content: 'Execution halted manually.', style: 'status-warning' } as any);
-                this.post({ type: 'receiveMessage', text: 'Execution halted manually.', style: 'status-warning' });
+                runStatus = 'aborted';
+                statusMessage = 'Execution halted manually';
+                // let the agent know we aborted
+                this.chatHistory.push({ type: 'message', role: 'user', content: '[System: The response was canceled by the user.]', isHidden: true} );
             } else {
-                this.chatHistory.push({ type: 'message', role: 'assistant', content: `Error: ${e.message || String(e)}`, style: 'status-error' } as any);
-                this.post({ type: 'receiveMessage', text: `Error: ${e.message || String(e)}`, style: 'status-error' });
+                runStatus = 'error';
+                statusMessage = `Error: ${e.message || String(e)}`;
+                console.log(`Error during agent turn: ${e.message || String(e)}`);
             }
-            this.saveChatHistory();
-            this.post({ type: 'agentRunComplete' });
         } finally {
             this.aborter = null;
-            this.post({ type: 'agentRunComplete' });
+            this.chatHistory.push({
+                type: 'run_summary',
+                provider: provider,
+                status: runStatus,
+                ...(statusMessage && { message: statusMessage }),
+                ...(runTokenUsage && { tokenUsage: runTokenUsage }),
+                ...(this.activeTurn.turnID && { turnID: this.activeTurn.turnID })
+            });
+
+            await this.saveChatHistory();
+            this.post({ type: 'agentRunComplete', status: runStatus, text: statusMessage });
         }
     }
 
@@ -517,6 +551,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
 
                 case 'askAgent': {
                     if (!data.value) { return; }
+                    this.post({ type: 'startRun' });
                     this.runAgentTurn(data.provider, data.model, data.effort, data.value);
                     break;
                 }

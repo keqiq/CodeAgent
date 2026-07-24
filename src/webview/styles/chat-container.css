@@ -27,11 +27,11 @@
 .message {
     padding: 8px 12px;
     border-radius: 8px;
-    max-width: 85%;
+    max-width: 90%;
     word-wrap: break-word;
     font-size: 12px;
     line-height: 1.2;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    /* box-shadow: 0 1px 2px rgba(0,0,0,0.1); */
 }
 
 .message.user {
@@ -173,6 +173,8 @@
     width: 85%;
     font-size: 12px;
     box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    min-width: 50%;
+    max-width: 90%;
 }
 
 .tool-group summary {
@@ -376,8 +378,8 @@
     background: var(--vscode-editorWidget-background);
     border: 1px solid var(--vscode-widget-border);
     border-radius: 6px;
-    width: 95%;
-    align-self: center;
+    width: 90%;
+    /* align-self: center; */
     font-size: 12px;
     margin-top: 4px;
     margin-bottom: 8px;
@@ -505,4 +507,77 @@
 .file-item-right {
     display: flex;
     gap: 8px;
+}
+
+.run-container {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 16px;
+}
+
+.run-content {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* --- Run Footer (Token Usage & Status) --- */
+.run-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    padding: 12px 8px 4px 8px; /* Extra top padding for the gradient fade-in */
+    margin-top: 4px;
+    font-size: 10px;
+    font-family: var(--vscode-editor-font-family);
+    color: var(--vscode-descriptionForeground);
+    border-bottom: 1px solid transparent; /* Base border */
+    max-width: 88%;
+}
+
+/* Token Usage Left Side */
+.token-usage-container {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: help;
+    opacity: 0.8;
+    transition: opacity 0.2s;
+}
+
+.token-usage-container:hover {
+    opacity: 1;
+}
+
+/* Run Status Right Side */
+.run-status {
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+/* --- Gradient Variants --- */
+/* Normal (Muted separation) */
+.footer-normal {
+    background: linear-gradient(to top, color-mix(in srgb, var(--vscode-editorWidget-border) 20%, transparent), transparent);
+    border-bottom-color: color-mix(in srgb, var(--vscode-editorWidget-border) 60%, transparent);
+}
+
+/* Aborted (Yellow) */
+.footer-aborted {
+    background: linear-gradient(to top, color-mix(in srgb, var(--vscode-charts-yellow) 15%, transparent), transparent);
+    border-bottom-color: color-mix(in srgb, var(--vscode-charts-yellow) 50%, transparent);
+}
+
+/* Error (Red) */
+.footer-error {
+    background: linear-gradient(to top, color-mix(in srgb, var(--vscode-testing-iconFailed) 15%, transparent), transparent);
+    border-bottom-color: color-mix(in srgb, var(--vscode-testing-iconFailed) 50%, transparent);
+}
+
+.footer-aborted .run-status {
+    color: var(--vscode-charts-yellow);
+}
+
+.footer-error .run-status {
+    color: var(--vscode-testing-iconFailed);
 }
