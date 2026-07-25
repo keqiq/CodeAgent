@@ -65,36 +65,36 @@ export class GeminiChatProvider extends ChatProvider {
     // private parseTools() {}
 
     private formatMessages(items: ChatItem[]): any[] {
-        // Filter out developer messages so we can pass them as system_instructions instead
-        return items
-            .filter(item => !(item.type === 'message' && item.role === 'developer'))
-            .map(item => {
-                if (item.type === 'message') {
-                    return { 
-                        type: item.role === 'user' ? 'user_input' : 'model_output',
-                        content: [{ type: "text", text: item.content }]
-                    };
-                } else if (item.type === 'function_call') {
-                    return { 
-                        type: "function_call", 
-                        id: item.id, 
-                        name: item.name, 
-                        arguments: typeof item.arguments === "string" 
-                            ? (item.arguments ? JSON.parse(item.arguments) : {}) 
-                            : (item.arguments || {})
-                    };
-                } else if (item.type === 'function_result') {
-                    return { 
-                        type: "function_result", 
-                        call_id: item.id, 
-                        name: item.name || "", 
-                        result: [{ 
-                            type: "text", 
-                            text: JSON.stringify({ response: item.result }) 
-                        }] 
-                    };
-                }
-        });
+        const formatted: any[] = [];
+        for (const item of items) {
+
+            if (item.type === 'message') {
+                formatted.push({ 
+                    type: item.role === 'user' ? 'user_input' : 'model_output',
+                    content: [{ type: "text", text: item.content }]
+                });
+            } else if (item.type === 'function_call') {
+                formatted.push({ 
+                    type: "function_call", 
+                    id: item.id, 
+                    name: item.name, 
+                    arguments: typeof item.arguments === "string" 
+                        ? (item.arguments ? JSON.parse(item.arguments) : {}) 
+                        : (item.arguments || {})
+                });
+            } else if (item.type === 'function_result') {
+                formatted.push({ 
+                    type: "function_result", 
+                    call_id: item.id, 
+                    name: item.name || "", 
+                    result: [{ 
+                        type: "text", 
+                        text: JSON.stringify({ response: item.result }) 
+                    }] 
+                });
+            }
+        }
+        return formatted;
     }
 
     async *fetchStream(
@@ -107,7 +107,6 @@ export class GeminiChatProvider extends ChatProvider {
     ): AsyncGenerator<StreamYield, ChatResponse, unknown> {
         
         let fullText = '';
-        const sysMsg = history.find(i => i.type === 'message' && i.role === 'developer');
         
         // OK if we are doing stateful multi turn conversation we need to send back only the previous tool result or the user's new prompt
         // Gemini just updated their interactions API 
@@ -127,7 +126,7 @@ export class GeminiChatProvider extends ChatProvider {
             model: model,
             input: currentInput,
             tools: GeminiChatProvider.geminiTools,
-            system_instruction: sysMsg && 'content' in sysMsg ? sysMsg.content : "You are an expert AI coding assistant...",
+            system_instruction: ChatProvider.systemPrompt,
             stream: true,
             generation_config: {thinking_level: effort as any, thinking_summaries: 'auto'},
             ...(previousTurnID && { previous_interaction_id: previousTurnID })

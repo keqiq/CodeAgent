@@ -35551,6 +35551,13 @@ init_sdk();
 
 // src/apis/chat/chatProvider.ts
 var ChatProvider = class _ChatProvider {
+  static systemPrompt = `You are an autonomous, expert software engineering agent integrated into VS Code. 
+                      You have access to tools that can search, read, write, and edit files in the user's workspace.
+                      When a user asks you to find a bug or fix a problem, DO NOT ask them for the file name if you can search for it yourself. 
+                      Proactively use your semantic search tool 'searchCodebase' tool to search the workspace.
+                      Tools like 'glob' and 'grep' should be used as a fallback if semantic search fails to return relevant results, or if you need to view files in more detail. 
+                      Find the relevant code, read it, and edit it to fix the issue. 
+                      Always explain your thought process before executing a tool.`;
   static stateManagementSupport = false;
   static modelCache = {};
   async getModels(fetchAll) {
@@ -35562,9 +35569,14 @@ var ChatProvider = class _ChatProvider {
     if (fetchAll || this.featuredModels.length === 0) return cachedModels;
     return cachedModels.filter((info) => this.featuredModels.includes(info.id));
   }
-  static formatResponse(text, toolCalls, tokenUsage, turnID) {
+  static formatResponse(text, toolCalls, tokenUsage, turnID, reasoning_content) {
     const items = [];
-    if (text) items.push({ type: "message", role: "assistant", content: text });
+    items.push({
+      type: "message",
+      role: "assistant",
+      content: text,
+      ...reasoning_content && { reasoning_content }
+    });
     for (const call of Array.from(toolCalls.values())) {
       items.push({
         type: "function_call",
@@ -36195,8 +36207,8 @@ var ClaudeChatProvider = class _ClaudeChatProvider extends ChatProvider {
   client;
   static claudeTools = _ClaudeChatProvider.parseTool(allToolSchemas);
   featuredModels = [
+    "claude-opus-5",
     "claude-fable-5",
-    "claude-opus-4-8",
     "claude-sonnet-5",
     "claude-haiku-4-5-20251001"
   ];
@@ -36241,12 +36253,10 @@ var ClaudeChatProvider = class _ClaudeChatProvider extends ChatProvider {
     });
   }
   formatMessages(items) {
-    let system = "";
     const messages = [];
     for (const item of items) {
       if (item.type === "message") {
-        if (item.role === "developer") system += item.content + "\n";
-        else messages.push({ role: item.role, content: item.content });
+        messages.push({ role: item.role, content: item.content });
       } else if (item.type === "function_call") {
         messages.push({
           role: "assistant",
@@ -36268,13 +36278,12 @@ var ClaudeChatProvider = class _ClaudeChatProvider extends ChatProvider {
         });
       }
     }
-    return { system, messages };
+    return messages;
   }
   // claude does not need an explicit turnID for caching
   async *fetchStream(model, effort, history, previousTurnID, useCache, abortSignal) {
     let fullText = "";
     const currentCalls = /* @__PURE__ */ new Map();
-    const { system, messages } = this.formatMessages(history);
     let tokenUsage = {
       totalTokens: 0,
       inputTokens: 0,
@@ -36283,9 +36292,12 @@ var ClaudeChatProvider = class _ClaudeChatProvider extends ChatProvider {
     };
     const stream = await this.client.messages.create({
       model,
-      system: system ? system : void 0,
-      messages,
-      tools: _ClaudeChatProvider.claudeTools,
+      system: ChatProvider.systemPrompt,
+      messages: this.formatMessages(history),
+      tools: [
+        ..._ClaudeChatProvider.claudeTools
+        // { type: "web_search_20260318", name: "web_search" }
+      ],
       stream: true,
       max_tokens: 1e5,
       thinking: {
@@ -46104,16 +46116,18 @@ var OpenAIChatProvider = class _OpenAIChatProvider extends ChatProvider {
   }
   // Not needed for Responses API
   // private parseTools(tools: any[]): OpenAI.Responses.Tool[] | undefined {}
-  formatMessages(items) {
-    return items.map((item) => {
+  formatMessages(items, includeSystem) {
+    const formatted = includeSystem ? [{ role: "developer", content: ChatProvider.systemPrompt }] : [];
+    for (const item of items) {
       if (item.type === "message") {
-        return { role: item.role, content: item.content };
+        formatted.push({ role: item.role, content: item.content });
       } else if (item.type === "function_call") {
-        return { type: "function_call", call_id: item.id, name: item.name, arguments: typeof item.arguments === "string" ? item.arguments : JSON.stringify(item.arguments) };
+        formatted.push({ type: "function_call", call_id: item.id, name: item.name, arguments: typeof item.arguments === "string" ? item.arguments : JSON.stringify(item.arguments) });
       } else if (item.type === "function_result") {
-        return { type: "function_call_output", call_id: item.id, output: item.result };
+        formatted.push({ type: "function_call_output", call_id: item.id, output: item.result });
       }
-    });
+    }
+    return formatted;
   }
   async *fetchStream(model, effort, history, previousTurnID, useCache, abortSignal) {
     let fullText = "";
@@ -46125,9 +46139,9 @@ var OpenAIChatProvider = class _OpenAIChatProvider extends ChatProvider {
       const newItemsToSubmit = history.filter(
         (item) => item.turnID === previousTurnID && (item.type === "function_result" || item.type === "message" && item.role === "user")
       );
-      currentInput = this.formatMessages(newItemsToSubmit);
+      currentInput = this.formatMessages(newItemsToSubmit, false);
     } else {
-      currentInput = this.formatMessages(history);
+      currentInput = this.formatMessages(history, true);
     }
     const stream = await this.client.responses.create({
       model,
@@ -46194,31 +46208,52 @@ var OpenAICompatibleProvider = class _OpenAICompatibleProvider extends ChatProvi
       apiKey
     });
   }
+  // For these providers with thinking models, we must pass back the reasoning content
+  // they expect it to be bundled like this smh
+  // {
+  // 'role': 'assistant',
+  // 'content': response.choices[0].message.content,
+  // 'reasoning_content': response.choices[0].message.reasoning_content,
+  // 'tool_calls': response.choices[0].message.tool_calls,
+  // }
   formatMessages(items) {
-    return items.map((item) => {
+    const formattedMessages = [{ role: "system", content: ChatProvider.systemPrompt }];
+    for (let i2 = 0; i2 < items.length; i2++) {
+      const item = items[i2];
       if (item.type === "message") {
-        const mappedRole = item.role === "developer" ? "system" : item.role;
-        return { role: mappedRole, content: item.content };
-      } else if (item.type === "function_call") {
-        return {
-          role: "assistant",
-          tool_calls: [{
-            id: item.id,
+        const msg = { role: item.role, content: item.content };
+        if (item.role === "assistant" && item.reasoning_content) {
+          msg.reasoning_content = item.reasoning_content;
+        }
+        let j = i2 + 1;
+        const toolCalls = [];
+        while (j < items.length && items[j].type === "function_call") {
+          const callItem = items[j];
+          if (callItem.type !== "function_call") break;
+          toolCalls.push({
+            id: callItem.id,
             type: "function",
             function: {
-              name: item.name,
-              arguments: typeof item.arguments === "string" ? item.arguments : JSON.stringify(item.arguments)
+              name: callItem.name,
+              arguments: typeof callItem.arguments === "string" ? callItem.arguments : JSON.stringify(callItem.arguments)
             }
-          }]
-        };
+          });
+          j++;
+        }
+        if (toolCalls.length > 0) {
+          msg.tool_calls = toolCalls;
+          i2 = j - 1;
+        }
+        formattedMessages.push(msg);
       } else if (item.type === "function_result") {
-        return {
+        formattedMessages.push({
           role: "tool",
           tool_call_id: item.id,
           content: item.result
-        };
+        });
       }
-    });
+    }
+    return formattedMessages;
   }
   static parseTools(flatTools) {
     return flatTools.map((tool) => {
@@ -46234,6 +46269,7 @@ var OpenAICompatibleProvider = class _OpenAICompatibleProvider extends ChatProvi
   }
   async *fetchStream(model, effort, history, previousTurnID, useCache, abortSignal) {
     let fullText = "";
+    let fullThought = "";
     const formattedMessages = this.formatMessages(history);
     const stream = await this.client.chat.completions.create({
       model,
@@ -46255,6 +46291,7 @@ var OpenAICompatibleProvider = class _OpenAICompatibleProvider extends ChatProvi
       }
       if (delta.reasoning_content) {
         const text = delta.reasoning_content;
+        fullThought += text;
         yield { type: "thought", content: text };
       }
       if (delta.tool_calls) {
@@ -64941,21 +64978,22 @@ var GeminiChatProvider = class _GeminiChatProvider extends ChatProvider {
   // Not needed for Interactions api
   // private parseTools() {}
   formatMessages(items) {
-    return items.filter((item) => !(item.type === "message" && item.role === "developer")).map((item) => {
+    const formatted = [];
+    for (const item of items) {
       if (item.type === "message") {
-        return {
+        formatted.push({
           type: item.role === "user" ? "user_input" : "model_output",
           content: [{ type: "text", text: item.content }]
-        };
+        });
       } else if (item.type === "function_call") {
-        return {
+        formatted.push({
           type: "function_call",
           id: item.id,
           name: item.name,
           arguments: typeof item.arguments === "string" ? item.arguments ? JSON.parse(item.arguments) : {} : item.arguments || {}
-        };
+        });
       } else if (item.type === "function_result") {
-        return {
+        formatted.push({
           type: "function_result",
           call_id: item.id,
           name: item.name || "",
@@ -64963,13 +65001,13 @@ var GeminiChatProvider = class _GeminiChatProvider extends ChatProvider {
             type: "text",
             text: JSON.stringify({ response: item.result })
           }]
-        };
+        });
       }
-    });
+    }
+    return formatted;
   }
   async *fetchStream(model, effort, history, previousTurnID, useCache, abortSignal) {
     let fullText = "";
-    const sysMsg = history.find((i2) => i2.type === "message" && i2.role === "developer");
     let currentInput;
     if (previousTurnID && useCache) {
       const newItemsToSubmit = history.filter(
@@ -64983,7 +65021,7 @@ var GeminiChatProvider = class _GeminiChatProvider extends ChatProvider {
       model,
       input: currentInput,
       tools: _GeminiChatProvider.geminiTools,
-      system_instruction: sysMsg && "content" in sysMsg ? sysMsg.content : "You are an expert AI coding assistant...",
+      system_instruction: ChatProvider.systemPrompt,
       stream: true,
       generation_config: { thinking_level: effort, thinking_summaries: "auto" },
       ...previousTurnID && { previous_interaction_id: previousTurnID }
@@ -78790,7 +78828,7 @@ var ChatApp = class {
       this.chatHistory = savedHistory;
       const lastItemWithId = [...savedHistory].reverse().find((item) => item.turnID);
       if (lastItemWithId) this.activeTurn.turnID = lastItemWithId.turnID;
-    } else this.chatHistory = this.getInitialChatMessages();
+    } else this.chatHistory = [];
     const activeWorktreeID = context.workspaceState.get("activeWorktreeID");
     if (activeWorktreeID) {
       const workspaceRoot = vscode8.workspace.workspaceFolders?.[0].uri.fsPath;
@@ -78830,19 +78868,6 @@ var ChatApp = class {
   activeTurn = { provider: "", turnID: void 0 };
   activeWorktree;
   aborter = null;
-  getInitialChatMessages() {
-    return [{
-      type: "message",
-      role: "developer",
-      content: `You are an autonomous, expert software engineering agent integrated into VS Code. 
-                      You have access to tools that can search, read, write, and edit files in the user's workspace.
-                      When a user asks you to find a bug or fix a problem, DO NOT ask them for the file name if you can search for it yourself. 
-                      Proactively use your semantic search tool 'find' tool to search the workspace.
-                      Tools like 'glob' and 'grep' should be used as a fallback if semantic search fails to return relevant results, or if you need to view files in more detail. 
-                      Find the relevant code, read it, and edit it to fix the issue. 
-                      Always explain your thought process before executing a tool.`
-    }];
-  }
   post(message) {
     this.view?.webview.postMessage(message);
   }
@@ -79057,7 +79082,7 @@ var ChatApp = class {
       } else {
         runStatus = "error";
         statusMessage = `Error: ${e2.message || String(e2)}`;
-        console.log(e2.message || String(e2));
+        console.log(`Error during agent turn: ${e2.message || String(e2)}`);
       }
     } finally {
       this.aborter = null;
@@ -79209,7 +79234,7 @@ var ChatApp = class {
         }
         case "clearChat": {
           this.activeTurn = { provider: "", turnID: void 0 };
-          this.chatHistory = this.getInitialChatMessages();
+          this.chatHistory = [];
           await this.context.workspaceState.update("chatHistory", this.chatHistory);
           if (this.activeWorktree) await this.clearActiveWorktree();
           this.post({ type: "clearChatContainer" });

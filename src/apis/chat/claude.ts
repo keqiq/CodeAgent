@@ -8,11 +8,11 @@ export class ClaudeChatProvider extends ChatProvider {
     private static claudeTools: Anthropic.Tool[] = ClaudeChatProvider.parseTool(allToolSchemas);
     
     protected featuredModels: string[] = [
-            'claude-fable-5',
-            'claude-opus-4-8',
-            'claude-sonnet-5',
-            'claude-haiku-4-5-20251001'
-        ];
+        'claude-opus-5',
+        'claude-fable-5',
+        'claude-sonnet-5',
+        'claude-haiku-4-5-20251001'
+    ];
 
     constructor(apiKey: string) {
         super();
@@ -64,14 +64,12 @@ export class ClaudeChatProvider extends ChatProvider {
         });
     }
 
-    private formatMessages(items: ChatItem[]): { system: string, messages: Anthropic.MessageParam[] } {
-        let system = '';
+    private formatMessages(items: ChatItem[]): Anthropic.MessageParam[] {
         const messages: Anthropic.MessageParam[] = [];
 
         for (const item of items) {
             if (item.type === 'message') {
-                if (item.role === 'developer') system += item.content + '\n';
-                else messages.push({ role: item.role as 'user' | 'assistant', content: item.content });
+                messages.push({ role: item.role as 'user' | 'assistant', content: item.content });
             }  
             else if (item.type === 'function_call') {
                 messages.push({
@@ -95,7 +93,7 @@ export class ClaudeChatProvider extends ChatProvider {
                 });
             }
         }
-        return { system, messages };
+        return messages ;
     }
 
     // claude does not need an explicit turnID for caching
@@ -110,7 +108,7 @@ export class ClaudeChatProvider extends ChatProvider {
 
         let fullText = '';
         const currentCalls = new Map();
-        const { system, messages } = this.formatMessages(history);
+   
         let tokenUsage: TokenUsage = {
             totalTokens: 0,
             inputTokens: 0,
@@ -120,9 +118,12 @@ export class ClaudeChatProvider extends ChatProvider {
         
         const stream = await this.client.messages.create({
             model: model as any,
-            system: system ? system : undefined,
-            messages: messages,
-            tools: ClaudeChatProvider.claudeTools,
+            system: ChatProvider.systemPrompt,
+            messages: this.formatMessages(history),
+            tools: [
+                ...ClaudeChatProvider.claudeTools,
+                // { type: "web_search_20260318", name: "web_search" }
+            ],
             stream: true,
             max_tokens: 100000,
             thinking: {

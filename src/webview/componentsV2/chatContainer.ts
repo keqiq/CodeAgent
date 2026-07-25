@@ -195,9 +195,6 @@ export class ChatContainer {
             msgDiv.classList.add(msg.style);
         }
 
-        // Do not add system messages to the chat window
-        if (role === 'developer') return;
-
         // Agent messages, need markdown parsing and code highlight
         if (role === 'assistant') {
             msgDiv.innerHTML = this.parseMarkdown(text);

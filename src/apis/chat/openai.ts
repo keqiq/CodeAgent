@@ -91,16 +91,21 @@ export class OpenAIChatProvider extends ChatProvider {
     // Not needed for Responses API
     // private parseTools(tools: any[]): OpenAI.Responses.Tool[] | undefined {}
 
-    private formatMessages(items: ChatItem[]): any[] {
-        return items.map(item => {
+    private formatMessages(items: ChatItem[], includeSystem: boolean): any[] {
+        const formatted: any[] = includeSystem 
+            ? [{ role: 'developer', content: ChatProvider.systemPrompt }] 
+            : [];
+
+        for (const item of items) {
             if (item.type === 'message') {
-                return { role: item.role, content: item.content };
+                formatted.push({ role: item.role, content: item.content });
             } else if (item.type === 'function_call') {
-                return { type: "function_call", call_id: item.id, name: item.name, arguments: typeof item.arguments === "string" ? item.arguments : JSON.stringify(item.arguments) };
+                formatted.push({ type: "function_call", call_id: item.id, name: item.name, arguments: typeof item.arguments === "string" ? item.arguments : JSON.stringify(item.arguments) });
             } else if (item.type === 'function_result') {
-                return { type: "function_call_output", call_id: item.id, output: item.result };
+                formatted.push({ type: "function_call_output", call_id: item.id, output: item.result });
             }
-        });
+        }
+        return formatted;
     }
 
     async *fetchStream(
@@ -123,9 +128,9 @@ export class OpenAIChatProvider extends ChatProvider {
                 item.turnID === previousTurnID && (item.type === 'function_result' || (item.type === 'message' && item.role === 'user'))
             );
 
-            currentInput = this.formatMessages(newItemsToSubmit);
+            currentInput = this.formatMessages(newItemsToSubmit, false);
         } else {
-            currentInput = this.formatMessages(history);
+            currentInput = this.formatMessages(history, true);
         }
 
         const stream = await this.client.responses.create({
@@ -214,31 +219,67 @@ export abstract class OpenAICompatibleProvider extends ChatProvider {
         });
     }
     
+    // For these providers with thinking models, we must pass back the reasoning content
+    // they expect it to be bundled like this smh
+    // {
+    // 'role': 'assistant',
+    // 'content': response.choices[0].message.content,
+    // 'reasoning_content': response.choices[0].message.reasoning_content,
+    // 'tool_calls': response.choices[0].message.tool_calls,
+    // }
     protected formatMessages(items: ChatItem[]): any[] {
-        return items.map(item => {
+        const formattedMessages: any[] = [{ role: 'system', content: ChatProvider.systemPrompt }];
+        
+        for (let i = 0; i < items.length; i++) {
+            const item = items[i];
+
             if (item.type === 'message') {
-                const mappedRole = item.role === 'developer' ? 'system' : item.role;
-                return { role: mappedRole, content: item.content };
-            } else if (item.type === 'function_call') {
-                return {
-                    role: 'assistant',
-                    tool_calls: [{
-                        id: item.id,
+                const msg: any = { role: item.role, content: item.content };
+                
+                // Attach thought to message
+                if (item.role === 'assistant' && (item as any).reasoning_content) {
+                    msg.reasoning_content = (item as any).reasoning_content;
+                }
+
+                // Get all subsequent tool calls
+                // Relevant ones should sit before function results
+                let j = i + 1;
+                const toolCalls = [];
+                
+                while (j < items.length && items[j].type === 'function_call') {
+                    const callItem = items[j];
+
+                    if (callItem.type !== 'function_call') break;
+                    toolCalls.push({
+                        id: callItem.id,
                         type: 'function',
                         function: {
-                            name: item.name,
-                            arguments: typeof item.arguments === 'string' ? item.arguments : JSON.stringify(item.arguments)
+                            name: callItem.name,
+                            arguments: typeof callItem.arguments === 'string' ? callItem.arguments : JSON.stringify(callItem.arguments)
                         }
-                    }]
-                };
-            } else if (item.type === 'function_result') {
-                return {
+                    });
+                    j++;
+                }
+
+                if (toolCalls.length > 0) {
+                    msg.tool_calls = toolCalls;
+                    // Skip the loop forward past all the tool calls
+                    i = j - 1; 
+                }
+
+                formattedMessages.push(msg);
+            } 
+            
+            else if (item.type === 'function_result') {
+                formattedMessages.push({
                     role: 'tool',
                     tool_call_id: item.id,
                     content: item.result
-                };
+                });
             }
-        });
+        }
+        
+        return formattedMessages;
     }
 
     protected static parseTools(flatTools: any[]): any[] {
@@ -262,7 +303,11 @@ export abstract class OpenAICompatibleProvider extends ChatProvider {
         useCache: boolean,
         abortSignal: AbortSignal
     ): AsyncGenerator<StreamYield, ChatResponse, unknown> {
+
+        // Providers like deepseek and kimi requires passing back the reasoning content
+        // Capture full thought and add it as reasoning_content in the message
         let fullText = '';
+        let fullThought = '';
         const formattedMessages = this.formatMessages(history);
 
         // I don't think any of the third party provider support the responses api
@@ -294,6 +339,7 @@ export abstract class OpenAICompatibleProvider extends ChatProvider {
             // Safely parse reasoning content if the model provides it
             if ((delta as any).reasoning_content) {
                 const text = (delta as any).reasoning_content;
+                fullThought += text;
                 yield { type : 'thought', content: text };
             }
 
@@ -333,7 +379,7 @@ export abstract class OpenAICompatibleProvider extends ChatProvider {
         }
 
         if (currentCalls.size > 0 || fullText.length > 0) {
-            return ChatProvider.formatResponse(fullText, currentCalls, tokenUsage!);
+            return ChatProvider.formatResponse(fullText, currentCalls, tokenUsage!, );
         }
 
         return { items: [], tokenUsage };

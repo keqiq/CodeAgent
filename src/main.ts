@@ -40,7 +40,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
             const lastItemWithId = [...savedHistory].reverse().find(item => item.turnID);
             if (lastItemWithId) this.activeTurn.turnID = lastItemWithId.turnID;
         }
-        else this.chatHistory = this.getInitialChatMessages();
+        else this.chatHistory = [];
 
         const activeWorktreeID = context.workspaceState.get<string>('activeWorktreeID');
         if (activeWorktreeID) {
@@ -77,20 +77,6 @@ export class ChatApp implements vscode.WebviewViewProvider {
                 };
             }
         });
-    }
-
-    private getInitialChatMessages(): ChatItem[] {
-        return [{
-            type: 'message',
-            role: 'developer',
-            content: `You are an autonomous, expert software engineering agent integrated into VS Code. 
-                      You have access to tools that can search, read, write, and edit files in the user's workspace.
-                      When a user asks you to find a bug or fix a problem, DO NOT ask them for the file name if you can search for it yourself. 
-                      Proactively use your semantic search tool 'find' tool to search the workspace.
-                      Tools like 'glob' and 'grep' should be used as a fallback if semantic search fails to return relevant results, or if you need to view files in more detail. 
-                      Find the relevant code, read it, and edit it to fix the issue. 
-                      Always explain your thought process before executing a tool.`
-        }];
     }
 
     private post(message: any) { this.view?.webview.postMessage(message); }
@@ -380,6 +366,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
                 statusMessage = `Error: ${e.message || String(e)}`;
                 console.log(`Error during agent turn: ${e.message || String(e)}`);
             }
+
         } finally {
             this.aborter = null;
             this.chatHistory.push({
@@ -566,7 +553,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
                     this.activeTurn = {provider: '', turnID: undefined};
 
                     // Restore system prompt and nothing else
-                    this.chatHistory = this.getInitialChatMessages();
+                    this.chatHistory = [];
                     await this.context.workspaceState.update('chatHistory', this.chatHistory);
 
                     // Close active work tree
