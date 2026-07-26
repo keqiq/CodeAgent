@@ -204,6 +204,10 @@ export class OpenAIChatProvider extends ChatProvider {
 
         return { items: [], tokenUsage };
     }
+
+    async abortStream(): Promise<void> {
+        return;
+    }
 }
 
 // For other providers using OpenAI SDK
@@ -379,9 +383,13 @@ export abstract class OpenAICompatibleProvider extends ChatProvider {
         }
 
         if (currentCalls.size > 0 || fullText.length > 0) {
-            return ChatProvider.formatResponse(fullText, currentCalls, tokenUsage!, );
+            return ChatProvider.formatResponse(fullText, currentCalls, tokenUsage!);
         }
 
         return { items: [], tokenUsage };
+    }
+
+    async abortStream(): Promise<void> {
+        return;
     }
 }

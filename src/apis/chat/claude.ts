@@ -197,4 +197,8 @@ export class ClaudeChatProvider extends ChatProvider {
 
         return { items: [], tokenUsage };
     }
+
+    async abortStream(): Promise<void> {
+        return;
+    }
 }

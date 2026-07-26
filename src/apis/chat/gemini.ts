@@ -6,6 +6,7 @@ export class GeminiChatProvider extends ChatProvider {
     public static stateManagementSupport: boolean = true;
     private client: GoogleGenAI;
     private static geminiTools: any = allToolSchemas;
+    private activeInteractionId: string | null = null;
 
     protected featuredModels: string[] = [
             'gemini-3.6-flash',
@@ -133,20 +134,18 @@ export class GeminiChatProvider extends ChatProvider {
         }, { signal: abortSignal });
 
         const currentCalls = new Map();
-        let interactionId = null;
+
         let tokenUsage: TokenUsage | undefined = undefined;
         
         for await (const event of stream) {
-            if (abortSignal?.aborted) {
-                if (interactionId) await this.client.interactions.cancel(interactionId);
-                throw new Error('AbortError');
-            }
+            if (abortSignal?.aborted) throw new Error('AbortError');
+
             const evType = event.event_type;
 
             // Gemini's streaming with tool calls needs multi turn conversation implementation
             // Grab the current call's interaction id which we will need to keep track of for the next turn
             if (evType === 'interaction.created') {
-                interactionId = event.interaction.id;
+                this.activeInteractionId = event.interaction.id;
             }
 
             else if (evType === 'step.start') {
@@ -193,9 +192,13 @@ export class GeminiChatProvider extends ChatProvider {
         }
 
         if (currentCalls.size > 0 || fullText.length > 0) {
-            return ChatProvider.formatResponse(fullText, currentCalls, tokenUsage!, interactionId!);
+            return ChatProvider.formatResponse(fullText, currentCalls, tokenUsage!, this.activeInteractionId!);
         }
 
         return { items: [], tokenUsage: tokenUsage };
+    }
+
+    async abortStream(): Promise<void> {
+        if (this.activeInteractionId) await this.client.interactions.cancel(this.activeInteractionId);
     }
 }

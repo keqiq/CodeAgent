@@ -19,9 +19,60 @@ export class WorktreeManager {
         // Create the worktree linked to the current HEAD
         await exec(`git worktree add --detach "${this.worktreePath}" HEAD`, { cwd: this.originalWorkspace });
 
+        // Need to link build deps and copy configs probably ignored by git
+        await this.link();
+
         // Sync uncommitted changes
         await this.syncDirtyFiles();
     }
+
+    private async link(): Promise<void> {
+        const symlinkDirs = [
+            'node_modules',
+            '.venv',
+            'venv',
+            'vendor',
+            'target',
+            'build',
+            '.next',
+            'dist',
+            '.cargo'
+        ];
+
+        for (const dir of symlinkDirs) {
+            const src = path.join(this.originalWorkspace, dir);
+            const dest = path.join(this.worktreePath, dir);
+            
+            try {
+                const stat = await fs.stat(src);
+                if (stat.isDirectory()) {
+                    const symlinkType = process.platform === 'win32' ? 'junction' : 'dir';
+                    await fs.symlink(src, dest, symlinkType);
+                }
+            } catch {
+                // Folder doesn't exist in original workspace skip
+            }
+        }
+
+        const configs = [
+            '.env',
+            '.env.local',
+            '.env.development',
+            '.env.test',
+            'tsconfig.tsbuildinfo'
+        ];
+
+        for (const file of configs) {
+            const src = path.join(this.originalWorkspace, file);
+            const dest = path.join(this.worktreePath, file);
+
+            try {
+                await fs.copyFile(src, dest);
+            } catch {
+                // File doesn't exit in original workspace skip
+            }
+        }
+    } 
 
     public static async isGitInstalled(): Promise<boolean> {
         try {

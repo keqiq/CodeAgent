@@ -26,14 +26,14 @@ export class GeminiEmbedProvider extends EmbedProvider {
 
     }
 
-    async embed(model: string, texts: string[]): Promise<number[][]> {
+    async embed(model: string, texts: string[], abortSignal?: AbortSignal): Promise<number[][]> {
         const vectors: number[][] = [];
         for (const text of texts) {
-            const result = await this.client.models.embedContent ({
+            if (abortSignal?.aborted) throw new Error('AbortError');
+            const result = await this.client.models.embedContent({
                 model: model,
                 contents: text,
-                // config: { outputDimensionality: this.dimensions }
-            });
+            }); // Doesn't allow passing a signal here...
             const vector = result.embeddings?.[0]?.values;
 
             if (!vector) throw new Error("Gemini did not return embeddings");

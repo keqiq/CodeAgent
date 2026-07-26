@@ -133,7 +133,7 @@ export async function executeFind(query: string, deps: findDeps, signal: AbortSi
     if (signal.aborted) throw new Error('AbortError');
     if (!query.trim()) throw new Error('Search query is emtpy');
     if (!deps.indexer.indexEnabled()) throw new Error('Indexing is disabled cannot use semantic search');
-    const [queryVector] = await deps.embedProvider.embed(deps.model, [query]);
+    const [queryVector] = await deps.embedProvider.embed(deps.model, [query], signal);
     const results = await deps.indexer.search(query, queryVector);
 
     if (results.length === 0){

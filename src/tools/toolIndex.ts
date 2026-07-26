@@ -1,5 +1,6 @@
 import { searchSchemas, executeGlob, executeGrep, findDeps as findDeps, executeFind as executeFind } from "./search";
 import { fileSchemas, executeRead, executeWrite, executeEdit } from "./files";
+import { commandSchemas, executeRun } from "./execute";
 
 export interface ToolProperty {
     type: string;
@@ -30,6 +31,7 @@ export interface ToolResult {
 export const allToolSchemas: ToolSchema[] = [
     ...searchSchemas,
     ...fileSchemas,
+    ...commandSchemas
 ];
 
 export type ToolDeps = {
@@ -49,6 +51,8 @@ export function createToolRegistry(deps: ToolDeps): Record<string, (args: any) =
         write: async (args) => await executeWrite(args.filePath, args.content, deps.getCwd()),
 
         edit: async (args) => await executeEdit(args.filePath, args.oldText, args.newText, deps.getCwd()),
+
+        run: async (args) => await executeRun(args.command, deps.getCwd(), deps.getSignal()),
 
         find: async (args) => {
             try {

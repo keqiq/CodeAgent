@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import { ChatFactory } from './apis/chat/chatFactory';
-import { ChatItem, ChatResponse, ModelInfo, TokenUsage } from './apis/chat/chatProvider';
+import { ChatItem, ChatProvider, ChatResponse, ModelInfo, TokenUsage } from './apis/chat/chatProvider';
 import { createToolRegistry, ToolResult } from './tools/toolIndex';
 import { EmbedFactory } from './apis/embed/embedFactory';
 import { Indexer } from './indexing/indexer';
@@ -231,11 +231,12 @@ export class ChatApp implements vscode.WebviewViewProvider {
         let runStatus: 'ok' | 'aborted' | 'error' = 'ok';
         let statusMessage: string | undefined = undefined;
 
+        let providerInstance: ChatProvider | undefined = undefined;
         try {
             const apiKey = await this.getChatAPIKey(provider); 
             const serverStateManagment = this.context.globalState.get<boolean>('serverStateManagement') ?? true;
             
-            const providerInstance = ChatFactory.create(provider, apiKey);
+            providerInstance = ChatFactory.create(provider, apiKey);
             this.chatHistory.push({ type: 'message', role: 'user', content: userMessage, turnID: this.activeTurn.turnID });
             await this.saveChatHistory();
             
@@ -357,6 +358,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
             this.activeTurn = lastValidTurnState;
 
             if (e.name === 'AbortError' || e.message?.toLowerCase().includes('abort')) {
+                if (providerInstance) await providerInstance.abortStream(); 
                 runStatus = 'aborted';
                 statusMessage = 'Execution halted manually';
                 // let the agent know we aborted

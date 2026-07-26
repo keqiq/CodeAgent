@@ -19,14 +19,15 @@ export class OpenAICompatibleEmbedProvider extends EmbedProvider {
         }
     }
 
-    async embed(model: string, texts: string[]): Promise<number[][]> {
+    async embed(model: string, texts: string[], abortSignal?: AbortSignal): Promise<number[][]> {
         const vectors: number[][] = [];
         for (const text of texts) {
+            if (abortSignal?.aborted) throw new Error('AbortError');
             const result = await this.client.embeddings.create({
                 model: model,
                 input: text,
                 encoding_format: 'float'
-            });
+            }, { signal: abortSignal });
 
             const vector = result.data[0].embedding;
 

@@ -72,6 +72,8 @@ export abstract class ChatProvider {
         abortSignal: AbortSignal
     ): AsyncGenerator<StreamYield, ChatResponse, unknown>;
 
+    abstract abortStream(): Promise<void>;
+
     public static formatResponse(
         text: string, 
         toolCalls: Map<any, any>, 

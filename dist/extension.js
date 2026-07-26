@@ -6128,8 +6128,8 @@ async function runWalkGrep(pattern, root, signal) {
     hits.push(line);
     return true;
   };
-  const stat4 = await fs3.stat(root).catch(() => null);
-  if (stat4?.isFile()) {
+  const stat5 = await fs3.stat(root).catch(() => null);
+  if (stat5?.isFile()) {
     await grepFile(root, re, push);
   } else {
     await walk(root, "", (rel) => grepFile(path4.join(root, rel), re, push), signal);
@@ -19433,21 +19433,21 @@ var init_from = __esm({
     init_fetch_blob();
     ({ stat: stat2 } = import_node_fs.promises);
     blobFromSync = (path12, type) => fromBlob((0, import_node_fs.statSync)(path12), path12, type);
-    blobFrom = (path12, type) => stat2(path12).then((stat4) => fromBlob(stat4, path12, type));
-    fileFrom = (path12, type) => stat2(path12).then((stat4) => fromFile(stat4, path12, type));
+    blobFrom = (path12, type) => stat2(path12).then((stat5) => fromBlob(stat5, path12, type));
+    fileFrom = (path12, type) => stat2(path12).then((stat5) => fromFile(stat5, path12, type));
     fileFromSync = (path12, type) => fromFile((0, import_node_fs.statSync)(path12), path12, type);
-    fromBlob = (stat4, path12, type = "") => new fetch_blob_default([new BlobDataItem({
+    fromBlob = (stat5, path12, type = "") => new fetch_blob_default([new BlobDataItem({
       path: path12,
-      size: stat4.size,
-      lastModified: stat4.mtimeMs,
+      size: stat5.size,
+      lastModified: stat5.mtimeMs,
       start: 0
     })], { type });
-    fromFile = (stat4, path12, type = "") => new file_default([new BlobDataItem({
+    fromFile = (stat5, path12, type = "") => new file_default([new BlobDataItem({
       path: path12,
-      size: stat4.size,
-      lastModified: stat4.mtimeMs,
+      size: stat5.size,
+      lastModified: stat5.mtimeMs,
       start: 0
-    })], (0, import_node_path.basename)(path12), { type, lastModified: stat4.mtimeMs });
+    })], (0, import_node_path.basename)(path12), { type, lastModified: stat5.mtimeMs });
     BlobDataItem = class _BlobDataItem {
       #path;
       #start;
@@ -36073,7 +36073,7 @@ async function executeFind(query, deps, signal) {
   if (signal.aborted) throw new Error("AbortError");
   if (!query.trim()) throw new Error("Search query is emtpy");
   if (!deps.indexer.indexEnabled()) throw new Error("Indexing is disabled cannot use semantic search");
-  const [queryVector] = await deps.embedProvider.embed(deps.model, [query]);
+  const [queryVector] = await deps.embedProvider.embed(deps.model, [query], signal);
   const results = await deps.indexer.search(query, queryVector);
   if (results.length === 0) {
     return {
@@ -36175,10 +36175,67 @@ async function executeEdit(filePath, oldText, newText, cwd) {
   throw new Error("oldText was not found in the file at all. Ensure you are targeting the right code.");
 }
 
+// src/tools/execute.ts
+var cp2 = __toESM(require("child_process"));
+var commandSchemas = [
+  {
+    type: "function",
+    name: "run",
+    description: "Execute a terminal/shell command inside the isolated worktree workspace. Use this for running tests, build tasks, linters, or checking tool versions. IMPORTANT: Commands MUST be non-interactive (e.g., use '-y' or '--force' flags). Do NOT run long-running servers or watch commands (e.g., 'npm start', 'npm run dev', '--watch') as they will time out.",
+    parameters: {
+      type: "object",
+      properties: {
+        command: {
+          type: "string",
+          description: "The shell command to execute (e.g., 'npm test', 'cargo check', 'git status')."
+        }
+      },
+      required: ["command"]
+    }
+  }
+];
+async function executeRun(command, cwd, singal) {
+  return new Promise((resolve4) => {
+    if (singal.aborted) resolve4({ message: "Execution aborted." });
+    const child = cp2.exec(command, { cwd, timeout: 3e4 }, (error, stdout, stderr) => {
+      singal.removeEventListener("abort", abortListener);
+      let output = "";
+      if (stdout) output += `STDOUT:
+${truncateOutput(stdout)}
+`;
+      if (stderr) output += `STDERR:
+${truncateOutput(stderr)}
+`;
+      if (error) {
+        if (error.killed) output += `
+[Process kill: Exceeded timeout]`;
+        else output += `
+[Exit Code: ${error.code}]`;
+      }
+      resolve4({ message: output.trim() || "Command executed successfully with no output." });
+    });
+    const abortListener = () => {
+      child.kill();
+      resolve4({ message: "Process killed by user abort" });
+    };
+    singal.addEventListener("abort", abortListener);
+  });
+}
+function truncateOutput(text, maxLen = 3e3) {
+  if (text.length <= maxLen) return text;
+  const half = Math.floor(maxLen / 2);
+  return `${text.slice(0, half)}
+
+...[TRUNCATED]...
+
+${text.slice(-half)}`;
+}
+
 // src/tools/toolIndex.ts
 var allToolSchemas = [
   ...searchSchemas,
-  ...fileSchemas
+  ...fileSchemas,
+  ...commandSchemas
 ];
 function createToolRegistry(deps) {
   return {
@@ -36187,6 +36244,7 @@ function createToolRegistry(deps) {
     read: async (args) => await executeRead(args.filePath, deps.getCwd()),
     write: async (args) => await executeWrite(args.filePath, args.content, deps.getCwd()),
     edit: async (args) => await executeEdit(args.filePath, args.oldText, args.newText, deps.getCwd()),
+    run: async (args) => await executeRun(args.command, deps.getCwd(), deps.getSignal()),
     find: async (args) => {
       try {
         const searchDeps = await deps.createFindDeps();
@@ -36345,6 +36403,9 @@ var ClaudeChatProvider = class _ClaudeChatProvider extends ChatProvider {
       return ChatProvider.formatResponse(fullText, currentCalls, tokenUsage);
     }
     return { items: [], tokenUsage };
+  }
+  async abortStream() {
+    return;
   }
 };
 
@@ -46197,6 +46258,9 @@ var OpenAIChatProvider = class _OpenAIChatProvider extends ChatProvider {
     }
     return { items: [], tokenUsage };
   }
+  async abortStream() {
+    return;
+  }
 };
 var OpenAICompatibleProvider = class _OpenAICompatibleProvider extends ChatProvider {
   client;
@@ -46325,6 +46389,9 @@ var OpenAICompatibleProvider = class _OpenAICompatibleProvider extends ChatProvi
       return ChatProvider.formatResponse(fullText, currentCalls, tokenUsage);
     }
     return { items: [], tokenUsage };
+  }
+  async abortStream() {
+    return;
   }
 };
 
@@ -64922,6 +64989,7 @@ var GeminiChatProvider = class _GeminiChatProvider extends ChatProvider {
   static stateManagementSupport = true;
   client;
   static geminiTools = allToolSchemas;
+  activeInteractionId = null;
   featuredModels = [
     "gemini-3.6-flash",
     "gemini-3.5-flash",
@@ -65027,16 +65095,12 @@ var GeminiChatProvider = class _GeminiChatProvider extends ChatProvider {
       ...previousTurnID && { previous_interaction_id: previousTurnID }
     }, { signal: abortSignal });
     const currentCalls = /* @__PURE__ */ new Map();
-    let interactionId = null;
     let tokenUsage = void 0;
     for await (const event of stream) {
-      if (abortSignal?.aborted) {
-        if (interactionId) await this.client.interactions.cancel(interactionId);
-        throw new Error("AbortError");
-      }
+      if (abortSignal?.aborted) throw new Error("AbortError");
       const evType = event.event_type;
       if (evType === "interaction.created") {
-        interactionId = event.interaction.id;
+        this.activeInteractionId = event.interaction.id;
       } else if (evType === "step.start") {
         if (event.step.type === "function_call") {
           currentCalls.set(event.index, {
@@ -65071,9 +65135,12 @@ var GeminiChatProvider = class _GeminiChatProvider extends ChatProvider {
       }
     }
     if (currentCalls.size > 0 || fullText.length > 0) {
-      return ChatProvider.formatResponse(fullText, currentCalls, tokenUsage, interactionId);
+      return ChatProvider.formatResponse(fullText, currentCalls, tokenUsage, this.activeInteractionId);
     }
     return { items: [], tokenUsage };
+  }
+  async abortStream() {
+    if (this.activeInteractionId) await this.client.interactions.cancel(this.activeInteractionId);
   }
 };
 
@@ -65179,13 +65246,13 @@ var GeminiEmbedProvider = class extends EmbedProvider {
     }
     return modelNames.sort();
   }
-  async embed(model, texts) {
+  async embed(model, texts, abortSignal) {
     const vectors = [];
     for (const text of texts) {
+      if (abortSignal?.aborted) throw new Error("AbortError");
       const result = await this.client.models.embedContent({
         model,
         contents: text
-        // config: { outputDimensionality: this.dimensions }
       });
       const vector = result.embeddings?.[0]?.values;
       if (!vector) throw new Error("Gemini did not return embeddings");
@@ -65211,14 +65278,15 @@ var OpenAICompatibleEmbedProvider = class extends EmbedProvider {
       return [];
     }
   }
-  async embed(model, texts) {
+  async embed(model, texts, abortSignal) {
     const vectors = [];
     for (const text of texts) {
+      if (abortSignal?.aborted) throw new Error("AbortError");
       const result = await this.client.embeddings.create({
         model,
         input: text,
         encoding_format: "float"
-      });
+      }, { signal: abortSignal });
       const vector = result.data[0].embedding;
       vectors.push(vector);
     }
@@ -78704,12 +78772,12 @@ async function getEmbedModelsFromProvider(provider, apiKey) {
 }
 
 // src/worktreeManager.ts
-var cp2 = __toESM(require("child_process"));
+var cp3 = __toESM(require("child_process"));
 var util2 = __toESM(require("util"));
 var path10 = __toESM(require("path"));
 var vscode7 = __toESM(require("vscode"));
 var fs6 = __toESM(require("fs/promises"));
-var exec2 = util2.promisify(cp2.exec);
+var exec3 = util2.promisify(cp3.exec);
 var WorktreeManager = class {
   worktreePath;
   originalWorkspace;
@@ -78718,12 +78786,53 @@ var WorktreeManager = class {
     this.worktreePath = path10.join(workspacePath, "..", `.agent-worktree-${runID}`);
   }
   async setup() {
-    await exec2(`git worktree add --detach "${this.worktreePath}" HEAD`, { cwd: this.originalWorkspace });
+    await exec3(`git worktree add --detach "${this.worktreePath}" HEAD`, { cwd: this.originalWorkspace });
+    await this.link();
     await this.syncDirtyFiles();
+  }
+  async link() {
+    const symlinkDirs = [
+      "node_modules",
+      ".venv",
+      "venv",
+      "vendor",
+      "target",
+      "build",
+      ".next",
+      "dist",
+      ".cargo"
+    ];
+    for (const dir of symlinkDirs) {
+      const src = path10.join(this.originalWorkspace, dir);
+      const dest = path10.join(this.worktreePath, dir);
+      try {
+        const stat5 = await fs6.stat(src);
+        if (stat5.isDirectory()) {
+          const symlinkType = process.platform === "win32" ? "junction" : "dir";
+          await fs6.symlink(src, dest, symlinkType);
+        }
+      } catch {
+      }
+    }
+    const configs = [
+      ".env",
+      ".env.local",
+      ".env.development",
+      ".env.test",
+      "tsconfig.tsbuildinfo"
+    ];
+    for (const file of configs) {
+      const src = path10.join(this.originalWorkspace, file);
+      const dest = path10.join(this.worktreePath, file);
+      try {
+        await fs6.copyFile(src, dest);
+      } catch {
+      }
+    }
   }
   static async isGitInstalled() {
     try {
-      await exec2(`git --version`);
+      await exec3(`git --version`);
       return true;
     } catch {
       return false;
@@ -78731,26 +78840,26 @@ var WorktreeManager = class {
   }
   static async isGitRepo(workspacePath) {
     try {
-      await exec2(`git rev-parse --is-inside-work-tree`, { cwd: workspacePath });
+      await exec3(`git rev-parse --is-inside-work-tree`, { cwd: workspacePath });
       return true;
     } catch {
       return false;
     }
   }
   static async initGitRepo(workspacePath) {
-    await exec2(`git init`, { cwd: workspacePath });
-    await exec2(`git add .`, { cwd: workspacePath });
+    await exec3(`git init`, { cwd: workspacePath });
+    await exec3(`git add .`, { cwd: workspacePath });
     try {
-      await exec2(`git commit --allow-empty -m "Initial commit"`, { cwd: workspacePath });
+      await exec3(`git commit --allow-empty -m "Initial commit"`, { cwd: workspacePath });
     } catch (e2) {
-      await exec2(
+      await exec3(
         `git -c user.name="Agent Harness" -c user.email="agent@harness.local" commit --allow-empty -m "Initial commit"`,
         { cwd: workspacePath }
       );
     }
   }
   async syncDirtyFiles() {
-    const { stdout } = await exec2(`git status --porcelain`, { cwd: this.originalWorkspace });
+    const { stdout } = await exec3(`git status --porcelain`, { cwd: this.originalWorkspace });
     const dirtyFiles = stdout.split("\n").filter((line) => line.match(/^[MARC] |^[ MARC][MD] |^\?\? /)).map((line) => {
       let filePath = line.substring(3).trim();
       if (filePath.startsWith('"') && filePath.endsWith('"')) {
@@ -78771,11 +78880,11 @@ var WorktreeManager = class {
         }
       }
     }
-    await exec2(`git add -A`, { cwd: this.worktreePath });
+    await exec3(`git add -A`, { cwd: this.worktreePath });
   }
   async getPatch() {
-    await exec2(`git add -N .`, { cwd: this.worktreePath });
-    const { stdout: patch } = await exec2(`git diff`, { cwd: this.worktreePath });
+    await exec3(`git add -N .`, { cwd: this.worktreePath });
+    const { stdout: patch } = await exec3(`git diff`, { cwd: this.worktreePath });
     return patch;
   }
   async applyPatch() {
@@ -78784,8 +78893,8 @@ var WorktreeManager = class {
     const patchPath = path10.join(this.originalWorkspace, ".agent-run.patch");
     await fs6.writeFile(patchPath, patchContent, "utf-8");
     try {
-      await exec2(`git add -A`, { cwd: this.originalWorkspace });
-      await exec2(`git apply --3way --ignore-whitespace "${patchPath}"`, { cwd: this.originalWorkspace });
+      await exec3(`git add -A`, { cwd: this.originalWorkspace });
+      await exec3(`git apply --3way --ignore-whitespace "${patchPath}"`, { cwd: this.originalWorkspace });
     } catch (e2) {
       const errorStr = (e2.stdout || "") + (e2.stderr || "") + (e2.message || "");
       console.log(errorStr);
@@ -78797,8 +78906,8 @@ var WorktreeManager = class {
     }
   }
   async forceApply() {
-    await exec2(`git add -N .`, { cwd: this.worktreePath });
-    const { stdout } = await exec2(`git diff --name-only HEAD`, { cwd: this.worktreePath });
+    await exec3(`git add -N .`, { cwd: this.worktreePath });
+    const { stdout } = await exec3(`git diff --name-only HEAD`, { cwd: this.worktreePath });
     const files = stdout.split("\n").map((f3) => f3.trim()).filter((f3) => f3.length > 0);
     for (const file of files) {
       const src = vscode7.Uri.file(path10.join(this.worktreePath, file));
@@ -78815,7 +78924,7 @@ var WorktreeManager = class {
     }
   }
   async cleanup() {
-    await exec2(`git worktree remove "${this.worktreePath}" --force`, { cwd: this.originalWorkspace });
+    await exec3(`git worktree remove "${this.worktreePath}" --force`, { cwd: this.originalWorkspace });
   }
 };
 
@@ -78984,10 +79093,11 @@ var ChatApp = class {
     };
     let runStatus = "ok";
     let statusMessage = void 0;
+    let providerInstance = void 0;
     try {
       const apiKey = await this.getChatAPIKey(provider);
       const serverStateManagment = this.context.globalState.get("serverStateManagement") ?? true;
-      const providerInstance = ChatFactory.create(provider, apiKey);
+      providerInstance = ChatFactory.create(provider, apiKey);
       this.chatHistory.push({ type: "message", role: "user", content: userMessage, turnID: this.activeTurn.turnID });
       await this.saveChatHistory();
       let keepGoing = true;
@@ -79076,6 +79186,7 @@ var ChatApp = class {
     } catch (e2) {
       this.activeTurn = lastValidTurnState;
       if (e2.name === "AbortError" || e2.message?.toLowerCase().includes("abort")) {
+        if (providerInstance) await providerInstance.abortStream();
         runStatus = "aborted";
         statusMessage = "Execution halted manually";
         this.chatHistory.push({ type: "message", role: "user", content: "[System: The response was canceled by the user.]", isHidden: true });
