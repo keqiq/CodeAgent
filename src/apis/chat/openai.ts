@@ -136,7 +136,10 @@ export class OpenAIChatProvider extends ChatProvider {
         const stream = await this.client.responses.create({
             model: model,
             input: currentInput,
-            tools: OpenAIChatProvider.GPTTools,
+            tools: [
+                ...OpenAIChatProvider.GPTTools,
+                { type: 'web_search'}
+            ],
             stream: true,
             reasoning: {effort: effort as any, summary: 'auto' },
 
@@ -145,6 +148,7 @@ export class OpenAIChatProvider extends ChatProvider {
 
         for await (const event of stream) {
             if (abortSignal?.aborted) throw new Error('AbortError');
+            console.log(JSON.stringify(event));
             if (event.type === 'error') {
                 const errMsg = (event as any).error?.message || 'Unknown stream error';
                 throw new Error(`OpenAI API Error: ${errMsg}`);
@@ -162,7 +166,7 @@ export class OpenAIChatProvider extends ChatProvider {
                 }
             }
 
-            else if (event.type === 'response.reasoning_text.delta') {
+            else if (event.type === 'response.reasoning_summary_text.delta') {
                 const text = event.delta;
                 if (text) yield { type: 'thought', content: text };
             }
@@ -176,12 +180,37 @@ export class OpenAIChatProvider extends ChatProvider {
                         arguments: ''
                     });
                 }
+
+                else if (item && item.type === 'web_search_call') {
+                    currentCalls.set(item.id, {
+                        id: item.id,
+                        name: 'web_search',
+                        arguments: '',
+                        server: true
+                    });
+
+                    yield { 
+                        type: 'server_action', 
+                        content: 'Searching the web...',
+                        actionId: item.id,
+                        actionName: 'web'
+                    };
+                }
             }
 
             else if (event.type === 'response.function_call_arguments.delta') {
 
                 if (currentCalls.has(event.item_id)) {
                     currentCalls.get(event.item_id).arguments += event.delta;
+                }
+            }
+
+            else if (event.type === 'response.output_item.done') {
+                if (event.item.type === 'web_search_call'){
+                    const action = event.item.action;
+                    if (action?.type === 'search') {
+                        currentCalls.get(event.item.id).arguments = JSON.stringify({ query: action.query });
+                    }
                 }
             }
 
@@ -378,8 +407,6 @@ export abstract class OpenAICompatibleProvider extends ChatProvider {
 
                 };
             }
-
-
         }
 
         if (currentCalls.size > 0 || fullText.length > 0) {

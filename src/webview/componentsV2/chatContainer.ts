@@ -29,7 +29,7 @@ export class ChatContainer {
     private activeToolGroup: HTMLDetailsElement | null = null;
     private activeToolSummary: HTMLElement | null = null;
     private activeToolLogs: HTMLElement | null = null;
-    private activeTool: HTMLElement | null = null;
+    private activeTools: Map<string, HTMLElement> = new Map();
     private toolErrorCount: number = 0;
 
     private activeThoughtDetails: HTMLDetailsElement | null = null;
@@ -104,6 +104,7 @@ export class ChatContainer {
         this.activeRunContainer.appendChild(this.activeRunFooter);
 
         this.container.appendChild(this.activeRunContainer);
+        this.showTypingIndicator();
     }
 
     public updateTokenUsage(usage: TokenUsage): void {
@@ -349,37 +350,61 @@ export class ChatContainer {
     }
 
     // Called when the agent executes a tool and on tool completion or error
-    public updateToolGroup(msg: { status: string, toolName: string, args: any, error?: string }): void {
+    public updateToolGroup(msg: { status: string, toolId: string, toolName: string, args: any, error?: string }): void {
         if (!this.activeToolGroup) return;
 
         // Tool running
+        let targetTool = this.activeTools.get(msg.toolId);
         if (msg.status === 'running') {
             if (this.activeToolSummary) {
                 this.activeToolSummary.innerHTML = `<div class="tool-summary-content"><div class="vscode-spinner"></div> <span>Running <b>${msg.toolName}</b>...</span></div>`;
             }
             
-            this.activeTool = document.createElement('div');
-            this.activeTool.classList.add('tool-log-entry');
+            if (!targetTool) {
+                targetTool = document.createElement('div');
+                targetTool.classList.add('tool-log-entry');
+                
+                const displayArgs = this.formatToolArgs(msg.args);
+                targetTool.innerHTML = `
+                    <div class="tool-name-badge-container">
+                        <span class="status-highlight tool-name-badge tool-badge-running">
+                            <div class="vscode-spinner"></div>
+                            ${msg.toolName}
+                        </span>
+                    </div>
+                    <div class="tool-args-container">
+                        ${displayArgs}
+                    </div>
+                `;
 
-            const displayArgs = this.formatToolArgs(msg.args);
-
-            this.activeTool.innerHTML = `
-                <div class="tool-name-badge-container">
-                    <span class="status-highlight tool-name-badge tool-badge-running">
-                        <div class="vscode-spinner"></div>
-                        ${msg.toolName}
-                    </span>
-                </div>
-                <div class="tool-args-container">
-                    ${displayArgs}
-                </div>
-            `;
-            this.activeToolLogs!.appendChild(this.activeTool);
+                this.activeToolLogs!.appendChild(targetTool);
+                this.activeTools.set(msg.toolId, targetTool);
+            }
         }
+
+        // For web searches and other server tools
+        else if (msg.status === 'server') {
+            if (targetTool) {
+                const badge = targetTool.querySelector('.status-highlight') as HTMLElement;
+                if (badge) {
+                    badge.className = 'status-highlight tool-name-badge tool-badge-server';
+                    
+                    const spinner = badge.querySelector('.vscode-spinner');
+                    if (spinner) spinner.remove();
+                }
+
+                // Update the Arguments with the final parsed JSON
+                const argsContainer = targetTool.querySelector('.tool-args-container');
+                if (argsContainer) {
+                    argsContainer.innerHTML = this.formatToolArgs(msg.args);
+                }
+            }
+        }
+
         // Tool completion
         else if (msg.status === 'success') {
-            if (this.activeTool) {
-                const badge = this.activeTool.querySelector('.status-highlight') as HTMLElement;
+            if (targetTool) {
+                const badge = targetTool.querySelector('.status-highlight') as HTMLElement;
                 if (badge) {
                     badge.className = 'status-highlight tool-name-badge status-ok'; // Turns it green
                     const spinner = badge.querySelector('.vscode-spinner');
@@ -390,15 +415,15 @@ export class ChatContainer {
         // Tool error
         else if (msg.status === 'error') {
             this.toolErrorCount++;
-            if (this.activeTool) {
-                const badge = this.activeTool.querySelector('.status-highlight') as HTMLElement;
+            if (targetTool) {
+                const badge = targetTool.querySelector('.status-highlight') as HTMLElement;
                 if (badge) {
                     badge.className = 'status-highlight tool-name-badge status-error'; // Turns it red
                     const spinner = badge.querySelector('.vscode-spinner');
                     if (spinner) spinner.remove();
                 }
                 
-                const argsContainer = this.activeTool.querySelector('.tool-args-container');
+                const argsContainer = targetTool.querySelector('.tool-args-container');
                 if (argsContainer) {
                     argsContainer.innerHTML += `<div class="tool-error-text">${msg.error}</div>`;
                 }
@@ -407,24 +432,29 @@ export class ChatContainer {
         this.scrollToBottom();
     }
 
-    public endToolGroup(msg: { totalCount: number, interrupted?: boolean }): void {
+    public endToolGroup(msg: { customCount: number, serverCount: number, interrupted?: boolean }): void {
         if (!this.activeToolGroup || !this.activeToolSummary) return;
+
+        // Clean up leftover running tools
+        this.activeTools.forEach((toolDiv) => {
+            const badge = toolDiv.querySelector('.status-highlight') as HTMLElement;
+            if (badge && badge.classList.contains('tool-badge-running')) {
+                badge.className = 'status-highlight tool-name-badge status-error';
+                const spinner = badge.querySelector('.vscode-spinner');
+                if (spinner) spinner.remove();
+
+                // If this cleanup is due to an interrupt, add the specific error text
+                if (msg.interrupted) {
+                    const argsContainer = toolDiv.querySelector('.tool-args-container');
+                    if (argsContainer) {
+                        argsContainer.innerHTML += `<div class="tool-error-text">Halted manually</div>`;
+                    }
+                }
+            }
+        });
 
         // If tool calls were interrupted by user
         if (msg.interrupted) {
-            if (this.activeTool) {
-                const badge = this.activeTool.querySelector('.status-highlight') as HTMLElement;
-                if (badge) {
-                    badge.className = 'status-highlight tool-name-badge status-error';
-                    const spinner = badge.querySelector('.vscode-spinner');
-                    if (spinner) spinner.remove();
-                }
-                const argsContainer = this.activeTool.querySelector('.tool-args-container');
-                if (argsContainer) {
-                    argsContainer.innerHTML += `<div class="tool-error-text">Halted manually</div>`;
-                }
-            }
-            
             this.activeToolSummary.innerHTML = `
                 <div class="tool-summary-content">
                     <span>Execution Halted</span>
@@ -436,14 +466,21 @@ export class ChatContainer {
         
         // Tool calls all completed
         else {
-            const successCount = msg.totalCount - this.toolErrorCount;
+            const serverCount = msg.serverCount || 0;
+            const successCount = msg.customCount - this.toolErrorCount;
+            const totalCount = msg.customCount + serverCount;
             
             let summaryHTML = `
                 <div class="tool-summary-content">
-                    <span>Executed ${msg.totalCount} tool${msg.totalCount === 1 ? '' : 's'}</span>
-                    <div class="tool-summary-badges">
-                        <span class="status-highlight status-ok">${successCount} Success</span>`;
-            
+                    <span>Executed ${totalCount} tool${totalCount === 1 ? '' : 's'}</span>
+                    <div class="tool-summary-badges">`;
+
+            if (serverCount > 0) {
+                summaryHTML += `<span class="status-highlight tool-badge-server">${serverCount} Server</span>`;
+            }
+            if (successCount > 0) {
+                summaryHTML += `<span class="status-highlight status-ok">${successCount} Success</span>`;
+            }
             if (this.toolErrorCount > 0) {
                 summaryHTML += `<span class="status-highlight status-error">${this.toolErrorCount} Failed</span>`;
             }
@@ -456,7 +493,7 @@ export class ChatContainer {
         this.activeToolGroup = null;
         this.activeToolSummary = null;
         this.activeToolLogs = null;
-        this.activeTool = null;
+        this.activeTools.clear();
         this.toolErrorCount = 0;
     }
 
@@ -728,7 +765,7 @@ export class ChatContainer {
         this.removeTypingIndicator();
         this.endStream();
         this.endThought();
-        this.endToolGroup({ totalCount: 0, interrupted: true });
+        this.endToolGroup({ customCount: 0, serverCount: 0, interrupted: true });
         this.scrollToBottom();
     }
 

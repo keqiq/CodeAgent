@@ -23,8 +23,8 @@ export const commandSchemas: ToolSchema[] = [
 ];
 
 export async function executeRun(command: string, cwd: string, singal: AbortSignal): Promise<ToolResult> {
-    return new Promise((resolve) => {
-        if (singal.aborted) resolve({ message: 'Execution aborted.' });
+    return new Promise((resolve, reject) => {
+        if (singal.aborted) return reject(new Error('AbortError'));
         
         const child = cp.exec(command, { cwd, timeout: 30_000 }, (error, stdout, stderr) => {
             singal.removeEventListener('abort', abortListener);
@@ -35,16 +35,16 @@ export async function executeRun(command: string, cwd: string, singal: AbortSign
             
             if (error) {
                 // If killed by timeout option
-                if (error.killed) output += `\n[Process kill: Exceeded timeout]`;
-                else output += `\n[Exit Code: ${error.code}]`;
+                if (error.killed) return reject(new Error(`[Process killed: Exceeded timeout]\n${output}`.trim()));
+                else return reject(new Error(`[Exit Code: ${error.code}]\n${output}`));
             }
             
-            resolve({ message: output.trim() || "Command executed successfully with no output."});
+            resolve({ message: output.trim() || "Command executed successfully with no output.".trim()});
         });
         
         const abortListener = () => {
             child.kill();
-            resolve({ message: 'Process killed by user abort' });
+            reject(new Error('AbortError'));
         };
 
         singal.addEventListener('abort', abortListener);

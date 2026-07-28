@@ -35554,7 +35554,7 @@ var ChatProvider = class _ChatProvider {
   static systemPrompt = `You are an autonomous, expert software engineering agent integrated into VS Code. 
                       You have access to tools that can search, read, write, and edit files in the user's workspace.
                       When a user asks you to find a bug or fix a problem, DO NOT ask them for the file name if you can search for it yourself. 
-                      Proactively use your semantic search tool 'searchCodebase' tool to search the workspace.
+                      Proactively use your semantic search tool 'find' tool to search the workspace.
                       Tools like 'glob' and 'grep' should be used as a fallback if semantic search fails to return relevant results, or if you need to view files in more detail. 
                       Find the relevant code, read it, and edit it to fix the issue. 
                       Always explain your thought process before executing a tool.`;
@@ -35578,15 +35578,31 @@ var ChatProvider = class _ChatProvider {
       ...reasoning_content && { reasoning_content }
     });
     for (const call of Array.from(toolCalls.values())) {
+      let parsedArgs = { args: "None" };
+      if (call.arguments) {
+        if (typeof call.arguments === "object") {
+          parsedArgs = call.arguments;
+        } else {
+          try {
+            parsedArgs = JSON.parse(call.arguments);
+          } catch (e2) {
+            parsedArgs = { query: call.arguments };
+          }
+        }
+      }
       items.push({
         type: "function_call",
         id: call.id,
         name: call.name,
-        arguments: call.arguments ? JSON.parse(call.arguments) : {},
-        turnID: call.turnID
+        arguments: parsedArgs,
+        turnID: call.turnID,
+        server: call.server
       });
     }
     return { items, tokenUsage, ...turnID && { turnID } };
+  }
+  async executeProviderTool(name, args) {
+    return void 0;
   }
 };
 
@@ -36195,8 +36211,8 @@ var commandSchemas = [
   }
 ];
 async function executeRun(command, cwd, singal) {
-  return new Promise((resolve4) => {
-    if (singal.aborted) resolve4({ message: "Execution aborted." });
+  return new Promise((resolve4, reject) => {
+    if (singal.aborted) return reject(new Error("AbortError"));
     const child = cp2.exec(command, { cwd, timeout: 3e4 }, (error, stdout, stderr) => {
       singal.removeEventListener("abort", abortListener);
       let output = "";
@@ -36207,16 +36223,16 @@ ${truncateOutput(stdout)}
 ${truncateOutput(stderr)}
 `;
       if (error) {
-        if (error.killed) output += `
-[Process kill: Exceeded timeout]`;
-        else output += `
-[Exit Code: ${error.code}]`;
+        if (error.killed) return reject(new Error(`[Process killed: Exceeded timeout]
+${output}`.trim()));
+        else return reject(new Error(`[Exit Code: ${error.code}]
+${output}`));
       }
-      resolve4({ message: output.trim() || "Command executed successfully with no output." });
+      resolve4({ message: output.trim() || "Command executed successfully with no output.".trim() });
     });
     const abortListener = () => {
       child.kill();
-      resolve4({ message: "Process killed by user abort" });
+      reject(new Error("AbortError"));
     };
     singal.addEventListener("abort", abortListener);
   });
@@ -36353,8 +36369,8 @@ var ClaudeChatProvider = class _ClaudeChatProvider extends ChatProvider {
       system: ChatProvider.systemPrompt,
       messages: this.formatMessages(history),
       tools: [
-        ..._ClaudeChatProvider.claudeTools
-        // { type: "web_search_20260318", name: "web_search" }
+        ..._ClaudeChatProvider.claudeTools,
+        { type: "web_search_20260318", name: "web_search" }
       ],
       stream: true,
       max_tokens: 1e5,
@@ -36375,10 +36391,37 @@ var ClaudeChatProvider = class _ClaudeChatProvider extends ChatProvider {
             name: event.content_block.name,
             arguments: ""
           });
+        } else if (event.content_block.type === "server_tool_use") {
+          if (event.content_block.name === "code_execution") {
+            currentCalls.set(event.content_block.id, {
+              id: event.content_block.id,
+              name: event.content_block.name,
+              arguments: "",
+              server: true
+            });
+            yield {
+              type: "server_action",
+              content: "Searching the web",
+              actionId: event.content_block.id,
+              actionName: "web",
+              actionQuery: "Searching the web..."
+            };
+          } else if (event.content_block.name === "web_search") {
+            const callerId = event.content_block.caller.tool_id;
+            const parentCall = currentCalls.get(callerId);
+            if (parentCall) {
+              const newQuery = event.content_block.input.query;
+              if (parentCall.arguments) {
+                parentCall.arguments += "\n" + newQuery;
+              } else {
+                parentCall.arguments = newQuery;
+              }
+            }
+          }
         }
       } else if (event.type === "content_block_delta") {
         if (event.delta.type === "input_json_delta") {
-          if (currentCalls.has(event.index)) {
+          if (currentCalls.has(event.index) && !currentCalls.get(event.index).server) {
             currentCalls.get(event.index).arguments += event.delta.partial_json;
           }
         } else if (event.delta.type === "text_delta") {
@@ -36396,6 +36439,7 @@ var ClaudeChatProvider = class _ClaudeChatProvider extends ChatProvider {
           tokenUsage.outputTokens = event.usage.output_tokens - thinkingTokens;
           tokenUsage.thoughtTokens = thinkingTokens;
         }
+      } else if (event.type === "content_block_stop") {
       }
     }
     tokenUsage.totalTokens = tokenUsage.inputTokens + tokenUsage.outputTokens;
@@ -46207,13 +46251,17 @@ var OpenAIChatProvider = class _OpenAIChatProvider extends ChatProvider {
     const stream = await this.client.responses.create({
       model,
       input: currentInput,
-      tools: _OpenAIChatProvider.GPTTools,
+      tools: [
+        ..._OpenAIChatProvider.GPTTools,
+        { type: "web_search" }
+      ],
       stream: true,
       reasoning: { effort, summary: "auto" },
       ...previousTurnID && { previous_response_id: previousTurnID }
     }, { signal: abortSignal });
     for await (const event of stream) {
       if (abortSignal?.aborted) throw new Error("AbortError");
+      console.log(JSON.stringify(event));
       if (event.type === "error") {
         const errMsg = event.error?.message || "Unknown stream error";
         throw new Error(`OpenAI API Error: ${errMsg}`);
@@ -46225,7 +46273,7 @@ var OpenAIChatProvider = class _OpenAIChatProvider extends ChatProvider {
           fullText += text;
           yield { type: "text", content: text };
         }
-      } else if (event.type === "response.reasoning_text.delta") {
+      } else if (event.type === "response.reasoning_summary_text.delta") {
         const text = event.delta;
         if (text) yield { type: "thought", content: text };
       } else if (event.type === "response.output_item.added") {
@@ -46236,10 +46284,30 @@ var OpenAIChatProvider = class _OpenAIChatProvider extends ChatProvider {
             name: item.name,
             arguments: ""
           });
+        } else if (item && item.type === "web_search_call") {
+          currentCalls.set(item.id, {
+            id: item.id,
+            name: "web_search",
+            arguments: "",
+            server: true
+          });
+          yield {
+            type: "server_action",
+            content: "Searching the web...",
+            actionId: item.id,
+            actionName: "web"
+          };
         }
       } else if (event.type === "response.function_call_arguments.delta") {
         if (currentCalls.has(event.item_id)) {
           currentCalls.get(event.item_id).arguments += event.delta;
+        }
+      } else if (event.type === "response.output_item.done") {
+        if (event.item.type === "web_search_call") {
+          const action = event.item.action;
+          if (action?.type === "search") {
+            currentCalls.get(event.item.id).arguments = JSON.stringify({ query: action.query });
+          }
         }
       } else if (event.type === "response.completed") {
         const usage = event.response.usage;
@@ -65088,9 +65156,13 @@ var GeminiChatProvider = class _GeminiChatProvider extends ChatProvider {
     const stream = await this.client.interactions.create({
       model,
       input: currentInput,
-      tools: _GeminiChatProvider.geminiTools,
+      tools: [
+        ..._GeminiChatProvider.geminiTools,
+        { "type": "google_search" }
+      ],
       system_instruction: ChatProvider.systemPrompt,
       stream: true,
+      store: useCache && previousTurnID !== void 0,
       generation_config: { thinking_level: effort, thinking_summaries: "auto" },
       ...previousTurnID && { previous_interaction_id: previousTurnID }
     }, { signal: abortSignal });
@@ -65108,6 +65180,22 @@ var GeminiChatProvider = class _GeminiChatProvider extends ChatProvider {
             name: event.step.name,
             arguments: ""
           });
+        } else if (event.step.type === "google_search_call") {
+          const queryArr = event.step.arguments?.queries;
+          const query = Array.isArray(queryArr) && queryArr.length > 0 ? queryArr[0] : "Executing Google Search...";
+          currentCalls.set(event.index, {
+            id: event.step.id,
+            name: event.step.type,
+            arguments: query,
+            server: true
+          });
+          yield {
+            type: "server_action",
+            content: "Searching the web...",
+            actionId: event.step.id,
+            actionName: "web",
+            actionQuery: query
+          };
         }
       } else if (evType === "step.delta") {
         if (event.delta.type === "arguments_delta") {
@@ -79104,7 +79192,8 @@ var ChatApp = class {
       let turnCount = 0;
       const turnLimit = this.context.globalState.get("turnLimit") ?? 0;
       let hasStartedToolGroup = false;
-      let toolsRunThisTurn = 0;
+      let customToolsRunThisTurn = 0;
+      let serverToolsRunThisTurn = 0;
       while (keepGoing && (turnLimit === 0 || turnCount < turnLimit)) {
         if (this.aborter.signal.aborted) throw new Error("AbortError");
         turnCount++;
@@ -79123,13 +79212,27 @@ var ChatApp = class {
             const content = streamResult.value.content;
             if (streamResult.value.type === "text") this.post({ type: "streamChunk", chunk: content });
             else if (streamResult.value.type === "thought") this.post({ type: "streamThought", chunk: content });
+            else if (streamResult.value.type === "server_action") {
+              if (!hasStartedToolGroup) {
+                hasStartedToolGroup = true;
+                this.post({ type: "startToolGroup" });
+              }
+              this.post({
+                type: "updateTool",
+                status: "running",
+                toolId: streamResult.value.actionId,
+                // Keep track of tool id, server tools can run in parallel
+                toolName: streamResult.value.actionName,
+                args: { query: streamResult.value.actionQuery || "Searching the web..." }
+              });
+            }
           }
           streamResult = await streamGenerator.next();
         }
         if (this.aborter.signal.aborted) throw new Error("AbortError");
         this.post({ type: "streamEnd" });
         const finalResponse = streamResult.value;
-        if (finalResponse && finalResponse.items.length > 0) this.chatHistory.push(...finalResponse.items);
+        if (finalResponse && finalResponse.items?.length > 0) this.chatHistory.push(...finalResponse.items);
         if (finalResponse?.tokenUsage) {
           runTokenUsage.totalTokens += finalResponse.tokenUsage.totalTokens || 0;
           runTokenUsage.inputTokens += finalResponse.tokenUsage.inputTokens || 0;
@@ -79146,34 +79249,41 @@ var ChatApp = class {
           }
           for (const toolCall of functionCalls) {
             if (this.aborter?.signal.aborted) throw new Error("AbortError");
-            toolsRunThisTurn++;
             const toolName2 = toolCall.name;
             const toolArgs = toolCall.arguments;
             const toolId = toolCall.id;
-            this.post({ type: "updateTool", status: "running", toolName: toolName2, args: toolArgs });
+            if (toolCall.server) {
+              serverToolsRunThisTurn++;
+              this.post({ type: "updateTool", status: "server", toolId, toolName: toolName2, args: toolArgs });
+              this.chatHistory = this.chatHistory.filter((item) => !(item.type === "function_call" && item.id === toolId));
+              continue;
+            }
+            customToolsRunThisTurn++;
+            this.post({ type: "updateTool", status: "running", toolId, toolName: toolName2, args: toolArgs });
             let result;
             if (this.toolRegistry[toolName2]) {
               try {
                 result = await this.toolRegistry[toolName2](toolArgs);
-                this.post({ type: "updateTool", status: "success" });
+                this.post({ type: "updateTool", status: "success", toolId });
               } catch (e2) {
                 const message = e2 instanceof Error ? e2.message : String(e2);
                 result = { message: `Error executing ${toolName2}: ${message}` };
-                this.post({ type: "updateTool", status: "error", error: message });
+                this.post({ type: "updateTool", status: "error", toolId, error: message });
               }
             } else {
               result = { message: `Error: Tool '${toolName2}' is not registered` };
-              this.post({ type: "updateTool", status: "error", error: "Invalid tool call" });
+              this.post({ type: "updateTool", status: "error", toolId, error: "Invalid tool call" });
             }
             this.chatHistory.push({ type: "function_result", id: toolId, name: toolName2, result: result.message, turnID: currentTurnID });
           }
+          if (customToolsRunThisTurn === 0) keepGoing = false;
         } else {
           keepGoing = false;
         }
         this.activeTurn = { provider, turnID: currentTurnID };
       }
       this.post({ type: "updateTokenUsage", usage: runTokenUsage });
-      if (hasStartedToolGroup) this.post({ type: "endToolGroup", totalCount: toolsRunThisTurn });
+      if (hasStartedToolGroup) this.post({ type: "endToolGroup", customCount: customToolsRunThisTurn, serverCount: serverToolsRunThisTurn });
       await this.saveChatHistory();
       if (!this.aborter.signal.aborted) {
         const patchString = await this.activeWorktree.getPatch();

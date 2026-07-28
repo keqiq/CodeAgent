@@ -126,9 +126,13 @@ export class GeminiChatProvider extends ChatProvider {
         const stream = await this.client.interactions.create({
             model: model,
             input: currentInput,
-            tools: GeminiChatProvider.geminiTools,
+            tools: [
+                ...GeminiChatProvider.geminiTools,
+                { "type": "google_search" }
+            ],
             system_instruction: ChatProvider.systemPrompt,
             stream: true,
+            store: useCache && previousTurnID !== undefined,
             generation_config: {thinking_level: effort as any, thinking_summaries: 'auto'},
             ...(previousTurnID && { previous_interaction_id: previousTurnID })
         }, { signal: abortSignal });
@@ -155,6 +159,29 @@ export class GeminiChatProvider extends ChatProvider {
                         name: event.step.name,
                         arguments: ''
                     });
+                }
+
+                // Untested, google wants 20 CAD minimum credit deposit to use this
+                else if (event.step.type === 'google_search_call') {
+                    const queryArr = event.step.arguments?.queries;
+                    const query = (Array.isArray(queryArr) && queryArr.length > 0) 
+                        ? queryArr[0] 
+                        : 'Executing Google Search...';
+
+                    currentCalls.set(event.index, {
+                        id: event.step.id,
+                        name: event.step.type,
+                        arguments: query,
+                        server: true
+                    });
+
+                    yield {
+                        type: 'server_action',
+                        content: 'Searching the web...',
+                        actionId: event.step.id,
+                        actionName: 'web',
+                        actionQuery: query
+                    };
                 }
             }
 

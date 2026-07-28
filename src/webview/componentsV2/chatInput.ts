@@ -90,7 +90,6 @@ export class ChatInput {
 
             if (text && this.currentChatProvider && this.currentChatModel) {
                 this.chatContainer.appendMessage({ type: 'message', role: 'user', content: text });
-                this.chatContainer.showTypingIndicator();
 
                 this.vscodeAPI.postMessage({
                     type: 'askAgent',

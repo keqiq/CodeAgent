@@ -122,7 +122,7 @@ export class ClaudeChatProvider extends ChatProvider {
             messages: this.formatMessages(history),
             tools: [
                 ...ClaudeChatProvider.claudeTools,
-                // { type: "web_search_20260318", name: "web_search" }
+                { type: "web_search_20260318", name: "web_search" }
             ],
             stream: true,
             max_tokens: 100000,
@@ -138,6 +138,7 @@ export class ClaudeChatProvider extends ChatProvider {
 
         for await (const event of stream) {
             if (abortSignal?.aborted) throw new Error('AbortError');
+            // console.log(JSON.stringify(event));
 
             // Listen for start signal
             if (event.type === 'content_block_start') {
@@ -148,13 +149,54 @@ export class ClaudeChatProvider extends ChatProvider {
                         arguments: ''
                     });
                 }
+
+                // Purely for web search atm
+                else if (event.content_block.type === 'server_tool_use') {
+
+                    // Super confusing, when the server runs web search, it first sends this event
+                    // Need to capture the content_block.id as subsequent 'web_search' calls will reference this
+                    if (event.content_block.name === 'code_execution') {
+                        currentCalls.set(event.content_block.id, {
+                            id: event.content_block.id,
+                            name: event.content_block.name,
+                            arguments: '',
+                            server: true
+                        });
+
+                        yield {
+                            type: 'server_action',
+                            content: 'Searching the web',
+                            actionId: event.content_block.id,
+                            actionName: 'web',
+                            actionQuery: 'Searching the web...'
+                        };
+                    }
+
+                    // Follow ups to the previous code_execution
+                    // This actually has the query, and we can match it with caller.tool_id
+                    else if (event.content_block.name === 'web_search') {
+                        const callerId = ((event.content_block.caller) as any).tool_id;
+                        const parentCall = currentCalls.get(callerId);
+
+                        if (parentCall) {
+                            const newQuery = ((event.content_block.input) as any).query;
+                            
+                            // Append with a newline if we already have previous queries
+                            if (parentCall.arguments) {
+                                parentCall.arguments += '\n' + newQuery;
+                            } else {
+                                parentCall.arguments = newQuery;
+                            }
+                        }
+                    }
+                }
             }
 
             else if (event.type === 'content_block_delta') {
 
                 // This is for tool call arguments
                 if (event.delta.type === 'input_json_delta') {
-                    if (currentCalls.has(event.index)) {
+                    if (currentCalls.has(event.index) && !currentCalls.get(event.index).server) {
                         currentCalls.get(event.index).arguments += event.delta.partial_json;
                     }
                 }
@@ -186,6 +228,9 @@ export class ClaudeChatProvider extends ChatProvider {
                     tokenUsage.outputTokens = event.usage.output_tokens - thinkingTokens;
                     tokenUsage.thoughtTokens = thinkingTokens;
                 }
+            }
+
+            else if (event.type === 'content_block_stop') {
             }
 
         }

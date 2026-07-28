@@ -29,8 +29,8 @@
     border-radius: 8px;
     max-width: 90%;
     word-wrap: break-word;
-    font-size: 12px;
-    line-height: 1.2;
+    font-size: 13px;
+    line-height: 1.5;
     /* box-shadow: 0 1px 2px rgba(0,0,0,0.1); */
 }
 
@@ -217,6 +217,7 @@
 .tool-name-badge-container {
     flex-shrink: 0;
     padding-top: 3px;
+    min-width: 5%;
 }
 
 .tool-args-container {
@@ -249,6 +250,12 @@
     border-width: 1.5px;
     border-color: var(--vscode-descriptionForeground);
     border-top-color: transparent;
+}
+
+.tool-badge-server {
+    background: color-mix(in srgb, var(--vscode-textLink-foreground) 15%, transparent);
+    color: var(--vscode-textLink-foreground);
+    border-color: color-mix(in srgb, var(--vscode-textLink-foreground) 30%, transparent); 
 }
 
 .tool-summary-content {

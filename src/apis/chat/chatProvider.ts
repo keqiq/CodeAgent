@@ -1,6 +1,8 @@
+import { ToolResult } from "../../tools/toolIndex";
+
 export type ChatItem =
     | { type: 'message'; role: 'user' | 'assistant'; content: string, thought?: string, turnID?: string, isHidden?: boolean }
-    | { type: 'function_call'; id: string; name: string; arguments: any, turnID?: string}
+    | { type: 'function_call'; id: string; name: string; arguments: any, turnID?: string, server?: boolean}
     | { type: 'function_result'; id: string; name: string; result: string, turnID?: string }
     | { type: 'run_summary'; provider: string, status: 'ok' | 'aborted' | 'error'; tokenUsage?: TokenUsage; message?: string; turnID?: string}
 
@@ -11,8 +13,11 @@ export interface ChatResponse {
 }
 
 export interface StreamYield {
-    type: 'text' | 'thought';
+    type: 'text' | 'thought' | 'server_action';
     content: string;
+    actionId?: string;
+    actionName?: string;
+    actionQuery?: string;
 }
 
 export interface ModelInfo {
@@ -34,7 +39,7 @@ export abstract class ChatProvider {
     protected static systemPrompt: string = `You are an autonomous, expert software engineering agent integrated into VS Code. 
                       You have access to tools that can search, read, write, and edit files in the user's workspace.
                       When a user asks you to find a bug or fix a problem, DO NOT ask them for the file name if you can search for it yourself. 
-                      Proactively use your semantic search tool 'searchCodebase' tool to search the workspace.
+                      Proactively use your semantic search tool 'find' tool to search the workspace.
                       Tools like 'glob' and 'grep' should be used as a fallback if semantic search fails to return relevant results, or if you need to view files in more detail. 
                       Find the relevant code, read it, and edit it to fix the issue. 
                       Always explain your thought process before executing a tool.`;
@@ -74,7 +79,7 @@ export abstract class ChatProvider {
 
     abstract abortStream(): Promise<void>;
 
-    public static formatResponse(
+    static formatResponse(
         text: string, 
         toolCalls: Map<any, any>, 
         tokenUsage: TokenUsage, 
@@ -91,15 +96,33 @@ export abstract class ChatProvider {
             });
 
         for (const call of Array.from(toolCalls.values())) {
+
+            let parsedArgs: any = { args: 'None' };
+            if (call.arguments) {
+                if (typeof call.arguments === 'object') {
+                    parsedArgs = call.arguments;
+                } else {
+                    try {
+                        parsedArgs = JSON.parse(call.arguments);
+                    } catch (e) {
+                        parsedArgs = { query: call.arguments };
+                    }
+                }
+            }
             items.push({ 
                 type: 'function_call', 
                 id: call.id, 
                 name: call.name, 
-                arguments: call.arguments ? JSON.parse(call.arguments) : {},
-                turnID: call.turnID
+                arguments: parsedArgs,
+                turnID: call.turnID,
+                server: call.server,
             });
         }
 
         return { items, tokenUsage, ...(turnID && {turnID}) };
+    }
+
+    async executeProviderTool?(name: string, args: any): Promise<ToolResult | undefined> {
+        return undefined;
     }
 }

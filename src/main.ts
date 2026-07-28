@@ -245,7 +245,8 @@ export class ChatApp implements vscode.WebviewViewProvider {
             const turnLimit = this.context.globalState.get<number>('turnLimit') ?? 0;
             
             let hasStartedToolGroup = false;
-            let toolsRunThisTurn = 0;
+            let customToolsRunThisTurn = 0;
+            let serverToolsRunThisTurn = 0;
             
             while (keepGoing && (turnLimit === 0 || turnCount < turnLimit)) {
                 if (this.aborter.signal.aborted) throw new Error('AbortError');
@@ -268,6 +269,23 @@ export class ChatApp implements vscode.WebviewViewProvider {
                         
                         if (streamResult.value.type === 'text') this.post({ type: 'streamChunk', chunk: content });
                         else if (streamResult.value.type === 'thought') this.post({ type: 'streamThought', chunk: content });
+
+                        // We update the frontend with server tools immediately
+                        // Other parameters might show up later upon completion but it could take a while
+                        // Currently only web search
+                        else if (streamResult.value.type === 'server_action') {
+                            if (!hasStartedToolGroup) {
+                                hasStartedToolGroup = true;
+                                this.post({ type: 'startToolGroup' });
+                            }
+                            this.post({
+                                type: 'updateTool',
+                                status: 'running',
+                                toolId: streamResult.value.actionId, // Keep track of tool id, server tools can run in parallel
+                                toolName: streamResult.value.actionName,
+                                args: { query: streamResult.value.actionQuery || 'Searching the web...' }
+                            });
+                        }
                     }
                     streamResult = await streamGenerator.next();
                 }
@@ -277,7 +295,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
                 this.post({ type: 'streamEnd' });
                 const finalResponse = streamResult.value as ChatResponse;
                 
-                if (finalResponse && finalResponse.items.length > 0) this.chatHistory.push(...finalResponse.items);
+                if (finalResponse && finalResponse.items?.length > 0) this.chatHistory.push(...finalResponse.items);
 
                 if (finalResponse?.tokenUsage) {
                     runTokenUsage.totalTokens! += finalResponse.tokenUsage.totalTokens || 0;
@@ -300,32 +318,44 @@ export class ChatApp implements vscode.WebviewViewProvider {
 
                     for (const toolCall of functionCalls) {
                         if (this.aborter?.signal.aborted) throw new Error('AbortError');
-                        toolsRunThisTurn++;
                         const toolName = toolCall.name;
                         const toolArgs = toolCall.arguments;
                         const toolId = toolCall.id;
+                        
+                        if (toolCall.server) {
+                            serverToolsRunThisTurn++;
+                            this.post({ type: 'updateTool', status: 'server', toolId: toolId, toolName: toolName, args: toolArgs });
+                            
+                            // Remove server tools from chat history
+                            this.chatHistory = this.chatHistory.filter(item => !(item.type === 'function_call' && item.id === toolId));
+                            continue;
+                        }
+                        customToolsRunThisTurn++;
 
-                        this.post({ type: 'updateTool', status: 'running', toolName: toolName, args: toolArgs });
+                        this.post({ type: 'updateTool', status: 'running', toolId: toolId, toolName: toolName, args: toolArgs });
 
                         let result: ToolResult;
 
                         if (this.toolRegistry[toolName]) {
                             try {
                                 result = await this.toolRegistry[toolName](toolArgs);
-                                this.post({ type: 'updateTool', status: 'success' });
-                                // if (result.changedFiles?.length) this.indexer!.scheduleIndex(result.changedFiles);
+                                this.post({ type: 'updateTool', status: 'success', toolId: toolId });
                             } catch (e) {
                                 const message = e instanceof Error ? e.message : String(e);
                                 result = { message: `Error executing ${toolName}: ${message}`};
-                                this.post({ type: 'updateTool', status: 'error', error: message });
+                                this.post({ type: 'updateTool', status: 'error', toolId: toolId, error: message });
                             }
                         } else {
                             result =  {message: `Error: Tool '${toolName}' is not registered`};
-                            this.post({ type: 'updateTool', status: 'error', error: "Invalid tool call" });
+                            this.post({ type: 'updateTool', status: 'error', toolId: toolId, error: "Invalid tool call" });
                         }
 
                         this.chatHistory.push({ type: 'function_result', id: toolId, name: toolName, result: result.message, turnID: currentTurnID });
                     }
+
+                    // Do not continue the conversation if we only run server tools as they have no function results to follow up with
+                    // Still getting errors with this check...
+                    if (customToolsRunThisTurn === 0) keepGoing = false;
 
                 } else {
                     keepGoing = false;
@@ -335,7 +365,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
             }
 
             this.post({ type: 'updateTokenUsage', usage: runTokenUsage });
-            if (hasStartedToolGroup) this.post({ type: 'endToolGroup', totalCount: toolsRunThisTurn });
+            if (hasStartedToolGroup) this.post({ type: 'endToolGroup', customCount: customToolsRunThisTurn, serverCount: serverToolsRunThisTurn });
             await this.saveChatHistory();
 
             // Run complete review any changes
