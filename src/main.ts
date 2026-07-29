@@ -298,11 +298,23 @@ export class ChatApp implements vscode.WebviewViewProvider {
                 if (finalResponse && finalResponse.items?.length > 0) this.chatHistory.push(...finalResponse.items);
 
                 if (finalResponse?.tokenUsage) {
-                    runTokenUsage.totalTokens! += finalResponse.tokenUsage.totalTokens || 0;
-                    runTokenUsage.inputTokens! += finalResponse.tokenUsage.inputTokens || 0;
-                    runTokenUsage.outputTokens! += finalResponse.tokenUsage.outputTokens || 0;
-                    runTokenUsage.thoughtTokens! += finalResponse.tokenUsage.thoughtTokens || 0;
 
+                    if (provider.toLowerCase() === 'claude') {
+                        // claude return cumulative token usage across turns 
+                        runTokenUsage.totalTokens = finalResponse.tokenUsage.totalTokens || 0;
+                        runTokenUsage.inputTokens = finalResponse.tokenUsage.inputTokens || 0;
+                        runTokenUsage.outputTokens = finalResponse.tokenUsage.outputTokens || 0;
+                        runTokenUsage.thoughtTokens = finalResponse.tokenUsage.thoughtTokens || 0;
+        
+                    } else {
+                        // other providers will need to be accumulated across turns
+                        runTokenUsage.totalTokens! += finalResponse.tokenUsage.totalTokens || 0;
+                        runTokenUsage.inputTokens! += finalResponse.tokenUsage.inputTokens || 0;
+                        runTokenUsage.outputTokens! += finalResponse.tokenUsage.outputTokens || 0;
+                        runTokenUsage.thoughtTokens! += finalResponse.tokenUsage.thoughtTokens || 0;
+                        
+                    }
+                    
                     this.post({ type: 'updateTokenUsage', usage: runTokenUsage });
                 }
 
@@ -482,7 +494,6 @@ export class ChatApp implements vscode.WebviewViewProvider {
                                 if (currentStatus) this.post({ type: 'updatePatchStatus', status: currentStatus }); 
                             }
                             else await this.clearActiveWorktree();
-
                         }
                     
                     } catch (e) {

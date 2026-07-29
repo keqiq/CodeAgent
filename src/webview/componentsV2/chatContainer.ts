@@ -19,6 +19,16 @@ interface ParsedPatchResult {
     totalDeletions: number;
 }
 
+const THOUGHT_PHRASES = [
+    'Pondering...',
+    'Refining ideas...',
+    'Working on it...',
+    'Connecting the dots...',
+    'Mapping out next steps...',
+    'Taking a closer look...',
+    'Thinking extra hard...'
+];
+
 export class ChatContainer {
     private container: HTMLElement;
     private scrollToBottomBtn: HTMLButtonElement;
@@ -36,6 +46,9 @@ export class ChatContainer {
     private activeThoughtContent: HTMLElement | null = null;
     private activeThoughtRawText: string = '';
     private thoughtStartTime: number = 0;
+    private thoughtTotalTime: number = 0;
+    private isThinking: boolean = false;
+
 
     private activePatchContainer: HTMLElement | null = null;
 
@@ -119,6 +132,7 @@ export class ChatContainer {
     }
 
     public endRun(status: 'ok' | 'aborted' | 'error', message?: string): void {
+        this.endThought();
         if (!this.activeRunFooter || !this.runStatusElement) return;
 
         if (status === 'aborted') {
@@ -239,8 +253,10 @@ export class ChatContainer {
 
     public streamMessage(chunk: string): void {
         if (!this.activeRunContent) return;
-        // I believe thought ends before the model responds with messages
-        this.endThought();
+
+        // All thoughts are now contained in 1 container
+        // When a message is received, the thought is finished so pause the thinking timer
+        this.pauseThoughtTimer();
         
         // Create new streaming div
         if (!this.activeStreamDiv) {
@@ -276,6 +292,15 @@ export class ChatContainer {
         if (!this.activeRunContent) return;
         this.removeTypingIndicator();
 
+        // start or resume thought timer
+        if (!this.isThinking) {
+            this.thoughtStartTime = Date.now();
+            this.isThinking = true;
+
+            // Separate each thought
+            if (this.activeThoughtRawText) this.activeThoughtRawText += '\n\n';
+        }
+
         // Create new streaming details panel
         if (!this.activeThoughtDetails) {
             this.thoughtStartTime = Date.now();
@@ -308,9 +333,9 @@ export class ChatContainer {
 
     private endThought(): void {
         if (!this.activeThoughtDetails) return;
-
+        this.pauseThoughtTimer();
         // Update summary with thought duration
-        const duration = ((Date.now() - this.thoughtStartTime) / 1000).toFixed(1);
+        const duration = ((this.thoughtTotalTime) / 1000).toFixed(1);
         const summary = this.activeThoughtDetails.querySelector('summary');
         if (summary) summary.innerHTML = `<span>Thought for ${duration} seconds</span>`;
 
@@ -322,7 +347,32 @@ export class ChatContainer {
         // Remove references
         this.activeThoughtDetails = null;
         this.activeThoughtContent = null;
-        this.activeStreamRawText = "";
+        this.activeThoughtRawText = "";
+        this.thoughtTotalTime = 0;
+    }
+
+    private pauseThoughtTimer(): void {
+        if (this.isThinking) {
+            this.thoughtTotalTime += (Date.now() - this.thoughtStartTime);
+            this.isThinking = false;
+
+            // Update thought phrase
+            if (this.activeThoughtDetails) {
+                const summary = this.activeThoughtDetails.querySelector('summary');
+                if (summary) {
+                    summary.innerHTML = `
+                        <div class="typing-indicator" style="display:inline-flex; margin-right: 8px;">
+                            <span></span><span></span><span></span>
+                        </div> 
+                        <span>${this.getRandomThoughtPhrase()}</span>
+                    `;
+                }
+            }
+        }
+    }
+
+    private getRandomThoughtPhrase(): string {
+        return THOUGHT_PHRASES[Math.floor(Math.random() * THOUGHT_PHRASES.length)];
     }
 
     // -----------------------------------------------------------------------------
@@ -334,6 +384,10 @@ export class ChatContainer {
     public makeToolGroup(): void {
         if (!this.activeRunContent) return;
         this.removeTypingIndicator();
+        // Maybe the agent thinks first then immediately uses tools
+        // In this case the thought would have also ended
+        this.pauseThoughtTimer();
+
         this.activeToolGroup = document.createElement('details');
         this.activeToolGroup.classList.add('tool-group');
 
@@ -457,6 +511,7 @@ export class ChatContainer {
         if (msg.interrupted) {
             this.activeToolSummary.innerHTML = `
                 <div class="tool-summary-content">
+                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M11.5672 9.91603L3.68064 17.8026C2.65578 18.8275 2.45813 20.2915 3.23918 21.0725C4.02023 21.8535 5.48421 21.6559 6.50906 20.631L14.3956 12.7445" stroke="#bdbdbd" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path> <path d="M18.1588 3.32443L15.2376 6.24562C14.9168 6.56645 15.5113 7.23834 16.2923 8.01938C17.0734 8.80043 17.7452 9.39487 18.0661 9.07404L20.9873 6.15285" stroke="#bdbdbd" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path> <path d="M18.1474 3.33589C17.6014 3.13128 17.0102 3.01938 16.3928 3.01938C13.6314 3.01938 11.3928 5.25796 11.3928 8.01938C11.3928 8.63676 11.5047 9.22801 11.7093 9.77394M21.0763 6.26483C21.2809 6.81076 21.3928 7.40201 21.3928 8.01938C21.3928 10.7808 19.1542 13.0194 16.3928 13.0194C15.7754 13.0194 15.1842 12.9075 14.6382 12.7029" stroke="#bdbdbd" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path> </g></svg>
                     <span>Execution Halted</span>
                     <div class="tool-summary-badges">
                         <span class="status-highlight status-error">Halted</span>
@@ -472,6 +527,7 @@ export class ChatContainer {
             
             let summaryHTML = `
                 <div class="tool-summary-content">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M11.5672 9.91603L3.68064 17.8026C2.65578 18.8275 2.45813 20.2915 3.23918 21.0725C4.02023 21.8535 5.48421 21.6559 6.50906 20.631L14.3956 12.7445" stroke="#bdbdbd" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path> <path d="M18.1588 3.32443L15.2376 6.24562C14.9168 6.56645 15.5113 7.23834 16.2923 8.01938C17.0734 8.80043 17.7452 9.39487 18.0661 9.07404L20.9873 6.15285" stroke="#bdbdbd" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path> <path d="M18.1474 3.33589C17.6014 3.13128 17.0102 3.01938 16.3928 3.01938C13.6314 3.01938 11.3928 5.25796 11.3928 8.01938C11.3928 8.63676 11.5047 9.22801 11.7093 9.77394M21.0763 6.26483C21.2809 6.81076 21.3928 7.40201 21.3928 8.01938C21.3928 10.7808 19.1542 13.0194 16.3928 13.0194C15.7754 13.0194 15.1842 12.9075 14.6382 12.7029" stroke="#bdbdbd" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path> </g></svg>
                     <span>Executed ${totalCount} tool${totalCount === 1 ? '' : 's'}</span>
                     <div class="tool-summary-badges">`;
 
@@ -526,7 +582,7 @@ export class ChatContainer {
     // -----------------------------------------------------------------------------
 
     public makePatchReview(patchString: string): void {
-        if (!this.activeRunContent) return;
+        // if (!this.activeRunContent) return;
         this.removeTypingIndicator();
 
         const {files, totalAdditions, totalDeletions} = this.parsePatch(patchString);
@@ -543,7 +599,7 @@ export class ChatContainer {
         summaryText.classList.add('patch-summary-text');
 
         summaryText.innerHTML = `
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path fill-rule="evenodd" clip-rule="evenodd" d="M1.5 2h13l.5.5v11l-.5.5h-13l-.5-.5v-11l.5-.5zM2 3v10h12V3H2zm2 2h8v1H4V5zm0 3h8v1H4V8zm0 3h5v1H4v-1z"/></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M9 6C9 7.65685 7.65685 9 6 9C4.34315 9 3 7.65685 3 6C3 4.34315 4.34315 3 6 3C7.65685 3 9 4.34315 9 6Z" stroke="#bdbdbd" stroke-width="2"></path> <path d="M9 18C9 19.6569 7.65685 21 6 21C4.34315 21 3 19.6569 3 18C3 16.3431 4.34315 15 6 15C7.65685 15 9 16.3431 9 18Z" stroke="#bdbdbd" stroke-width="2"></path> <path d="M21 18C21 19.6569 19.6569 21 18 21C16.3431 21 15 19.6569 15 18C15 16.3431 16.3431 15 18 15C19.6569 15 21 16.3431 21 18Z" stroke="#bdbdbd" stroke-width="2"></path> <path d="M12 6C14.8284 6 16.2426 6 17.1213 6.87868C18 7.75736 18 9.17157 18 12V15" stroke="#bdbdbd" stroke-width="2"></path> <path d="M15 3L12.0605 5.93945V5.93945C12.0271 5.97289 12.0271 6.02711 12.0605 6.06055V6.06055L15 9" stroke="#bdbdbd" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path> <path d="M6 15V9" stroke="#bdbdbd" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path> </g></svg>
             <span><b>Staged Changes:</b> ${files.length} file${files.length > 1 ? 's' : ''} 
             <span class="patch-stat-add">+${totalAdditions}</span> 
             <span class="patch-stat-del">-${totalDeletions}</span></span>
@@ -612,7 +668,9 @@ export class ChatContainer {
         this.activePatchContainer.appendChild(summaryHeader);
         this.activePatchContainer.appendChild(fileList);
 
-        this.activeRunContent.appendChild(this.activePatchContainer);
+        if (this.activeRunContent) this.activeRunContent.appendChild(this.activePatchContainer);
+        // If we restart the extension without applying the patch, then we should persist it
+        else this.container.appendChild(this.activePatchContainer);
         this.scrollToBottom();
     }
 

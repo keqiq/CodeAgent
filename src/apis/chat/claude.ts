@@ -138,7 +138,7 @@ export class ClaudeChatProvider extends ChatProvider {
 
         for await (const event of stream) {
             if (abortSignal?.aborted) throw new Error('AbortError');
-            // console.log(JSON.stringify(event));
+            console.log(JSON.stringify(event));
 
             // Listen for start signal
             if (event.type === 'content_block_start') {
@@ -215,17 +215,22 @@ export class ClaudeChatProvider extends ChatProvider {
 
             // Apparently input tokens are accessible only in this message
             else if (event.type === 'message_start') {
-                if (event.message.usage) tokenUsage.inputTokens = event.message.usage.input_tokens || 0;
+                if (event.message.usage) {
+                    const usage = event.message.usage;
+                    const totalInput = usage.input_tokens + (usage.cache_read_input_tokens || 0) + (usage.cache_creation_input_tokens || 0);
+                    tokenUsage.inputTokens = totalInput;
+                } 
             }
             // Similarly for output tokens, though it is cumulative everytime we receive delta
             else if (event.type === 'message_delta') {
                 if (event.usage) {
-                    const thinkingTokens = event.usage.output_tokens_details?.thinking_tokens || 0;
+                    const usage = event.usage;
+                    const thinkingTokens = usage.output_tokens_details?.thinking_tokens || 0;
                     
-                    // Input token usage is off, ill see if this works
-                    if (event.usage.input_tokens) tokenUsage.inputTokens = event.usage.input_tokens;
-                    
-                    tokenUsage.outputTokens = event.usage.output_tokens - thinkingTokens;
+                    // looking at the events, the input tokens are updated every delta
+                    const totalInput = (usage.input_tokens || 0) + (usage.cache_read_input_tokens || 0) + (usage.cache_creation_input_tokens || 0);
+                    tokenUsage.inputTokens = totalInput;
+                    tokenUsage.outputTokens = usage.output_tokens - thinkingTokens;
                     tokenUsage.thoughtTokens = thinkingTokens;
                 }
             }

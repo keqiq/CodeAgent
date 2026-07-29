@@ -204,7 +204,8 @@ export class OpenAIChatProvider extends ChatProvider {
                     currentCalls.get(event.item_id).arguments += event.delta;
                 }
             }
-
+            
+            // TODO: This is causing weird empty query sometimes fix this
             else if (event.type === 'response.output_item.done') {
                 if (event.item.type === 'web_search_call'){
                     const action = event.item.action;
@@ -361,6 +362,7 @@ export abstract class OpenAICompatibleProvider extends ChatProvider {
         for await (const event of stream) {
             if (abortSignal?.aborted) throw new Error('AbortError');
             const delta = event.choices[0]?.delta;
+            // console.log(delta);
 
             if (!delta) continue;
 

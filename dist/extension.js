@@ -36384,6 +36384,7 @@ var ClaudeChatProvider = class _ClaudeChatProvider extends ChatProvider {
     }, { signal: abortSignal });
     for await (const event of stream) {
       if (abortSignal?.aborted) throw new Error("AbortError");
+      console.log(JSON.stringify(event));
       if (event.type === "content_block_start") {
         if (event.content_block.type === "tool_use") {
           currentCalls.set(event.index, {
@@ -36431,12 +36432,18 @@ var ClaudeChatProvider = class _ClaudeChatProvider extends ChatProvider {
           yield { type: "thought", content: event.delta.thinking };
         }
       } else if (event.type === "message_start") {
-        if (event.message.usage) tokenUsage.inputTokens = event.message.usage.input_tokens || 0;
+        if (event.message.usage) {
+          const usage = event.message.usage;
+          const totalInput = usage.input_tokens + (usage.cache_read_input_tokens || 0) + (usage.cache_creation_input_tokens || 0);
+          tokenUsage.inputTokens = totalInput;
+        }
       } else if (event.type === "message_delta") {
         if (event.usage) {
-          const thinkingTokens = event.usage.output_tokens_details?.thinking_tokens || 0;
-          if (event.usage.input_tokens) tokenUsage.inputTokens = event.usage.input_tokens;
-          tokenUsage.outputTokens = event.usage.output_tokens - thinkingTokens;
+          const usage = event.usage;
+          const thinkingTokens = usage.output_tokens_details?.thinking_tokens || 0;
+          const totalInput = (usage.input_tokens || 0) + (usage.cache_read_input_tokens || 0) + (usage.cache_creation_input_tokens || 0);
+          tokenUsage.inputTokens = totalInput;
+          tokenUsage.outputTokens = usage.output_tokens - thinkingTokens;
           tokenUsage.thoughtTokens = thinkingTokens;
         }
       } else if (event.type === "content_block_stop") {
@@ -79234,10 +79241,17 @@ var ChatApp = class {
         const finalResponse = streamResult.value;
         if (finalResponse && finalResponse.items?.length > 0) this.chatHistory.push(...finalResponse.items);
         if (finalResponse?.tokenUsage) {
-          runTokenUsage.totalTokens += finalResponse.tokenUsage.totalTokens || 0;
-          runTokenUsage.inputTokens += finalResponse.tokenUsage.inputTokens || 0;
-          runTokenUsage.outputTokens += finalResponse.tokenUsage.outputTokens || 0;
-          runTokenUsage.thoughtTokens += finalResponse.tokenUsage.thoughtTokens || 0;
+          if (provider.toLowerCase() === "claude") {
+            runTokenUsage.totalTokens = finalResponse.tokenUsage.totalTokens || 0;
+            runTokenUsage.inputTokens = finalResponse.tokenUsage.inputTokens || 0;
+            runTokenUsage.outputTokens = finalResponse.tokenUsage.outputTokens || 0;
+            runTokenUsage.thoughtTokens = finalResponse.tokenUsage.thoughtTokens || 0;
+          } else {
+            runTokenUsage.totalTokens += finalResponse.tokenUsage.totalTokens || 0;
+            runTokenUsage.inputTokens += finalResponse.tokenUsage.inputTokens || 0;
+            runTokenUsage.outputTokens += finalResponse.tokenUsage.outputTokens || 0;
+            runTokenUsage.thoughtTokens += finalResponse.tokenUsage.thoughtTokens || 0;
+          }
           this.post({ type: "updateTokenUsage", usage: runTokenUsage });
         }
         const functionCalls = finalResponse?.items.filter((item) => item.type === "function_call") || [];
