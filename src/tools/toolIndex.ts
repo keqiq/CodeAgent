@@ -1,6 +1,7 @@
 import { searchSchemas, executeGlob, executeGrep, findDeps as findDeps, executeFind as executeFind } from "./search";
 import { fileSchemas, executeRead, executeWrite, executeEdit } from "./files";
 import { commandSchemas, executeRun } from "./execute";
+import { webSchema, executeWebSearch } from "./web";
 
 export interface ToolProperty {
     type: string;
@@ -28,16 +29,19 @@ export interface ToolResult {
     changedFiles?: string[];
     data?: unknown;
 }
-export const allToolSchemas: ToolSchema[] = [
+export const requiredSchemas: ToolSchema[] = [
     ...searchSchemas,
     ...fileSchemas,
-    ...commandSchemas
+    ...commandSchemas,
 ];
+
+export { webSchema };
 
 export type ToolDeps = {
     createFindDeps: () => Promise<findDeps>;
     getCwd: () => string;
     getSignal: () => AbortSignal;
+    getTavilyKey:() => Promise<string>
 };
 
 export function createToolRegistry(deps: ToolDeps): Record<string, (args: any) => Promise<ToolResult>> {
@@ -53,6 +57,11 @@ export function createToolRegistry(deps: ToolDeps): Record<string, (args: any) =
         edit: async (args) => await executeEdit(args.filePath, args.oldText, args.newText, deps.getCwd()),
 
         run: async (args) => await executeRun(args.command, deps.getCwd(), deps.getSignal()),
+
+        web: async (args) => {
+            const apiKey = await deps.getTavilyKey();
+            return await executeWebSearch(args.query, apiKey, deps.getSignal());
+        },
 
         find: async (args) => {
             try {

@@ -1,11 +1,11 @@
-import { ModelInfo } from './chatProvider';
+import { ModelInfo, WebSearchMode } from './chatProvider';
 import { OpenAICompatibleProvider } from './openai';
 
 export class DeepSeekChatProvider extends OpenAICompatibleProvider {
     protected featuredModels = ['deepseek-v4-flash', 'deepseek-v4-pro'];
     
-    constructor(apiKey: string) {
-        super(apiKey, 'https://api.deepseek.com');
+    constructor(apiKey: string, webSearchMode: WebSearchMode) {
+        super(apiKey, 'https://api.deepseek.com', webSearchMode);
     }
 
     protected async getModelInfos(): Promise<ModelInfo[]> {

@@ -2,11 +2,11 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import { ChatFactory } from './apis/chat/chatFactory';
-import { ChatItem, ChatProvider, ChatResponse, ModelInfo, TokenUsage } from './apis/chat/chatProvider';
+import { ChatItem, ChatProvider, ChatResponse, ModelInfo, TokenUsage, WebSearchMode } from './apis/chat/chatProvider';
 import { createToolRegistry, ToolResult } from './tools/toolIndex';
 import { EmbedFactory } from './apis/embed/embedFactory';
 import { Indexer } from './indexing/indexer';
-import { getEmbedModelsFromProvider, getChatModelsFromProvider } from './utils/apiUtils';
+import { getEmbedModelsFromProvider, getChatModelsFromProvider, verifyTavilyAPIKey } from './utils/apiUtils';
 import { WorktreeManager } from './worktreeManager';
 
 declare const console: any;
@@ -40,6 +40,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
             const lastItemWithId = [...savedHistory].reverse().find(item => item.turnID);
             if (lastItemWithId) this.activeTurn.turnID = lastItemWithId.turnID;
         }
+
         else this.chatHistory = [];
 
         const activeWorktreeID = context.workspaceState.get<string>('activeWorktreeID');
@@ -65,7 +66,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
                 const provider = this.context.globalState.get<string>('embedProvider');
                 const model = this.context.globalState.get<string>(`${provider}_embedModel`);
                 
-                if (!provider || !model) throw new Error("embedding provider/model is not configured");
+                if (!provider || !model) throw new Error("Embedding provider/model is not configured");
                 if (!this.indexer) throw new Error("Index is not loaded. Enable indexing first.");
 
                 const apiKey = await this.getEmbedAPIKey(provider);
@@ -75,6 +76,20 @@ export class ChatApp implements vscode.WebviewViewProvider {
                     embedProvider: EmbedFactory.create(provider, apiKey),
                     model
                 };
+            },
+
+            getTavilyKey: async () => {
+
+                const webSearchEnabled = this.context.globalState.get<boolean>('webSearchEnabled') ?? false;
+                const webSearchMode = this.context.globalState.get<string>('webSearchMode') ?? 'tavily';
+
+                if (!webSearchEnabled || webSearchMode !== 'tavily') {
+                    throw new Error("You do not have access to the 'web' tool. It is currently disabled. Do not try to use it.");
+                }
+                
+                const tavilyAPIKey = await this.context.secrets.get('TAVILY_API_KEY');
+                if (!tavilyAPIKey) throw new Error('Tavily API key not configured!');
+                return tavilyAPIKey;
             }
         });
     }
@@ -235,8 +250,12 @@ export class ChatApp implements vscode.WebviewViewProvider {
         try {
             const apiKey = await this.getChatAPIKey(provider); 
             const serverStateManagment = this.context.globalState.get<boolean>('serverStateManagement') ?? true;
+            const enabledWebSearch = this.context.globalState.get<boolean>('webSearchEnabled') ?? false;
+            const savedWebMode = this.context.globalState.get<string>('webSearchMode') ?? 'tavily';
+
+            const webSearchMode: WebSearchMode = enabledWebSearch ? (savedWebMode as WebSearchMode) : 'none';
             
-            providerInstance = ChatFactory.create(provider, apiKey);
+            providerInstance = ChatFactory.create(provider, apiKey, webSearchMode);
             this.chatHistory.push({ type: 'message', role: 'user', content: userMessage, turnID: this.activeTurn.turnID });
             await this.saveChatHistory();
             
@@ -254,8 +273,8 @@ export class ChatApp implements vscode.WebviewViewProvider {
                 // Use the ID ONLY if the provider hasn't changed
                 const turnID = (this.activeTurn.provider === provider && serverStateManagment) ? this.activeTurn.turnID : undefined;
                 const streamGenerator = providerInstance.fetchStream(
-                    model, 
-                    effort, 
+                    model,
+                    effort,
                     this.chatHistory, 
                     turnID,
                     serverStateManagment,
@@ -448,12 +467,16 @@ export class ChatApp implements vscode.WebviewViewProvider {
                         const showAllChatModels = this.context.globalState.get<boolean>('showAllChatModels') ?? false;
                         const serverStateManagement = this.context.globalState.get<boolean>('serverStateManagement') ?? true;
                         const turnLimit = this.context.globalState.get<number>('turnLimit') ?? 0;
+                        const enabledWebSearch = this.context.globalState.get<boolean>('webSearchEnabled') ?? false;
+                        const webSearchMode = this.context.globalState.get<string>('webSearchMode') ?? 'tavily';
 
                         this.post({
                             type: 'restoreChatSettings',
                             showAll: showAllChatModels,
                             stateful: serverStateManagement,
-                            turnLimit: turnLimit
+                            turnLimit: turnLimit,
+                            webSearch: enabledWebSearch,
+                            searchMode: webSearchMode 
                         });
 
                         const retrievalCount = this.context.globalState.get<number>('retrievalCount') ?? 10;
@@ -475,7 +498,13 @@ export class ChatApp implements vscode.WebviewViewProvider {
                         const chatProvider = this.context.globalState.get<string>('chatProvider');
                         if (chatProvider) {
                             const stateManagementSupport = ChatFactory.supportsStateManagement(chatProvider);
-                            this.post({ type: 'updateChatProvider', provider: chatProvider, stateful: stateManagementSupport });
+                            const serverWebSearchSupport = ChatFactory.supportsServerWebSearch(chatProvider);
+                            this.post({ 
+                                type: 'updateChatProvider', 
+                                provider: chatProvider, 
+                                stateful: stateManagementSupport,
+                                serverSearch: serverWebSearchSupport
+                            });
                         }
 
                         const indexEnabled = this.context.globalState.get<boolean>('indexEnabled') ?? false;
@@ -509,7 +538,13 @@ export class ChatApp implements vscode.WebviewViewProvider {
                     const serverStateManagement = this.context.globalState.get<boolean>('serverStateManagement') ?? true;
                     this.post({ type: 'restoreChatSettings', stateful: serverStateManagement});
                     const stateManagementSupport = ChatFactory.supportsStateManagement(data.provider);
-                    this.post({ type: 'updateChatProvider', provider: data.provider, stateful: stateManagementSupport });
+                    const serverWebSearchSupport = ChatFactory.supportsServerWebSearch(data.provider);
+                    this.post({ 
+                        type: 'updateChatProvider', 
+                        provider: data.provider, 
+                        stateful: stateManagementSupport, 
+                        serverSearch: serverWebSearchSupport
+                    });
                     break;
                 }
                 
@@ -576,6 +611,33 @@ export class ChatApp implements vscode.WebviewViewProvider {
 
                 case 'updateTurnLimit': {
                     await this.context.globalState.update('turnLimit', data.limit);
+                    break;
+                }
+
+                case 'saveTavilyAPIKey': {
+                    try {
+                        await verifyTavilyAPIKey(data.key);
+                        await this.context.secrets.store('TAVILY_API_KEY', data.key);
+                    } catch (e) {
+                        vscode.window.showErrorMessage('Invalid Tavily API key');
+                        this.post({ type: 'requestTavilyAPIKey' });
+                    }
+                    break;
+                }
+
+                case 'setWebSearchMode': {
+                    await this.context.globalState.update('webSearchEnabled', data.enabled);
+                    await this.context.globalState.update('webSearchMode', data.mode);
+                    if (data.enabled && data.mode === 'tavily') {
+                        const tavilyAPIKey = await this.context.secrets.get('TAVILY_API_KEY');
+
+                        try { 
+                            await verifyTavilyAPIKey(tavilyAPIKey); 
+                        } catch (e) {
+                            vscode.window.showErrorMessage('Invalid Tavily API key');
+                            this.post({ type: 'requestTavilyAPIKey' });
+                        }
+                    }
                     break;
                 }
 

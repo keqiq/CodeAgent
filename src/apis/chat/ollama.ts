@@ -1,12 +1,12 @@
-import { ModelInfo } from "./chatProvider";
+import { ModelInfo, WebSearchMode } from "./chatProvider";
 import { OpenAICompatibleProvider } from "./openai";
 
 export class OllamaChatProvider extends OpenAICompatibleProvider {
     
     protected featuredModels: string[] = [];
 
-    constructor(apiKey: string) {
-        super(apiKey, 'http://127.0.0.1:11434/v1'); // Ollama default port
+    constructor(apiKey: string, webSearchMode: WebSearchMode) {
+        super(apiKey, 'http://127.0.0.1:11434/v1', webSearchMode); // Ollama default port
     }
 
     protected async getModelInfos(): Promise<ModelInfo[]> {

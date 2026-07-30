@@ -1,12 +1,12 @@
-import { ModelInfo }  from './chatProvider';
+import { ModelInfo, WebSearchMode }  from './chatProvider';
 import { OpenAICompatibleProvider } from './openai';
 
 export class KimiChatProvider extends OpenAICompatibleProvider {
 
     protected featuredModels = ['kimi-k3', 'kimi-k2.7-code', 'kimi-k2.6']; 
 
-    constructor(apiKey: string) {
-        super(apiKey, 'https://api.moonshot.ai/v1');
+    constructor(apiKey: string, webSearchMode: WebSearchMode) {
+        super(apiKey, 'https://api.moonshot.ai/v1', webSearchMode);
     }
 
     protected async getModelInfos(): Promise<ModelInfo[]> {

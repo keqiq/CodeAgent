@@ -1,4 +1,4 @@
-import { ChatProvider } from './chatProvider';
+import { ChatProvider, WebSearchMode } from './chatProvider';
 import { ClaudeChatProvider } from './claude';
 import { DeepSeekChatProvider } from './deepseek';
 import { GeminiChatProvider } from "./gemini";
@@ -7,8 +7,9 @@ import { OllamaChatProvider } from './ollama';
 import { OpenAIChatProvider } from "./openai";
 
 interface ChatProviderConstructor {
-    new (apiKey: string): ChatProvider;
+    new (apiKey: string, webSearchMode: WebSearchMode): ChatProvider;
     stateManagementSupport: boolean;
+    serverWebSearchSupport: boolean;
 }
 
 export class ChatFactory {
@@ -31,13 +32,18 @@ export class ChatFactory {
         return ProviderClass.stateManagementSupport;
     }
 
+    static supportsServerWebSearch(providerName: string): boolean {
+        const ProviderClass = this.providers[providerName];
+        return ProviderClass.serverWebSearchSupport;
+    }
+
     static getAvailableProviders(): string[] {
         return Object.keys(this.providers);
     }
 
-    static create(providerName: string, apiKey: string): ChatProvider {
+    static create(providerName: string, apiKey: string, webSearchMode: WebSearchMode): ChatProvider {
         const ProviderClass = this.providers[providerName];
 
-        return new (ProviderClass as any)(apiKey);
+        return new (ProviderClass as any)(apiKey, webSearchMode);
     }
 }

@@ -34,6 +34,8 @@ export interface TokenUsage {
     thoughtTokens: number | undefined
 }
 
+export type WebSearchMode = 'none' | 'tavily' | 'server';
+
 export abstract class ChatProvider {
 
     protected static systemPrompt: string = `You are an autonomous, expert software engineering agent integrated into VS Code. 
@@ -45,10 +47,13 @@ export abstract class ChatProvider {
                       Always explain your thought process before executing a tool.`;
 
     public static stateManagementSupport: boolean = false;
+    public static serverWebSearchSupport: boolean = false;
 
     private static modelCache: Record<string, ModelInfo[]> = {};
 
     protected abstract featuredModels: string[];
+
+    protected tools: any[] = [];
 
     protected abstract getModelInfos(): Promise<ModelInfo[]>;
 

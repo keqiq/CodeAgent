@@ -1,11 +1,12 @@
 import { GoogleGenAI } from '@google/genai';
-import { ChatItem, ChatProvider, ChatResponse, ModelInfo, StreamYield, TokenUsage } from './chatProvider';
-import { allToolSchemas } from '../../tools/toolIndex';
+import { ChatItem, ChatProvider, ChatResponse, ModelInfo, StreamYield, TokenUsage, WebSearchMode } from './chatProvider';
+import { requiredSchemas, ToolSchema, webSchema } from '../../tools/toolIndex';
 
 export class GeminiChatProvider extends ChatProvider {
     public static stateManagementSupport: boolean = true;
+    public static serverWebSearchSupport: boolean = true;
     private client: GoogleGenAI;
-    private static geminiTools: any = allToolSchemas;
+    // private static geminiTools: any = requiredSchemas;
     private activeInteractionId: string | null = null;
 
     protected featuredModels: string[] = [
@@ -14,9 +15,15 @@ export class GeminiChatProvider extends ChatProvider {
             'gemini-3.1-pro', 'gemini-3.1-flash-lite'
     ];
 
-    constructor(apiKey: string) {
+    constructor(apiKey: string, webSearchMode: WebSearchMode) {
         super();
         this.client = new GoogleGenAI({ apiKey: apiKey });
+        
+        const runTools: any[] = [...requiredSchemas];
+        if (webSearchMode === 'tavily') runTools.push(...webSchema);
+        else if (webSearchMode === 'server') runTools.push({ "type": "google_search" });
+
+        this.tools = runTools;
     }
 
     protected async getModelInfos(): Promise<ModelInfo[]> {
@@ -126,10 +133,7 @@ export class GeminiChatProvider extends ChatProvider {
         const stream = await this.client.interactions.create({
             model: model,
             input: currentInput,
-            tools: [
-                ...GeminiChatProvider.geminiTools,
-                { "type": "google_search" }
-            ],
+            tools: this.tools,
             system_instruction: ChatProvider.systemPrompt,
             stream: true,
             store: useCache && previousTurnID !== undefined,

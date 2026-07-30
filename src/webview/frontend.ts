@@ -70,6 +70,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 chatSettings.showChatAPIKeyInput(msg.provider);
                 break;
 
+            case 'requestTavilyAPIKey':
+                chatSettings.showTavilyAPIKeyInput();
+                break;
+
             // --- CHAT STREAMING & TOOLS & PATCH & TOKEN ---
             case 'startRun':
                 chatContainer.startRun();

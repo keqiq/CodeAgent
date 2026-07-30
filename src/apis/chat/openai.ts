@@ -1,11 +1,12 @@
 import OpenAI from 'openai';
-import { ChatItem, ChatProvider, ChatResponse, ModelInfo, StreamYield, TokenUsage } from './chatProvider';
-import { allToolSchemas } from '../../tools/toolIndex';
+import { ChatItem, ChatProvider, ChatResponse, ModelInfo, StreamYield, TokenUsage, WebSearchMode } from './chatProvider';
+import { requiredSchemas, ToolSchema, webSchema } from '../../tools/toolIndex';
 
 export class OpenAIChatProvider extends ChatProvider {
     public static stateManagementSupport: boolean = true;
+    public static serverWebSearchSupport: boolean = true;
     private client: OpenAI;
-    private static GPTTools: any = allToolSchemas;
+    // private static GPTTools: any = requiredSchemas;
 
     protected featuredModels: string[] = [
             'gpt-5.6-sol', 'gpt-5.6-terra', 'gpt-5.6-luna',
@@ -14,9 +15,16 @@ export class OpenAIChatProvider extends ChatProvider {
             'gpt-5.3-codex',
     ];
 
-    constructor(apiKey: string) {
+    constructor(apiKey: string, webSearchMode: WebSearchMode) {
         super();
         this.client = new OpenAI({ apiKey });
+
+        const runTools: any[] = [...requiredSchemas];
+        
+        if (webSearchMode === 'tavily') runTools.push(...webSchema);
+        else if (webSearchMode === 'server') runTools.push({ type: 'web_search' });
+
+        this.tools = runTools;
     }
 
     protected async getModelInfos(): Promise<ModelInfo[]> {
@@ -136,10 +144,7 @@ export class OpenAIChatProvider extends ChatProvider {
         const stream = await this.client.responses.create({
             model: model,
             input: currentInput,
-            tools: [
-                ...OpenAIChatProvider.GPTTools,
-                { type: 'web_search'}
-            ],
+            tools: this.tools,
             stream: true,
             reasoning: {effort: effort as any, summary: 'auto' },
 
@@ -243,14 +248,20 @@ export class OpenAIChatProvider extends ChatProvider {
 // For other providers using OpenAI SDK
 export abstract class OpenAICompatibleProvider extends ChatProvider {
     protected client: OpenAI;
-    protected static tools: any = OpenAICompatibleProvider.parseTools(allToolSchemas);
+    // protected static tools: any = OpenAICompatibleProvider.parseTools(requiredSchemas);
     
-    constructor(apiKey: string, baseURL: string) {
+    constructor(apiKey: string, baseURL: string, webSearchMode: WebSearchMode) {
         super();
         this.client = new OpenAI({
             baseURL: baseURL,
             apiKey: apiKey
         });
+
+        const runTools: ToolSchema[] = [...requiredSchemas];
+
+        if (webSearchMode === 'tavily') runTools.push(...webSchema);
+
+        this.tools = OpenAICompatibleProvider.parseTools(runTools);
     }
     
     // For these providers with thinking models, we must pass back the reasoning content
@@ -349,7 +360,7 @@ export abstract class OpenAICompatibleProvider extends ChatProvider {
         const stream = await this.client.chat.completions.create({
             model: model,
             messages: formattedMessages,
-            tools: OpenAICompatibleProvider.tools,
+            tools: this.tools,
             stream: true,
             stream_options: { include_usage: true },
 

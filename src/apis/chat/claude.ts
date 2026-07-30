@@ -1,11 +1,12 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { ChatItem, ChatProvider, ChatResponse, ModelInfo, StreamYield, TokenUsage } from './chatProvider';
-import { allToolSchemas, ToolSchema } from '../../tools/toolIndex';
+import { ChatItem, ChatProvider, ChatResponse, ModelInfo, StreamYield, TokenUsage, WebSearchMode } from './chatProvider';
+import { requiredSchemas, webSchema, ToolSchema } from '../../tools/toolIndex';
 
 export class ClaudeChatProvider extends ChatProvider {
     public static stateManagementSupport: boolean = true;
+    public static serverWebSearchSupport: boolean = true;
     private client: Anthropic;
-    private static claudeTools: Anthropic.Tool[] = ClaudeChatProvider.parseTool(allToolSchemas);
+    // private static claudeTools: Anthropic.Tool[] = ClaudeChatProvider.parseTool(allToolSchemas);
     
     protected featuredModels: string[] = [
         'claude-opus-5',
@@ -14,9 +15,17 @@ export class ClaudeChatProvider extends ChatProvider {
         'claude-haiku-4-5-20251001'
     ];
 
-    constructor(apiKey: string) {
+    constructor(apiKey: string, webSearchMode: WebSearchMode) {
         super();
         this.client = new Anthropic({ apiKey: apiKey });
+        
+        const runTools: ToolSchema[] = [...requiredSchemas];
+        if (webSearchMode === 'tavily') runTools.push(...webSchema);
+
+        const parsedTools: any[] = ClaudeChatProvider.parseTool(runTools);
+        if (webSearchMode === 'server') parsedTools.push({ type: "web_search_20260318", name: "web_search" });
+
+        this.tools = parsedTools;
     }
 
     protected async getModelInfos(): Promise<ModelInfo[]> {
@@ -120,10 +129,7 @@ export class ClaudeChatProvider extends ChatProvider {
             model: model as any,
             system: ChatProvider.systemPrompt,
             messages: this.formatMessages(history),
-            tools: [
-                ...ClaudeChatProvider.claudeTools,
-                { type: "web_search_20260318", name: "web_search" }
-            ],
+            tools: this.tools,
             stream: true,
             max_tokens: 100000,
             thinking: {

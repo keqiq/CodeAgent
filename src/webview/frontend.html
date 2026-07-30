@@ -240,6 +240,29 @@
 
                     <div class="menu-divider"></div>
 
+                    <div class="menu-item" id="menuWebSearchToggle">
+                        <div class="menu-item-title">Web Search</div>
+                        <div class="menu-item-desc">Enable live web lookups.</div>
+                    </div>
+
+                    <div class="menu-item hidden" id="menuWebSearchModeToggle">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span class="menu-item-title">Engine</span>
+                            <span id="webSearchModeLabel" style="font-size: 10px; font-weight: 700; color: var(--vscode-textLink-foreground);">TAVILY</span>
+                        </div>
+                    </div>
+
+                    <div class="menu-item hidden" id="menuTavilyKeyBtn">
+                        Set Tavily API Key
+                    </div>
+
+                    <div class="inlineAPIKeyContainer hidden" id="tavilyKeyContainer">
+                        <input type="password" id="tavilyKeyInput" placeholder="tvly-..." autocomplete="off">
+                        <button id="tavilyKeySaveBtn" class="send-btn">Save</button>
+                    </div>
+
+                    <div class="menu-divider"></div>
+
                     <div class="menu-item clear-chat-item" id="menuClearChatBtn">
                         <div class="menu-item-title" style="color: var(--vscode-errorForeground);">Delete Chat</div>
                         <button id="clearChatConfirmBtn" class="icon-btn hidden" title="Confirm Clear"

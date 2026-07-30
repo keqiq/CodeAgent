@@ -25,6 +25,17 @@ export class ChatSettings {
     private clearChatBtn: HTMLElement;
     private clearChatConfirmBtn: HTMLElement;
 
+    private toggleWebSearch: HTMLElement;
+    private toggleWebSearchMode: HTMLElement;
+    private webSearchModeLabel: HTMLElement;
+    private currentWebSearchMode: 'tavily' | 'server' = 'tavily';
+
+    private tavilyKeyBtn: HTMLElement;
+    private tavilyKeyContainer: HTMLElement;
+    private tavilyKeyInput: HTMLInputElement;
+    private tavilyKeySaveBtn: HTMLElement;
+
+
     constructor(private vscodeAPI: WebviewApi) {
         this.container = document.getElementById('chatSettingsContainer') as HTMLElement;
         this.toggleBtn = document.getElementById('chatSettingsToggleBtn') as HTMLButtonElement;
@@ -46,6 +57,15 @@ export class ChatSettings {
 
         this.clearChatBtn = document.getElementById('menuClearChatBtn') as HTMLElement;
         this.clearChatConfirmBtn = document.getElementById('clearChatConfirmBtn') as HTMLElement;
+
+        this.toggleWebSearch = document.getElementById('menuWebSearchToggle') as HTMLElement;
+        this.toggleWebSearchMode = document.getElementById('menuWebSearchModeToggle') as HTMLElement;
+        this.webSearchModeLabel = document.getElementById('webSearchModeLabel') as HTMLElement;
+
+        this.tavilyKeyBtn = document.getElementById('menuTavilyKeyBtn') as HTMLElement;
+        this.tavilyKeyContainer = document.getElementById('tavilyKeyContainer') as HTMLElement;
+        this.tavilyKeyInput = document.getElementById('tavilyKeyInput') as HTMLInputElement;
+        this.tavilyKeySaveBtn = document.getElementById('tavilyKeySaveBtn') as HTMLElement;
 
         this.initListeners();
     }
@@ -137,10 +157,46 @@ export class ChatSettings {
             this.clearChatConfirmBtn.classList.add('hidden');
             this.dropdown.classList.add('hidden');
         });
+
+        this.toggleWebSearch.addEventListener('click', () => {
+            const isActive = this.toggleWebSearch.classList.toggle('active');
+            
+            if (isActive) {
+                this.toggleWebSearchMode.classList.remove('hidden');
+                if (this.currentWebSearchMode === 'tavily') this.tavilyKeyBtn.classList.remove('hidden');
+            } else {
+                this.toggleWebSearchMode.classList.add('hidden');
+                this.tavilyKeyBtn.classList.add('hidden');
+                this.tavilyKeyContainer.classList.add('hidden');
+            }
+            this.notifyWebSearchChange();
+        });
+
+        this.toggleWebSearchMode.addEventListener('click', () => {
+            // Prevent switching to Server if the provider doesn't support it
+            if (this.toggleWebSearchMode.classList.contains('disabled')) return;
+
+            this.currentWebSearchMode = this.currentWebSearchMode === 'tavily' ? 'server' : 'tavily';
+            this.updateWebSearchModeUI();
+        });
+
+        this.tavilyKeyBtn.addEventListener('click', () => {
+            const isHidden = this.tavilyKeyContainer.classList.toggle('hidden');
+            if (!isHidden) this.tavilyKeyInput.focus();
+        });
+
+        this.tavilyKeySaveBtn.addEventListener('click', () => {
+            const key = this.tavilyKeyInput.value.trim();
+            if (key) {
+                this.tavilyKeyContainer.classList.add('hidden');
+                this.tavilyKeyInput.value = '';
+                this.vscodeAPI.postMessage({ type: 'saveTavilyAPIKey', key: key });
+            }
+        });
     }
 
     // When setting a new provider we need to update state management capabilities
-    public setProvider(msg: { provider: string, stateful: boolean }): void {
+    public setProvider(msg: { provider: string, stateful: boolean, serverSearch?: boolean }): void {
         if (!msg.provider) return;
 
         this.currentProvider = msg.provider;
@@ -167,9 +223,27 @@ export class ChatSettings {
             this.statefulDesc.textContent = "Server-side context management.";
             this.toggleStateful.style.opacity = '';
         }
+
+        if (!msg.serverSearch) {
+            this.toggleWebSearchMode.classList.add('disabled');
+            this.toggleWebSearchMode.style.opacity = '1';
+            if (this.currentWebSearchMode === 'server') {
+                this.currentWebSearchMode = 'tavily';
+                this.updateWebSearchModeUI();
+            }
+        } else {
+            this.toggleWebSearchMode.classList.remove('disabled');
+            this.toggleWebSearchMode.style.opacity = '1';
+        }
     }
 
-    public restoreSettings(msg: {showAll?: boolean, stateful?: boolean, turnLimit?: number}): void {
+    public restoreSettings(msg: {
+        showAll?: boolean, 
+        stateful?: boolean, 
+        turnLimit?: number
+        webSearch?: boolean,
+        searchMode?: 'tavily' | 'server'
+    }): void {
         if (msg.showAll !== undefined) {
             if (msg.showAll) this.toggleAllModels.classList.add('active');
             else this.toggleAllModels.classList.remove('active');
@@ -182,6 +256,22 @@ export class ChatSettings {
 
         if (msg.turnLimit !== undefined) {
             this.maxTurnInput.value = msg.turnLimit.toString();
+        }
+
+        if (msg.webSearch !== undefined) {
+            if (msg.webSearch) {
+                this.toggleWebSearch.classList.add('active');
+                this.toggleWebSearchMode.classList.remove('hidden');
+                if (msg.searchMode !== undefined) this.currentWebSearchMode = msg.searchMode;
+            }
+            
+            else {
+                this.toggleWebSearch.classList.remove('active');
+                this.toggleWebSearchMode.classList.add('hidden');
+                this.tavilyKeyBtn.classList.add('hidden');
+                this.tavilyKeyContainer.classList.add('hidden');
+            }
+            this.updateWebSearchModeUI();
         }
     }
 
@@ -215,5 +305,32 @@ export class ChatSettings {
             this.keyContainer.classList.add('hidden');
             this.clearChatConfirmBtn.classList.add('hidden');
         }
+    }
+
+    private updateWebSearchModeUI() {
+        if (this.currentWebSearchMode === 'server') {
+            this.webSearchModeLabel.textContent = 'SERVER';
+            this.tavilyKeyBtn.classList.add('hidden');
+            this.tavilyKeyContainer.classList.add('hidden');
+        } else {
+            this.webSearchModeLabel.textContent = 'TAVILY';
+            // Only show the key button if the parent Web Search toggle is ON
+            if (this.toggleWebSearch.classList.contains('active')) {
+                this.tavilyKeyBtn.classList.remove('hidden');
+            }
+        }
+        this.notifyWebSearchChange();
+    }
+
+    private notifyWebSearchChange() {
+        const isEnabled = this.toggleWebSearch.classList.contains('active');
+        this.vscodeAPI.postMessage({ type: 'setWebSearchMode', enabled: isEnabled, mode: this.currentWebSearchMode });
+    }
+
+    public showTavilyAPIKeyInput(): void {
+        this.dropdown.classList.remove('hidden');
+        this.tavilyKeyContainer.classList.remove('hidden');
+        this.tavilyKeyInput.value = '';
+        this.tavilyKeyInput.focus();
     }
 }

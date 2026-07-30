@@ -11,6 +11,8 @@
     left: auto;
     min-width: 250px;
     padding: 6px;
+
+    max-height: calc(100vh - 80px);
 }
 
 /* Menu Button Items */
