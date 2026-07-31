@@ -144,7 +144,7 @@ export class ClaudeChatProvider extends ChatProvider {
 
         for await (const event of stream) {
             if (abortSignal?.aborted) throw new Error('AbortError');
-            console.log(JSON.stringify(event));
+            // console.log(JSON.stringify(event));
 
             // Listen for start signal
             if (event.type === 'content_block_start') {

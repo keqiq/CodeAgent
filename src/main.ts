@@ -846,7 +846,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
     }
 
     private getHTML(): string {
-        const htmlPath = vscode.Uri.joinPath(this.context.extensionUri, 'src/webview', 'frontend.html');
+        const htmlPath = vscode.Uri.joinPath(this.context.extensionUri, 'dist', 'frontend.html');
         const scriptPath = vscode.Uri.joinPath(this.context.extensionUri, 'dist', 'webview.bundle.js');
         const cssPath = vscode.Uri.joinPath(this.context.extensionUri, 'dist', 'webview.bundle.css');
 

@@ -31,6 +31,10 @@
       ]
     }
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/keqiq/CodeAgent"
+  },
   "scripts": {
     "vscode:prepublish": "npm run package",
     "compile": "npm run check-types && npm run lint && node esbuild.js && npm run build:webview",
@@ -59,29 +63,30 @@
     "esbuild": "^0.27.3",
     "eslint": "^9.39.3",
     "npm-run-all": "^4.1.5",
-    "tree-sitter-javascript": "^0.25.0",
-    "tree-sitter-typescript": "^0.23.2",
-    "typescript": "^5.9.3",
-    "typescript-eslint": "^8.56.1"
-  },
-  "dependencies": {
-    "@anthropic-ai/sdk": "^0.112.4",
-    "@google/genai": "^2.6.0",
-    "@lancedb/lancedb": "^0.30.0",
-    "@tavily/core": "^0.7.6",
-    "apache-arrow": "^18.1.0",
-    "dotenv": "^17.4.2",
-    "highlight.js": "^11.11.1",
-    "marked": "^18.0.6",
-    "minimatch": "^10.2.5",
-    "openai": "^6.39.0",
     "tree-sitter-c": "^0.24.1",
     "tree-sitter-c-sharp": "^0.23.5",
     "tree-sitter-cpp": "^0.23.4",
     "tree-sitter-go": "^0.25.0",
     "tree-sitter-java": "^0.23.5",
+    "tree-sitter-javascript": "^0.25.0",
     "tree-sitter-python": "^0.25.0",
     "tree-sitter-rust": "^0.24.0",
+    "tree-sitter-typescript": "^0.23.2",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.56.1",
+
+    "@anthropic-ai/sdk": "^0.112.4",
+    "@google/genai": "^2.6.0",
+    "@tavily/core": "^0.7.6",
+    "dotenv": "^17.4.2",
+    "highlight.js": "^11.11.1",
+    "marked": "^18.0.6",
+    "minimatch": "^10.2.5",
+    "openai": "^6.39.0"
+  },
+  "dependencies": {
+    "@lancedb/lancedb": "^0.30.0",
+    "apache-arrow": "^18.1.0",
     "web-tree-sitter": "^0.26.9"
   }
 }

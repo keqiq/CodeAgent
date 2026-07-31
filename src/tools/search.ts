@@ -5,6 +5,7 @@ import { ToolResult, ToolSchema } from './toolIndex';
 import { EmbedProvider } from '../apis/embed/embedProvider';
 import { Indexer } from '../indexing/indexer';
 import { excludePattern } from '../indexing/languages/_languageIndex';
+import { filterGitIgnored } from '../utils/gitignore';
 
 export type findDeps = {
     indexer: Indexer,
@@ -16,7 +17,7 @@ export const searchSchemas: ToolSchema[] = [
     {
         type: "function",
         name: "glob",
-        description: "Find files in the current workspace matching a glob pattern.",
+        description: "Find files in the current workspace matching a glob pattern. Use this to discover file paths before reading them.",
         parameters: {
             type: "object",
             properties: {
@@ -28,12 +29,12 @@ export const searchSchemas: ToolSchema[] = [
     {
         type: "function",
         name: "grep",
-        description: "Search for a regular expression pattern inside files.",
+        description: "Search for an exact regex pattern inside files. Use sparingly — prefer 'find' for code exploration. Only reach for grep when you need precise regex matching (e.g., finding all call sites of a specific function signature, exact string matches, import patterns) that semantic search may miss. Always pair with a narrow filePattern to limit scope.",
         parameters: {
             type: "object",
             properties: {
-                query: { type: "string", description: "The regex pattern to search for."},
-                filePattern: { type: "string", description: "Optional glob pattern (default: '**/*')."}
+                query: { type: "string", description: "The regex pattern to search for. Be specific."},
+                filePattern: { type: "string", description: "Glob to restrict which files are searched (e.g., 'src/**/*.ts'). Always provide this to avoid scanning the entire workspace."}
             },
             required: ["query"]
         }
@@ -41,7 +42,7 @@ export const searchSchemas: ToolSchema[] = [
     {
         type: "function",
         name: "find",
-        description: "Search indexed workspace code using a hybrid of semantic meaning and exact keyword matching. For best results, include specific code identifiers, variable names, or technical terms alongside the semantic intent.",
+        description: "Search indexed workspace code using a hybrid of semantic meaning and exact keyword matching. This is the primary code search tool — fast, indexed, and token-efficient. Use it first for exploring code, finding definitions, understanding patterns, or locating relevant implementation. For best results, include specific code identifiers, variable names, or technical terms alongside the semantic intent.",
         parameters: {
             type: "object",
             properties: {
@@ -70,9 +71,12 @@ export async function executeGlob(pattern: string, cwd: string, signal: AbortSig
 
         if (signal.aborted) throw new Error('AbortError');
 
-        if (uris.length === 0) return { message: 'No files found in workspace' };
+        // Filter out files ignored by .gitignore (git's view of the repo)
+        const filteredUris = await filterGitIgnored(uris, cwd);
 
-        return { message: uris.map(uri => path.relative(cwd, uri.fsPath)).join('\n') };
+        if (filteredUris.length === 0) return { message: 'No files found in workspace' };
+
+        return { message: filteredUris.map(uri => path.relative(cwd, uri.fsPath)).join('\n') };
     } 
 
     finally {
@@ -81,8 +85,8 @@ export async function executeGlob(pattern: string, cwd: string, signal: AbortSig
     }
 };
 
-
-const textDecoder = new TextDecoder('utf-8');
+const MAX_RESULTS = 500;
+const MAX_OUTPUT_CHARS = 50_000;
 
 export async function executeGrep(query: string, filePattern: string = '**/*', cwd: string, signal: AbortSignal): Promise<ToolResult> {
     let regex: RegExp;
@@ -99,10 +103,17 @@ export async function executeGrep(query: string, filePattern: string = '**/*', c
 
     try {
         const uris = await vscode.workspace.findFiles(searchPattern, relativeExlude, 1000, cancelTokenSource.token);
-        const results: string[] = [];
 
-        for (const uri of uris) {
+        // Filter out files ignored by .gitignore (git's view of the repo)
+        const filteredUris = await filterGitIgnored(uris, cwd);
+
+        const results: string[] = [];
+        let totalChars = 0;
+        let truncated = false;
+
+        for (const uri of filteredUris) {
             if (signal.aborted) throw new Error('AbortError');
+            if (truncated) break;
 
             try {
                 const content = await getFileContent(uri);
@@ -110,9 +121,22 @@ export async function executeGrep(query: string, filePattern: string = '**/*', c
 
                 const relativePath = path.relative(cwd, uri.fsPath);
 
-                for (let i = 0; i< lines.length; i++) {
+                for (let i = 0; i < lines.length; i++) {
                     if (regex.test(lines[i])) {
-                        results.push(`${relativePath}:${i + 1}:${lines[i].trim()}`);
+                        const entry = `${relativePath}:${i + 1}:${lines[i].trim()}`;
+                        totalChars += entry.length + 1; // +1 for the newline when joined
+
+                        if (results.length >= MAX_RESULTS || totalChars >= MAX_OUTPUT_CHARS) {
+                            truncated = true;
+                            if (totalChars >= MAX_OUTPUT_CHARS) {
+                                // Don't add the overflow entry; slice back to what fits
+                            } else {
+                                results.push(entry);
+                            }
+                            break;
+                        }
+
+                        results.push(entry);
                     }
                 }
             } catch (e) { continue; }
@@ -120,7 +144,24 @@ export async function executeGrep(query: string, filePattern: string = '**/*', c
 
         if (signal.aborted) throw new Error('AbortError');
 
-        return { message: results.length > 0 ? results.slice(0, 500).join('\n') : "No matches found." };
+        if (results.length === 0) {
+            return { message: "No matches found." };
+        }
+
+        // Final safety: ensure we never exceed MAX_OUTPUT_CHARS even with all entries
+        let output = results.join('\n');
+        if (output.length > MAX_OUTPUT_CHARS) {
+            // Truncate to the nearest complete line boundary
+            const cutPoint = output.lastIndexOf('\n', MAX_OUTPUT_CHARS);
+            output = cutPoint > 0 ? output.slice(0, cutPoint) : output.slice(0, MAX_OUTPUT_CHARS);
+            truncated = true;
+        }
+
+        if (truncated) {
+            output += `\n\n[Results truncated. ${results.length} matches found. Refine your search to narrow results.]`;
+        }
+
+        return { message: output };
     }
 
     finally {

@@ -153,7 +153,7 @@ export class OpenAIChatProvider extends ChatProvider {
 
         for await (const event of stream) {
             if (abortSignal?.aborted) throw new Error('AbortError');
-            console.log(JSON.stringify(event));
+            // console.log(JSON.stringify(event));
             if (event.type === 'error') {
                 const errMsg = (event as any).error?.message || 'Unknown stream error';
                 throw new Error(`OpenAI API Error: ${errMsg}`);

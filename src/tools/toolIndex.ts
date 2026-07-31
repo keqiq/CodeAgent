@@ -1,12 +1,16 @@
 import { searchSchemas, executeGlob, executeGrep, findDeps as findDeps, executeFind as executeFind } from "./search";
 import { fileSchemas, executeRead, executeWrite, executeEdit } from "./files";
 import { commandSchemas, executeRun } from "./execute";
-import { webSchema, executeWebSearch } from "./web";
+import { webSchema, executeWebSearch, executeURL } from "./web";
 
 export interface ToolProperty {
     type: string;
     description?: string;
     enum?: string[];
+    items?: {
+        type: string;
+        description?: string;
+    };
 }
 
 export interface ToolParameters {
@@ -61,6 +65,11 @@ export function createToolRegistry(deps: ToolDeps): Record<string, (args: any) =
         web: async (args) => {
             const apiKey = await deps.getTavilyKey();
             return await executeWebSearch(args.query, apiKey, deps.getSignal());
+        },
+
+        url: async (args) => {
+            const apiKey = await deps.getTavilyKey();
+            return await executeURL(args.urls, apiKey, args.query, deps.getSignal());
         },
 
         find: async (args) => {

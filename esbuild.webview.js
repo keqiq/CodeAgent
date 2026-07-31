@@ -1,9 +1,14 @@
 const esbuild = require("esbuild");
+const fs = require("fs");
 
 const production = process.argv.includes('--production');
 const watch = process.argv.includes('--watch');
 
 async function main() {
+	if (!fs.existsSync('dist')) {
+        fs.mkdirSync('dist');
+    }
+    fs.copyFileSync('src/webview/frontend.html', 'dist/frontend.html');
 	const ctx = await esbuild.context({
 		entryPoints: [
 			'src/webview/frontend.ts'
