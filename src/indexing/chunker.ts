@@ -47,7 +47,7 @@ export class CodeChunker {
         for (const uri of uris) {
             try {
                 const fileChunk = await this.chunkFile(uri);
-                console.log(`Chunked file ${uri.fsPath}`);
+                // console.log(`Chunked file ${uri.fsPath}`);
                 chunks.push(...fileChunk);
             } catch (e) {
                 console.warn(`Failed to Chunk file ${uri.fsPath}`, e);

@@ -2,46 +2,32 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import { ChatFactory } from './apis/chat/chatFactory';
-import { ChatItem, ChatProvider, ChatResponse, ModelInfo, TokenUsage, WebSearchMode } from './apis/chat/chatProvider';
+import { ChatProvider, ModelInfo, WebSearchMode } from './apis/chat/chatProvider';
 import { createToolRegistry, ToolResult } from './tools/toolIndex';
 import { EmbedFactory } from './apis/embed/embedFactory';
 import { Indexer } from './indexing/indexer';
 import { getEmbedModelsFromProvider, getChatModelsFromProvider, verifyTavilyAPIKey } from './utils/apiUtils';
 import { WorktreeManager } from './worktreeManager';
+import { ChatResponse, ContextManager } from './contextManager';
 
 declare const console: any;
-
-interface ActiveTurnState {
-    provider: string;
-    turnID: string | undefined;
-}
 
 export class ChatApp implements vscode.WebviewViewProvider {
 
     private view?: vscode.WebviewView;
     
-    private chatHistory: ChatItem[];
+    private contextManager: ContextManager;
     private toolRegistry: any;
     private chatModelInfo: Map<string, ModelInfo> = new Map();
     
     private indexer? : Indexer;
-
-    private activeTurn: ActiveTurnState = { provider: '', turnID: undefined};
 
     private activeWorktree? : WorktreeManager;
 
     private aborter: AbortController | null = null;
     
     constructor(private readonly context: vscode.ExtensionContext) {
-        const savedHistory = context.workspaceState.get<ChatItem[]>('chatHistory');
-        
-        if (savedHistory && savedHistory.length > 0) {
-            this.chatHistory = savedHistory;
-            const lastItemWithId = [...savedHistory].reverse().find(item => item.turnID);
-            if (lastItemWithId) this.activeTurn.turnID = lastItemWithId.turnID;
-        }
-
-        else this.chatHistory = [];
+        this.contextManager = new ContextManager(context);
 
         const activeWorktreeID = context.workspaceState.get<string>('activeWorktreeID');
         if (activeWorktreeID) {
@@ -95,8 +81,6 @@ export class ChatApp implements vscode.WebviewViewProvider {
     }
 
     private post(message: any) { this.view?.webview.postMessage(message); }
-
-    private async saveChatHistory() { await this.context.workspaceState.update('chatHistory', this.chatHistory); }
 
     private async getChatAPIKey(provider: string): Promise<string> {
         if (provider.toLowerCase() === 'ollama') return 'local-no-key-required'; 
@@ -226,7 +210,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
                     throw new Error("Agent execution cancelled. A Git repository is required.");
                 }
             }
-            const runID = this.activeTurn.turnID || Date.now().toString();
+            const runID = this.contextManager.getTurnID() || Date.now().toString();
             this.activeWorktree = new WorktreeManager(workspaceRoot, runID);
             await this.activeWorktree.setup();
 
@@ -234,30 +218,24 @@ export class ChatApp implements vscode.WebviewViewProvider {
         }
 
         this.aborter = new AbortController();
-        const lastValidTurnState: ActiveTurnState = { ...this.activeTurn };
-
-        let runTokenUsage: TokenUsage = {
-            totalTokens: 0,
-            inputTokens: 0,
-            outputTokens: 0,
-            thoughtTokens: 0
-        };
 
         let runStatus: 'ok' | 'aborted' | 'error' = 'ok';
         let statusMessage: string | undefined = undefined;
 
         let providerInstance: ChatProvider | undefined = undefined;
+
         try {
             const apiKey = await this.getChatAPIKey(provider); 
             const serverStateManagment = this.context.globalState.get<boolean>('serverStateManagement') ?? true;
             const enabledWebSearch = this.context.globalState.get<boolean>('webSearchEnabled') ?? false;
             const savedWebMode = this.context.globalState.get<string>('webSearchMode') ?? 'tavily';
-
+            
             const webSearchMode: WebSearchMode = enabledWebSearch ? (savedWebMode as WebSearchMode) : 'none';
             
             providerInstance = ChatFactory.create(provider, apiKey, webSearchMode);
-            this.chatHistory.push({ type: 'message', role: 'user', content: userMessage, turnID: this.activeTurn.turnID });
-            await this.saveChatHistory();
+
+            this.contextManager.prepareRun(provider, serverStateManagment);
+            this.contextManager.addUserMessage(userMessage);
             
             let keepGoing = true;
             let turnCount = 0;
@@ -270,18 +248,18 @@ export class ChatApp implements vscode.WebviewViewProvider {
             while (keepGoing && (turnLimit === 0 || turnCount < turnLimit)) {
                 if (this.aborter.signal.aborted) throw new Error('AbortError');
                 turnCount++;
-                // Use the ID ONLY if the provider hasn't changed
-                const turnID = (this.activeTurn.provider === provider && serverStateManagment) ? this.activeTurn.turnID : undefined;
+
                 const streamGenerator = providerInstance.fetchStream(
                     model,
                     effort,
-                    this.chatHistory, 
-                    turnID,
+                    this.contextManager.getLLMContext(), 
+                    this.contextManager.getTurnID(),
                     serverStateManagment,
                     this.aborter.signal
                 );
                 let streamResult = await streamGenerator.next();
                 
+                // Wait for the stream to finish, then run all tools called if any
                 while (!streamResult.done) {
                     if (streamResult.value) {
                         const content = streamResult.value.content;
@@ -312,33 +290,22 @@ export class ChatApp implements vscode.WebviewViewProvider {
                 // Can't catch the abort error during streaming for some reason so we have to catch it here again
                 if (this.aborter.signal.aborted) throw new Error('AbortError');
                 this.post({ type: 'streamEnd' });
-                const finalResponse = streamResult.value as ChatResponse;
+
+                // Replace previous tool results with compact summaries
+                this.contextManager.pruneToolResults();
                 
-                if (finalResponse && finalResponse.items?.length > 0) this.chatHistory.push(...finalResponse.items);
+                const finalResponse = streamResult.value as ChatResponse;
 
                 if (finalResponse?.tokenUsage) {
-
-                    if (provider.toLowerCase() === 'claude') {
-                        // claude return cumulative token usage across turns 
-                        runTokenUsage.totalTokens = finalResponse.tokenUsage.totalTokens || 0;
-                        runTokenUsage.inputTokens = finalResponse.tokenUsage.inputTokens || 0;
-                        runTokenUsage.outputTokens = finalResponse.tokenUsage.outputTokens || 0;
-                        runTokenUsage.thoughtTokens = finalResponse.tokenUsage.thoughtTokens || 0;
-        
-                    } else {
-                        // other providers will need to be accumulated across turns
-                        runTokenUsage.totalTokens! += finalResponse.tokenUsage.totalTokens || 0;
-                        runTokenUsage.inputTokens! += finalResponse.tokenUsage.inputTokens || 0;
-                        runTokenUsage.outputTokens! += finalResponse.tokenUsage.outputTokens || 0;
-                        runTokenUsage.thoughtTokens! += finalResponse.tokenUsage.thoughtTokens || 0;
-                        
-                    }
-                    
-                    this.post({ type: 'updateTokenUsage', usage: runTokenUsage });
+                    this.post({ 
+                        type: 'updateTokenUsage', 
+                        usage: this.contextManager.recordTokenUsage(provider, finalResponse.tokenUsage)
+                    });
                 }
 
-                const functionCalls = finalResponse?.items.filter(item => item.type === 'function_call') || [];
                 const currentTurnID = finalResponse?.turnID;
+                this.contextManager.setTurnID(currentTurnID);
+                const functionCalls = this.contextManager.processResponseItems(finalResponse.items);
 
                 if (functionCalls.length > 0) {
 
@@ -356,9 +323,6 @@ export class ChatApp implements vscode.WebviewViewProvider {
                         if (toolCall.server) {
                             serverToolsRunThisTurn++;
                             this.post({ type: 'updateTool', status: 'server', toolId: toolId, toolName: toolName, args: toolArgs });
-                            
-                            // Remove server tools from chat history
-                            this.chatHistory = this.chatHistory.filter(item => !(item.type === 'function_call' && item.id === toolId));
                             continue;
                         }
                         customToolsRunThisTurn++;
@@ -366,12 +330,14 @@ export class ChatApp implements vscode.WebviewViewProvider {
                         this.post({ type: 'updateTool', status: 'running', toolId: toolId, toolName: toolName, args: toolArgs });
 
                         let result: ToolResult;
+                        let isError = false;
 
                         if (this.toolRegistry[toolName]) {
                             try {
                                 result = await this.toolRegistry[toolName](toolArgs);
                                 this.post({ type: 'updateTool', status: 'success', toolId: toolId });
                             } catch (e) {
+                                isError = true;
                                 const message = e instanceof Error ? e.message : String(e);
                                 result = { message: `Error executing ${toolName}: ${message}`};
                                 this.post({ type: 'updateTool', status: 'error', toolId: toolId, error: message });
@@ -381,7 +347,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
                             this.post({ type: 'updateTool', status: 'error', toolId: toolId, error: "Invalid tool call" });
                         }
 
-                        this.chatHistory.push({ type: 'function_result', id: toolId, name: toolName, result: result.message, turnID: currentTurnID });
+                        this.contextManager.addFunctionResult(toolId, toolName, result.message, isError);
                     }
 
                     // Do not continue the conversation if we only run server tools as they have no function results to follow up with
@@ -391,57 +357,43 @@ export class ChatApp implements vscode.WebviewViewProvider {
                 } else {
                     keepGoing = false;
                 }
-                
-                this.activeTurn = { provider: provider, turnID: currentTurnID };
             }
 
-            this.post({ type: 'updateTokenUsage', usage: runTokenUsage });
+            this.post({ type: 'updateTokenUsage', usage: this.contextManager.getTokenUsage() });
             if (hasStartedToolGroup) this.post({ type: 'endToolGroup', customCount: customToolsRunThisTurn, serverCount: serverToolsRunThisTurn });
-            await this.saveChatHistory();
 
             // Run complete review any changes
             if (!this.aborter.signal.aborted) {
                 const patchString = await this.activeWorktree.getPatch();
 
-                if (patchString.trim()) {
-                    this.post({ type: 'reviewPatch', patch: patchString });
-                }
+                if (patchString.trim()) this.post({ type: 'reviewPatch', patch: patchString });
 
                 // No changes close worktree
-                else {
-                    await this.clearActiveWorktree();
-                }
+                else await this.clearActiveWorktree();
             }
 
         } catch (e: any) {
-            // roll back to previous turnID
             // the idea is to revert back to the previous completed state if the current run was not completed
-            this.activeTurn = lastValidTurnState;
+            this.contextManager.rollback();
 
             if (e.name === 'AbortError' || e.message?.toLowerCase().includes('abort')) {
                 if (providerInstance) await providerInstance.abortStream(); 
                 runStatus = 'aborted';
                 statusMessage = 'Execution halted manually';
                 // let the agent know we aborted
-                this.chatHistory.push({ type: 'message', role: 'user', content: '[System: The response was canceled by the user.]', isHidden: true} );
+                this.contextManager.addSystemMessage('The response was canceled by the user.');
             } else {
                 runStatus = 'error';
                 statusMessage = `Error: ${e.message || String(e)}`;
-                console.log(`Error during agent turn: ${e.message || String(e)}`);
+                console.log(`Error during agent turn: ${formatError(e)}`);
             }
 
         } finally {
             this.aborter = null;
-            this.chatHistory.push({
-                type: 'run_summary',
-                provider: provider,
-                status: runStatus,
-                ...(statusMessage && { message: statusMessage }),
-                ...(runTokenUsage && { tokenUsage: runTokenUsage }),
-                ...(this.activeTurn.turnID && { turnID: this.activeTurn.turnID })
-            });
 
-            await this.saveChatHistory();
+            this.contextManager.addRunSummary(provider, runStatus, statusMessage);
+            await this.contextManager.save();
+
             this.post({ type: 'agentRunComplete', status: runStatus, text: statusMessage });
         }
     }
@@ -493,7 +445,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
                         this.post({ type: 'initChatProviders', providers: ChatFactory.getAvailableProviders() });
                         this.post({ type: 'initEmbedProviders', providers: EmbedFactory.getAvailableProviders() });
 
-                        this.post({ type: 'restoreChatHistory', history: this.chatHistory });
+                        this.post({ type: 'restoreChatHistory', history: this.contextManager.getHistory() });
                         
                         const chatProvider = this.context.globalState.get<string>('chatProvider');
                         if (chatProvider) {
@@ -655,11 +607,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
                 }
 
                 case 'clearChat': {
-                    this.activeTurn = {provider: '', turnID: undefined};
-
-                    // Restore system prompt and nothing else
-                    this.chatHistory = [];
-                    await this.context.workspaceState.update('chatHistory', this.chatHistory);
+                    await this.contextManager.clear();
 
                     // Close active work tree
                     if  (this.activeWorktree)  await this.clearActiveWorktree();
@@ -745,14 +693,8 @@ export class ChatApp implements vscode.WebviewViewProvider {
                         try {
                             await this.activeWorktree.applyPatch();
 
-                            this.chatHistory.push({ 
-                                type: 'message', 
-                                role: 'user', 
-                                content: '[System: The user applied your proposed changes to the workspace.]',
-                                turnID: this.activeTurn.turnID,
-                                isHidden: true // Hidden message just for the agent
-                            });
-                            await this.saveChatHistory();
+                            this.contextManager.addSystemMessage('The user applied your proposed changes to the workspace');
+                            await this.contextManager.save();
                             await this.clearActiveWorktree();
                             this.post({ type: 'updatePatchStatus', status: 'accepted' });
 
@@ -774,14 +716,10 @@ export class ChatApp implements vscode.WebviewViewProvider {
                     if (this.activeWorktree) {
                         await this.clearActiveWorktree();
 
-                        this.chatHistory.push({ 
-                            type: 'message', 
-                            role: 'user', 
-                            content: '[System: The user discarded your proposed changes. The workspace was reverted to its original state.]',
-                            turnID: this.activeTurn.turnID,
-                            isHidden: true
-                        });
-                        await this.saveChatHistory();
+                        this.contextManager.addSystemMessage(
+                            'The user discarded your proposed changes. Workspace is reverted to last applied changes or original state.'
+                        );
+                        await this.contextManager.save();
                         this.post({ type: 'updatePatchStatus', status: 'rejected' });
                     }
                     break;
@@ -791,15 +729,9 @@ export class ChatApp implements vscode.WebviewViewProvider {
                 case 'markResolved': {
                     if (this.activeWorktree) {
                         await this.clearActiveWorktree();
-
-                        this.chatHistory.push({ 
-                            type: 'message', 
-                            role: 'user', 
-                            content: '[System: The user resolved merge conflicts and applied the changes.]', 
-                            turnID: this.activeTurn.turnID, 
-                            isHidden: true 
-                        });
-                        await this.saveChatHistory();
+                        
+                        this.contextManager.addSystemMessage('The user resolved merge conflicts and applied the changes.');
+                        await this.contextManager.save();
                         this.post({ type: 'updatePatchStatus', status: 'accepted' });
                     }
                     break;
@@ -812,14 +744,8 @@ export class ChatApp implements vscode.WebviewViewProvider {
                             await this.activeWorktree.forceApply();
 
                             await this.clearActiveWorktree();
-                            this.chatHistory.push({ 
-                                type: 'message', 
-                                role: 'user', 
-                                content: '[System: The user force-applied your changes, overwriting their local edits.]', 
-                                turnID: this.activeTurn.turnID, 
-                                isHidden: true 
-                            });
-                            await this.saveChatHistory();
+                            this.contextManager.addSystemMessage('The user force-applied your changes, overwriting their local edits.');
+                            await this.contextManager.save();
                             this.post({ type: 'updatePatchStatus', status: 'accepted' });
                         } catch (e) {
                             vscode.window.showErrorMessage(`Failed to force apply: ${e}`);

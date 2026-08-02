@@ -1,9 +1,10 @@
-import { ChatItem, TokenUsage } from "../../apis/chat/chatProvider";
+
 import { WebviewApi } from "../frontend";
 import { marked } from 'marked';
 import hljs from 'highlight.js';
 
 import 'highlight.js/styles/vs2015.css';
+import { ChatItem, TokenUsage } from "../../contextManager";
 
 interface ParsedPatchFile {
     filename: string;

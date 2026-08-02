@@ -26,11 +26,20 @@ export class Indexer {
     private deletedFiles = new Set<string>();
     private headerDirtyFiles = new Set<string>();
     private debounceTimer?: NodeJS.Timeout;
+    private flushInProgress = false;
 
     private emitter = new vscode.EventEmitter<IndexStatusMessage>();
     public readonly onDidUpdateStatus = this.emitter.event;
 
     private readonly excludePattern = [...globalExcludePatterns, ...languageExcludePatterns];
+
+    /** Regex to detect agent worktree directories so we can ignore them in file watchers */
+    private static readonly worktreePattern = /[\/\\]\.agent-worktree-\d+[\/\\]/;
+
+    /** Returns true if the URI path is inside an agent worktree directory */
+    private isWorktreePath(uri: vscode.Uri): boolean {
+        return Indexer.worktreePattern.test(uri.fsPath);
+    }
 
     private watcher: vscode.FileSystemWatcher;
     private renameDisposable: vscode.Disposable;
@@ -46,25 +55,31 @@ export class Indexer {
         const extGlob = supportedExtensions.map(ext => ext.replace(/^\./, '')).join(',');
         const watchPattern = `**/*.{${extGlob}}`;
 
+        // Exclude agent worktrees from the file watcher to prevent ENOENT
+        // errors when a worktree is deleted after applying an agent's changes.
         this.watcher = vscode.workspace.createFileSystemWatcher(watchPattern);
         
-        // Watch for file edits, add editted files to index queue
+        // Watch for file edits, add edited files to the index queue. The watcher
+        // glob cannot express our exclude patterns, so filter every event here.
         this.watcher.onDidChange(async uri => {
+            if (!this.shouldWatch(uri)) return;
             this.markWorkspaceModified();
             if (!this.indexEnabled() || !this.db) return;
             this.scheduleIndex([vscode.workspace.asRelativePath(uri)]);
         });
 
-        // Watch for file creation, add created file to index queue and update neighbouring files' headers
+        // Watch for file creation, add created files to the index queue and update neighbouring files' headers
         this.watcher.onDidCreate(async uri => {
+            if (!this.shouldWatch(uri)) return;
             this.markWorkspaceModified();
             if (!this.indexEnabled() || !this.db) return;
             this.scheduleIndex([vscode.workspace.asRelativePath(uri)]);
             await this.scheduleNeighbourHoodUpdate(uri);
         });
 
-        // Watch for file deletion, add deleted file to deletion queue and update neighbouring files' headers
+        // Watch for file deletion, add deleted files to the deletion queue and update neighbouring files' headers
         this.watcher.onDidDelete(async uri => {
+            if (!this.shouldWatch(uri)) return;
             this.markWorkspaceModified();
             if (!this.indexEnabled() || !this.db) return;
             this.scheduleDeleteFile([vscode.workspace.asRelativePath(uri)]);
@@ -76,14 +91,19 @@ export class Indexer {
             this.markWorkspaceModified();
             if (!this.indexEnabled() || !this.db) return;
             for (const file of e.files) {
+                // Skip renames involving worktree or excluded/generated files.
+                if (this.isWorktreePath(file.oldUri) || this.isWorktreePath(file.newUri)) continue;
+
                 const oldPath = vscode.workspace.asRelativePath(file.oldUri);
                 const newPath = vscode.workspace.asRelativePath(file.newUri);
+                const oldIsIndexable = this.isSupportedFile(oldPath) && !this.isExcluded(oldPath);
+                const newIsIndexable = this.isSupportedFile(newPath) && !this.isExcluded(newPath);
 
-                if (this.isSupportedFile(newPath) && !this.isExcluded(newPath)) {
+                if (newIsIndexable) {
                     this.scheduleIndex([newPath]);
                 }
 
-                if (this.isSupportedFile(oldPath)) {
+                if (oldIsIndexable) {
                     this.scheduleDeleteFile([oldPath]);
                 }
 
@@ -291,6 +311,19 @@ export class Indexer {
         return this.excludePattern.some(pattern => minimatch(filePath, pattern, { dot: true}));
     }
 
+    /**
+     * The FileSystemWatcher only supports an include glob. Keep its events in
+     * sync with chunkWorkspace() by applying the same exclusions here. This is
+     * important for generated bundles: the extension build writes dist/*.js,
+     * which otherwise looks like user source to the JavaScript watcher.
+     */
+    private shouldWatch(uri: vscode.Uri): boolean {
+        if (this.isWorktreePath(uri)) return false;
+
+        const relativePath = vscode.workspace.asRelativePath(uri);
+        return this.isSupportedFile(relativePath) && !this.isExcluded(relativePath);
+    }
+
     public indexEnabled(): boolean {
         return this.context.globalState.get<boolean>('indexEnabled') ?? true;
     }
@@ -343,10 +376,19 @@ export class Indexer {
     }
 
     private async flushIndexQueue(): Promise<void> {
+        // Build/watch events can arrive while embedding is in progress. Do not
+        // run concurrent database mutations; leave newly queued files in the
+        // sets and schedule a second pass when this one completes.
+        if (this.flushInProgress) return;
+        this.flushInProgress = true;
+
         const provider = this.context.globalState.get<string>("embedProvider");
-        
-        if (!provider) return;
-        
+
+        if (!provider) {
+            this.flushInProgress = false;
+            return;
+        }
+
         try {
             const apiKey = await this.getApiKey(provider);
             if (!apiKey) throw new Error(`${provider} API key missing`);
@@ -406,6 +448,15 @@ export class Indexer {
                 state: 'error',
                 text: e instanceof Error ? e.message : String(e)
             });
+        } finally {
+            this.flushInProgress = false;
+
+            // Events received during the flush were intentionally not cleared.
+            // Process them in a separate pass rather than losing them or
+            // running another flush concurrently.
+            if (this.dirtyFiles.size > 0 || this.deletedFiles.size > 0 || this.headerDirtyFiles.size > 0) {
+                this.resetDebounceTimer();
+            }
         }
     }
 

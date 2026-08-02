@@ -1,16 +1,5 @@
+import { ChatItem, ChatResponse, TokenUsage } from "../../contextManager";
 import { ToolResult } from "../../tools/toolIndex";
-
-export type ChatItem =
-    | { type: 'message'; role: 'user' | 'assistant'; content: string, thought?: string, turnID?: string, isHidden?: boolean }
-    | { type: 'function_call'; id: string; name: string; arguments: any, turnID?: string, server?: boolean}
-    | { type: 'function_result'; id: string; name: string; result: string, turnID?: string }
-    | { type: 'run_summary'; provider: string, status: 'ok' | 'aborted' | 'error'; tokenUsage?: TokenUsage; message?: string; turnID?: string}
-
-export interface ChatResponse {
-    items: ChatItem[];
-    tokenUsage: TokenUsage | undefined;
-    turnID?: string;
-}
 
 export interface StreamYield {
     type: 'text' | 'thought' | 'server_action';
@@ -25,13 +14,6 @@ export interface ModelInfo {
     reason: boolean | undefined;
     efforts: string[];
     defaultEffort: string | null;
-}
-
-export interface TokenUsage {
-    totalTokens: number | undefined,
-    inputTokens: number | undefined,
-    outputTokens: number | undefined,
-    thoughtTokens: number | undefined
 }
 
 export type WebSearchMode = 'none' | 'tavily' | 'server';

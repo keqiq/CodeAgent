@@ -87,6 +87,33 @@ export async function executeGlob(pattern: string, cwd: string, signal: AbortSig
 
 const MAX_RESULTS = 500;
 const MAX_OUTPUT_CHARS = 50_000;
+const MAX_ENTRY_CHARS = 2_000;
+
+// Common binary file extensions that should never be grep-searched.
+// This is a fast pre-check before reading file content.
+const BINARY_EXTENSIONS = new Set([
+    '.vsix', '.zip', '.tar', '.gz', '.bz2', '.xz', '.zst', '.7z', '.rar',
+    '.png', '.jpg', '.jpeg', '.gif', '.ico', '.bmp', '.webp', '.svg',
+    '.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx',
+    '.exe', '.dll', '.so', '.dylib', '.o', '.a', '.lib', '.obj',
+    '.wasm', '.woff', '.woff2', '.ttf', '.eot',
+    '.mp3', '.mp4', '.avi', '.mov', '.mkv', '.wav', '.flac', '.ogg',
+    '.pyc', '.pyo',
+    '.class', '.jar', '.war',
+    '.DS_Store',
+    '.db', '.sqlite', '.sqlite3',
+]);
+
+function isLikelyBinaryExtension(filePath: string): boolean {
+    const ext = path.extname(filePath).toLowerCase();
+    return BINARY_EXTENSIONS.has(ext);
+}
+
+function isBinaryContent(content: string): boolean {
+    // Null bytes are a strong indicator of binary content.
+    // Text files decoded as UTF-8 from binary sources will contain \0.
+    return content.includes('\0');
+}
 
 export async function executeGrep(query: string, filePattern: string = '**/*', cwd: string, signal: AbortSignal): Promise<ToolResult> {
     let regex: RegExp;
@@ -115,8 +142,15 @@ export async function executeGrep(query: string, filePattern: string = '**/*', c
             if (signal.aborted) throw new Error('AbortError');
             if (truncated) break;
 
+            // Skip files with known binary extensions (cheap pre-check)
+            if (isLikelyBinaryExtension(uri.fsPath)) continue;
+
             try {
                 const content = await getFileContent(uri);
+
+                // Skip binary files detected by null-byte content (e.g. .vsix archives)
+                if (isBinaryContent(content)) continue;
+
                 const lines = content.split('\n');
 
                 const relativePath = path.relative(cwd, uri.fsPath);
@@ -124,6 +158,10 @@ export async function executeGrep(query: string, filePattern: string = '**/*', c
                 for (let i = 0; i < lines.length; i++) {
                     if (regex.test(lines[i])) {
                         const entry = `${relativePath}:${i + 1}:${lines[i].trim()}`;
+
+                        // Skip individual entries that are unreasonably long (binary garbage)
+                        if (entry.length > MAX_ENTRY_CHARS) continue;
+
                         totalChars += entry.length + 1; // +1 for the newline when joined
 
                         if (results.length >= MAX_RESULTS || totalChars >= MAX_OUTPUT_CHARS) {
@@ -157,8 +195,10 @@ export async function executeGrep(query: string, filePattern: string = '**/*', c
             truncated = true;
         }
 
+        // Place truncation warning at the START so it's always visible
+        // even if downstream systems clip the end of the message.
         if (truncated) {
-            output += `\n\n[Results truncated. ${results.length} matches found. Refine your search to narrow results.]`;
+            output = `[Results truncated. ${results.length} matches found. Refine your search to narrow results.]\n\n${output}`;
         }
 
         return { message: output };

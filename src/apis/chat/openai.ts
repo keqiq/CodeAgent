@@ -1,6 +1,7 @@
 import OpenAI from 'openai';
-import { ChatItem, ChatProvider, ChatResponse, ModelInfo, StreamYield, TokenUsage, WebSearchMode } from './chatProvider';
+import { ChatProvider, ModelInfo, StreamYield, WebSearchMode } from './chatProvider';
 import { requiredSchemas, ToolSchema, webSchema } from '../../tools/toolIndex';
+import { ChatItem, ChatResponse, TokenUsage } from '../../contextManager';
 
 export class OpenAIChatProvider extends ChatProvider {
     public static stateManagementSupport: boolean = true;

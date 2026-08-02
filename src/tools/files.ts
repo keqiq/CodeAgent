@@ -10,7 +10,9 @@ export const fileSchemas: ToolSchema[] = [
         parameters: {
             type: "object",
             properties: {
-                filePath: { type: "string", description: "The relative path to the file in the worksapce." }
+                filePath: { type: "string", description: "The relative path to the file in the worksapce." },
+                offset: { type: "number", description: "Line number to start reading from (1-indexed)." },
+                limit: { type: "number", description: "Maximum number of lines to read." }
             },
             required: ["filePath"]
         }
@@ -47,12 +49,19 @@ export const fileSchemas: ToolSchema[] = [
 const textDecoder = new TextDecoder('utf-8');
 const textEncoder = new TextEncoder();
 
-export async function executeRead(filePath: string, cwd: string): Promise<ToolResult> {
+export async function executeRead(filePath: string, cwd: string, offset = 1, limit = 2000): Promise<ToolResult> {
     const fileUri = resolveUri(cwd, filePath);
-
     const uint8Array = await vscode.workspace.fs.readFile(fileUri);
+    const lines = textDecoder.decode(uint8Array).split('\n');
 
-    return { message: textDecoder.decode(uint8Array) };
+    const sliced = lines.slice(offset - 1, offset - 1 + limit).join('\n');
+    let message = sliced;
+
+    if (lines.length > offset - 1 + limit) {
+        message += `\n\n...[TRUNCATED: Showing lines ${offset}-${offset + limit - 1} of ${lines.length}. Use 'offset' parameter to read further.]...`;
+    }
+
+    return { message };
 }
 
 export async function executeWrite(filePath: string, content: string, cwd: string): Promise<ToolResult> {
