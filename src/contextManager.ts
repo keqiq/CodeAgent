@@ -1,4 +1,7 @@
 import * as vscode from 'vscode';
+import { getEncoding } from 'js-tiktoken';
+import { ChatProvider } from './apis/chat/chatProvider';
+import { ChatFactory } from './apis/chat/chatFactory';
 
 export interface MessageItem {
     type: 'message';
@@ -49,6 +52,15 @@ export interface TokenUsage {
     inputTokens: number | undefined,
     outputTokens: number | undefined,
     thoughtTokens: number | undefined
+}
+
+export interface TokenCategoryUsage {
+    userTokens: number;
+    assistantTokens: number;
+    systemTokens: number;
+    toolCallTokens: number;
+    toolResultTokens: number;
+    totalTokens: number;
 }
 
 export class ContextManager {
@@ -264,5 +276,58 @@ export class ContextManager {
             ...this.summarizedHistory,
             ...this.history.slice(this.summarizeIndex)
         ];
+    }
+
+    public estimateCategorizedTokens(provider: string): TokenCategoryUsage {
+        const encoder = getEncoding('o200k_base');
+
+        const usage: TokenCategoryUsage = {
+            userTokens: 0,
+            assistantTokens: 0,
+            systemTokens: 0,
+            toolCallTokens: 0,
+            toolResultTokens: 0,
+            totalTokens: 0
+        };
+        
+        const baseOverhead = 4;
+        
+        usage.systemTokens += encoder.encode(ChatFactory.getSystemPrompt(provider)).length + baseOverhead;
+
+        usage.systemTokens += encoder.encode(JSON.stringify(ChatFactory.getToolSchemas(provider))).length + baseOverhead;
+        
+        const currentContext = this.getLLMContext();
+        for (const item of currentContext) {
+            let textToEncode = "";
+
+            switch (item.type) {
+                case 'message':
+                    textToEncode = item.content;
+                    if (item.thought) textToEncode += item.thought;
+
+                    const messageTokens = encoder.encode(textToEncode).length + baseOverhead;
+
+                    if (item.role === 'user') usage.userTokens += messageTokens;
+                    else if (item.role === 'assistant') usage.assistantTokens += messageTokens;
+                    break;
+
+                case 'function_call':
+                    textToEncode = item.name + JSON.stringify(item.arguments);
+                    usage.toolCallTokens += encoder.encode(textToEncode).length + baseOverhead;
+                    break;
+
+                case 'function_result':
+                    textToEncode = item.name + item.result;
+                    usage.toolResultTokens += encoder.encode(textToEncode).length + baseOverhead;
+                    break;
+
+                case 'run_summary':
+                    break;
+            }   
+        }
+
+        usage.totalTokens = usage.userTokens + usage.assistantTokens + usage.systemTokens + usage.toolCallTokens + usage.toolResultTokens;
+
+        return usage;
     }
 }

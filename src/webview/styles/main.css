@@ -3,6 +3,7 @@
 @import url('./chat-input.css');
 @import url('./custom-dropdown.css');
 @import url('./chat-settings-menu.css');
+@import url('./context-window.css');
 
 body { 
     font-family: var(--vscode-font-family); 

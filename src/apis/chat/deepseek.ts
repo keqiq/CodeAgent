@@ -19,7 +19,8 @@ export class DeepSeekChatProvider extends OpenAICompatibleProvider {
                 id: id,
                 reason: true,
                 efforts: ['high', 'xhigh'],
-                defaultEffort: 'high'
+                defaultEffort: 'high',
+                contextWindow: 1_000_000
             });
         }
         return infos;

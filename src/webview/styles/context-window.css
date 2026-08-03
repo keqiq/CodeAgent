@@ -1,0 +1,104 @@
+/* Context Window Progress Bar Button */
+.context-bar-btn {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 90px;
+    height: 22px;
+    background: color-mix(in srgb, var(--vscode-input-background) 50%, transparent);
+    border: 1px solid color-mix(in srgb, var(--vscode-widget-border) 60%, transparent);
+    border-radius: 4px;
+    padding: 0 8px;
+    cursor: pointer;
+    overflow: hidden;
+    transition: border-color 0.2s;
+}
+
+.context-bar-btn:hover {
+    border-color: var(--vscode-focusBorder);
+}
+
+.context-bar-fill {
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 0%;
+    background-color: var(--vscode-progressBar-background);
+    opacity: 0.35;
+    z-index: 1;
+    transition: width 0.3s ease, background-color 0.3s ease;
+}
+
+.context-bar-text {
+    position: relative;
+    z-index: 2;
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--vscode-foreground);
+    white-space: nowrap;
+    opacity: 0.8;
+}
+
+/* Ensures the context dropdown pops up correctly above the bar */
+#contextWindowDropdown {
+    bottom: calc(100% + 10px);
+    right: 0;
+    left: auto;
+    min-width: 200px;
+}
+
+/* --- Token Pie Chart --- */
+.context-chart-container {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 8px 10px 12px 10px;
+}
+
+.context-pie-chart {
+    width: 65px;
+    height: 65px;
+    border-radius: 50%;
+    /* Default empty state */
+    background: var(--vscode-editorWidget-background);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--vscode-widget-border) 60%, transparent);
+    flex-shrink: 0;
+    transition: background 0.3s ease;
+}
+
+.context-legend {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    font-size: 11px;
+    color: var(--vscode-foreground);
+    flex: 1;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 6px;
+    opacity: 0.85;
+}
+
+.legend-item strong {
+    margin-left: auto; /* Pushes the number to the right edge */
+    font-weight: 600;
+}
+
+.legend-color {
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+
+/* Fallback colors included just in case the theme doesn't define them */
+.user-color { background-color: var(--vscode-charts-blue, #3794ff); }
+.assistant-color { background-color: var(--vscode-charts-purple, #b180d7); }
+.system-color { background-color: var(--vscode-charts-green, #89d185); }
+.tools-color { background-color: var(--vscode-charts-orange, #d18616); }

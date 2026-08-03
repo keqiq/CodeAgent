@@ -118,3 +118,9 @@ textarea {
     border-top: 1px dashed var(--vscode-widget-border);
     padding-top: 8px;
 }
+
+.right-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}

@@ -20,7 +20,7 @@ export class GeminiChatProvider extends ChatProvider {
         super();
         this.client = new GoogleGenAI({ apiKey: apiKey });
         
-        const runTools: any[] = [...requiredSchemas];
+        const runTools: any[] = [...GeminiChatProvider.baseTools];
         if (webSearchMode === 'tavily') runTools.push(...webSchema);
         else if (webSearchMode === 'server') runTools.push({ "type": "google_search" });
 
@@ -63,7 +63,8 @@ export class GeminiChatProvider extends ChatProvider {
                     id: id,
                     reason: reasonCapable,
                     efforts: reasonCapable ? effortLevels: [],
-                    defaultEffort: reasonCapable ? defaultEffort : null
+                    defaultEffort: reasonCapable ? defaultEffort : null,
+                    ...(m.inputTokenLimit && { contextWindow: m.inputTokenLimit })
                 });
             }
         }
@@ -135,7 +136,7 @@ export class GeminiChatProvider extends ChatProvider {
             model: model,
             input: currentInput,
             tools: this.tools,
-            system_instruction: ChatProvider.systemPrompt,
+            system_instruction: GeminiChatProvider.systemPrompt,
             stream: true,
             store: useCache && previousTurnID !== undefined,
             generation_config: {thinking_level: effort as any, thinking_summaries: 'auto'},

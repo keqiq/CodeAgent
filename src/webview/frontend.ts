@@ -4,6 +4,7 @@ import { ChatContainer } from "./componentsV2/chatContainer";
 import { ChatInput } from "./componentsV2/chatInput";
 import { ChatHeader } from "./componentsV2/chatHeader";
 import { ChatSettings } from "./componentsV2/chatSettings";
+import { ContextWindow } from './componentsV2/contextWindow';
 
 export interface WebviewApi<StateType = any> {
     postMessage(message: unknown): void;
@@ -19,6 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const chatSettings = new ChatSettings(vscodeAPI);
     const chatInput = new ChatInput(vscodeAPI, chatContainer, chatSettings);
     const chatHeader = new ChatHeader(vscodeAPI);
+    const contextWindow = new ContextWindow(vscodeAPI);
 
     window.addEventListener('message', (event: MessageEvent) => {
         const msg = event.data;
@@ -63,6 +65,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             case 'updateChatModelInfo':
                 chatInput.updateChatModelInfo(msg);
+                contextWindow.updateContextWindow(msg.contextWindow);
                 break;
 
             case 'requestChatAPIKey':
@@ -126,6 +129,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 chatContainer.updateTokenUsage(msg.usage);
                 break;
 
+            case 'updateContextWindowUsage':
+                contextWindow.updateTokenUsage(msg.usage);
+                break;
+
             // --- INDEXING & HEADER ---
 
             case 'restoreIndexSettings': 
@@ -159,6 +166,7 @@ document.addEventListener('DOMContentLoaded', () => {
             case 'clearChatContainer':
                 chatContainer.clearChatUI();
                 chatSettings.toggleClearChatBtn(false);
+                contextWindow.clearTokenUsage();
                 break;
             
             default:

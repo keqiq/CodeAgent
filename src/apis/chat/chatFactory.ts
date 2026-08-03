@@ -10,6 +10,8 @@ interface ChatProviderConstructor {
     new (apiKey: string, webSearchMode: WebSearchMode): ChatProvider;
     stateManagementSupport: boolean;
     serverWebSearchSupport: boolean;
+    systemPrompt: string;
+    baseTools: any[];
 }
 
 export class ChatFactory {
@@ -35,6 +37,16 @@ export class ChatFactory {
     static supportsServerWebSearch(providerName: string): boolean {
         const ProviderClass = this.providers[providerName];
         return ProviderClass.serverWebSearchSupport;
+    }
+
+    static getSystemPrompt(providerName: string): string {
+        const ProviderClass = this.providers[providerName];
+        return ProviderClass.systemPrompt;
+    }
+
+    static getToolSchemas(providerName: string): any[] {
+        const ProviderClass = this.providers[providerName];
+        return ProviderClass.baseTools;
     }
 
     static getAvailableProviders(): string[] {

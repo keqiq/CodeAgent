@@ -6,6 +6,7 @@ import { ChatItem, ChatResponse, TokenUsage } from '../../contextManager';
 export class ClaudeChatProvider extends ChatProvider {
     public static stateManagementSupport: boolean = true;
     public static serverWebSearchSupport: boolean = true;
+    public static baseTools = ClaudeChatProvider.parseTool(requiredSchemas);
     private client: Anthropic;
     // private static claudeTools: Anthropic.Tool[] = ClaudeChatProvider.parseTool(allToolSchemas);
     
@@ -20,13 +21,16 @@ export class ClaudeChatProvider extends ChatProvider {
         super();
         this.client = new Anthropic({ apiKey: apiKey });
         
-        const runTools: ToolSchema[] = [...requiredSchemas];
-        if (webSearchMode === 'tavily') runTools.push(...webSchema);
+        const runTools: any[] = [...ClaudeChatProvider.baseTools];
+        let webTools: any[] = [];
 
-        const parsedTools: any[] = ClaudeChatProvider.parseTool(runTools);
-        if (webSearchMode === 'server') parsedTools.push({ type: "web_search_20260318", name: "web_search" });
+        if (webSearchMode === 'tavily') {
+            webTools = ClaudeChatProvider.parseTool(webSchema);
+            runTools.push(...webTools);
+        }
+        else if (webSearchMode === 'server') runTools.push({ type: "web_search_20260318", name: "web_search" });
 
-        this.tools = parsedTools;
+        this.tools = runTools;
     }
 
     protected async getModelInfos(): Promise<ModelInfo[]> {
@@ -53,7 +57,8 @@ export class ClaudeChatProvider extends ChatProvider {
                 id: m.id,
                 reason: reasonCapable,
                 efforts: reasonCapable? efforts : [],
-                defaultEffort: reasonCapable? 'high' : null
+                defaultEffort: reasonCapable? 'high' : null,
+                ...(m.max_input_tokens && { contextWindow: m.max_input_tokens })
             });
         }
 
@@ -128,7 +133,7 @@ export class ClaudeChatProvider extends ChatProvider {
         
         const stream = await this.client.messages.create({
             model: model as any,
-            system: ChatProvider.systemPrompt,
+            system: ClaudeChatProvider.systemPrompt,
             messages: this.formatMessages(history),
             tools: this.tools,
             stream: true,

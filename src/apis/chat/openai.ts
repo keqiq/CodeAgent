@@ -20,7 +20,7 @@ export class OpenAIChatProvider extends ChatProvider {
         super();
         this.client = new OpenAI({ apiKey });
 
-        const runTools: any[] = [...requiredSchemas];
+        const runTools: any[] = [...OpenAIChatProvider.baseTools];
         
         if (webSearchMode === 'tavily') runTools.push(...webSchema);
         else if (webSearchMode === 'server') runTools.push({ type: 'web_search' });
@@ -56,6 +56,7 @@ export class OpenAIChatProvider extends ChatProvider {
                 // So this will break with new models too
                 let supportedEfforts: string[] = [];
                 let defaultEffort: string | null = null;
+                let contextWindow: number | undefined = undefined;
 
                 if (reasonCapable) {
                     defaultEffort = 'medium';
@@ -68,29 +69,41 @@ export class OpenAIChatProvider extends ChatProvider {
                         // gpt-5-pro only supports high
                         supportedEfforts = ['high'];
                         defaultEffort = 'high';
+                        contextWindow = 400_000;
 
                     } else if (minorVersion === 6) {
                         // gpt-5.6 models support max mode
                         supportedEfforts = ['none', 'low', 'medium', 'high', 'xhigh', 'max'];
+                        contextWindow = 1_050_000;
 
                     } else if (minorVersion > 1) {
                         // models after gpt-5.1-codex-max (e.g., gpt-5.2, 5.3, 5.4, 5.5) support xhigh
                         supportedEfforts = ['none', 'low', 'medium', 'high', 'xhigh'];
 
+                        // GPT-5.5, GPT-5.4
+                        if (minorVersion >= 4) {
+                            if (id.includes('mini') || id.includes('nano')) contextWindow = 400_000;
+                            else contextWindow = 1_050_000;
+                        }
+                        else contextWindow = 400_000;
+
                     } else if (minorVersion === 1) {
                         // gpt-5.1 supports none, low, medium, high
                         supportedEfforts = ['none', 'low', 'medium', 'high'];
-
+                        contextWindow = 400_000;
+                        
                     } else {
                         // models before gpt-5.1 (e.g., o1, o3, gpt-5.0) do NOT support none
                         supportedEfforts = ['minimal', 'low', 'medium', 'high'];
+                        // Im not even gonna bother with context windows for older deprecated models
                     }
                 }
                 infos.push({
                     id: id,
                     reason: reasonCapable,
                     efforts: supportedEfforts,
-                    defaultEffort: defaultEffort
+                    defaultEffort: defaultEffort,
+                    ...(contextWindow && { contextWindow : contextWindow })
                 });
             }
         }
@@ -102,7 +115,7 @@ export class OpenAIChatProvider extends ChatProvider {
 
     private formatMessages(items: ChatItem[], includeSystem: boolean): any[] {
         const formatted: any[] = includeSystem 
-            ? [{ role: 'developer', content: ChatProvider.systemPrompt }] 
+            ? [{ role: 'developer', content: OpenAIChatProvider.systemPrompt }] 
             : [];
 
         for (const item of items) {
@@ -249,7 +262,7 @@ export class OpenAIChatProvider extends ChatProvider {
 // For other providers using OpenAI SDK
 export abstract class OpenAICompatibleProvider extends ChatProvider {
     protected client: OpenAI;
-    // protected static tools: any = OpenAICompatibleProvider.parseTools(requiredSchemas);
+    public static baseTools: any[] = OpenAICompatibleProvider.parseTools(requiredSchemas);
     
     constructor(apiKey: string, baseURL: string, webSearchMode: WebSearchMode) {
         super();
@@ -258,11 +271,13 @@ export abstract class OpenAICompatibleProvider extends ChatProvider {
             apiKey: apiKey
         });
 
-        const runTools: ToolSchema[] = [...requiredSchemas];
+        const runTools: any[] = [...OpenAICompatibleProvider.baseTools];
+        if (webSearchMode === 'tavily') {
+            const webTools: any[] = OpenAICompatibleProvider.parseTools(webSchema);
+            runTools.push(...webTools);
+        }
 
-        if (webSearchMode === 'tavily') runTools.push(...webSchema);
-
-        this.tools = OpenAICompatibleProvider.parseTools(runTools);
+        this.tools = runTools;
     }
     
     // For these providers with thinking models, we must pass back the reasoning content
@@ -274,7 +289,7 @@ export abstract class OpenAICompatibleProvider extends ChatProvider {
     // 'tool_calls': response.choices[0].message.tool_calls,
     // }
     protected formatMessages(items: ChatItem[]): any[] {
-        const formattedMessages: any[] = [{ role: 'system', content: ChatProvider.systemPrompt }];
+        const formattedMessages: any[] = [{ role: 'system', content: OpenAIChatProvider.systemPrompt }];
         
         for (let i = 0; i < items.length; i++) {
             const item = items[i];

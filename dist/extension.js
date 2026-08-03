@@ -46802,65 +46802,6 @@ var path12 = __toESM(require("path"));
 // src/apis/chat/claude.ts
 init_sdk();
 
-// src/apis/chat/chatProvider.ts
-var ChatProvider = class _ChatProvider {
-  static systemPrompt = `You are an autonomous, expert software engineering agent integrated into VS Code. 
-                      You have access to tools that can search, read, write, and edit files in the user's workspace.
-                      When a user asks you to find a bug or fix a problem, DO NOT ask them for the file name if you can search for it yourself. 
-                      Proactively use your semantic search tool 'find' tool to search the workspace.
-                      Tools like 'glob' and 'grep' should be used as a fallback if semantic search fails to return relevant results, or if you need to view files in more detail. 
-                      Find the relevant code, read it, and edit it to fix the issue. 
-                      Always explain your thought process before executing a tool.`;
-  static stateManagementSupport = false;
-  static serverWebSearchSupport = false;
-  static modelCache = {};
-  tools = [];
-  async getModels(fetchAll) {
-    const providerName = this.constructor.name;
-    if (!_ChatProvider.modelCache[providerName]) {
-      _ChatProvider.modelCache[providerName] = await this.getModelInfos();
-    }
-    const cachedModels = _ChatProvider.modelCache[providerName];
-    if (fetchAll || this.featuredModels.length === 0) return cachedModels;
-    return cachedModels.filter((info) => this.featuredModels.includes(info.id));
-  }
-  static formatResponse(text, toolCalls, tokenUsage, turnID, reasoning_content) {
-    const items = [];
-    items.push({
-      type: "message",
-      role: "assistant",
-      content: text,
-      ...reasoning_content && { reasoning_content }
-    });
-    for (const call of Array.from(toolCalls.values())) {
-      let parsedArgs = { args: "None" };
-      if (call.arguments) {
-        if (typeof call.arguments === "object") {
-          parsedArgs = call.arguments;
-        } else {
-          try {
-            parsedArgs = JSON.parse(call.arguments);
-          } catch (e2) {
-            parsedArgs = { query: call.arguments };
-          }
-        }
-      }
-      items.push({
-        type: "function_call",
-        id: call.id,
-        name: call.name,
-        arguments: parsedArgs,
-        turnID: call.turnID,
-        server: call.server
-      });
-    }
-    return { items, tokenUsage, ...turnID && { turnID } };
-  }
-  async executeProviderTool(name, args) {
-    return void 0;
-  }
-};
-
 // src/tools/search.ts
 var vscode2 = __toESM(require("vscode"));
 var path7 = __toESM(require("path"));
@@ -54162,10 +54103,74 @@ function createToolRegistry(deps) {
   };
 }
 
+// src/apis/chat/chatProvider.ts
+var ChatProvider = class _ChatProvider {
+  static systemPrompt = `You are an autonomous, expert software engineering agent integrated into VS Code. 
+                      You have access to tools that can search, read, write, and edit files in the user's workspace.
+                      When a user asks you to find a bug or fix a problem, DO NOT ask them for the file name if you can search for it yourself. 
+                      Proactively use your semantic search tool 'find' tool to search the workspace.
+                      Tools like 'glob' and 'grep' should be used as a fallback if semantic search fails to return relevant results, or if you need to view files in more detail. 
+                      Find the relevant code, read it, and edit it to fix the issue. 
+                      Always explain your thought process before executing a tool.`;
+  static stateManagementSupport = false;
+  static serverWebSearchSupport = false;
+  static baseTools = [...requiredSchemas];
+  static modelCache = {};
+  tools = [];
+  getTools() {
+    return this.tools;
+  }
+  async getModels(fetchAll) {
+    const providerName = this.constructor.name;
+    if (!_ChatProvider.modelCache[providerName]) {
+      _ChatProvider.modelCache[providerName] = await this.getModelInfos();
+    }
+    const cachedModels = _ChatProvider.modelCache[providerName];
+    if (fetchAll || this.featuredModels.length === 0) return cachedModels;
+    return cachedModels.filter((info) => this.featuredModels.includes(info.id));
+  }
+  static formatResponse(text, toolCalls, tokenUsage, turnID, reasoning_content) {
+    const items = [];
+    items.push({
+      type: "message",
+      role: "assistant",
+      content: text,
+      ...reasoning_content && { reasoning_content }
+    });
+    for (const call of Array.from(toolCalls.values())) {
+      let parsedArgs = { args: "None" };
+      if (call.arguments) {
+        if (typeof call.arguments === "object") {
+          parsedArgs = call.arguments;
+        } else {
+          try {
+            parsedArgs = JSON.parse(call.arguments);
+          } catch (e2) {
+            parsedArgs = { query: call.arguments };
+          }
+        }
+      }
+      items.push({
+        type: "function_call",
+        id: call.id,
+        name: call.name,
+        arguments: parsedArgs,
+        turnID: call.turnID,
+        server: call.server
+      });
+    }
+    return { items, tokenUsage, ...turnID && { turnID } };
+  }
+  async executeProviderTool(name, args) {
+    return void 0;
+  }
+};
+
 // src/apis/chat/claude.ts
 var ClaudeChatProvider = class _ClaudeChatProvider extends ChatProvider {
   static stateManagementSupport = true;
   static serverWebSearchSupport = true;
+  static baseTools = _ClaudeChatProvider.parseTool(requiredSchemas);
   client;
   // private static claudeTools: Anthropic.Tool[] = ClaudeChatProvider.parseTool(allToolSchemas);
   featuredModels = [
@@ -54177,11 +54182,13 @@ var ClaudeChatProvider = class _ClaudeChatProvider extends ChatProvider {
   constructor(apiKey, webSearchMode) {
     super();
     this.client = new Anthropic({ apiKey });
-    const runTools = [...requiredSchemas];
-    if (webSearchMode === "tavily") runTools.push(...webSchema);
-    const parsedTools = _ClaudeChatProvider.parseTool(runTools);
-    if (webSearchMode === "server") parsedTools.push({ type: "web_search_20260318", name: "web_search" });
-    this.tools = parsedTools;
+    const runTools = [..._ClaudeChatProvider.baseTools];
+    let webTools = [];
+    if (webSearchMode === "tavily") {
+      webTools = _ClaudeChatProvider.parseTool(webSchema);
+      runTools.push(...webTools);
+    } else if (webSearchMode === "server") runTools.push({ type: "web_search_20260318", name: "web_search" });
+    this.tools = runTools;
   }
   async getModelInfos() {
     const infos = [];
@@ -54201,7 +54208,8 @@ var ClaudeChatProvider = class _ClaudeChatProvider extends ChatProvider {
         id: m2.id,
         reason: reasonCapable,
         efforts: reasonCapable ? efforts : [],
-        defaultEffort: reasonCapable ? "high" : null
+        defaultEffort: reasonCapable ? "high" : null,
+        ...m2.max_input_tokens && { contextWindow: m2.max_input_tokens }
       });
     }
     return infos;
@@ -54259,7 +54267,7 @@ var ClaudeChatProvider = class _ClaudeChatProvider extends ChatProvider {
     };
     const stream4 = await this.client.messages.create({
       model,
-      system: ChatProvider.systemPrompt,
+      system: _ClaudeChatProvider.systemPrompt,
       messages: this.formatMessages(history),
       tools: this.tools,
       stream: true,
@@ -64045,7 +64053,7 @@ OpenAI.Skills = Skills2;
 OpenAI.Videos = Videos;
 
 // src/apis/chat/openai.ts
-var OpenAIChatProvider = class extends ChatProvider {
+var OpenAIChatProvider = class _OpenAIChatProvider extends ChatProvider {
   static stateManagementSupport = true;
   static serverWebSearchSupport = true;
   client;
@@ -64065,7 +64073,7 @@ var OpenAIChatProvider = class extends ChatProvider {
   constructor(apiKey, webSearchMode) {
     super();
     this.client = new OpenAI({ apiKey });
-    const runTools = [...requiredSchemas];
+    const runTools = [..._OpenAIChatProvider.baseTools];
     if (webSearchMode === "tavily") runTools.push(...webSchema);
     else if (webSearchMode === "server") runTools.push({ type: "web_search" });
     this.tools = runTools;
@@ -64093,6 +64101,7 @@ var OpenAIChatProvider = class extends ChatProvider {
         const reasonCapable = id.startsWith("o1") || id.startsWith("o3") || id.startsWith("gpt-5") || id.startsWith("gpt-oss");
         let supportedEfforts = [];
         let defaultEffort = null;
+        let contextWindow = void 0;
         if (reasonCapable) {
           defaultEffort = "medium";
           const gpt5Match = id.match(/gpt-5\.(\d+)/);
@@ -64100,12 +64109,19 @@ var OpenAIChatProvider = class extends ChatProvider {
           if (id.includes("gpt-5-pro")) {
             supportedEfforts = ["high"];
             defaultEffort = "high";
+            contextWindow = 4e5;
           } else if (minorVersion === 6) {
             supportedEfforts = ["none", "low", "medium", "high", "xhigh", "max"];
+            contextWindow = 105e4;
           } else if (minorVersion > 1) {
             supportedEfforts = ["none", "low", "medium", "high", "xhigh"];
+            if (minorVersion >= 4) {
+              if (id.includes("mini") || id.includes("nano")) contextWindow = 4e5;
+              else contextWindow = 105e4;
+            } else contextWindow = 4e5;
           } else if (minorVersion === 1) {
             supportedEfforts = ["none", "low", "medium", "high"];
+            contextWindow = 4e5;
           } else {
             supportedEfforts = ["minimal", "low", "medium", "high"];
           }
@@ -64114,7 +64130,8 @@ var OpenAIChatProvider = class extends ChatProvider {
           id,
           reason: reasonCapable,
           efforts: supportedEfforts,
-          defaultEffort
+          defaultEffort,
+          ...contextWindow && { contextWindow }
         });
       }
     }
@@ -64123,7 +64140,7 @@ var OpenAIChatProvider = class extends ChatProvider {
   // Not needed for Responses API
   // private parseTools(tools: any[]): OpenAI.Responses.Tool[] | undefined {}
   formatMessages(items, includeSystem) {
-    const formatted = includeSystem ? [{ role: "developer", content: ChatProvider.systemPrompt }] : [];
+    const formatted = includeSystem ? [{ role: "developer", content: _OpenAIChatProvider.systemPrompt }] : [];
     for (const item of items) {
       if (item.type === "message") {
         formatted.push({ role: item.role, content: item.content });
@@ -64229,16 +64246,19 @@ var OpenAIChatProvider = class extends ChatProvider {
 };
 var OpenAICompatibleProvider = class _OpenAICompatibleProvider extends ChatProvider {
   client;
-  // protected static tools: any = OpenAICompatibleProvider.parseTools(requiredSchemas);
+  static baseTools = _OpenAICompatibleProvider.parseTools(requiredSchemas);
   constructor(apiKey, baseURL, webSearchMode) {
     super();
     this.client = new OpenAI({
       baseURL,
       apiKey
     });
-    const runTools = [...requiredSchemas];
-    if (webSearchMode === "tavily") runTools.push(...webSchema);
-    this.tools = _OpenAICompatibleProvider.parseTools(runTools);
+    const runTools = [..._OpenAICompatibleProvider.baseTools];
+    if (webSearchMode === "tavily") {
+      const webTools = _OpenAICompatibleProvider.parseTools(webSchema);
+      runTools.push(...webTools);
+    }
+    this.tools = runTools;
   }
   // For these providers with thinking models, we must pass back the reasoning content
   // they expect it to be bundled like this smh
@@ -64249,7 +64269,7 @@ var OpenAICompatibleProvider = class _OpenAICompatibleProvider extends ChatProvi
   // 'tool_calls': response.choices[0].message.tool_calls,
   // }
   formatMessages(items) {
-    const formattedMessages = [{ role: "system", content: ChatProvider.systemPrompt }];
+    const formattedMessages = [{ role: "system", content: OpenAIChatProvider.systemPrompt }];
     for (let i2 = 0; i2 < items.length; i2++) {
       const item = items[i2];
       if (item.type === "message") {
@@ -64378,7 +64398,8 @@ var DeepSeekChatProvider = class extends OpenAICompatibleProvider {
         id,
         reason: true,
         efforts: ["high", "xhigh"],
-        defaultEffort: "high"
+        defaultEffort: "high",
+        contextWindow: 1e6
       });
     }
     return infos;
@@ -82953,7 +82974,7 @@ function getApiKeyFromEnv() {
 }
 
 // src/apis/chat/gemini.ts
-var GeminiChatProvider = class extends ChatProvider {
+var GeminiChatProvider = class _GeminiChatProvider extends ChatProvider {
   static stateManagementSupport = true;
   static serverWebSearchSupport = true;
   client;
@@ -82969,7 +82990,7 @@ var GeminiChatProvider = class extends ChatProvider {
   constructor(apiKey, webSearchMode) {
     super();
     this.client = new GoogleGenAI({ apiKey });
-    const runTools = [...requiredSchemas];
+    const runTools = [..._GeminiChatProvider.baseTools];
     if (webSearchMode === "tavily") runTools.push(...webSchema);
     else if (webSearchMode === "server") runTools.push({ "type": "google_search" });
     this.tools = runTools;
@@ -83010,7 +83031,8 @@ var GeminiChatProvider = class extends ChatProvider {
           id,
           reason: reasonCapable,
           efforts: reasonCapable ? effortLevels : [],
-          defaultEffort: reasonCapable ? defaultEffort : null
+          defaultEffort: reasonCapable ? defaultEffort : null,
+          ...m2.inputTokenLimit && { contextWindow: m2.inputTokenLimit }
         });
       }
     }
@@ -83062,7 +83084,7 @@ var GeminiChatProvider = class extends ChatProvider {
       model,
       input: currentInput,
       tools: this.tools,
-      system_instruction: ChatProvider.systemPrompt,
+      system_instruction: _GeminiChatProvider.systemPrompt,
       stream: true,
       store: useCache && previousTurnID !== void 0,
       generation_config: { thinking_level: effort, thinking_summaries: "auto" },
@@ -83146,12 +83168,16 @@ var KimiChatProvider = class extends OpenAICompatibleProvider {
     for (const m2 of response.data) {
       const id = m2.id;
       const reasonCapable = id === "kimi-k3";
+      let contextWindow = void 0;
+      if (id === "kimi-k3") contextWindow = 1e6;
+      else contextWindow = 256e3;
       infos.push({
         id,
         reason: reasonCapable,
         efforts: reasonCapable ? ["low", "high", "max"] : [],
-        defaultEffort: reasonCapable ? "max" : null
+        defaultEffort: reasonCapable ? "max" : null,
         // k3 defaults to max
+        contextWindow
       });
     }
     return infos;
@@ -83206,6 +83232,14 @@ var ChatFactory = class {
   static supportsServerWebSearch(providerName) {
     const ProviderClass = this.providers[providerName];
     return ProviderClass.serverWebSearchSupport;
+  }
+  static getSystemPrompt(providerName) {
+    const ProviderClass = this.providers[providerName];
+    return ProviderClass.systemPrompt;
+  }
+  static getToolSchemas(providerName) {
+    const ProviderClass = this.providers[providerName];
+    return ProviderClass.baseTools;
   }
   static getAvailableProviders() {
     return Object.keys(this.providers);
@@ -97137,6 +97171,45 @@ var ContextManager = class {
       ...this.history.slice(this.summarizeIndex)
     ];
   }
+  estimateCategorizedTokens(provider) {
+    const encoder3 = getEncoding("o200k_base");
+    const usage = {
+      userTokens: 0,
+      assistantTokens: 0,
+      systemTokens: 0,
+      toolCallTokens: 0,
+      toolResultTokens: 0,
+      totalTokens: 0
+    };
+    const baseOverhead = 4;
+    usage.systemTokens += encoder3.encode(ChatFactory.getSystemPrompt(provider)).length + baseOverhead;
+    usage.systemTokens += encoder3.encode(JSON.stringify(ChatFactory.getToolSchemas(provider))).length + baseOverhead;
+    const currentContext = this.getLLMContext();
+    for (const item of currentContext) {
+      let textToEncode = "";
+      switch (item.type) {
+        case "message":
+          textToEncode = item.content;
+          if (item.thought) textToEncode += item.thought;
+          const messageTokens = encoder3.encode(textToEncode).length + baseOverhead;
+          if (item.role === "user") usage.userTokens += messageTokens;
+          else if (item.role === "assistant") usage.assistantTokens += messageTokens;
+          break;
+        case "function_call":
+          textToEncode = item.name + JSON.stringify(item.arguments);
+          usage.toolCallTokens += encoder3.encode(textToEncode).length + baseOverhead;
+          break;
+        case "function_result":
+          textToEncode = item.name + item.result;
+          usage.toolResultTokens += encoder3.encode(textToEncode).length + baseOverhead;
+          break;
+        case "run_summary":
+          break;
+      }
+    }
+    usage.totalTokens = usage.userTokens + usage.assistantTokens + usage.systemTokens + usage.toolCallTokens + usage.toolResultTokens;
+    return usage;
+  }
 };
 
 // src/main.ts
@@ -97424,6 +97497,10 @@ var ChatApp = class {
       this.aborter = null;
       this.contextManager.addRunSummary(provider, runStatus, statusMessage);
       await this.contextManager.save();
+      this.post({
+        type: "updateContextWindowUsage",
+        usage: this.contextManager.estimateCategorizedTokens(provider)
+      });
       this.post({ type: "agentRunComplete", status: runStatus, text: statusMessage });
     }
   }
@@ -97473,6 +97550,10 @@ var ChatApp = class {
                 stateful: stateManagementSupport,
                 serverSearch: serverWebSearchSupport
               });
+              this.post({
+                type: "updateContextWindowUsage",
+                usage: this.contextManager.estimateCategorizedTokens(chatProvider)
+              });
             }
             const indexEnabled = this.context.globalState.get("indexEnabled") ?? false;
             if (indexEnabled) {
@@ -97504,6 +97585,10 @@ var ChatApp = class {
             provider: data.provider,
             stateful: stateManagementSupport,
             serverSearch: serverWebSearchSupport
+          });
+          this.post({
+            type: "updateContextWindowUsage",
+            usage: this.contextManager.estimateCategorizedTokens(data.provider)
           });
           break;
         }
@@ -97537,7 +97622,8 @@ var ChatApp = class {
               type: "updateChatModelInfo",
               reason: info.reason,
               efforts: info.efforts,
-              defaultEffort: savedEffort ? savedEffort : info.defaultEffort
+              defaultEffort: savedEffort ? savedEffort : info.defaultEffort,
+              contextWindow: info.contextWindow
             });
           }
           break;

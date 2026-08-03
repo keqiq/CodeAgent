@@ -1,5 +1,5 @@
 import { ChatItem, ChatResponse, TokenUsage } from "../../contextManager";
-import { ToolResult } from "../../tools/toolIndex";
+import { requiredSchemas, ToolResult } from "../../tools/toolIndex";
 
 export interface StreamYield {
     type: 'text' | 'thought' | 'server_action';
@@ -14,13 +14,14 @@ export interface ModelInfo {
     reason: boolean | undefined;
     efforts: string[];
     defaultEffort: string | null;
+    contextWindow?: number;
 }
 
 export type WebSearchMode = 'none' | 'tavily' | 'server';
 
 export abstract class ChatProvider {
 
-    protected static systemPrompt: string = `You are an autonomous, expert software engineering agent integrated into VS Code. 
+    public static systemPrompt: string = `You are an autonomous, expert software engineering agent integrated into VS Code. 
                       You have access to tools that can search, read, write, and edit files in the user's workspace.
                       When a user asks you to find a bug or fix a problem, DO NOT ask them for the file name if you can search for it yourself. 
                       Proactively use your semantic search tool 'find' tool to search the workspace.
@@ -30,7 +31,8 @@ export abstract class ChatProvider {
 
     public static stateManagementSupport: boolean = false;
     public static serverWebSearchSupport: boolean = false;
-
+    public static baseTools: any[] = [...requiredSchemas];
+    
     private static modelCache: Record<string, ModelInfo[]> = {};
 
     protected abstract featuredModels: string[];
@@ -38,6 +40,10 @@ export abstract class ChatProvider {
     protected tools: any[] = [];
 
     protected abstract getModelInfos(): Promise<ModelInfo[]>;
+
+    public getTools(): any[] {
+        return this.tools;
+    };
 
     public async getModels(fetchAll?: boolean): Promise<ModelInfo[]> {
         const providerName = this.constructor.name;

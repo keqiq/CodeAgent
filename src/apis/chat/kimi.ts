@@ -20,12 +20,17 @@ export class KimiChatProvider extends OpenAICompatibleProvider {
             // The other models can reason but ill set reason to false so the frontend wont see the effort dropdown
             // But it will still be on by default
             const reasonCapable = id === 'kimi-k3';
+            let contextWindow: number | undefined = undefined;
+
+            if (id === 'kimi-k3') contextWindow = 1_000_000;
+            else contextWindow = 256_000;
 
             infos.push({
                 id: id,
                 reason: reasonCapable,
                 efforts: reasonCapable ? ['low', 'high', 'max'] : [],
-                defaultEffort: reasonCapable ? 'max' : null // k3 defaults to max
+                defaultEffort: reasonCapable ? 'max' : null, // k3 defaults to max
+                contextWindow: contextWindow
             });
         }
 

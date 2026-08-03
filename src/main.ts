@@ -394,6 +394,14 @@ export class ChatApp implements vscode.WebviewViewProvider {
             this.contextManager.addRunSummary(provider, runStatus, statusMessage);
             await this.contextManager.save();
 
+            // This is different from updateTokenUsage
+            // This updates the pie chart in the context window menu, it is an estimate for the token usage for different categories of messages
+            // Whereas updateTokenUsage is an accurate provider issued token usage counter for input and output tokens
+            this.post({
+                type: 'updateContextWindowUsage',
+                usage: this.contextManager.estimateCategorizedTokens(provider)
+            });
+
             this.post({ type: 'agentRunComplete', status: runStatus, text: statusMessage });
         }
     }
@@ -446,6 +454,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
                         this.post({ type: 'initEmbedProviders', providers: EmbedFactory.getAvailableProviders() });
 
                         this.post({ type: 'restoreChatHistory', history: this.contextManager.getHistory() });
+
                         
                         const chatProvider = this.context.globalState.get<string>('chatProvider');
                         if (chatProvider) {
@@ -457,7 +466,13 @@ export class ChatApp implements vscode.WebviewViewProvider {
                                 stateful: stateManagementSupport,
                                 serverSearch: serverWebSearchSupport
                             });
+
+                            this.post({ 
+                                type: 'updateContextWindowUsage',
+                                usage: this.contextManager.estimateCategorizedTokens(chatProvider)
+                            });
                         }
+                        
 
                         const indexEnabled = this.context.globalState.get<boolean>('indexEnabled') ?? false;
                         
@@ -497,6 +512,11 @@ export class ChatApp implements vscode.WebviewViewProvider {
                         stateful: stateManagementSupport, 
                         serverSearch: serverWebSearchSupport
                     });
+
+                    this.post({
+                        type: 'updateContextWindowUsage',
+                        usage: this.contextManager.estimateCategorizedTokens(data.provider)
+                    });
                     break;
                 }
                 
@@ -534,7 +554,8 @@ export class ChatApp implements vscode.WebviewViewProvider {
                             type: 'updateChatModelInfo', 
                             reason: info.reason, 
                             efforts: info.efforts, 
-                            defaultEffort: savedEffort ? savedEffort : info.defaultEffort 
+                            defaultEffort: savedEffort ? savedEffort : info.defaultEffort,
+                            contextWindow: info.contextWindow
                         });
                     }
                     break;
