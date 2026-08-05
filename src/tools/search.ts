@@ -1,13 +1,11 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
-import { getFileContent } from '../utils/workspace';
 import { ToolResult, ToolSchema } from './toolIndex';
 import { EmbedProvider } from '../apis/embed/embedProvider';
 import { Indexer } from '../indexing/indexer';
 import { excludePattern } from '../indexing/languages/_languageIndex';
 import { filterGitIgnored } from '../utils/gitignore';
 import { spawn } from 'child_process';
-// import { rgPath } from '@vscode/ripgrep';
 import * as readline from 'readline';
 import * as fs from 'fs';
 
@@ -60,35 +58,6 @@ export const searchSchemas: ToolSchema[] = [
     }
 ];
 
-export async function executeGlob(pattern: string, cwd: string, signal: AbortSignal): Promise<ToolResult> {
-
-    const baseUri = vscode.Uri.file(cwd);
-    const searchPattern = new vscode.RelativePattern(baseUri, pattern);
-    const relativeExlude = new vscode.RelativePattern(baseUri, excludePattern);
-
-    const cancelTokenSource = new vscode.CancellationTokenSource();
-    const abortListener = () => cancelTokenSource.cancel();
-    signal.addEventListener('abort', abortListener);
-
-    try {
-        const uris = await vscode.workspace.findFiles(searchPattern, relativeExlude, 1000, cancelTokenSource.token);
-
-        if (signal.aborted) throw new Error('AbortError');
-
-        // Filter out files ignored by .gitignore (git's view of the repo)
-        const filteredUris = await filterGitIgnored(uris, cwd);
-
-        if (filteredUris.length === 0) return { message: 'No files found in workspace' };
-
-        return { message: filteredUris.map(uri => path.relative(cwd, uri.fsPath)).join('\n') };
-    } 
-
-    finally {
-        signal.removeEventListener('abort', abortListener);
-        cancelTokenSource.dispose();
-    }
-};
-
 export function getRipgrepPath(): string {
     const isWin = process.platform === 'win32';
     const rgExe = isWin ? 'rg.exe' : 'rg';
@@ -106,6 +75,73 @@ export function getRipgrepPath(): string {
     }
 
     return 'rg';
+}
+
+const rgPath = getRipgrepPath();
+
+const MAX_FILES = 100;
+
+export function executeGlob(pattern: string, cwd: string, signal: AbortSignal): Promise<ToolResult> {
+    return new Promise((resolve, reject) => {
+        const args = [
+            '--files',
+            '--glob', pattern,
+            '--glob', `!${excludePattern}`,
+            '.'
+        ];
+
+        const child = spawn(rgPath, args, { cwd });
+
+        const results: string[] = [];
+        let truncated = false;
+        
+        const abortListener = () => {
+            child.kill();
+            reject(new Error('AbortError'));
+        };
+        signal.addEventListener('abort', abortListener);
+
+        const rl = readline.createInterface({
+            input: child.stdout,
+            crlfDelay: Infinity
+        });
+
+        rl.on('line', (line) => {
+            if (truncated) return;
+
+            const entry = line.trim();
+            if (entry) {
+                if (results.length >= MAX_FILES) {
+                    truncated = true;
+                    child.kill();
+                    return;
+                }
+
+                results.push(entry);
+            }
+        });
+
+        child.on('error', (e) => {
+            signal.removeEventListener('abort', abortListener);
+            reject(e);
+        });
+
+        child.on('close', () => {
+            signal.removeEventListener('abort', abortListener);
+
+            if (signal.aborted) return reject(new Error('AbortError'));
+
+            if (results.length === 0) return resolve({ message: 'No files found in workspace.' });
+
+            let output = results.join('\n');
+
+            if (truncated) {
+                output = `[Results truncated. ${results.length} files found. Refine your search pattern to narrow results.]\n\n${output}`;
+            }
+
+            resolve({ message: output });
+        });
+    });
 }
 
 const MAX_RESULTS = 100;
@@ -127,7 +163,6 @@ export async function executeGrep(query: string, filePattern: string, cwd: strin
             '.'
         ];
 
-        const rgPath = getRipgrepPath();
         const child = spawn(rgPath, args, { cwd });
 
         const results: string[] = [];
