@@ -387,17 +387,17 @@ var init_detect_platform = __esm({
         "X-Stainless-Runtime-Version": "unknown"
       };
     };
-    normalizeArch = (arch) => {
-      if (arch === "x32")
+    normalizeArch = (arch2) => {
+      if (arch2 === "x32")
         return "x32";
-      if (arch === "x86_64" || arch === "x64")
+      if (arch2 === "x86_64" || arch2 === "x64")
         return "x64";
-      if (arch === "arm")
+      if (arch2 === "arm")
         return "arm";
-      if (arch === "aarch64" || arch === "arm64")
+      if (arch2 === "aarch64" || arch2 === "arm64")
         return "arm64";
-      if (arch)
-        return `other:${arch}`;
+      if (arch2)
+        return `other:${arch2}`;
       return "unknown";
     };
     normalizePlatform = (platform) => {
@@ -974,23 +974,23 @@ async function checkCredentialsFileSafety(path13, onWarn = (m2) => console.warn(
   if (typeof process === "undefined" || process.platform === "win32")
     return;
   const fs8 = await import("node:fs");
-  let resolved = path13;
+  let resolved2 = path13;
   let st;
   try {
-    resolved = await fs8.promises.realpath(path13);
-    st = await fs8.promises.stat(resolved);
+    resolved2 = await fs8.promises.realpath(path13);
+    st = await fs8.promises.stat(resolved2);
   } catch {
     return;
   }
   const mode = st.mode & 511;
   if (mode & 18) {
-    throw new WorkloadIdentityError(`Credentials file at ${resolved} is group/world-writable (mode 0o${mode.toString(8)}); this allows other local users to plant tokens. Run \`chmod 600 ${resolved}\`.`);
+    throw new WorkloadIdentityError(`Credentials file at ${resolved2} is group/world-writable (mode 0o${mode.toString(8)}); this allows other local users to plant tokens. Run \`chmod 600 ${resolved2}\`.`);
   }
   if (mode & 36) {
-    throw new WorkloadIdentityError(`Credentials file at ${resolved} is group/world-readable (mode 0o${mode.toString(8)}); run \`chmod 600 ${resolved}\` before retrying.`);
+    throw new WorkloadIdentityError(`Credentials file at ${resolved2} is group/world-readable (mode 0o${mode.toString(8)}); run \`chmod 600 ${resolved2}\` before retrying.`);
   }
   if (typeof process.getuid === "function" && st.uid !== process.getuid()) {
-    onWarn(`credentials file at ${resolved} is owned by uid ${st.uid} (current process uid ${process.getuid()}); verify this is intentional.`);
+    onWarn(`credentials file at ${resolved2} is owned by uid ${st.uid} (current process uid ${process.getuid()}); verify this is intentional.`);
   }
 }
 async function writeCredentialsFileAtomic(targetPath, data) {
@@ -21277,7 +21277,7 @@ var require_mime_types = __commonJS({
   "node_modules/mime-types/index.js"(exports2) {
     "use strict";
     var db = require_mime_db();
-    var extname2 = require("path").extname;
+    var extname = require("path").extname;
     var EXTRACT_TYPE_REGEXP = /^\s*([^;\s]*)(?:;|\s|$)/;
     var TEXT_TYPE_REGEXP = /^text\//i;
     exports2.charset = charset;
@@ -21331,7 +21331,7 @@ var require_mime_types = __commonJS({
       if (!path13 || typeof path13 !== "string") {
         return false;
       }
-      var extension3 = extname2("x." + path13).toLowerCase().substr(1);
+      var extension3 = extname("x." + path13).toLowerCase().substr(1);
       if (!extension3) {
         return false;
       }
@@ -46803,25 +46803,8 @@ var path12 = __toESM(require("path"));
 init_sdk();
 
 // src/tools/search.ts
-var vscode2 = __toESM(require("vscode"));
-var path7 = __toESM(require("path"));
-
-// src/utils/workspace.ts
 var vscode = __toESM(require("vscode"));
-var path5 = __toESM(require("path"));
-function getWorkspaceUri(filePath) {
-  const folders = vscode.workspace.workspaceFolders;
-  if (!folders || folders.length === 0) throw new Error("No workspace open");
-  return vscode.Uri.joinPath(folders[0].uri, filePath);
-}
-var textDecoder = new TextDecoder("utf-8");
-async function getFileContent(uri) {
-  const uint8Array = await vscode.workspace.fs.readFile(uri);
-  return textDecoder.decode(uint8Array);
-}
-function resolveUri(cwd, filePath) {
-  return vscode.Uri.file(path5.join(cwd, filePath));
-}
+var path6 = __toESM(require("path"));
 
 // src/indexing/languages/javascript.ts
 function isFunctionVariable(node) {
@@ -47189,7 +47172,7 @@ var excludePattern = `{${[
 // src/utils/gitignore.ts
 var cp2 = __toESM(require("child_process"));
 var util = __toESM(require("util"));
-var path6 = __toESM(require("path"));
+var path5 = __toESM(require("path"));
 var exec2 = util.promisify(cp2.exec);
 var cachedFiles = null;
 var cachedCwd = null;
@@ -47222,12 +47205,33 @@ async function filterGitIgnored(uris, cwd) {
     return uris;
   }
   return uris.filter((uri) => {
-    const relativePath = path6.relative(cwd, uri.fsPath);
+    const relativePath = path5.relative(cwd, uri.fsPath);
     return gitFiles.has(relativePath);
   });
 }
 
 // src/tools/search.ts
+var import_child_process = require("child_process");
+
+// node_modules/@vscode/ripgrep/lib/index.js
+var import_node_module = require("node:module");
+var import_meta = {};
+var require2 = (0, import_node_module.createRequire)(import_meta.url);
+var arch = process.env.npm_config_arch || process.arch;
+var binaryName = process.platform === "win32" ? "rg.exe" : "rg";
+var platformPkg = `@vscode/ripgrep-${process.platform}-${arch}`;
+var resolved;
+try {
+  resolved = require2.resolve(`${platformPkg}/bin/${binaryName}`);
+} catch {
+  throw new Error(
+    `Could not find ${platformPkg}. Ensure optionalDependencies are installed for this platform (${process.platform}-${arch}).`
+  );
+}
+var rgPath = resolved;
+
+// src/tools/search.ts
+var readline2 = __toESM(require("readline"));
 var searchSchemas = [
   {
     type: "function",
@@ -47271,162 +47275,104 @@ var searchSchemas = [
   }
 ];
 async function executeGlob(pattern, cwd, signal) {
-  const baseUri = vscode2.Uri.file(cwd);
-  const searchPattern = new vscode2.RelativePattern(baseUri, pattern);
-  const relativeExlude = new vscode2.RelativePattern(baseUri, excludePattern);
-  const cancelTokenSource = new vscode2.CancellationTokenSource();
+  const baseUri = vscode.Uri.file(cwd);
+  const searchPattern = new vscode.RelativePattern(baseUri, pattern);
+  const relativeExlude = new vscode.RelativePattern(baseUri, excludePattern);
+  const cancelTokenSource = new vscode.CancellationTokenSource();
   const abortListener = () => cancelTokenSource.cancel();
   signal.addEventListener("abort", abortListener);
   try {
-    const uris = await vscode2.workspace.findFiles(searchPattern, relativeExlude, 1e3, cancelTokenSource.token);
+    const uris = await vscode.workspace.findFiles(searchPattern, relativeExlude, 1e3, cancelTokenSource.token);
     if (signal.aborted) throw new Error("AbortError");
     const filteredUris = await filterGitIgnored(uris, cwd);
     if (filteredUris.length === 0) return { message: "No files found in workspace" };
-    return { message: filteredUris.map((uri) => path7.relative(cwd, uri.fsPath)).join("\n") };
+    return { message: filteredUris.map((uri) => path6.relative(cwd, uri.fsPath)).join("\n") };
   } finally {
     signal.removeEventListener("abort", abortListener);
     cancelTokenSource.dispose();
   }
 }
-var MAX_RESULTS = 500;
-var MAX_OUTPUT_CHARS = 5e4;
-var MAX_ENTRY_CHARS = 2e3;
-var BINARY_EXTENSIONS = /* @__PURE__ */ new Set([
-  ".vsix",
-  ".zip",
-  ".tar",
-  ".gz",
-  ".bz2",
-  ".xz",
-  ".zst",
-  ".7z",
-  ".rar",
-  ".png",
-  ".jpg",
-  ".jpeg",
-  ".gif",
-  ".ico",
-  ".bmp",
-  ".webp",
-  ".svg",
-  ".pdf",
-  ".doc",
-  ".docx",
-  ".xls",
-  ".xlsx",
-  ".ppt",
-  ".pptx",
-  ".exe",
-  ".dll",
-  ".so",
-  ".dylib",
-  ".o",
-  ".a",
-  ".lib",
-  ".obj",
-  ".wasm",
-  ".woff",
-  ".woff2",
-  ".ttf",
-  ".eot",
-  ".mp3",
-  ".mp4",
-  ".avi",
-  ".mov",
-  ".mkv",
-  ".wav",
-  ".flac",
-  ".ogg",
-  ".pyc",
-  ".pyo",
-  ".class",
-  ".jar",
-  ".war",
-  ".DS_Store",
-  ".db",
-  ".sqlite",
-  ".sqlite3"
-]);
-function isLikelyBinaryExtension(filePath) {
-  const ext2 = path7.extname(filePath).toLowerCase();
-  return BINARY_EXTENSIONS.has(ext2);
-}
-function isBinaryContent(content) {
-  return content.includes("\0");
-}
-async function executeGrep(query, filePattern = "**/*", cwd, signal) {
-  let regex;
+var MAX_RESULTS = 100;
+var MAX_ENTRY_CHARS = 1e3;
+var MAX_OUTPUT_CHARS = 25e3;
+async function executeGrep(query, filePattern, cwd, signal) {
   try {
-    regex = new RegExp(query);
+    new RegExp(query);
   } catch (e2) {
-    throw new Error(`Invalid regex: ${e2}`);
+    throw new Error(`Invalid regex: ${String(e2)}`);
   }
-  const baseUri = vscode2.Uri.file(cwd);
-  const searchPattern = new vscode2.RelativePattern(baseUri, filePattern);
-  const relativeExlude = new vscode2.RelativePattern(baseUri, excludePattern);
-  const cancelTokenSource = new vscode2.CancellationTokenSource();
-  const abortListener = () => cancelTokenSource.cancel();
-  signal.addEventListener("abort", abortListener);
-  try {
-    const uris = await vscode2.workspace.findFiles(searchPattern, relativeExlude, 1e3, cancelTokenSource.token);
-    const filteredUris = await filterGitIgnored(uris, cwd);
+  return new Promise((resolve4, reject) => {
+    const args = [
+      "--json",
+      "--line-number",
+      "--glob",
+      filePattern,
+      "--glob",
+      `!${excludePattern}`,
+      "-e",
+      query,
+      "."
+    ];
+    const child = (0, import_child_process.spawn)(rgPath, args, { cwd });
     const results = [];
     let totalChars = 0;
     let truncated = false;
-    for (const uri of filteredUris) {
-      if (signal.aborted) throw new Error("AbortError");
-      if (truncated) break;
-      if (isLikelyBinaryExtension(uri.fsPath)) continue;
+    const abortListener = () => {
+      child.kill();
+      reject(new Error("AbortError"));
+    };
+    signal.addEventListener("abort", abortListener);
+    const rl = readline2.createInterface({
+      input: child.stdout,
+      crlfDelay: Infinity
+    });
+    rl.on("line", (line) => {
+      if (truncated) return;
       try {
-        const content = await getFileContent(uri);
-        if (isBinaryContent(content)) continue;
-        const lines = content.split("\n");
-        const relativePath = path7.relative(cwd, uri.fsPath);
-        for (let i2 = 0; i2 < lines.length; i2++) {
-          if (regex.test(lines[i2])) {
-            const entry = `${relativePath}:${i2 + 1}:${lines[i2].trim()}`;
-            if (entry.length > MAX_ENTRY_CHARS) continue;
-            totalChars += entry.length + 1;
-            if (results.length >= MAX_RESULTS || totalChars >= MAX_OUTPUT_CHARS) {
-              truncated = true;
-              if (totalChars >= MAX_OUTPUT_CHARS) {
-              } else {
-                results.push(entry);
-              }
-              break;
-            }
-            results.push(entry);
+        const parsed = JSON.parse("line");
+        if (parsed.type === "match") {
+          const filePath = parsed.data.path.text;
+          const lineNumber = parsed.data.lineNumber;
+          const lineText = (parsed.data.lines.text || "").replace(/\r?\n$/, "").trim();
+          const entry = `${filePath}:${lineNumber}:${lineText}`;
+          if (entry.length > MAX_ENTRY_CHARS) return;
+          totalChars += entry.length + 1;
+          if (results.length >= MAX_RESULTS || totalChars >= MAX_OUTPUT_CHARS) {
+            truncated = true;
+            child.kill();
+            return;
           }
+          results.push(entry);
         }
       } catch (e2) {
-        continue;
       }
-    }
-    if (signal.aborted) throw new Error("AbortError");
-    if (results.length === 0) {
-      return { message: "No matches found." };
-    }
-    let output = results.join("\n");
-    if (output.length > MAX_OUTPUT_CHARS) {
-      const cutPoint = output.lastIndexOf("\n", MAX_OUTPUT_CHARS);
-      output = cutPoint > 0 ? output.slice(0, cutPoint) : output.slice(0, MAX_OUTPUT_CHARS);
-      truncated = true;
-    }
-    if (truncated) {
-      output = `[Results truncated. ${results.length} matches found. Refine your search to narrow results.]
+    });
+    child.on("error", (e2) => {
+      signal.removeEventListener("abort", abortListener);
+      reject(e2);
+    });
+    child.on("close", () => {
+      signal.removeEventListener("abort", abortListener);
+      if (signal.aborted) return reject(new Error("AbortListener"));
+      if (results.length === 0) return resolve4({ message: "No matches found." });
+      let output = results.join("\n");
+      if (output.length > MAX_OUTPUT_CHARS) {
+        const cutPoint = output.lastIndexOf("\n", MAX_OUTPUT_CHARS);
+        output = cutPoint > 0 ? output.slice(0, cutPoint) : output.slice(0, MAX_OUTPUT_CHARS);
+        truncated = true;
+      }
+      if (truncated) {
+        output = `[Results truncated. ${results.length} matches found. Refine your search to narrow results.]
 
 ${output}`;
-    }
-    return { message: output };
-  } finally {
-    signal.removeEventListener("abort", abortListener);
-    cancelTokenSource.dispose();
-  }
+      }
+      resolve4({ message: output });
+    });
+  });
 }
 async function executeFind(query, deps, signal) {
   if (signal.aborted) throw new Error("AbortError");
   if (!query.trim()) throw new Error("Search query is emtpy");
-  if (!deps.indexer.indexEnabled()) throw new Error("Indexing is disabled cannot use semantic search");
   const [queryVector] = await deps.embedProvider.embed(deps.model, [query], signal);
   const results = await deps.indexer.search(query, queryVector);
   if (results.length === 0) {
@@ -47447,6 +47393,25 @@ ${r2.text}`
 
 // src/tools/files.ts
 var vscode3 = __toESM(require("vscode"));
+
+// src/utils/workspace.ts
+var vscode2 = __toESM(require("vscode"));
+var path7 = __toESM(require("path"));
+function getWorkspaceUri(filePath) {
+  const folders = vscode2.workspace.workspaceFolders;
+  if (!folders || folders.length === 0) throw new Error("No workspace open");
+  return vscode2.Uri.joinPath(folders[0].uri, filePath);
+}
+var textDecoder = new TextDecoder("utf-8");
+async function getFileContent(uri) {
+  const uint8Array = await vscode2.workspace.fs.readFile(uri);
+  return textDecoder.decode(uint8Array);
+}
+function resolveUri(cwd, filePath) {
+  return vscode2.Uri.file(path7.join(cwd, filePath));
+}
+
+// src/tools/files.ts
 var fileSchemas = [
   {
     type: "function",
@@ -54697,17 +54662,17 @@ function getBrowserInfo2() {
   }
   return null;
 }
-var normalizeArch2 = (arch) => {
-  if (arch === "x32")
+var normalizeArch2 = (arch2) => {
+  if (arch2 === "x32")
     return "x32";
-  if (arch === "x86_64" || arch === "x64")
+  if (arch2 === "x86_64" || arch2 === "x64")
     return "x64";
-  if (arch === "arm")
+  if (arch2 === "arm")
     return "arm";
-  if (arch === "aarch64" || arch === "arm64")
+  if (arch2 === "aarch64" || arch2 === "arm64")
     return "arm64";
-  if (arch)
-    return `other:${arch}`;
+  if (arch2)
+    return `other:${arch2}`;
   return "unknown";
 };
 var normalizePlatform2 = (platform) => {
@@ -97238,6 +97203,7 @@ var ChatApp = class {
         const model = this.context.globalState.get(`${provider}_embedModel`);
         if (!provider || !model) throw new Error("Embedding provider/model is not configured");
         if (!this.indexer) throw new Error("Index is not loaded. Enable indexing first.");
+        if (!this.indexer.indexEnabled()) throw new Error("Indexing is disabled cannot use semantic search");
         const apiKey = await this.getEmbedAPIKey(provider);
         return {
           indexer: this.indexer,

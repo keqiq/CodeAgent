@@ -54,6 +54,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
                 
                 if (!provider || !model) throw new Error("Embedding provider/model is not configured");
                 if (!this.indexer) throw new Error("Index is not loaded. Enable indexing first.");
+                if (!this.indexer.indexEnabled()) throw new Error('Indexing is disabled cannot use semantic search');
 
                 const apiKey = await this.getEmbedAPIKey(provider);
                 
