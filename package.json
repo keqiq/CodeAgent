@@ -1,8 +1,8 @@
 {
   "name": "vscodeagent",
-  "displayName": "VsCodeAgent",
+  "displayName": "VSCodeAgent",
   "description": "",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "engines": {
     "vscode": "^1.120.0"
   },
@@ -16,7 +16,7 @@
       "activitybar": [
         {
           "id": "codeagent-container",
-          "title": "VsCodeAgent",
+          "title": "VSCodeAgent",
           "icon": "$(hubot)"
         }
       ]
@@ -49,7 +49,20 @@
     "check-types": "tsc --noEmit",
     "lint": "eslint src",
     "test": "vscode-test",
-    "build:webview": "node esbuild.webview.js"
+    "build:webview": "node esbuild.webview.js",
+    "vsix": "vsce package",
+
+    "switch:linux": "rm -rf node_modules && npm install",
+    "switch:mac-x64": "rm -rf node_modules && npm install --os=darwin --cpu=x64",
+    "switch:mac-arm64": "rm -rf node_modules && npm install --os=darwin --cpu=arm64",
+    "switch:win-x64": "rm -rf node_modules && npm install --os=win32 --cpu=x64",
+    "switch:win-arm64": "rm -rf node_modules && npm install --os=win32 --cpu=arm64",
+    
+    "package:linux-x64": "npm run switch:linux && npm run package && npx vsce package --target linux-x64",
+    "package:mac-x64": "npm run switch:mac-x64 && npm run package && npx vsce package --target darwin-x64",
+    "package:mac-arm64": "npm run switch:mac-arm64 && npm run package && npx vsce package --target darwin-arm64",
+    "package:win-x64": "npm run switch:win-x64 && npm run package && npx vsce package --target win32-x64",
+    "package:win-arm64": "npm run switch:win-arm64 && npm run package && npx vsce package --target win32-arm64"
   },
   "devDependencies": {
     "@anthropic-ai/sdk": "^0.112.4",
@@ -63,6 +76,7 @@
     "@types/vscode": "^1.120.0",
     "@vscode/test-cli": "^0.0.12",
     "@vscode/test-electron": "^2.5.2",
+    "@vscode/vsce": "^3.9.2",
     "dotenv": "^17.4.2",
     "esbuild": "^0.27.3",
     "eslint": "^9.39.3",
@@ -85,7 +99,6 @@
   },
   "dependencies": {
     "@lancedb/lancedb": "^0.30.0",
-    "@vscode/ripgrep": "^1.18.0",
     "apache-arrow": "^18.1.0",
     "js-tiktoken": "^1.0.21",
     "web-tree-sitter": "^0.26.9"

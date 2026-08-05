@@ -387,17 +387,17 @@ var init_detect_platform = __esm({
         "X-Stainless-Runtime-Version": "unknown"
       };
     };
-    normalizeArch = (arch2) => {
-      if (arch2 === "x32")
+    normalizeArch = (arch) => {
+      if (arch === "x32")
         return "x32";
-      if (arch2 === "x86_64" || arch2 === "x64")
+      if (arch === "x86_64" || arch === "x64")
         return "x64";
-      if (arch2 === "arm")
+      if (arch === "arm")
         return "arm";
-      if (arch2 === "aarch64" || arch2 === "arm64")
+      if (arch === "aarch64" || arch === "arm64")
         return "arm64";
-      if (arch2)
-        return `other:${arch2}`;
+      if (arch)
+        return `other:${arch}`;
       return "unknown";
     };
     normalizePlatform = (platform) => {
@@ -973,48 +973,48 @@ function redactSensitive(body) {
 async function checkCredentialsFileSafety(path13, onWarn = (m2) => console.warn(`anthropic-sdk: ${m2}`)) {
   if (typeof process === "undefined" || process.platform === "win32")
     return;
-  const fs8 = await import("node:fs");
-  let resolved2 = path13;
+  const fs9 = await import("node:fs");
+  let resolved = path13;
   let st;
   try {
-    resolved2 = await fs8.promises.realpath(path13);
-    st = await fs8.promises.stat(resolved2);
+    resolved = await fs9.promises.realpath(path13);
+    st = await fs9.promises.stat(resolved);
   } catch {
     return;
   }
   const mode = st.mode & 511;
   if (mode & 18) {
-    throw new WorkloadIdentityError(`Credentials file at ${resolved2} is group/world-writable (mode 0o${mode.toString(8)}); this allows other local users to plant tokens. Run \`chmod 600 ${resolved2}\`.`);
+    throw new WorkloadIdentityError(`Credentials file at ${resolved} is group/world-writable (mode 0o${mode.toString(8)}); this allows other local users to plant tokens. Run \`chmod 600 ${resolved}\`.`);
   }
   if (mode & 36) {
-    throw new WorkloadIdentityError(`Credentials file at ${resolved2} is group/world-readable (mode 0o${mode.toString(8)}); run \`chmod 600 ${resolved2}\` before retrying.`);
+    throw new WorkloadIdentityError(`Credentials file at ${resolved} is group/world-readable (mode 0o${mode.toString(8)}); run \`chmod 600 ${resolved}\` before retrying.`);
   }
   if (typeof process.getuid === "function" && st.uid !== process.getuid()) {
-    onWarn(`credentials file at ${resolved2} is owned by uid ${st.uid} (current process uid ${process.getuid()}); verify this is intentional.`);
+    onWarn(`credentials file at ${resolved} is owned by uid ${st.uid} (current process uid ${process.getuid()}); verify this is intentional.`);
   }
 }
 async function writeCredentialsFileAtomic(targetPath, data) {
-  const fs8 = await import("node:fs");
+  const fs9 = await import("node:fs");
   const path13 = await import("node:path");
   const dir = path13.dirname(targetPath);
-  await fs8.promises.mkdir(dir, { recursive: true, mode: 448 });
+  await fs9.promises.mkdir(dir, { recursive: true, mode: 448 });
   const tmpPath = `${targetPath}.${process.pid}.${Math.random().toString(36).slice(2)}.tmp`;
   try {
-    const fh = await fs8.promises.open(tmpPath, "w", 384);
+    const fh = await fs9.promises.open(tmpPath, "w", 384);
     try {
       await fh.writeFile(JSON.stringify(data, null, 2));
       await fh.sync();
     } finally {
       await fh.close();
     }
-    await fs8.promises.rename(tmpPath, targetPath);
+    await fs9.promises.rename(tmpPath, targetPath);
   } catch (err) {
-    await fs8.promises.unlink(tmpPath).catch(() => {
+    await fs9.promises.unlink(tmpPath).catch(() => {
     });
     throw err;
   }
   try {
-    const dirFh = await fs8.promises.open(dir, "r");
+    const dirFh = await fs9.promises.open(dir, "r");
     try {
       await dirFh.sync();
     } finally {
@@ -1192,12 +1192,12 @@ var init_token_cache = __esm({
 var readEnv;
 var init_env = __esm({
   "node_modules/@anthropic-ai/sdk/internal/utils/env.mjs"() {
-    readEnv = (env2) => {
+    readEnv = (env3) => {
       if (typeof globalThis.process !== "undefined") {
-        return globalThis.process.env?.[env2]?.trim() || void 0;
+        return globalThis.process.env?.[env3]?.trim() || void 0;
       }
       if (typeof globalThis.Deno !== "undefined") {
-        return globalThis.Deno.env?.get?.(env2)?.trim() || void 0;
+        return globalThis.Deno.env?.get?.(env3)?.trim() || void 0;
       }
       return void 0;
     };
@@ -1378,12 +1378,12 @@ var init_credentials = __esm({
         return null;
       }
       validateProfileName(profileName);
-      const fs8 = await import("node:fs");
+      const fs9 = await import("node:fs");
       const path13 = await import("node:path");
       const configPath = path13.join(rootConfigPath, "configs", `${profileName}.json`);
       let configRaw;
       try {
-        configRaw = await fs8.promises.readFile(configPath, "utf-8");
+        configRaw = await fs9.promises.readFile(configPath, "utf-8");
       } catch (err) {
         if (err?.code !== "ENOENT") {
           throw new Error(`failed to read config file ${configPath}: ${err}`);
@@ -1511,11 +1511,11 @@ var init_credentials = __esm({
       if (profileName) {
         return profileName;
       }
-      const fs8 = await import("node:fs");
+      const fs9 = await import("node:fs");
       const path13 = await import("node:path");
       const filePath = path13.join(rootConfigPath, "active_config");
       try {
-        return (await fs8.promises.readFile(filePath, "utf-8")).trim() || "default";
+        return (await fs9.promises.readFile(filePath, "utf-8")).trim() || "default";
       } catch (err) {
         if (err?.code !== "ENOENT") {
           throw new Error(`failed to read ${filePath}: ${err}`);
@@ -1532,10 +1532,10 @@ function identityTokenFromFile(path13) {
     throw new AnthropicError("Identity token file path is empty");
   }
   return async () => {
-    const fs8 = await import("node:fs");
+    const fs9 = await import("node:fs");
     let content;
     try {
-      content = await fs8.promises.readFile(path13, "utf-8");
+      content = await fs9.promises.readFile(path13, "utf-8");
     } catch (err) {
       throw new AnthropicError(`Failed to read identity token file at ${path13}: ${err}`);
     }
@@ -1626,11 +1626,11 @@ var init_oidc_federation = __esm({
 // node_modules/@anthropic-ai/sdk/lib/credentials/user-oauth.mjs
 function userOAuthProvider(config) {
   return async (opts) => {
-    const fs8 = await import("node:fs");
+    const fs9 = await import("node:fs");
     await checkCredentialsFileSafety(config.credentialsPath, config.onSafetyWarning);
     let raw;
     try {
-      raw = await fs8.promises.readFile(config.credentialsPath, "utf-8");
+      raw = await fs9.promises.readFile(config.credentialsPath, "utf-8");
     } catch (err) {
       throw new WorkloadIdentityError(`Credentials file not found at ${config.credentialsPath}: ${err}`);
     }
@@ -1802,11 +1802,11 @@ function resolveIdentityTokenProvider(auth) {
 }
 function cachedExchangeProvider(exchange, credentialsPath, onCacheWriteError, onSafetyWarning) {
   return async (opts) => {
-    const fs8 = await import("node:fs");
+    const fs9 = await import("node:fs");
     await checkCredentialsFileSafety(credentialsPath, onSafetyWarning);
     let existing;
     try {
-      const raw = await fs8.promises.readFile(credentialsPath, "utf-8");
+      const raw = await fs9.promises.readFile(credentialsPath, "utf-8");
       existing = JSON.parse(raw);
       const token = existing?.["access_token"];
       if (token && !opts?.forceRefresh) {
@@ -4697,8 +4697,8 @@ function backoff2(attempt) {
   return backoff(attempt, POLL_BACKOFF_BASE_MS, POLL_BACKOFF_CAP_MS);
 }
 function defaultWorkerId() {
-  const env2 = globalThis.process?.env;
-  const host = env2?.["HOSTNAME"];
+  const env3 = globalThis.process?.env;
+  const host = env3?.["HOSTNAME"];
   return host ? `${host}-${uuid4()}` : uuid4();
 }
 var _WorkPoller_runnerClient, _WorkPoller_consumed, _WorkPoller_controller, _WorkPoller_detachExternal, _WorkPoller_autoStop, _WorkPoller_drain, _WorkPoller_blockMs, _WorkPoller_reclaimOlderThanMs, _WorkPoller_requestOpts, POLL_BLOCK_MS, POLL_BACKOFF_BASE_MS, POLL_BACKOFF_CAP_MS, WorkPoller;
@@ -5793,13 +5793,13 @@ function resolvePath(ctx, p) {
   return confineToRoot(ctx.workdir, p, { allowOutside: ctx.unrestrictedPaths ?? false });
 }
 function scrubbedShellEnv() {
-  const env2 = {};
+  const env3 = {};
   for (const [key, value] of Object.entries(process.env)) {
     if (key.startsWith("ANTHROPIC_"))
       continue;
-    env2[key] = value;
+    env3[key] = value;
   }
-  return env2;
+  return env3;
 }
 function betaBashTool(ctx) {
   let session;
@@ -6232,7 +6232,7 @@ var init_node = __esm({
     ANSI_RE = /\x1b\[[0-9;?]*[ -/]*[@-~]/g;
     fsGlob = fs3.glob;
     BashSession = class {
-      constructor(dir, env2 = scrubbedShellEnv()) {
+      constructor(dir, env3 = scrubbedShellEnv()) {
         _BashSession_instances.add(this);
         _BashSession_proc.set(this, void 0);
         _BashSession_buf.set(this, "");
@@ -6246,7 +6246,7 @@ var init_node = __esm({
           // PS1/PS2/TERM are shell-control settings BashSession always applies so
           // the pipe-based sentinel exec parsing works — not part of the
           // user-facing environment.
-          env: { ...env2, PS1: "", PS2: "", TERM: "dumb" },
+          env: { ...env3, PS1: "", PS2: "", TERM: "dumb" },
           stdio: ["pipe", "pipe", "pipe"],
           detached: true
         }), "f");
@@ -22440,7 +22440,7 @@ var require_form_data = __commonJS({
     var http5 = require("http");
     var https3 = require("https");
     var parseUrl2 = require("url").parse;
-    var fs8 = require("fs");
+    var fs9 = require("fs");
     var Stream6 = require("stream").Stream;
     var crypto4 = require("crypto");
     var mime = require_mime_types();
@@ -22510,7 +22510,7 @@ var require_form_data = __commonJS({
         if (value.end != void 0 && value.end != Infinity && value.start != void 0) {
           callback(null, value.end + 1 - (value.start ? value.start : 0));
         } else {
-          fs8.stat(value.path, function(err, stat5) {
+          fs9.stat(value.path, function(err, stat5) {
             if (err) {
               callback(err);
               return;
@@ -22871,7 +22871,7 @@ var require_ms = __commonJS({
 // node_modules/debug/src/common.js
 var require_common = __commonJS({
   "node_modules/debug/src/common.js"(exports2, module2) {
-    function setup(env2) {
+    function setup(env3) {
       createDebug.debug = createDebug;
       createDebug.default = createDebug;
       createDebug.coerce = coerce;
@@ -22880,8 +22880,8 @@ var require_common = __commonJS({
       createDebug.enabled = enabled;
       createDebug.humanize = require_ms();
       createDebug.destroy = destroy;
-      Object.keys(env2).forEach((key) => {
-        createDebug[key] = env2[key];
+      Object.keys(env3).forEach((key) => {
+        createDebug[key] = env3[key];
       });
       createDebug.names = [];
       createDebug.skips = [];
@@ -23228,19 +23228,19 @@ function hasFlag(flag, argv = globalThis.Deno ? globalThis.Deno.args : import_no
   return position !== -1 && (terminatorPosition === -1 || position < terminatorPosition);
 }
 function envForceColor() {
-  if (!("FORCE_COLOR" in env)) {
+  if (!("FORCE_COLOR" in env2)) {
     return;
   }
-  if (env.FORCE_COLOR === "true") {
+  if (env2.FORCE_COLOR === "true") {
     return 1;
   }
-  if (env.FORCE_COLOR === "false") {
+  if (env2.FORCE_COLOR === "false") {
     return 0;
   }
-  if (env.FORCE_COLOR.length === 0) {
+  if (env2.FORCE_COLOR.length === 0) {
     return 1;
   }
-  const level = Math.min(Number.parseInt(env.FORCE_COLOR, 10), 3);
+  const level = Math.min(Number.parseInt(env2.FORCE_COLOR, 10), 3);
   if (![0, 1, 2, 3].includes(level)) {
     return;
   }
@@ -23274,14 +23274,14 @@ function _supportsColor(haveStream, { streamIsTTY, sniffFlags = true } = {}) {
       return 2;
     }
   }
-  if ("TF_BUILD" in env && "AGENT_NAME" in env) {
+  if ("TF_BUILD" in env2 && "AGENT_NAME" in env2) {
     return 1;
   }
   if (haveStream && !streamIsTTY && forceColor === void 0) {
     return 0;
   }
   const min = forceColor || 0;
-  if (env.TERM === "dumb") {
+  if (env2.TERM === "dumb") {
     return min;
   }
   if (import_node_process.default.platform === "win32") {
@@ -23291,33 +23291,33 @@ function _supportsColor(haveStream, { streamIsTTY, sniffFlags = true } = {}) {
     }
     return 1;
   }
-  if ("CI" in env) {
-    if (["GITHUB_ACTIONS", "GITEA_ACTIONS", "CIRCLECI"].some((key) => key in env)) {
+  if ("CI" in env2) {
+    if (["GITHUB_ACTIONS", "GITEA_ACTIONS", "CIRCLECI"].some((key) => key in env2)) {
       return 3;
     }
-    if (["TRAVIS", "APPVEYOR", "GITLAB_CI", "BUILDKITE", "DRONE"].some((sign) => sign in env) || env.CI_NAME === "codeship") {
+    if (["TRAVIS", "APPVEYOR", "GITLAB_CI", "BUILDKITE", "DRONE"].some((sign) => sign in env2) || env2.CI_NAME === "codeship") {
       return 1;
     }
     return min;
   }
-  if ("TEAMCITY_VERSION" in env) {
-    return /^(9\.(0*[1-9]\d*)\.|\d{2,}\.)/.test(env.TEAMCITY_VERSION) ? 1 : 0;
+  if ("TEAMCITY_VERSION" in env2) {
+    return /^(9\.(0*[1-9]\d*)\.|\d{2,}\.)/.test(env2.TEAMCITY_VERSION) ? 1 : 0;
   }
-  if (env.COLORTERM === "truecolor") {
+  if (env2.COLORTERM === "truecolor") {
     return 3;
   }
-  if (env.TERM === "xterm-kitty") {
+  if (env2.TERM === "xterm-kitty") {
     return 3;
   }
-  if (env.TERM === "xterm-ghostty") {
+  if (env2.TERM === "xterm-ghostty") {
     return 3;
   }
-  if (env.TERM === "wezterm") {
+  if (env2.TERM === "wezterm") {
     return 3;
   }
-  if ("TERM_PROGRAM" in env) {
-    const version = Number.parseInt((env.TERM_PROGRAM_VERSION || "").split(".")[0], 10);
-    switch (env.TERM_PROGRAM) {
+  if ("TERM_PROGRAM" in env2) {
+    const version = Number.parseInt((env2.TERM_PROGRAM_VERSION || "").split(".")[0], 10);
+    switch (env2.TERM_PROGRAM) {
       case "iTerm.app": {
         return version >= 3 ? 3 : 2;
       }
@@ -23326,13 +23326,13 @@ function _supportsColor(haveStream, { streamIsTTY, sniffFlags = true } = {}) {
       }
     }
   }
-  if (/-256(color)?$/i.test(env.TERM)) {
+  if (/-256(color)?$/i.test(env2.TERM)) {
     return 2;
   }
-  if (/^screen|^xterm|^vt100|^vt220|^rxvt|color|ansi|cygwin|linux/i.test(env.TERM)) {
+  if (/^screen|^xterm|^vt100|^vt220|^rxvt|color|ansi|cygwin|linux/i.test(env2.TERM)) {
     return 1;
   }
-  if ("COLORTERM" in env) {
+  if ("COLORTERM" in env2) {
     return 1;
   }
   return min;
@@ -23344,13 +23344,13 @@ function createSupportsColor(stream4, options = {}) {
   });
   return translateLevel(level);
 }
-var import_node_process, import_node_os, import_node_tty, env, flagForceColor, supportsColor, supports_color_default;
+var import_node_process, import_node_os, import_node_tty, env2, flagForceColor, supportsColor, supports_color_default;
 var init_supports_color = __esm({
   "node_modules/supports-color/index.js"() {
     import_node_process = __toESM(require("node:process"), 1);
     import_node_os = __toESM(require("node:os"), 1);
     import_node_tty = __toESM(require("node:tty"), 1);
-    ({ env } = import_node_process.default);
+    ({ env: env2 } = import_node_process.default);
     if (hasFlag("no-color") || hasFlag("no-colors") || hasFlag("color=false") || hasFlag("color=never")) {
       flagForceColor = 0;
     } else if (hasFlag("color") || hasFlag("colors") || hasFlag("color=true") || hasFlag("color=always")) {
@@ -35878,7 +35878,7 @@ var require_util2 = __commonJS({
     exports2.removeUndefinedValuesInObject = removeUndefinedValuesInObject;
     exports2.isValidFile = isValidFile;
     exports2.getWellKnownCertificateConfigFileLocation = getWellKnownCertificateConfigFileLocation;
-    var fs8 = require("fs");
+    var fs9 = require("fs");
     var os2 = require("os");
     var path13 = require("path");
     var WELL_KNOWN_CERTIFICATE_CONFIG_FILE = "certificate_config.json";
@@ -35966,7 +35966,7 @@ var require_util2 = __commonJS({
     }
     async function isValidFile(filePath) {
       try {
-        const stats = await fs8.promises.lstat(filePath);
+        const stats = await fs9.promises.lstat(filePath);
         return stats.isFile();
       } catch (e2) {
         return false;
@@ -36346,8 +36346,8 @@ var require_loginticket = __commonJS({
        * @param {TokenPayload} pay Payload of the jwt
        * @constructor
        */
-      constructor(env2, pay) {
-        this.envelope = env2;
+      constructor(env3, pay) {
+        this.envelope = env3;
         this.payload = pay;
       }
       getEnvelope() {
@@ -37232,25 +37232,25 @@ var require_envDetect = __commonJS({
       return envPromise;
     }
     async function getEnvMemoized() {
-      let env2 = GCPEnv.NONE;
+      let env3 = GCPEnv.NONE;
       if (isAppEngine()) {
-        env2 = GCPEnv.APP_ENGINE;
+        env3 = GCPEnv.APP_ENGINE;
       } else if (isCloudFunction()) {
-        env2 = GCPEnv.CLOUD_FUNCTIONS;
+        env3 = GCPEnv.CLOUD_FUNCTIONS;
       } else if (await isComputeEngine()) {
         if (await isKubernetesEngine()) {
-          env2 = GCPEnv.KUBERNETES_ENGINE;
+          env3 = GCPEnv.KUBERNETES_ENGINE;
         } else if (isCloudRun()) {
-          env2 = GCPEnv.CLOUD_RUN;
+          env3 = GCPEnv.CLOUD_RUN;
         } else if (isCloudRunJob()) {
-          env2 = GCPEnv.CLOUD_RUN_JOBS;
+          env3 = GCPEnv.CLOUD_RUN_JOBS;
         } else {
-          env2 = GCPEnv.COMPUTE_ENGINE;
+          env3 = GCPEnv.COMPUTE_ENGINE;
         }
       } else {
-        env2 = GCPEnv.NONE;
+        env3 = GCPEnv.NONE;
       }
-      return env2;
+      return env3;
     }
     function isAppEngine() {
       return !!(process.env.GAE_SERVICE || process.env.GAE_MODULE_NAME);
@@ -37923,10 +37923,10 @@ var require_getCredentials = __commonJS({
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.getCredentials = getCredentials;
     var path13 = require("path");
-    var fs8 = require("fs");
+    var fs9 = require("fs");
     var util_1 = require("util");
     var errorWithCode_1 = require_errorWithCode();
-    var readFile2 = fs8.readFile ? (0, util_1.promisify)(fs8.readFile) : async () => {
+    var readFile2 = fs9.readFile ? (0, util_1.promisify)(fs9.readFile) : async () => {
       throw new errorWithCode_1.ErrorWithCode("use key rather than keyFile.", "MISSING_CREDENTIALS");
     };
     var ExtensionFiles;
@@ -39603,12 +39603,12 @@ var require_filesubjecttokensupplier = __commonJS({
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.FileSubjectTokenSupplier = void 0;
     var util_1 = require("util");
-    var fs8 = require("fs");
-    var readFile2 = (0, util_1.promisify)(fs8.readFile ?? (() => {
+    var fs9 = require("fs");
+    var readFile2 = (0, util_1.promisify)(fs9.readFile ?? (() => {
     }));
-    var realpath3 = (0, util_1.promisify)(fs8.realpath ?? (() => {
+    var realpath3 = (0, util_1.promisify)(fs9.realpath ?? (() => {
     }));
-    var lstat2 = (0, util_1.promisify)(fs8.lstat ?? (() => {
+    var lstat2 = (0, util_1.promisify)(fs9.lstat ?? (() => {
     }));
     var FileSubjectTokenSupplier = class {
       filePath;
@@ -39726,7 +39726,7 @@ var require_certificatesubjecttokensupplier = __commonJS({
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.CertificateSubjectTokenSupplier = exports2.InvalidConfigurationError = exports2.CertificateSourceUnavailableError = exports2.CERTIFICATE_CONFIGURATION_ENV_VARIABLE = void 0;
     var util_1 = require_util2();
-    var fs8 = require("fs");
+    var fs9 = require("fs");
     var crypto_1 = require("crypto");
     var https3 = require("https");
     exports2.CERTIFICATE_CONFIGURATION_ENV_VARIABLE = "GOOGLE_API_CERTIFICATE_CONFIG";
@@ -39820,7 +39820,7 @@ var require_certificatesubjecttokensupplier = __commonJS({
         const configPath = this.certificateConfigPath;
         let fileContents;
         try {
-          fileContents = await fs8.promises.readFile(configPath, "utf8");
+          fileContents = await fs9.promises.readFile(configPath, "utf8");
         } catch (err) {
           throw new CertificateSourceUnavailableError(`Failed to read certificate config file at: ${configPath}`);
         }
@@ -39845,14 +39845,14 @@ var require_certificatesubjecttokensupplier = __commonJS({
       async #getKeyAndCert(certPath, keyPath) {
         let cert, key;
         try {
-          cert = await fs8.promises.readFile(certPath);
+          cert = await fs9.promises.readFile(certPath);
           new crypto_1.X509Certificate(cert);
         } catch (err) {
           const message = err instanceof Error ? err.message : String(err);
           throw new CertificateSourceUnavailableError(`Failed to read certificate file at ${certPath}: ${message}`);
         }
         try {
-          key = await fs8.promises.readFile(keyPath);
+          key = await fs9.promises.readFile(keyPath);
           (0, crypto_1.createPrivateKey)(key);
         } catch (err) {
           const message = err instanceof Error ? err.message : String(err);
@@ -39871,7 +39871,7 @@ var require_certificatesubjecttokensupplier = __commonJS({
           return JSON.stringify([leafCert.raw.toString("base64")]);
         }
         try {
-          const chainPems = await fs8.promises.readFile(this.trustChainPath, "utf8");
+          const chainPems = await fs9.promises.readFile(this.trustChainPath, "utf8");
           const pemBlocks = chainPems.match(/-----BEGIN CERTIFICATE-----[^-]+-----END CERTIFICATE-----/g) ?? [];
           const chainCerts = pemBlocks.map((pem, index) => {
             try {
@@ -40573,7 +40573,7 @@ var require_pluggable_auth_handler = __commonJS({
     exports2.PluggableAuthHandler = exports2.ExecutableError = void 0;
     var executable_response_1 = require_executable_response();
     var childProcess = require("child_process");
-    var fs8 = require("fs");
+    var fs9 = require("fs");
     var ExecutableError = class extends Error {
       /**
        * The exit code returned by the executable.
@@ -40658,14 +40658,14 @@ var require_pluggable_auth_handler = __commonJS({
         }
         let filePath;
         try {
-          filePath = await fs8.promises.realpath(this.outputFile);
+          filePath = await fs9.promises.realpath(this.outputFile);
         } catch {
           return void 0;
         }
-        if (!(await fs8.promises.lstat(filePath)).isFile()) {
+        if (!(await fs9.promises.lstat(filePath)).isFile()) {
           return void 0;
         }
-        const responseString = await fs8.promises.readFile(filePath, {
+        const responseString = await fs9.promises.readFile(filePath, {
           encoding: "utf8"
         });
         if (responseString === "") {
@@ -41076,7 +41076,7 @@ var require_googleauth = __commonJS({
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.GoogleAuth = exports2.GoogleAuthExceptionMessages = void 0;
     var child_process_1 = require("child_process");
-    var fs8 = require("fs");
+    var fs9 = require("fs");
     var gaxios_1 = require_src3();
     var gcpMetadata = require_src5();
     var os2 = require("os");
@@ -41371,7 +41371,7 @@ var require_googleauth = __commonJS({
         }
         if (location) {
           location = path13.join(location, "gcloud", "application_default_credentials.json");
-          if (!fs8.existsSync(location)) {
+          if (!fs9.existsSync(location)) {
             location = null;
           }
         }
@@ -41392,8 +41392,8 @@ var require_googleauth = __commonJS({
           throw new Error("The file path is invalid.");
         }
         try {
-          filePath = fs8.realpathSync(filePath);
-          if (!fs8.lstatSync(filePath).isFile()) {
+          filePath = fs9.realpathSync(filePath);
+          if (!fs9.lstatSync(filePath).isFile()) {
             throw new Error();
           }
         } catch (err) {
@@ -41402,7 +41402,7 @@ var require_googleauth = __commonJS({
           }
           throw err;
         }
-        const readStream2 = fs8.createReadStream(filePath);
+        const readStream2 = fs9.createReadStream(filePath);
         return this.fromStream(readStream2, options);
       }
       /**
@@ -41715,7 +41715,7 @@ var require_googleauth = __commonJS({
           return this._cacheClientFromJSON(this.jsonContent, this.clientOptions);
         } else if (this.keyFilename) {
           const filePath = path13.resolve(this.keyFilename);
-          const stream4 = fs8.createReadStream(filePath);
+          const stream4 = fs9.createReadStream(filePath);
           return await this.fromStreamAsync(stream4, this.clientOptions);
         } else if (this.apiKey) {
           const client = await this.fromAPIKey(this.apiKey, this.clientOptions);
@@ -46796,7 +46796,7 @@ var vscode9 = __toESM(require("vscode"));
 
 // src/main.ts
 var vscode8 = __toESM(require("vscode"));
-var fs7 = __toESM(require("fs"));
+var fs8 = __toESM(require("fs"));
 var path12 = __toESM(require("path"));
 
 // src/apis/chat/claude.ts
@@ -47212,26 +47212,8 @@ async function filterGitIgnored(uris, cwd) {
 
 // src/tools/search.ts
 var import_child_process = require("child_process");
-
-// node_modules/@vscode/ripgrep/lib/index.js
-var import_node_module = require("node:module");
-var import_meta = {};
-var require2 = (0, import_node_module.createRequire)(import_meta.url);
-var arch = process.env.npm_config_arch || process.arch;
-var binaryName = process.platform === "win32" ? "rg.exe" : "rg";
-var platformPkg = `@vscode/ripgrep-${process.platform}-${arch}`;
-var resolved;
-try {
-  resolved = require2.resolve(`${platformPkg}/bin/${binaryName}`);
-} catch {
-  throw new Error(
-    `Could not find ${platformPkg}. Ensure optionalDependencies are installed for this platform (${process.platform}-${arch}).`
-  );
-}
-var rgPath = resolved;
-
-// src/tools/search.ts
 var readline2 = __toESM(require("readline"));
+var fs4 = __toESM(require("fs"));
 var searchSchemas = [
   {
     type: "function",
@@ -47292,6 +47274,21 @@ async function executeGlob(pattern, cwd, signal) {
     cancelTokenSource.dispose();
   }
 }
+function getRipgrepPath() {
+  const isWin = process.platform === "win32";
+  const rgExe = isWin ? "rg.exe" : "rg";
+  const possiblePaths = [
+    path6.join(vscode.env.appRoot, "node_modules.asar.unpacked", "@vscode", "ripgrep", "bin", rgExe),
+    path6.join(vscode.env.appRoot, "node_modules", "@vscode", "ripgrep", "bin", rgExe),
+    path6.join(vscode.env.appRoot, "node_modules.asar.unpacked", "vscode-ripgrep", "bin", rgExe)
+  ];
+  for (const p of possiblePaths) {
+    if (fs4.existsSync(p)) {
+      return p;
+    }
+  }
+  return "rg";
+}
 var MAX_RESULTS = 100;
 var MAX_ENTRY_CHARS = 1e3;
 var MAX_OUTPUT_CHARS = 25e3;
@@ -47313,6 +47310,7 @@ async function executeGrep(query, filePattern, cwd, signal) {
       query,
       "."
     ];
+    const rgPath = getRipgrepPath();
     const child = (0, import_child_process.spawn)(rgPath, args, { cwd });
     const results = [];
     let totalChars = 0;
@@ -47329,10 +47327,10 @@ async function executeGrep(query, filePattern, cwd, signal) {
     rl.on("line", (line) => {
       if (truncated) return;
       try {
-        const parsed = JSON.parse("line");
+        const parsed = JSON.parse(line);
         if (parsed.type === "match") {
           const filePath = parsed.data.path.text;
-          const lineNumber = parsed.data.lineNumber;
+          const lineNumber = parsed.data.line_number;
           const lineText = (parsed.data.lines.text || "").replace(/\r?\n$/, "").trim();
           const entry = `${filePath}:${lineNumber}:${lineText}`;
           if (entry.length > MAX_ENTRY_CHARS) return;
@@ -49124,8 +49122,8 @@ var defaults2 = {
           return toURLEncodedForm(data, formSerializer).toString();
         }
         if ((isFileList2 = utils_default.isFileList(data)) || contentType.indexOf("multipart/form-data") > -1) {
-          const env2 = own(this, "env");
-          const _FormData = env2 && env2.FormData;
+          const env3 = own(this, "env");
+          const _FormData = env3 && env3.FormData;
           return toFormData_default(
             isFileList2 ? { "files[]": data } : data,
             _FormData && new _FormData(),
@@ -51748,10 +51746,10 @@ var maybeWithAuthCredentials = (url2) => {
   }
   return urlToCheck.includes("@") || urlToCheck.includes(":");
 };
-var factory = (env2) => {
+var factory = (env3) => {
   const globalObject = utils_default.global !== void 0 && utils_default.global !== null ? utils_default.global : globalThis;
   const { ReadableStream: ReadableStream2, TextEncoder: TextEncoder2 } = globalObject;
-  env2 = utils_default.merge.call(
+  env3 = utils_default.merge.call(
     {
       skipUndefined: true
     },
@@ -51759,9 +51757,9 @@ var factory = (env2) => {
       Request: globalObject.Request,
       Response: globalObject.Response
     },
-    env2
+    env3
   );
-  const { fetch: envFetch, Request: Request2, Response: Response3 } = env2;
+  const { fetch: envFetch, Request: Request2, Response: Response3 } = env3;
   const isFetchSupported = envFetch ? isFunction2(envFetch) : typeof fetch === "function";
   const isRequestSupported = isFunction2(Request2);
   const isResponseSupported = isFunction2(Response3);
@@ -52119,14 +52117,14 @@ var factory = (env2) => {
 };
 var seedCache = /* @__PURE__ */ new Map();
 var getFetch = (config) => {
-  let env2 = config && config.env || {};
-  const { fetch: fetch3, Request: Request2, Response: Response3 } = env2;
+  let env3 = config && config.env || {};
+  const { fetch: fetch3, Request: Request2, Response: Response3 } = env3;
   const seeds = [Request2, Response3, fetch3];
   let len = seeds.length, i2 = len, seed, target, map = seedCache;
   while (i2--) {
     seed = seeds[i2];
     target = map.get(seed);
-    target === void 0 && map.set(seed, target = i2 ? /* @__PURE__ */ new Map() : factory(env2));
+    target === void 0 && map.set(seed, target = i2 ? /* @__PURE__ */ new Map() : factory(env3));
     map = target;
   }
   return target;
@@ -54662,17 +54660,17 @@ function getBrowserInfo2() {
   }
   return null;
 }
-var normalizeArch2 = (arch2) => {
-  if (arch2 === "x32")
+var normalizeArch2 = (arch) => {
+  if (arch === "x32")
     return "x32";
-  if (arch2 === "x86_64" || arch2 === "x64")
+  if (arch === "x86_64" || arch === "x64")
     return "x64";
-  if (arch2 === "arm")
+  if (arch === "arm")
     return "arm";
-  if (arch2 === "aarch64" || arch2 === "arm64")
+  if (arch === "aarch64" || arch === "arm64")
     return "arm64";
-  if (arch2)
-    return `other:${arch2}`;
+  if (arch)
+    return `other:${arch}`;
   return "unknown";
 };
 var normalizePlatform2 = (platform) => {
@@ -60363,12 +60361,12 @@ var toFloat32Array = (base64Str) => {
 };
 
 // node_modules/openai/internal/utils/env.mjs
-var readEnv2 = (env2) => {
+var readEnv2 = (env3) => {
   if (typeof globalThis.process !== "undefined") {
-    return globalThis.process.env?.[env2]?.trim() || void 0;
+    return globalThis.process.env?.[env3]?.trim() || void 0;
   }
   if (typeof globalThis.Deno !== "undefined") {
-    return globalThis.Deno.env?.get?.(env2)?.trim() || void 0;
+    return globalThis.Deno.env?.get?.(env3)?.trim() || void 0;
   }
   return void 0;
 };
@@ -64375,7 +64373,7 @@ var DeepSeekChatProvider = class extends OpenAICompatibleProvider {
 var import_p_retry = __toESM(require_p_retry(), 1);
 var import_google_auth_library = __toESM(require_src6(), 1);
 var import_fs = require("fs");
-var fs5 = __toESM(require("fs/promises"), 1);
+var fs6 = __toESM(require("fs/promises"), 1);
 var import_promises2 = require("fs/promises");
 var import_node_stream4 = require("node:stream");
 var import_promises3 = require("node:stream/promises");
@@ -80554,13 +80552,13 @@ var buildHeaders4 = (newHeaders) => {
   }
   return { [brand_privateNullableHeaders3]: true, values: targetHeaders, nulls: nullHeaders };
 };
-var readEnv3 = (env2) => {
+var readEnv3 = (env3) => {
   var _a10, _b2, _c2, _d2, _e2;
   if (typeof globalThis.process !== "undefined") {
-    return ((_b2 = (_a10 = globalThis.process.env) === null || _a10 === void 0 ? void 0 : _a10[env2]) === null || _b2 === void 0 ? void 0 : _b2.trim()) || void 0;
+    return ((_b2 = (_a10 = globalThis.process.env) === null || _a10 === void 0 ? void 0 : _a10[env3]) === null || _b2 === void 0 ? void 0 : _b2.trim()) || void 0;
   }
   if (typeof globalThis.Deno !== "undefined") {
-    return ((_e2 = (_d2 = (_c2 = globalThis.Deno.env) === null || _c2 === void 0 ? void 0 : _c2.get) === null || _d2 === void 0 ? void 0 : _d2.call(_c2, env2)) === null || _e2 === void 0 ? void 0 : _e2.trim()) || void 0;
+    return ((_e2 = (_d2 = (_c2 = globalThis.Deno.env) === null || _c2 === void 0 ? void 0 : _c2.get) === null || _d2 === void 0 ? void 0 : _d2.call(_c2, env3)) === null || _e2 === void 0 ? void 0 : _e2.trim()) || void 0;
   }
   return void 0;
 };
@@ -82551,7 +82549,7 @@ var NodeUploader = class {
   async stat(file) {
     const fileStat = { size: 0, type: void 0 };
     if (typeof file === "string") {
-      const originalStat = await fs5.stat(file);
+      const originalStat = await fs6.stat(file);
       fileStat.size = originalStat.size;
       fileStat.type = this.inferMimeType(file);
       return fileStat;
@@ -82699,7 +82697,7 @@ var NodeUploader = class {
     let fileHandle;
     const fileName = path$1.basename(file);
     try {
-      fileHandle = await fs5.open(file, "r");
+      fileHandle = await fs6.open(file, "r");
       if (!fileHandle) {
         throw new Error(`Failed to open file`);
       }
@@ -82919,9 +82917,9 @@ var GoogleGenAI = class {
     this.fileSearchStores = new FileSearchStores(this.apiClient);
   }
 };
-function getEnv2(env2) {
+function getEnv2(env3) {
   var _a10, _b2, _c2;
-  return (_c2 = (_b2 = (_a10 = process === null || process === void 0 ? void 0 : process.env) === null || _a10 === void 0 ? void 0 : _a10[env2]) === null || _b2 === void 0 ? void 0 : _b2.trim()) !== null && _c2 !== void 0 ? _c2 : void 0;
+  return (_c2 = (_b2 = (_a10 = process === null || process === void 0 ? void 0 : process.env) === null || _a10 === void 0 ? void 0 : _a10[env3]) === null || _b2 === void 0 ? void 0 : _b2.trim()) !== null && _c2 !== void 0 ? _c2 : void 0;
 }
 function stringToBoolean(str2) {
   if (str2 === void 0) {
@@ -96807,7 +96805,7 @@ var cp4 = __toESM(require("child_process"));
 var util6 = __toESM(require("util"));
 var path11 = __toESM(require("path"));
 var vscode7 = __toESM(require("vscode"));
-var fs6 = __toESM(require("fs/promises"));
+var fs7 = __toESM(require("fs/promises"));
 var exec5 = util6.promisify(cp4.exec);
 var WorktreeManager = class {
   worktreePath;
@@ -96837,10 +96835,10 @@ var WorktreeManager = class {
       const src = path11.join(this.originalWorkspace, dir);
       const dest = path11.join(this.worktreePath, dir);
       try {
-        const stat5 = await fs6.stat(src);
+        const stat5 = await fs7.stat(src);
         if (stat5.isDirectory()) {
           const symlinkType = process.platform === "win32" ? "junction" : "dir";
-          await fs6.symlink(src, dest, symlinkType);
+          await fs7.symlink(src, dest, symlinkType);
         }
       } catch {
       }
@@ -96856,7 +96854,7 @@ var WorktreeManager = class {
       const src = path11.join(this.originalWorkspace, file);
       const dest = path11.join(this.worktreePath, file);
       try {
-        await fs6.copyFile(src, dest);
+        await fs7.copyFile(src, dest);
       } catch {
       }
     }
@@ -96922,7 +96920,7 @@ var WorktreeManager = class {
     const patchContent = await this.getPatch();
     if (!patchContent.trim()) return;
     const patchPath = path11.join(this.originalWorkspace, ".agent-run.patch");
-    await fs6.writeFile(patchPath, patchContent, "utf-8");
+    await fs7.writeFile(patchPath, patchContent, "utf-8");
     try {
       await exec5(`git add -A`, { cwd: this.originalWorkspace });
       await exec5(`git apply --3way --ignore-whitespace "${patchPath}"`, { cwd: this.originalWorkspace });
@@ -96932,7 +96930,7 @@ var WorktreeManager = class {
       if (errorStr.includes("with conflicts")) throw new Error("MERGE_CONFLICT");
       throw e2;
     } finally {
-      await fs6.unlink(patchPath).catch(() => {
+      await fs7.unlink(patchPath).catch(() => {
       });
     }
   }
@@ -97792,7 +97790,7 @@ var ChatApp = class {
     const scriptPath = vscode8.Uri.joinPath(this.context.extensionUri, "dist", "webview.bundle.js");
     const cssPath = vscode8.Uri.joinPath(this.context.extensionUri, "dist", "webview.bundle.css");
     try {
-      let html = fs7.readFileSync(htmlPath.fsPath, "utf-8");
+      let html = fs8.readFileSync(htmlPath.fsPath, "utf-8");
       const scriptUri = this.view.webview.asWebviewUri(scriptPath);
       const styleUri = this.view.webview.asWebviewUri(cssPath);
       html = html.replace("{{styleUri}}", styleUri.toString());

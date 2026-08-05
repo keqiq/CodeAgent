@@ -7,8 +7,9 @@ import { Indexer } from '../indexing/indexer';
 import { excludePattern } from '../indexing/languages/_languageIndex';
 import { filterGitIgnored } from '../utils/gitignore';
 import { spawn } from 'child_process';
-import { rgPath } from '@vscode/ripgrep';
+// import { rgPath } from '@vscode/ripgrep';
 import * as readline from 'readline';
+import * as fs from 'fs';
 
 export type findDeps = {
     indexer: Indexer,
@@ -88,6 +89,25 @@ export async function executeGlob(pattern: string, cwd: string, signal: AbortSig
     }
 };
 
+export function getRipgrepPath(): string {
+    const isWin = process.platform === 'win32';
+    const rgExe = isWin ? 'rg.exe' : 'rg';
+
+    const possiblePaths = [
+        path.join(vscode.env.appRoot, 'node_modules.asar.unpacked', '@vscode', 'ripgrep', 'bin', rgExe),
+        path.join(vscode.env.appRoot, 'node_modules', '@vscode', 'ripgrep', 'bin', rgExe),
+        path.join(vscode.env.appRoot, 'node_modules.asar.unpacked', 'vscode-ripgrep', 'bin', rgExe),
+    ];
+
+    for (const p of possiblePaths) {
+        if (fs.existsSync(p)) {
+            return p;
+        }
+    }
+
+    return 'rg';
+}
+
 const MAX_RESULTS = 100;
 const MAX_ENTRY_CHARS = 1_000;
 const MAX_OUTPUT_CHARS = 25_000;
@@ -107,6 +127,7 @@ export async function executeGrep(query: string, filePattern: string, cwd: strin
             '.'
         ];
 
+        const rgPath = getRipgrepPath();
         const child = spawn(rgPath, args, { cwd });
 
         const results: string[] = [];
@@ -128,11 +149,11 @@ export async function executeGrep(query: string, filePattern: string, cwd: strin
             if (truncated) return;
 
             try {
-                const parsed = JSON.parse('line');
+                const parsed = JSON.parse(line);
 
                 if (parsed.type === 'match') {
                     const filePath = parsed.data.path.text;
-                    const lineNumber = parsed.data.lineNumber;
+                    const lineNumber = parsed.data.line_number;
                     const lineText = (parsed.data.lines.text || '').replace(/\r?\n$/, '').trim();
     
                     const entry = `${filePath}:${lineNumber}:${lineText}`;

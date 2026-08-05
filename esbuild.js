@@ -44,7 +44,7 @@ async function main() {
 			'vscode',
 			'@lancedb/lancedb',
 			'@lancedb/lancedb-*',
-			'web-tree-sitter'
+			'web-tree-sitter',
 		]
 	});
 	if (watch) {
