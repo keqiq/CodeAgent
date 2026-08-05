@@ -68,6 +68,8 @@ export async function executeWrite(filePath: string, content: string, cwd: strin
     const fileUri = resolveUri(cwd, filePath);
     const uint8Array = textEncoder.encode(content);
     await vscode.workspace.fs.writeFile(fileUri, uint8Array);
+    // Force lsp to parse the new file
+    await vscode.workspace.openTextDocument(fileUri);
     return {
         message: `Successfully wrote to ${filePath}`,
         changedFiles: [filePath]
@@ -91,6 +93,8 @@ export async function executeEdit(filePath: string, oldText: string, newText: st
         if (hasCRLF) updatedContent = updatedContent.replace(/\n/g, '\r\n');
 
         await vscode.workspace.fs.writeFile(fileUri, textEncoder.encode(updatedContent));
+
+        await vscode.workspace.openTextDocument(fileUri);
 
         return {
             message: `Successfully edited ${filePath} with strict matching.`,

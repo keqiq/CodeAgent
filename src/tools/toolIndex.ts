@@ -1,4 +1,4 @@
-import { searchSchemas, executeGlob, executeGrep, findDeps as findDeps, executeFind as executeFind } from "./search";
+import { searchSchemas, executeGlob, executeGrep, executeRefs, findDeps, executeFind } from "./search";
 import { fileSchemas, executeRead, executeWrite, executeEdit } from "./files";
 import { commandSchemas, executeRun } from "./execute";
 import { webSchema, executeWebSearch, executeURL } from "./web";
@@ -54,6 +54,8 @@ export function createToolRegistry(deps: ToolDeps): Record<string, (args: any) =
 
         grep: async (args) => await executeGrep(args.query, args.filePattern, deps.getCwd(), deps.getSignal()),
 
+        refs: async (args) => await executeRefs(args.filePath, args.line, args.symbol, deps.getCwd()),
+
         read: async (args) => await executeRead(args.filePath, deps.getCwd()),
 
         write: async (args) => await executeWrite(args.filePath, args.content, deps.getCwd()),
@@ -73,15 +75,8 @@ export function createToolRegistry(deps: ToolDeps): Record<string, (args: any) =
         },
 
         find: async (args) => {
-            try {
-                const searchDeps = await deps.createFindDeps();
-                return await executeFind(args.query, searchDeps, deps.getSignal());
-            } catch (e) {
-                return {
-                    ok: false,
-                    message: `Codebase semantic search unavailable: ${e instanceof Error ? e.message : String(e)}. Use glob, grep, or read instead.`
-                };
-            }
+            const searchDeps = await deps.createFindDeps();
+            return await executeFind(args.query, searchDeps, deps.getSignal());
         }
     };
 }

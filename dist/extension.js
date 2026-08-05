@@ -24437,8 +24437,8 @@ var require_follow_redirects = __commonJS({
       }
       return parsed;
     }
-    function resolveUrl(relative2, base) {
-      return useNativeURL ? new URL2(relative2, base) : parseUrl2(url2.resolve(base, relative2));
+    function resolveUrl(relative3, base) {
+      return useNativeURL ? new URL2(relative3, base) : parseUrl2(url2.resolve(base, relative3));
     }
     function validateUrl(input) {
       if (/^\[/.test(input.hostname) && !/^\[[:0-9a-f]+\]$/i.test(input.hostname)) {
@@ -47213,6 +47213,20 @@ var searchSchemas = [
       },
       required: ["query"]
     }
+  },
+  {
+    type: "function",
+    name: "refs",
+    description: "Find all references of a variable or function across the workspace. Provide the file path, the line number it is on, and the exact symbol name.",
+    parameters: {
+      type: "object",
+      properties: {
+        filePath: { type: "string", description: "The relative path to the file." },
+        line: { type: "number", description: "The 1-based line number." },
+        symbol: { type: "string", description: "The exact name of the variable/function (e.g., 'validateUser')." }
+      },
+      required: ["filePath", "line", "symbol"]
+    }
   }
 ];
 function getRipgrepPath() {
@@ -47345,7 +47359,7 @@ async function executeGrep(query, filePattern, cwd, signal) {
     });
     child.on("close", () => {
       signal.removeEventListener("abort", abortListener);
-      if (signal.aborted) return reject(new Error("AbortListener"));
+      if (signal.aborted) return reject(new Error("AbortError"));
       if (results.length === 0) return resolve4({ message: "No matches found." });
       let output = results.join("\n");
       if (output.length > MAX_OUTPUT_CHARS) {
@@ -47381,6 +47395,46 @@ Lines: ${r2.startLine}-${r2.endLine}
 ${r2.text}`
     ).join("\n\n---\n\n")
   };
+}
+var MAX_REFS = 500;
+async function executeRefs(filePath, line, symbol, cwd) {
+  const uri = vscode.Uri.file(path5.join(cwd, filePath));
+  try {
+    const document2 = await vscode.workspace.openTextDocument(uri);
+    if (line < 1 || line > document2.lineCount) {
+      return { message: `Error: Line ${line} is out of bounds. File only has ${document2.lineCount} lines.` };
+    }
+    const lineText = document2.lineAt(line - 1).text;
+    const characterIndex = lineText.indexOf(symbol);
+    if (characterIndex === -1) return { message: `Could not find symbol ${symbol} on line ${line} in ${filePath}` };
+    const position = new vscode.Position(line - 1, characterIndex);
+    const locations = await vscode.commands.executeCommand(
+      "vscode.executeReferenceProvider",
+      uri,
+      position
+    );
+    const totalRefs = locations.length;
+    if (totalRefs === 0) {
+      return {
+        message: "No references found for this symbol. (Note: If you just created or heavily modified this file, the workspace language server may still be indexing. Wait a moment and try again, or use grep as a fallback.)"
+      };
+    }
+    const slicedLocations = locations.slice(0, MAX_REFS);
+    const results = slicedLocations.map((loc) => {
+      const relativePath = path5.relative(cwd, loc.uri.fsPath);
+      const startLine = loc.range.start.line + 1;
+      const startChar = loc.range.start.character + 1;
+      return `${relativePath} - Row:${startLine} Col:${startChar}`;
+    });
+    if (totalRefs > MAX_REFS) {
+      return { message: `[Results truncated. ${totalRefs} references found.]
+
+${results.join("\n")}` };
+    }
+    return { message: results.join("\n") };
+  } catch (e2) {
+    return { message: `Failed to find references: ${String(e2)}` };
+  }
 }
 
 // src/tools/files.ts
@@ -47466,6 +47520,7 @@ async function executeWrite(filePath, content, cwd) {
   const fileUri = resolveUri(cwd, filePath);
   const uint8Array = textEncoder.encode(content);
   await vscode3.workspace.fs.writeFile(fileUri, uint8Array);
+  await vscode3.workspace.openTextDocument(fileUri);
   return {
     message: `Successfully wrote to ${filePath}`,
     changedFiles: [filePath]
@@ -47483,6 +47538,7 @@ async function executeEdit(filePath, oldText, newText, cwd) {
     let updatedContent = fileContent.replace(searchOldText, applyNewText);
     if (hasCRLF) updatedContent = updatedContent.replace(/\n/g, "\r\n");
     await vscode3.workspace.fs.writeFile(fileUri, textEncoder.encode(updatedContent));
+    await vscode3.workspace.openTextDocument(fileUri);
     return {
       message: `Successfully edited ${filePath} with strict matching.`,
       changedFiles: [filePath]
@@ -54034,6 +54090,7 @@ function createToolRegistry(deps) {
   return {
     glob: async (args) => await executeGlob(args.pattern, deps.getCwd(), deps.getSignal()),
     grep: async (args) => await executeGrep(args.query, args.filePattern, deps.getCwd(), deps.getSignal()),
+    refs: async (args) => await executeRefs(args.filePath, args.line, args.symbol, deps.getCwd()),
     read: async (args) => await executeRead(args.filePath, deps.getCwd()),
     write: async (args) => await executeWrite(args.filePath, args.content, deps.getCwd()),
     edit: async (args) => await executeEdit(args.filePath, args.oldText, args.newText, deps.getCwd()),
@@ -54047,15 +54104,8 @@ function createToolRegistry(deps) {
       return await executeURL(args.urls, apiKey, args.query, deps.getSignal());
     },
     find: async (args) => {
-      try {
-        const searchDeps = await deps.createFindDeps();
-        return await executeFind(args.query, searchDeps, deps.getSignal());
-      } catch (e2) {
-        return {
-          ok: false,
-          message: `Codebase semantic search unavailable: ${e2 instanceof Error ? e2.message : String(e2)}. Use glob, grep, or read instead.`
-        };
-      }
+      const searchDeps = await deps.createFindDeps();
+      return await executeFind(args.query, searchDeps, deps.getSignal());
     }
   };
 }
@@ -96842,6 +96892,7 @@ var WorktreeManager = class {
       ".env.local",
       ".env.development",
       ".env.test",
+      "tsconfig.json",
       "tsconfig.tsbuildinfo"
     ];
     for (const file of configs) {

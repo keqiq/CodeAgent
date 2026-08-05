@@ -4,7 +4,6 @@ import { ToolResult, ToolSchema } from './toolIndex';
 import { EmbedProvider } from '../apis/embed/embedProvider';
 import { Indexer } from '../indexing/indexer';
 import { excludePattern } from '../indexing/languages/_languageIndex';
-import { filterGitIgnored } from '../utils/gitignore';
 import { spawn } from 'child_process';
 import * as readline from 'readline';
 import * as fs from 'fs';
@@ -23,7 +22,7 @@ export const searchSchemas: ToolSchema[] = [
         parameters: {
             type: "object",
             properties: {
-                pattern: { type: "string", description: "Glob pattern (e.g., 'src/**/*.ts')."}
+                pattern: { type: "string", description: "Glob pattern (e.g., 'src/**/*.ts')." }
             },
             required: ["pattern"]
         }
@@ -35,7 +34,7 @@ export const searchSchemas: ToolSchema[] = [
         parameters: {
             type: "object",
             properties: {
-                query: { type: "string", description: "The regex pattern to search for. Be specific."},
+                query: { type: "string", description: "The regex pattern to search for. Be specific." },
                 filePattern: { type: "string", description: "Glob to restrict which files are searched (e.g., 'src/**/*.ts'). Always provide this to avoid scanning the entire workspace."}
             },
             required: ["query"]
@@ -54,6 +53,20 @@ export const searchSchemas: ToolSchema[] = [
                 }
             },
             required: ["query"]
+        }
+    },
+    {
+        type: "function",
+        name: "refs",
+        description: "Find all references of a variable or function across the workspace. Provide the file path, the line number it is on, and the exact symbol name.",
+        parameters: {
+            type: "object",
+            properties: {
+                filePath: { type: "string", description: "The relative path to the file." },
+                line: { type: "number", description: "The 1-based line number." },
+                symbol: { type: "string", description: "The exact name of the variable/function (e.g., 'validateUser')." }
+            },
+            required: ["filePath", "line", "symbol"]
         }
     }
 ];
@@ -217,7 +230,7 @@ export async function executeGrep(query: string, filePattern: string, cwd: strin
         child.on('close', () => {
             signal.removeEventListener('abort', abortListener);
 
-            if (signal.aborted) return reject(new Error('AbortListener'));
+            if (signal.aborted) return reject(new Error('AbortError'));
 
             if (results.length === 0) return resolve({ message: 'No matches found.' });
 
@@ -259,4 +272,57 @@ export async function executeFind(query: string, deps: findDeps, signal: AbortSi
     };
 }
 
+const MAX_REFS = 500;
 
+export async function executeRefs(filePath: string, line: number, symbol: string, cwd: string): Promise<ToolResult> {
+    const uri = vscode.Uri.file(path.join(cwd, filePath));
+
+    try {
+        const document = await vscode.workspace.openTextDocument(uri);
+
+        if (line < 1 || line > document.lineCount) {
+            return { message: `Error: Line ${line} is out of bounds. File only has ${document.lineCount} lines.` };
+        }
+
+        const lineText = document.lineAt(line - 1).text;
+
+        const characterIndex = lineText.indexOf(symbol);
+
+        if (characterIndex === -1) return { message: `Could not find symbol ${symbol} on line ${line} in ${filePath}` };
+
+        const position = new vscode.Position(line - 1, characterIndex);
+
+        const locations = await vscode.commands.executeCommand<vscode.Location[]>(
+            'vscode.executeReferenceProvider',
+            uri,
+            position
+        );
+
+        const totalRefs = locations.length;
+        if (totalRefs === 0) {
+            return { 
+                message: 'No references found for this symbol. ' +
+                        '(Note: If you just created or heavily modified this file, ' +
+                        'the workspace language server may still be indexing. ' +
+                        'Wait a moment and try again, or use grep as a fallback.)' 
+            };
+        }
+
+        const slicedLocations = locations.slice(0, MAX_REFS);
+
+        const results = slicedLocations.map(loc => {
+            const relativePath = path.relative(cwd, loc.uri.fsPath);
+            const startLine = loc.range.start.line + 1;
+            const startChar = loc.range.start.character + 1;
+            return `${relativePath} - Row:${startLine} Col:${startChar}`;
+        });
+
+        if (totalRefs > MAX_REFS) {
+            return { message: `[Results truncated. ${totalRefs} references found.]\n\n${results.join('\n')}` };
+        }
+
+        return { message: results.join('\n') };
+    } catch (e) {
+        return { message: `Failed to find references: ${String(e)}` };
+    }
+}

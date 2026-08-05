@@ -59,6 +59,7 @@ export class WorktreeManager {
             '.env.local',
             '.env.development',
             '.env.test',
+            'tsconfig.json',
             'tsconfig.tsbuildinfo'
         ];
 
