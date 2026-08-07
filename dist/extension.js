@@ -46792,10 +46792,10 @@ __export(extension_exports, {
   deactivate: () => deactivate
 });
 module.exports = __toCommonJS(extension_exports);
-var vscode9 = __toESM(require("vscode"));
+var vscode10 = __toESM(require("vscode"));
 
 // src/main.ts
-var vscode8 = __toESM(require("vscode"));
+var vscode9 = __toESM(require("vscode"));
 var fs8 = __toESM(require("fs"));
 var path11 = __toESM(require("path"));
 
@@ -47416,7 +47416,7 @@ async function executeRefs(filePath, line, symbol, cwd) {
     const totalRefs = locations.length;
     if (totalRefs === 0) {
       return {
-        message: "No references found for this symbol. (Note: If you just created or heavily modified this file, the workspace language server may still be indexing. Wait a moment and try again, or use grep as a fallback.)"
+        message: "No references found for this symbol. (Note: If you just created or heavily modified this file, the workspace language server may still be indexing. Wait a moment and try again, or use grep as a fallback.Or the langauage server is not running.)"
       };
     }
     const slicedLocations = locations.slice(0, MAX_REFS);
@@ -47571,11 +47571,11 @@ var commandSchemas = [
     }
   }
 ];
-async function executeRun(command, cwd, singal) {
+async function executeRun(command, cwd, signal) {
   return new Promise((resolve4, reject) => {
-    if (singal.aborted) return reject(new Error("AbortError"));
+    if (signal.aborted) return reject(new Error("AbortError"));
     const child = cp2.exec(command, { cwd, timeout: 3e4 }, (error, stdout, stderr) => {
-      singal.removeEventListener("abort", abortListener);
+      signal.removeEventListener("abort", abortListener);
       let output = "";
       if (stdout) output += `STDOUT:
 ${truncateOutput(stdout)}
@@ -47595,7 +47595,7 @@ ${output}`));
       child.kill();
       reject(new Error("AbortError"));
     };
-    singal.addEventListener("abort", abortListener);
+    signal.addEventListener("abort", abortListener);
   });
 }
 function truncateOutput(text, maxLen = 3e3) {
@@ -53999,7 +53999,7 @@ var webSchema = [
   },
   {
     type: "function",
-    name: "web_extract",
+    name: "url",
     description: "Extracts clean, detailed content from one or more specific web page URLs. Use this after web search when the search snippets are not sufficient.",
     parameters: {
       type: "object",
@@ -54080,11 +54080,34 @@ ${result.rawContent}
   }
 }
 
+// src/tools/artifact.ts
+var artifactSchema = [
+  {
+    type: "function",
+    name: "recall",
+    description: "Retrieve previous tool results from an artifact.",
+    parameters: {
+      type: "object",
+      properties: {
+        artifactID: {
+          type: "string",
+          description: "The id for the artifact to retrieve."
+        }
+      },
+      required: ["artifactID"]
+    }
+  }
+];
+async function executeRecall(artifactID, contextManager, signal) {
+  return { message: await contextManager.readArtifact(artifactID) };
+}
+
 // src/tools/toolIndex.ts
 var requiredSchemas = [
   ...searchSchemas,
   ...fileSchemas,
-  ...commandSchemas
+  ...commandSchemas,
+  ...artifactSchema
 ];
 function createToolRegistry(deps) {
   return {
@@ -54104,8 +54127,11 @@ function createToolRegistry(deps) {
       return await executeURL(args.urls, apiKey, args.query, deps.getSignal());
     },
     find: async (args) => {
-      const searchDeps = await deps.createFindDeps();
+      const searchDeps = await deps.getFindDeps();
       return await executeFind(args.query, searchDeps, deps.getSignal());
+    },
+    recall: async (args) => {
+      return await executeRecall(args.artifactID, deps.getContext(), deps.getSignal());
     }
   };
 }
@@ -97003,17 +97029,15 @@ var WorktreeManager = class {
 };
 
 // src/contextManager.ts
+var vscode8 = __toESM(require("vscode"));
 var ContextManager = class {
   constructor(context) {
     this.context = context;
-    const savedHistory = context.workspaceState.get("chatHistory");
-    if (savedHistory && savedHistory.length > 0) this.history = savedHistory;
-    const savedSummarizedHistory = context.workspaceState.get("summarizedHistory");
-    if (savedSummarizedHistory && savedSummarizedHistory.length > 0) this.summarizedHistory = savedSummarizedHistory;
-    const savedSummarizeIndex = context.workspaceState.get("summarizeIndex");
-    if (savedSummarizeIndex) this.summarizeIndex = savedSummarizeIndex;
+    this.storageUri = context.storageUri;
+    if (this.storageUri) this.artifactsUri = vscode8.Uri.joinPath(this.storageUri, "artifacts");
   }
   context;
+  isInitialized = false;
   // Full history for frontend
   history = [];
   activeToolResults = [];
@@ -97030,12 +97054,44 @@ var ContextManager = class {
     outputTokens: 0,
     thoughtTokens: 0
   };
+  storageUri;
+  artifactsUri;
+  async initialize() {
+    if (!this.storageUri || this.isInitialized) return;
+    try {
+      await vscode8.workspace.fs.createDirectory(this.storageUri);
+      if (this.artifactsUri) await vscode8.workspace.fs.createDirectory(this.artifactsUri);
+    } catch (e2) {
+      console.error("Failed to create context directory");
+    }
+    await this.loadHistory();
+    this.isInitialized = true;
+  }
+  async loadHistory() {
+    if (!this.storageUri) return;
+    const fileUri = vscode8.Uri.joinPath(this.storageUri, "chat_history.json");
+    try {
+      const data = await vscode8.workspace.fs.readFile(fileUri);
+      const state = JSON.parse(new TextDecoder().decode(data));
+      if (state.history) this.history = state.history;
+      if (state.summarizedHistory) this.summarizedHistory = state.summarizedHistory;
+      if (state.summarizeIndex) this.summarizeIndex = state.summarizeIndex;
+    } catch (e2) {
+      console.log("Not existing chat history found");
+    }
+  }
+  async loadArtifacts() {
+  }
   async save() {
-    await Promise.all([
-      this.context.workspaceState.update("chatHistory", this.history),
-      this.context.workspaceState.update("summarizedHistory", this.summarizedHistory),
-      this.context.workspaceState.update("summarizeIndex", this.summarizeIndex)
-    ]);
+    if (!this.storageUri) return;
+    const state = {
+      history: this.history,
+      summarizedHistory: this.summarizedHistory,
+      summarizeIndex: this.summarizeIndex
+    };
+    const fileUri = vscode8.Uri.joinPath(this.storageUri, "chat_history.json");
+    const data = new TextEncoder().encode(JSON.stringify(state, null, 2));
+    await vscode8.workspace.fs.writeFile(fileUri, data);
   }
   getHistory() {
     return [...this.history];
@@ -97165,13 +97221,43 @@ var ContextManager = class {
     this.previousProvider = "";
     this.resetTokenUsage();
     await this.save();
+    await this.clearArtifacts();
   }
-  pruneToolResults() {
+  async readArtifact(artifactID) {
+    if (!this.artifactsUri) throw new Error("Artifact storage not initialized");
+    const fileUri = vscode8.Uri.joinPath(this.artifactsUri, artifactID);
+    const data = await vscode8.workspace.fs.readFile(fileUri);
+    return new TextDecoder().decode(data);
+  }
+  // Save tool results to disk, return id
+  async saveArtifact(item) {
+    if (!this.artifactsUri) return "artifact_storage_disabled";
+    const artifactID = `artifact_${item.name}_${item.id}_${Date.now()}.txt`;
+    const fileUri = vscode8.Uri.joinPath(this.artifactsUri, artifactID);
+    const data = new TextEncoder().encode(item.result);
+    await vscode8.workspace.fs.writeFile(fileUri, data);
+    return artifactID;
+  }
+  async pruneToolResults() {
     for (const item of this.activeToolResults) {
-      if (item.error) item.result = `[Tool '${item.name}' failed. Original error retained: ${item.result}]`;
-      else item.result = `[Tool '${item.name}' executed successfully.]`;
+      const artifactID = await this.saveArtifact(item);
+      if (item.error) {
+        const snippet = item.result.substring(0, 150).replace(/\n/g, " ");
+        item.result = `[Tool '${item.name}' failed. Artifact saved as ${artifactID}. Error snippet: ${snippet}...]`;
+      } else {
+        item.result = `[Tool '${item.name}' executed successfully. Full output stored in artifact: ${artifactID}]`;
+      }
     }
     this.activeToolResults = [];
+  }
+  async clearArtifacts() {
+    if (!this.artifactsUri) return;
+    try {
+      await vscode8.workspace.fs.delete(this.artifactsUri, { recursive: true, useTrash: false });
+      await vscode8.workspace.fs.createDirectory(this.artifactsUri);
+    } catch (e2) {
+      console.error("Failed to clear artifacts directory:", e2);
+    }
   }
   getLLMContext() {
     return [
@@ -97227,13 +97313,13 @@ var ChatApp = class {
     this.contextManager = new ContextManager(context);
     const activeWorktreeID = context.workspaceState.get("activeWorktreeID");
     if (activeWorktreeID) {
-      const workspaceRoot = vscode8.workspace.workspaceFolders?.[0].uri.fsPath;
+      const workspaceRoot = vscode9.workspace.workspaceFolders?.[0].uri.fsPath;
       if (workspaceRoot) this.activeWorktree = new WorktreeManager(workspaceRoot, activeWorktreeID);
     }
     this.toolRegistry = createToolRegistry({
       getCwd: () => {
         if (this.activeWorktree) return this.activeWorktree.worktreePath;
-        const root = vscode8.workspace.workspaceFolders?.[0].uri.fsPath;
+        const root = vscode9.workspace.workspaceFolders?.[0].uri.fsPath;
         if (!root) throw new Error("No active workspace");
         return root;
       },
@@ -97241,7 +97327,7 @@ var ChatApp = class {
         if (!this.aborter) throw new Error("No active turn to get signal from");
         return this.aborter.signal;
       },
-      createFindDeps: async () => {
+      getFindDeps: async () => {
         const provider = this.context.globalState.get("embedProvider");
         const model = this.context.globalState.get(`${provider}_embedModel`);
         if (!provider || !model) throw new Error("Embedding provider/model is not configured");
@@ -97258,11 +97344,14 @@ var ChatApp = class {
         const webSearchEnabled = this.context.globalState.get("webSearchEnabled") ?? false;
         const webSearchMode = this.context.globalState.get("webSearchMode") ?? "tavily";
         if (!webSearchEnabled || webSearchMode !== "tavily") {
-          throw new Error("You do not have access to the 'web' tool. It is currently disabled. Do not try to use it.");
+          throw new Error("You do not have access to the 'web' tool this turn. It is currently disabled.");
         }
         const tavilyAPIKey = await this.context.secrets.get("TAVILY_API_KEY");
         if (!tavilyAPIKey) throw new Error("Tavily API key not configured!");
         return tavilyAPIKey;
+      },
+      getContext: () => {
+        return this.contextManager;
       }
     });
   }
@@ -97318,7 +97407,7 @@ var ChatApp = class {
       const isValidModel = infos.some((info) => info.id === chatModel);
       this.post({ type: "updateChatModel", model: isValidModel ? chatModel : void 0 });
     } catch (e2) {
-      vscode8.window.showErrorMessage(`Failed to fetch chat models: ${e2}`);
+      vscode9.window.showErrorMessage(`Failed to fetch chat models: ${e2}`);
       this.post({ type: "requestChatAPIKey", provider });
     }
   }
@@ -97332,7 +97421,7 @@ var ChatApp = class {
       const isValidModel = models.includes(savedModel);
       this.post({ type: "updateEmbedModel", model: isValidModel ? savedModel : void 0 });
     } catch (e2) {
-      vscode8.window.showErrorMessage(`Failed to fetch embed models: ${e2}`);
+      vscode9.window.showErrorMessage(`Failed to fetch embed models: ${e2}`);
       this.post({ type: "requestEmbedAPIKey", provider });
     }
   }
@@ -97345,17 +97434,17 @@ var ChatApp = class {
     }
   }
   async runAgentTurn(provider, model, effort, userMessage) {
-    const workspaceRoot = vscode8.workspace.workspaceFolders?.[0].uri.fsPath;
+    const workspaceRoot = vscode9.workspace.workspaceFolders?.[0].uri.fsPath;
     if (!workspaceRoot) throw new Error("No active workspace");
     if (!this.activeWorktree) {
       const gitInstalled = await WorktreeManager.isGitInstalled();
       if (!gitInstalled) {
-        vscode8.window.showErrorMessage("Install Git on your system and restart VS Code.", "Understood");
+        vscode9.window.showErrorMessage("Install Git on your system and restart VS Code.", "Understood");
         return;
       }
       const isRepo = await WorktreeManager.isGitRepo(workspaceRoot);
       if (!isRepo) {
-        const userChoice = await vscode8.window.showWarningMessage(
+        const userChoice = await vscode9.window.showWarningMessage(
           "Git repository required for file edits. Initialize now?",
           "Initialize",
           "Cancel"
@@ -97363,9 +97452,9 @@ var ChatApp = class {
         if (userChoice === "Initialize") {
           try {
             await WorktreeManager.initGitRepo(workspaceRoot);
-            vscode8.window.showInformationMessage("Git repository initialized successfully.");
+            vscode9.window.showInformationMessage("Git repository initialized successfully.");
           } catch (e2) {
-            vscode8.window.showErrorMessage(`Failed to initialize Git: ${e2}`);
+            vscode9.window.showErrorMessage(`Failed to initialize Git: ${e2}`);
             return;
           }
         } else {
@@ -97432,7 +97521,7 @@ var ChatApp = class {
         }
         if (this.aborter.signal.aborted) throw new Error("AbortError");
         this.post({ type: "streamEnd" });
-        this.contextManager.pruneToolResults();
+        await this.contextManager.pruneToolResults();
         const finalResponse = streamResult.value;
         if (finalResponse?.tokenUsage) {
           this.post({
@@ -97524,6 +97613,7 @@ var ChatApp = class {
       switch (data.type) {
         case "webviewReady": {
           try {
+            await this.contextManager.initialize();
             const showAllChatModels = this.context.globalState.get("showAllChatModels") ?? false;
             const serverStateManagement = this.context.globalState.get("serverStateManagement") ?? true;
             const turnLimit = this.context.globalState.get("turnLimit") ?? 0;
@@ -97578,7 +97668,7 @@ var ChatApp = class {
               } else await this.clearActiveWorktree();
             }
           } catch (e2) {
-            vscode8.window.showErrorMessage(`Failed to restore state ${e2}`);
+            vscode9.window.showErrorMessage(`Failed to restore state ${e2}`);
           }
           break;
         }
@@ -97664,7 +97754,7 @@ var ChatApp = class {
             await verifyTavilyAPIKey(data.key);
             await this.context.secrets.store("TAVILY_API_KEY", data.key);
           } catch (e2) {
-            vscode8.window.showErrorMessage("Invalid Tavily API key");
+            vscode9.window.showErrorMessage("Invalid Tavily API key");
             this.post({ type: "requestTavilyAPIKey" });
           }
           break;
@@ -97677,7 +97767,7 @@ var ChatApp = class {
             try {
               await verifyTavilyAPIKey(tavilyAPIKey);
             } catch (e2) {
-              vscode8.window.showErrorMessage("Invalid Tavily API key");
+              vscode9.window.showErrorMessage("Invalid Tavily API key");
               this.post({ type: "requestTavilyAPIKey" });
             }
           }
@@ -97773,7 +97863,7 @@ var ChatApp = class {
                 await this.context.workspaceState.update("patchStatus", "conflict");
                 this.post({ type: "updatePatchStatus", status: "conflict" });
               } else {
-                vscode8.window.showErrorMessage(`Failed to apply patch: ${e2.message || String(e2)}`);
+                vscode9.window.showErrorMessage(`Failed to apply patch: ${e2.message || String(e2)}`);
               }
             }
           }
@@ -97811,19 +97901,19 @@ var ChatApp = class {
               await this.contextManager.save();
               this.post({ type: "updatePatchStatus", status: "accepted" });
             } catch (e2) {
-              vscode8.window.showErrorMessage(`Failed to force apply: ${e2}`);
+              vscode9.window.showErrorMessage(`Failed to force apply: ${e2}`);
             }
           }
           break;
         }
         case "openDiffView": {
           if (this.activeWorktree) {
-            const workspaceRoot = vscode8.workspace.workspaceFolders?.[0].uri.fsPath;
+            const workspaceRoot = vscode9.workspace.workspaceFolders?.[0].uri.fsPath;
             if (!workspaceRoot) return;
-            const originalUri = vscode8.Uri.file(path11.join(workspaceRoot, data.file));
-            const worktreeUri = vscode8.Uri.file(path11.join(this.activeWorktree.worktreePath, data.file));
+            const originalUri = vscode9.Uri.file(path11.join(workspaceRoot, data.file));
+            const worktreeUri = vscode9.Uri.file(path11.join(this.activeWorktree.worktreePath, data.file));
             const title = `${data.file} (Agent Proposal)`;
-            vscode8.commands.executeCommand("vscode.diff", originalUri, worktreeUri, title);
+            vscode9.commands.executeCommand("vscode.diff", originalUri, worktreeUri, title);
           }
           break;
         }
@@ -97831,9 +97921,9 @@ var ChatApp = class {
     });
   }
   getHTML() {
-    const htmlPath = vscode8.Uri.joinPath(this.context.extensionUri, "dist", "frontend.html");
-    const scriptPath = vscode8.Uri.joinPath(this.context.extensionUri, "dist", "webview.bundle.js");
-    const cssPath = vscode8.Uri.joinPath(this.context.extensionUri, "dist", "webview.bundle.css");
+    const htmlPath = vscode9.Uri.joinPath(this.context.extensionUri, "dist", "frontend.html");
+    const scriptPath = vscode9.Uri.joinPath(this.context.extensionUri, "dist", "webview.bundle.js");
+    const cssPath = vscode9.Uri.joinPath(this.context.extensionUri, "dist", "webview.bundle.css");
     try {
       let html = fs8.readFileSync(htmlPath.fsPath, "utf-8");
       const scriptUri = this.view.webview.asWebviewUri(scriptPath);
@@ -97842,7 +97932,7 @@ var ChatApp = class {
       html = html.replace("{{scriptUri}}", scriptUri.toString());
       return html;
     } catch (e2) {
-      vscode8.window.showErrorMessage(`Error loading frontend html: ${e2}`);
+      vscode9.window.showErrorMessage(`Error loading frontend html: ${e2}`);
       return `<!DOCTYPE html><html><body>Error loading UI</body></html>`;
     }
   }
@@ -97858,7 +97948,7 @@ function formatError(e2) {
 function activate(context) {
   const chatApp = new ChatApp(context);
   context.subscriptions.push(
-    vscode9.window.registerWebviewViewProvider(
+    vscode10.window.registerWebviewViewProvider(
       "codeagent-sidebar",
       chatApp
     )

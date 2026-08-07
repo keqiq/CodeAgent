@@ -22,12 +22,13 @@ export const commandSchemas: ToolSchema[] = [
     }
 ];
 
-export async function executeRun(command: string, cwd: string, singal: AbortSignal): Promise<ToolResult> {
+// TODO: Pretty dangerous as it allows any command, add some safety nets
+export async function executeRun(command: string, cwd: string, signal: AbortSignal): Promise<ToolResult> {
     return new Promise((resolve, reject) => {
-        if (singal.aborted) return reject(new Error('AbortError'));
+        if (signal.aborted) return reject(new Error('AbortError'));
         
         const child = cp.exec(command, { cwd, timeout: 30_000 }, (error, stdout, stderr) => {
-            singal.removeEventListener('abort', abortListener);
+            signal.removeEventListener('abort', abortListener);
             
             let output = '';
             if (stdout) output += `STDOUT:\n${truncateOutput(stdout)}\n`;
@@ -47,7 +48,7 @@ export async function executeRun(command: string, cwd: string, singal: AbortSign
             reject(new Error('AbortError'));
         };
 
-        singal.addEventListener('abort', abortListener);
+        signal.addEventListener('abort', abortListener);
     });
 }
 

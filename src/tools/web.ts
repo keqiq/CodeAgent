@@ -19,7 +19,7 @@ export const webSchema: ToolSchema[] = [
     },
     {
         type: 'function',
-        name: 'web_extract',
+        name: 'url',
         description: 'Extracts clean, detailed content from one or more specific web page URLs. Use this after web search when the search snippets are not sufficient.',
         parameters: {
             type: 'object',

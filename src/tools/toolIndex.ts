@@ -2,6 +2,8 @@ import { searchSchemas, executeGlob, executeGrep, executeRefs, findDeps, execute
 import { fileSchemas, executeRead, executeWrite, executeEdit } from "./files";
 import { commandSchemas, executeRun } from "./execute";
 import { webSchema, executeWebSearch, executeURL } from "./web";
+import { ContextManager } from "../contextManager";
+import { artifactSchema, executeRecall } from "./artifact";
 
 export interface ToolProperty {
     type: string;
@@ -37,15 +39,17 @@ export const requiredSchemas: ToolSchema[] = [
     ...searchSchemas,
     ...fileSchemas,
     ...commandSchemas,
+    ...artifactSchema
 ];
 
 export { webSchema };
 
 export type ToolDeps = {
-    createFindDeps: () => Promise<findDeps>;
+    getFindDeps: () => Promise<findDeps>;
     getCwd: () => string;
     getSignal: () => AbortSignal;
-    getTavilyKey:() => Promise<string>
+    getTavilyKey:() => Promise<string>;
+    getContext:() => ContextManager
 };
 
 export function createToolRegistry(deps: ToolDeps): Record<string, (args: any) => Promise<ToolResult>> {
@@ -75,8 +79,12 @@ export function createToolRegistry(deps: ToolDeps): Record<string, (args: any) =
         },
 
         find: async (args) => {
-            const searchDeps = await deps.createFindDeps();
+            const searchDeps = await deps.getFindDeps();
             return await executeFind(args.query, searchDeps, deps.getSignal());
+        },
+
+        recall: async (args) => {
+            return await executeRecall(args.artifactID, deps.getContext(), deps.getSignal());
         }
     };
 }

@@ -48,7 +48,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
                 return this.aborter.signal;
             },
 
-            createFindDeps: async () => {
+            getFindDeps: async () => {
                 const provider = this.context.globalState.get<string>('embedProvider');
                 const model = this.context.globalState.get<string>(`${provider}_embedModel`);
                 
@@ -71,13 +71,17 @@ export class ChatApp implements vscode.WebviewViewProvider {
                 const webSearchMode = this.context.globalState.get<string>('webSearchMode') ?? 'tavily';
 
                 if (!webSearchEnabled || webSearchMode !== 'tavily') {
-                    throw new Error("You do not have access to the 'web' tool. It is currently disabled. Do not try to use it.");
+                    throw new Error("You do not have access to the 'web' tool this turn. It is currently disabled.");
                 }
                 
                 const tavilyAPIKey = await this.context.secrets.get('TAVILY_API_KEY');
                 if (!tavilyAPIKey) throw new Error('Tavily API key not configured!');
                 return tavilyAPIKey;
-            }
+            },
+
+            getContext: () => {
+                return this.contextManager;
+            } 
         });
     }
 
@@ -292,8 +296,8 @@ export class ChatApp implements vscode.WebviewViewProvider {
                 if (this.aborter.signal.aborted) throw new Error('AbortError');
                 this.post({ type: 'streamEnd' });
 
-                // Replace previous tool results with compact summaries
-                this.contextManager.pruneToolResults();
+                // save previous tool results to disk and replace with artifact pointers
+                await this.contextManager.pruneToolResults();
                 
                 const finalResponse = streamResult.value as ChatResponse;
 
@@ -424,6 +428,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
                 case 'webviewReady': {
 
                     try {
+                        await this.contextManager.initialize();
 
                         const showAllChatModels = this.context.globalState.get<boolean>('showAllChatModels') ?? false;
                         const serverStateManagement = this.context.globalState.get<boolean>('serverStateManagement') ?? true;

@@ -304,7 +304,8 @@ export async function executeRefs(filePath: string, line: number, symbol: string
                 message: 'No references found for this symbol. ' +
                         '(Note: If you just created or heavily modified this file, ' +
                         'the workspace language server may still be indexing. ' +
-                        'Wait a moment and try again, or use grep as a fallback.)' 
+                        'Wait a moment and try again, or use grep as a fallback.' +
+                        'Or the langauage server is not running.)'
             };
         }
 

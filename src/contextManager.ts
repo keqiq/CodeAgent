@@ -63,7 +63,15 @@ export interface TokenCategoryUsage {
     totalTokens: number;
 }
 
+interface ChatState {
+    history: ChatItem[];
+    summarizedHistory: ChatItem[];
+    summarizeIndex: number;
+}
+
 export class ContextManager {
+    private isInitialized: boolean = false;
+
     // Full history for frontend
     private history: ChatItem[] = [];
 
@@ -86,21 +94,62 @@ export class ContextManager {
         thoughtTokens: 0
     };
 
+    private storageUri: vscode.Uri | undefined;
+    private artifactsUri: vscode.Uri | undefined;
+
     constructor(private readonly context: vscode.ExtensionContext) {
-        const savedHistory = context.workspaceState.get<ChatItem[]>('chatHistory');
-        if (savedHistory && savedHistory.length > 0) this.history = savedHistory;
-        const savedSummarizedHistory = context.workspaceState.get<ChatItem[]>('summarizedHistory');
-        if (savedSummarizedHistory && savedSummarizedHistory.length > 0) this.summarizedHistory = savedSummarizedHistory;
-        const savedSummarizeIndex = context.workspaceState.get<number>('summarizeIndex');
-        if (savedSummarizeIndex) this.summarizeIndex = savedSummarizeIndex;
+        this.storageUri = context.storageUri;
+        if (this.storageUri) this.artifactsUri = vscode.Uri.joinPath(this.storageUri, 'artifacts');
+    }
+
+    public async initialize(): Promise<void> {
+        if (!this.storageUri || this.isInitialized) return;
+        try {
+            await vscode.workspace.fs.createDirectory(this.storageUri);
+            if (this.artifactsUri) await vscode.workspace.fs.createDirectory(this.artifactsUri);
+        } catch (e) {
+            console.error('Failed to create context directory');
+        }
+
+        await this.loadHistory();
+
+        this.isInitialized = true;
+    }
+
+    public async loadHistory(): Promise<void> {
+        if (!this.storageUri) return;
+
+        const fileUri = vscode.Uri.joinPath(this.storageUri, 'chat_history.json');
+
+        try {
+            const data = await vscode.workspace.fs.readFile(fileUri);
+            const state = JSON.parse(new TextDecoder().decode(data)) as ChatState;
+
+            if (state.history) this.history = state.history;
+            if (state.summarizedHistory) this.summarizedHistory = state.summarizedHistory;
+            if (state.summarizeIndex) this.summarizeIndex = state.summarizeIndex;
+        } catch (e) {
+            console.log('Not existing chat history found');
+        }
+    }
+
+    public async loadArtifacts(): Promise<void> {
+
     }
 
     public async save(): Promise<void> {
-        await Promise.all([
-            this.context.workspaceState.update('chatHistory', this.history),
-            this.context.workspaceState.update('summarizedHistory', this.summarizedHistory),
-            this.context.workspaceState.update('summarizeIndex', this.summarizeIndex)
-        ]);
+        if (!this.storageUri) return;
+    
+        const state: ChatState = {
+            history: this.history,
+            summarizedHistory: this.summarizedHistory,
+            summarizeIndex: this.summarizeIndex
+        };
+
+        const fileUri = vscode.Uri.joinPath(this.storageUri, 'chat_history.json');
+        const data = new TextEncoder().encode(JSON.stringify(state, null, 2));
+        
+        await vscode.workspace.fs.writeFile(fileUri, data);
     }
 
     public getHistory(): ChatItem[] {
@@ -259,14 +308,57 @@ export class ContextManager {
         this.previousProvider = '';
         this.resetTokenUsage();
         await this.save();
+        await this.clearArtifacts();
     }
 
-    public pruneToolResults(): void {
+    public async readArtifact(artifactID: string): Promise<string> {
+        if (!this.artifactsUri) throw new Error('Artifact storage not initialized');
+
+        const fileUri = vscode.Uri.joinPath(this.artifactsUri, artifactID);
+        
+        const data = await vscode.workspace.fs.readFile(fileUri);
+        return new TextDecoder().decode(data);
+    }
+
+    // Save tool results to disk, return id
+    public async saveArtifact(item: FunctionResultItem): Promise<string> {
+        if (!this.artifactsUri) return 'artifact_storage_disabled';
+
+        const artifactID = `artifact_${item.name}_${item.id}_${Date.now()}.txt`;
+        const fileUri = vscode.Uri.joinPath(this.artifactsUri, artifactID);
+
+        const data = new TextEncoder().encode(item.result);
+        await vscode.workspace.fs.writeFile(fileUri, data);
+
+        return artifactID;
+    }
+
+    public async pruneToolResults(): Promise<void> {
         for (const item of this.activeToolResults) {
-            if (item.error) item.result = `[Tool '${item.name}' failed. Original error retained: ${item.result}]`;
-            else item.result = `[Tool '${item.name}' executed successfully.]`;
+
+            const artifactID = await this.saveArtifact(item);
+
+            if (item.error) {
+                const snippet = item.result.substring(0, 150).replace(/\n/g, ' ');
+                item.result = `[Tool '${item.name}' failed. Artifact saved as ${artifactID}. Error snippet: ${snippet}...]`;
+            } else {
+                item.result = `[Tool '${item.name}' executed successfully. Full output stored in artifact: ${artifactID}]`;
+            }
         }
+
         this.activeToolResults = [];
+    }
+
+    private async clearArtifacts(): Promise<void> {
+        if (!this.artifactsUri) return;
+
+        try {
+            await vscode.workspace.fs.delete(this.artifactsUri, { recursive: true, useTrash: false });
+            await vscode.workspace.fs.createDirectory(this.artifactsUri);
+        } catch (e) {
+            console.error('Failed to clear artifacts directory:', e);
+        }
+        
     }
 
     public getLLMContext(): ChatItem[] {
