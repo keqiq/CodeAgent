@@ -223,8 +223,46 @@
 
                         <div class="menu-divider"></div>
 
-                        <div class="menu-item" id="menuCondenseHistoryBtn">
-                            <div class="menu-item-title">Condense History</div>
+                        <div class="menu-item active" id="menuPruneToggle">
+                            <div class="menu-item-title">Prune Tool Results</div>
+                            <div class="menu-item-desc">Compact large results to save context.</div>
+                        </div>
+
+                        <div class="menu-item" id="menuPruneStrategyToggle">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span class="menu-item-title">Strategy</span>
+                                <span id="pruneStrategyLabel"
+                                    style="font-size: 10px; font-weight: 700; color: var(--vscode-textLink-foreground);">TURN</span>
+                            </div>
+                        </div>
+
+                        <div class="menu-item number-input" id="menuPruneInterval">
+                            <div class="menu-item-text">
+                                <div class="menu-item-title" id="pruneIntervalTitle">Turn Interval</div>
+                                <div class="menu-item-desc">How often to prune.</div>
+                            </div>
+
+                            <div class="number-control">
+                                <button type="button" id="pruneIntervalMinus" class="icon-btn" title="Decrease">
+                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                                        <path fill-rule="evenodd" clip-rule="evenodd"
+                                            d="M10.4 12.4L6.1 8l4.3-4.4-.7-.7L4.7 8l5 5.1.7-.7z" />
+                                    </svg>
+                                </button>
+                                <input type="number" id="pruneIntervalInput" value="1" min="1">
+                                <button type="button" id="pruneIntervalPlus" class="icon-btn" title="Increase">
+                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                                        <path fill-rule="evenodd" clip-rule="evenodd"
+                                            d="M5.6 3.6L9.9 8l-4.3 4.4.7.7L11.3 8l-5-5.1-.7.7z" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="menu-divider"></div>
+
+                        <div class="menu-item disabled" id="menuCondenseHistoryBtn">
+                            <div class="menu-item-title">Condense History WIP</div>
                             <div class="menu-item-desc">Summarize to free up context.</div>
                         </div>
                     </div>

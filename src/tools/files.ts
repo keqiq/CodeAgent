@@ -70,10 +70,7 @@ export async function executeWrite(filePath: string, content: string, cwd: strin
     await vscode.workspace.fs.writeFile(fileUri, uint8Array);
     // Force lsp to parse the new file
     await vscode.workspace.openTextDocument(fileUri);
-    return {
-        message: `Successfully wrote to ${filePath}`,
-        changedFiles: [filePath]
-    };
+    return { message: `Successfully wrote to ${filePath}` };
 }
 
 const normalize = (str: string) => str.replace(/\r\n/g, '\n').replace(/[ \t]+/g, ' ').trim();
@@ -96,10 +93,7 @@ export async function executeEdit(filePath: string, oldText: string, newText: st
 
         await vscode.workspace.openTextDocument(fileUri);
 
-        return {
-            message: `Successfully edited ${filePath} with strict matching.`,
-            changedFiles: [filePath]
-        };
+        return { message: `Successfully edited ${filePath} with strict matching.` };
     }
 
     // Whitespace agnostic matching fallback

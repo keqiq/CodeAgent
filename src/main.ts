@@ -229,11 +229,16 @@ export class ChatApp implements vscode.WebviewViewProvider {
 
         let providerInstance: ChatProvider | undefined = undefined;
 
+        const serverStateManagment = this.context.globalState.get<boolean>('serverStateManagement') ?? true;
+        const enabledWebSearch = this.context.globalState.get<boolean>('webSearchEnabled') ?? false;
+        const savedWebMode = this.context.globalState.get<string>('webSearchMode') ?? 'tavily';
+        
+        const pruneMode = this.context.globalState.get<string>('pruneMode') ?? 'run';
+        const pruneTurnInterval = this.context.globalState.get<number>('pruneTurnInterval') ?? 1;
+        const pruneRunInterval = this.context.globalState.get<number>('pruneRunInterval') ?? 1;
+
         try {
             const apiKey = await this.getChatAPIKey(provider); 
-            const serverStateManagment = this.context.globalState.get<boolean>('serverStateManagement') ?? true;
-            const enabledWebSearch = this.context.globalState.get<boolean>('webSearchEnabled') ?? false;
-            const savedWebMode = this.context.globalState.get<string>('webSearchMode') ?? 'tavily';
             
             const webSearchMode: WebSearchMode = enabledWebSearch ? (savedWebMode as WebSearchMode) : 'none';
             
@@ -241,7 +246,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
 
             this.contextManager.prepareRun(provider, serverStateManagment);
             this.contextManager.addUserMessage(userMessage);
-            
+
             let keepGoing = true;
             let turnCount = 0;
             const turnLimit = this.context.globalState.get<number>('turnLimit') ?? 0;
@@ -296,8 +301,8 @@ export class ChatApp implements vscode.WebviewViewProvider {
                 if (this.aborter.signal.aborted) throw new Error('AbortError');
                 this.post({ type: 'streamEnd' });
 
-                // save previous tool results to disk and replace with artifact pointers
-                await this.contextManager.pruneToolResults();
+                // update turn counter for tool pruning
+                await this.contextManager.endTurn(pruneMode, pruneTurnInterval);
                 
                 const finalResponse = streamResult.value as ChatResponse;
 
@@ -352,7 +357,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
                             this.post({ type: 'updateTool', status: 'error', toolId: toolId, error: "Invalid tool call" });
                         }
 
-                        this.contextManager.addFunctionResult(toolId, toolName, result.message, isError);
+                        this.contextManager.addFunctionResult(toolId, toolName, result.message, isError, result.data);
                     }
 
                     // Do not continue the conversation if we only run server tools as they have no function results to follow up with
@@ -397,6 +402,10 @@ export class ChatApp implements vscode.WebviewViewProvider {
             this.aborter = null;
 
             this.contextManager.addRunSummary(provider, runStatus, statusMessage);
+
+            // Update run counter for tool pruning
+            await this.contextManager.endRun(pruneMode, pruneRunInterval);
+
             await this.contextManager.save();
 
             // This is different from updateTokenUsage
@@ -478,6 +487,17 @@ export class ChatApp implements vscode.WebviewViewProvider {
                                 usage: this.contextManager.estimateCategorizedTokens(chatProvider)
                             });
                         }
+
+                        const pruneMode = this.context.globalState.get<string>('pruneMode') ?? 'run';
+                        const pruneTurnInterval = this.context.globalState.get<number>('pruneTurnInterval') ?? 1;
+                        const pruneRunInterval = this.context.globalState.get<number>('pruneRunInterval') ?? 1;
+
+                        this.post({
+                            type: 'restorePruneSettings',
+                            mode: pruneMode,
+                            turnInterval: pruneTurnInterval,
+                            runInterval: pruneRunInterval
+                        });
                         
 
                         const indexEnabled = this.context.globalState.get<boolean>('indexEnabled') ?? false;
@@ -617,6 +637,17 @@ export class ChatApp implements vscode.WebviewViewProvider {
                             this.post({ type: 'requestTavilyAPIKey' });
                         }
                     }
+                    break;
+                }
+
+                case 'setPruneMode': {
+                    await this.context.globalState.update('pruneMode', data.mode);
+                    break;
+                }
+
+                case 'setPruneInterval': {
+                    if (data.turn) await this.context.globalState.update('pruneTurnInterval', data.turn);
+                    else if (data.run) await this.context.globalState.update('pruneRunInterval', data.run);
                     break;
                 }
 

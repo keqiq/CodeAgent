@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { getEncoding } from 'js-tiktoken';
-import { ChatProvider } from './apis/chat/chatProvider';
 import { ChatFactory } from './apis/chat/chatFactory';
+import { PRUNE_TOOLS } from './tools/toolIndex';
 
 export interface MessageItem {
     type: 'message';
@@ -28,6 +28,7 @@ export interface FunctionResultItem {
     result: string;
     error: boolean;
     turnID?: string;
+    data?:any;
 }
 
 export interface RunSummaryItem {
@@ -76,6 +77,8 @@ export class ContextManager {
     private history: ChatItem[] = [];
 
     private activeToolResults: FunctionResultItem[] = [];
+    private turnsSinceLastPrune: number = 0;
+    private runsSinceLastPrune: number = 0;
 
     private summarizedHistory: ChatItem[] = [];
     private summarizeIndex = 0;
@@ -273,14 +276,15 @@ export class ContextManager {
         });
     }
 
-    public addFunctionResult(id: string, name: string, result: string, error: boolean): void {
+    public addFunctionResult(id: string, name: string, result: string, error: boolean, data?: any): void {
         const item: FunctionResultItem = {
             type: 'function_result',
             id,
             name,
             result,
             error,
-            ...(this.activeTurnID && { turnID: this.activeTurnID })
+            ...(this.activeTurnID && { turnID: this.activeTurnID }),
+            ...(data && { data })
         };
         this.history.push(item);
         this.activeToolResults.push(item);
@@ -306,9 +310,31 @@ export class ContextManager {
         this.previousTurnID = undefined;
         this.activeProvider = '';
         this.previousProvider = '';
+        this.turnsSinceLastPrune = 0;
+        this.runsSinceLastPrune = 0;
         this.resetTokenUsage();
         await this.save();
         await this.clearArtifacts();
+    }
+
+    public async endTurn(mode: string, interval: number): Promise<void> {
+        this.turnsSinceLastPrune++;
+
+        // If previous tool results contain errors, keep tool results for debug context
+        const hasUnresolvedErrors = this.activeToolResults.some(item => item.error);
+        if (hasUnresolvedErrors) return;
+
+        if (mode === 'turn' && this.turnsSinceLastPrune >= interval) {
+            await this.pruneToolResults();
+        }
+    }
+
+    public async endRun(mode: string, interval: number): Promise<void> {
+        this.runsSinceLastPrune++;
+
+        if (mode === 'run' && this.runsSinceLastPrune >= interval) {
+            await this.pruneToolResults();
+        }
     }
 
     public async readArtifact(artifactID: string): Promise<string> {
@@ -334,12 +360,23 @@ export class ContextManager {
     }
 
     public async pruneToolResults(): Promise<void> {
+        if (this.activeToolResults.length === 0) return;
+
         for (const item of this.activeToolResults) {
 
-            const artifactID = await this.saveArtifact(item);
+            // For calls to fetch artifacts, we should point to the original artifact
+            const isRecall = item.name === 'recall';
+
+            const shouldPrune = isRecall || PRUNE_TOOLS.has(item.name) || item.result.length > 300;
+
+            if (!shouldPrune) continue;
+
+            let artifactID: string;
+            if (isRecall) artifactID = item.data?.artifactID || 'unknown_artifact';
+            else artifactID = await this.saveArtifact(item);
 
             if (item.error) {
-                const snippet = item.result.substring(0, 150).replace(/\n/g, ' ');
+                const snippet = item.result.substring(0, 50).replace(/\n/g, ' ');
                 item.result = `[Tool '${item.name}' failed. Artifact saved as ${artifactID}. Error snippet: ${snippet}...]`;
             } else {
                 item.result = `[Tool '${item.name}' executed successfully. Full output stored in artifact: ${artifactID}]`;
@@ -347,6 +384,8 @@ export class ContextManager {
         }
 
         this.activeToolResults = [];
+        this.turnsSinceLastPrune = 0;
+        this.runsSinceLastPrune = 0;
     }
 
     private async clearArtifacts(): Promise<void> {

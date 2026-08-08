@@ -18,6 +18,20 @@ export class ContextWindow {
     private currentTokens: number = 0;
     private categorizedUsage: TokenCategoryUsage | null = null;
 
+    private togglePrune: HTMLElement;
+    private togglePruneStrategy: HTMLElement;
+    private pruneStrategyLabel: HTMLElement;
+    private pruneIntervalContainer: HTMLElement;
+    private pruneIntervalTitle: HTMLElement;
+    
+    private pruneIntervalInput: HTMLInputElement;
+    private pruneIntervalMinus: HTMLElement;
+    private pruneIntervalPlus: HTMLElement;
+
+    private activeStrategy: 'turn' | 'run' = 'turn';
+    private turnInterval: number = 1;
+    private runInterval: number = 1;
+
     constructor(private vscodeAPI: WebviewApi) {
         this.contextContainer = document.getElementById('contextWindowContainer') as HTMLElement;
         this.contextToggleBtn = document.getElementById('contextWindowToggleBtn') as HTMLElement;
@@ -30,6 +44,16 @@ export class ContextWindow {
         this.legAssistant = document.getElementById('legAssistant') as HTMLElement;
         this.legSystem = document.getElementById('legSystem') as HTMLElement;
         this.legTools = document.getElementById('legTools') as HTMLElement;
+
+        this.togglePrune = document.getElementById('menuPruneToggle') as HTMLElement;
+        this.togglePruneStrategy = document.getElementById('menuPruneStrategyToggle') as HTMLElement;
+        this.pruneStrategyLabel = document.getElementById('pruneStrategyLabel') as HTMLElement;
+        this.pruneIntervalContainer = document.getElementById('menuPruneInterval') as HTMLElement;
+        this.pruneIntervalTitle = document.getElementById('pruneIntervalTitle') as HTMLElement;
+        
+        this.pruneIntervalInput = document.getElementById('pruneIntervalInput') as HTMLInputElement;
+        this.pruneIntervalMinus = document.getElementById('pruneIntervalMinus') as HTMLElement;
+        this.pruneIntervalPlus = document.getElementById('pruneIntervalPlus') as HTMLElement;
 
         this.initListeners();
     }
@@ -46,6 +70,98 @@ export class ContextWindow {
                 this.contextDropdown.classList.add('hidden');
             }
         });
+
+        // Toggle pruning control
+        this.togglePrune.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isActive = this.togglePrune.classList.toggle('active');
+
+            if (isActive) {
+                this.togglePruneStrategy.classList.remove('hidden');
+                this.pruneIntervalContainer.classList.remove('hidden');
+                this.vscodeAPI.postMessage({ type: 'setPruneMode', mode: this.activeStrategy });
+            } else {
+                this.togglePruneStrategy.classList.add('hidden');
+                this.pruneIntervalContainer.classList.add('hidden');
+                this.vscodeAPI.postMessage({ type: 'setPruneMode', mode: 'none' });
+            }
+        });
+
+        // Switch between turn and task pruning mode
+        this.togglePruneStrategy.addEventListener('click', (e) => {
+            e.stopPropagation();
+
+            this.activeStrategy = this.activeStrategy === 'turn' ? 'run' : 'turn';
+            this.updateStrategyUI();
+
+            this.vscodeAPI.postMessage({ type: 'setPruneMode', mode: this.activeStrategy });
+        });
+
+        // Interval controls
+        this.pruneIntervalMinus.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.adjustInterval(-1);
+        });
+
+        this.pruneIntervalPlus.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.adjustInterval(1);
+        });
+
+        this.pruneIntervalInput.addEventListener('change', () => {
+            let val = parseInt(this.pruneIntervalInput.value, 10);
+            if (isNaN(val) || val < 1) val = 1;
+            this.setIntervalValue(val);
+        });
+    }
+
+    private adjustInterval(delta: number) {
+        let val = parseInt(this.pruneIntervalInput.value, 10) || 1;
+        val = Math.max(1, val + delta);
+        this.setIntervalValue(val);
+    }
+
+    private setIntervalValue(val: number) {
+        this.pruneIntervalInput.value = val.toString();
+        
+        if (this.activeStrategy === 'turn') {
+            this.turnInterval = val;
+            this.vscodeAPI.postMessage({ type: 'setPruneInterval', turn: val });
+        } else {
+            this.runInterval = val;
+            this.vscodeAPI.postMessage({ type: 'setPruneInterval', run: val });
+        }
+    }
+
+    private updateStrategyUI() {
+        if (this.activeStrategy === 'turn') {
+            this.pruneStrategyLabel.textContent = 'TURN';
+            this.pruneIntervalTitle.textContent = 'Turn Interval';
+            this.pruneIntervalInput.value = this.turnInterval.toString();
+        } else {
+            this.pruneStrategyLabel.textContent = 'TASK';
+            this.pruneIntervalTitle.textContent = 'Task Interval';
+            this.pruneIntervalInput.value = this.runInterval.toString();
+        }
+    }
+
+    public restorePruneSettings(mode: string, turnInterval: number, runInterval: number): void {
+        this.turnInterval = Math.max(1, turnInterval);
+        this.runInterval = Math.max(1, runInterval);
+
+        if (mode === 'none') {
+            this.togglePrune.classList.remove('active');
+            this.togglePruneStrategy.classList.add('hidden');
+            this.pruneIntervalContainer.classList.add('hidden');
+            // Keep internal strategy state intact in case they toggle it back on
+        } else {
+            this.togglePrune.classList.add('active');
+            this.togglePruneStrategy.classList.remove('hidden');
+            this.pruneIntervalContainer.classList.remove('hidden');
+            this.activeStrategy = mode as 'turn' | 'run';
+        }
+
+        this.updateStrategyUI();
     }
 
     public updateContextWindow(maxContext: number | undefined): void {

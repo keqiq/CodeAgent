@@ -45,6 +45,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 chatSettings.toggleClearChatBtn(visibleMessages.length > 0);
                 break;
 
+            case 'restorePruneSettings':
+                contextWindow.restorePruneSettings(msg.mode, msg.turnInterval, msg.runInterval);
+                break;
+
             // --- CHAT PROVIDER & MODELS ---
             case 'updateChatProvider':
                 chatInput.updateChatProvider(msg.provider);

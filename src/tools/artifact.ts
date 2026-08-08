@@ -20,5 +20,8 @@ export const artifactSchema: ToolSchema[] = [
 ];
 
 export async function executeRecall(artifactID: string, contextManager: ContextManager, signal: AbortSignal): Promise<ToolResult> {
-    return { message: await contextManager.readArtifact(artifactID) };
+    return { 
+        message: await contextManager.readArtifact(artifactID),
+        data: { artifactID }
+    };
 }

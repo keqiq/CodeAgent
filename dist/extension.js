@@ -47521,10 +47521,7 @@ async function executeWrite(filePath, content, cwd) {
   const uint8Array = textEncoder.encode(content);
   await vscode3.workspace.fs.writeFile(fileUri, uint8Array);
   await vscode3.workspace.openTextDocument(fileUri);
-  return {
-    message: `Successfully wrote to ${filePath}`,
-    changedFiles: [filePath]
-  };
+  return { message: `Successfully wrote to ${filePath}` };
 }
 var normalize = (str2) => str2.replace(/\r\n/g, "\n").replace(/[ \t]+/g, " ").trim();
 async function executeEdit(filePath, oldText, newText, cwd) {
@@ -47539,10 +47536,7 @@ async function executeEdit(filePath, oldText, newText, cwd) {
     if (hasCRLF) updatedContent = updatedContent.replace(/\n/g, "\r\n");
     await vscode3.workspace.fs.writeFile(fileUri, textEncoder.encode(updatedContent));
     await vscode3.workspace.openTextDocument(fileUri);
-    return {
-      message: `Successfully edited ${filePath} with strict matching.`,
-      changedFiles: [filePath]
-    };
+    return { message: `Successfully edited ${filePath} with strict matching.` };
   }
   const normalizedFile = normalize(fileContent);
   const normalizedOldText = normalize(oldText);
@@ -54099,7 +54093,10 @@ var artifactSchema = [
   }
 ];
 async function executeRecall(artifactID, contextManager, signal) {
-  return { message: await contextManager.readArtifact(artifactID) };
+  return {
+    message: await contextManager.readArtifact(artifactID),
+    data: { artifactID }
+  };
 }
 
 // src/tools/toolIndex.ts
@@ -54109,6 +54106,7 @@ var requiredSchemas = [
   ...commandSchemas,
   ...artifactSchema
 ];
+var PRUNE_TOOLS = /* @__PURE__ */ new Set(["read", "glob", "grep", "find", "refs", "run", "web", "url"]);
 function createToolRegistry(deps) {
   return {
     glob: async (args) => await executeGlob(args.pattern, deps.getCwd(), deps.getSignal()),
@@ -97041,6 +97039,8 @@ var ContextManager = class {
   // Full history for frontend
   history = [];
   activeToolResults = [];
+  turnsSinceLastPrune = 0;
+  runsSinceLastPrune = 0;
   summarizedHistory = [];
   summarizeIndex = 0;
   activeTurnID = void 0;
@@ -97188,14 +97188,15 @@ var ContextManager = class {
       ...this.activeTurnID && { turnID: this.activeTurnID }
     });
   }
-  addFunctionResult(id, name, result, error) {
+  addFunctionResult(id, name, result, error, data) {
     const item = {
       type: "function_result",
       id,
       name,
       result,
       error,
-      ...this.activeTurnID && { turnID: this.activeTurnID }
+      ...this.activeTurnID && { turnID: this.activeTurnID },
+      ...data && { data }
     };
     this.history.push(item);
     this.activeToolResults.push(item);
@@ -97219,9 +97220,25 @@ var ContextManager = class {
     this.previousTurnID = void 0;
     this.activeProvider = "";
     this.previousProvider = "";
+    this.turnsSinceLastPrune = 0;
+    this.runsSinceLastPrune = 0;
     this.resetTokenUsage();
     await this.save();
     await this.clearArtifacts();
+  }
+  async endTurn(mode, interval) {
+    this.turnsSinceLastPrune++;
+    const hasUnresolvedErrors = this.activeToolResults.some((item) => item.error);
+    if (hasUnresolvedErrors) return;
+    if (mode === "turn" && this.turnsSinceLastPrune >= interval) {
+      await this.pruneToolResults();
+    }
+  }
+  async endRun(mode, interval) {
+    this.runsSinceLastPrune++;
+    if (mode === "run" && this.runsSinceLastPrune >= interval) {
+      await this.pruneToolResults();
+    }
   }
   async readArtifact(artifactID) {
     if (!this.artifactsUri) throw new Error("Artifact storage not initialized");
@@ -97239,16 +97256,24 @@ var ContextManager = class {
     return artifactID;
   }
   async pruneToolResults() {
+    if (this.activeToolResults.length === 0) return;
     for (const item of this.activeToolResults) {
-      const artifactID = await this.saveArtifact(item);
+      const isRecall = item.name === "recall";
+      const shouldPrune = isRecall || PRUNE_TOOLS.has(item.name) || item.result.length > 300;
+      if (!shouldPrune) continue;
+      let artifactID;
+      if (isRecall) artifactID = item.data?.artifactID || "unknown_artifact";
+      else artifactID = await this.saveArtifact(item);
       if (item.error) {
-        const snippet = item.result.substring(0, 150).replace(/\n/g, " ");
+        const snippet = item.result.substring(0, 50).replace(/\n/g, " ");
         item.result = `[Tool '${item.name}' failed. Artifact saved as ${artifactID}. Error snippet: ${snippet}...]`;
       } else {
         item.result = `[Tool '${item.name}' executed successfully. Full output stored in artifact: ${artifactID}]`;
       }
     }
     this.activeToolResults = [];
+    this.turnsSinceLastPrune = 0;
+    this.runsSinceLastPrune = 0;
   }
   async clearArtifacts() {
     if (!this.artifactsUri) return;
@@ -97470,11 +97495,14 @@ var ChatApp = class {
     let runStatus = "ok";
     let statusMessage = void 0;
     let providerInstance = void 0;
+    const serverStateManagment = this.context.globalState.get("serverStateManagement") ?? true;
+    const enabledWebSearch = this.context.globalState.get("webSearchEnabled") ?? false;
+    const savedWebMode = this.context.globalState.get("webSearchMode") ?? "tavily";
+    const pruneMode = this.context.globalState.get("pruneMode") ?? "run";
+    const pruneTurnInterval = this.context.globalState.get("pruneTurnInterval") ?? 1;
+    const pruneRunInterval = this.context.globalState.get("pruneRunInterval") ?? 1;
     try {
       const apiKey = await this.getChatAPIKey(provider);
-      const serverStateManagment = this.context.globalState.get("serverStateManagement") ?? true;
-      const enabledWebSearch = this.context.globalState.get("webSearchEnabled") ?? false;
-      const savedWebMode = this.context.globalState.get("webSearchMode") ?? "tavily";
       const webSearchMode = enabledWebSearch ? savedWebMode : "none";
       providerInstance = ChatFactory.create(provider, apiKey, webSearchMode);
       this.contextManager.prepareRun(provider, serverStateManagment);
@@ -97521,7 +97549,7 @@ var ChatApp = class {
         }
         if (this.aborter.signal.aborted) throw new Error("AbortError");
         this.post({ type: "streamEnd" });
-        await this.contextManager.pruneToolResults();
+        await this.contextManager.endTurn(pruneMode, pruneTurnInterval);
         const finalResponse = streamResult.value;
         if (finalResponse?.tokenUsage) {
           this.post({
@@ -97565,7 +97593,7 @@ var ChatApp = class {
               result = { message: `Error: Tool '${toolName2}' is not registered` };
               this.post({ type: "updateTool", status: "error", toolId, error: "Invalid tool call" });
             }
-            this.contextManager.addFunctionResult(toolId, toolName2, result.message, isError);
+            this.contextManager.addFunctionResult(toolId, toolName2, result.message, isError, result.data);
           }
           if (customToolsRunThisTurn === 0) keepGoing = false;
         } else {
@@ -97594,6 +97622,7 @@ var ChatApp = class {
     } finally {
       this.aborter = null;
       this.contextManager.addRunSummary(provider, runStatus, statusMessage);
+      await this.contextManager.endRun(pruneMode, pruneRunInterval);
       await this.contextManager.save();
       this.post({
         type: "updateContextWindowUsage",
@@ -97654,6 +97683,15 @@ var ChatApp = class {
                 usage: this.contextManager.estimateCategorizedTokens(chatProvider)
               });
             }
+            const pruneMode = this.context.globalState.get("pruneMode") ?? "run";
+            const pruneTurnInterval = this.context.globalState.get("pruneTurnInterval") ?? 1;
+            const pruneRunInterval = this.context.globalState.get("pruneRunInterval") ?? 1;
+            this.post({
+              type: "restorePruneSettings",
+              mode: pruneMode,
+              turnInterval: pruneTurnInterval,
+              runInterval: pruneRunInterval
+            });
             const indexEnabled = this.context.globalState.get("indexEnabled") ?? false;
             if (indexEnabled) {
               const embedProvider = this.context.globalState.get("embedProvider");
@@ -97771,6 +97809,15 @@ var ChatApp = class {
               this.post({ type: "requestTavilyAPIKey" });
             }
           }
+          break;
+        }
+        case "setPruneMode": {
+          await this.context.globalState.update("pruneMode", data.mode);
+          break;
+        }
+        case "setPruneInterval": {
+          if (data.turn) await this.context.globalState.update("pruneTurnInterval", data.turn);
+          else if (data.run) await this.context.globalState.update("pruneRunInterval", data.run);
           break;
         }
         case "askAgent": {

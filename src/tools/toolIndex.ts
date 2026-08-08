@@ -31,8 +31,6 @@ export interface ToolSchema {
 
 export interface ToolResult {
     message: string;
-
-    changedFiles?: string[];
     data?: unknown;
 }
 export const requiredSchemas: ToolSchema[] = [
@@ -51,6 +49,9 @@ export type ToolDeps = {
     getTavilyKey:() => Promise<string>;
     getContext:() => ContextManager
 };
+
+// Tools with potentionally large output that could use pruning
+export const PRUNE_TOOLS = new Set(['read', 'glob', 'grep', 'find', 'refs', 'run', 'web', 'url']);
 
 export function createToolRegistry(deps: ToolDeps): Record<string, (args: any) => Promise<ToolResult>> {
     return {
