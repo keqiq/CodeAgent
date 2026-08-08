@@ -25,9 +25,8 @@ export abstract class ChatProvider {
                       You have access to tools that can search, read, write, and edit files in the user's workspace.
                       When a user asks you to find a bug or fix a problem, DO NOT ask them for the file name if you can search for it yourself. 
                       Proactively use your semantic search tool 'find' tool to search the workspace.
-                      Tools like 'glob' and 'grep' should be used as a fallback if semantic search fails to return relevant results, or if you need to view files in more detail. 
-                      Find the relevant code, read it, and edit it to fix the issue. 
-                      Always explain your thought process before executing a tool.`;
+                      Tools like 'glob' and 'grep' should be used as a fallback if semantic search fails to return relevant results.
+                      Find the relevant code, read it, and edit it to add features and fix issues.`;
 
     public static stateManagementSupport: boolean = false;
     public static serverWebSearchSupport: boolean = false;

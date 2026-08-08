@@ -136,10 +136,6 @@ export class ContextManager {
         }
     }
 
-    public async loadArtifacts(): Promise<void> {
-
-    }
-
     public async save(): Promise<void> {
         if (!this.storageUri) return;
     
@@ -225,10 +221,10 @@ export class ContextManager {
             };
         } else {
             // Other providers return incremental per-turn usage that must be accumulated
-            this.runTokenUsage.totalTokens = (this.runTokenUsage.totalTokens || 0) + (usage.totalTokens || 0);
-            this.runTokenUsage.inputTokens = (this.runTokenUsage.inputTokens || 0) + (usage.inputTokens || 0);
-            this.runTokenUsage.outputTokens = (this.runTokenUsage.outputTokens || 0) + (usage.outputTokens || 0);
-            this.runTokenUsage.thoughtTokens = (this.runTokenUsage.thoughtTokens || 0) + (usage.thoughtTokens || 0);
+            this.runTokenUsage.totalTokens! += (usage.totalTokens || 0);
+            this.runTokenUsage.inputTokens! += (usage.inputTokens || 0);
+            this.runTokenUsage.outputTokens! += (usage.outputTokens || 0);
+            this.runTokenUsage.thoughtTokens! += (usage.thoughtTokens || 0);
         }
         return { ...this.runTokenUsage };
     }
@@ -317,19 +313,18 @@ export class ContextManager {
         await this.clearArtifacts();
     }
 
-    public async endTurn(mode: string, interval: number): Promise<void> {
+    public async updateTurnBoundary(mode: string, interval: number, previousTurnHadError: boolean): Promise<void> {
         this.turnsSinceLastPrune++;
 
         // If previous tool results contain errors, keep tool results for debug context
-        const hasUnresolvedErrors = this.activeToolResults.some(item => item.error);
-        if (hasUnresolvedErrors) return;
+        if (previousTurnHadError) return;
 
         if (mode === 'turn' && this.turnsSinceLastPrune >= interval) {
             await this.pruneToolResults();
         }
     }
 
-    public async endRun(mode: string, interval: number): Promise<void> {
+    public async updateRunBoundary(mode: string, interval: number): Promise<void> {
         this.runsSinceLastPrune++;
 
         if (mode === 'run' && this.runsSinceLastPrune >= interval) {
@@ -367,7 +362,7 @@ export class ContextManager {
             // For calls to fetch artifacts, we should point to the original artifact
             const isRecall = item.name === 'recall';
 
-            const shouldPrune = isRecall || PRUNE_TOOLS.has(item.name) || item.result.length > 300;
+            const shouldPrune = isRecall || PRUNE_TOOLS.has(item.name) || item.result.length > 300 || item.error;
 
             if (!shouldPrune) continue;
 
@@ -376,8 +371,7 @@ export class ContextManager {
             else artifactID = await this.saveArtifact(item);
 
             if (item.error) {
-                const snippet = item.result.substring(0, 50).replace(/\n/g, ' ');
-                item.result = `[Tool '${item.name}' failed. Artifact saved as ${artifactID}. Error snippet: ${snippet}...]`;
+                item.result = `[Tool '${item.name}' failed. Full error stored in artifact: ${artifactID}]`;
             } else {
                 item.result = `[Tool '${item.name}' executed successfully. Full output stored in artifact: ${artifactID}]`;
             }

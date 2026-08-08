@@ -254,6 +254,8 @@ export class ChatApp implements vscode.WebviewViewProvider {
             let hasStartedToolGroup = false;
             let customToolsRunThisTurn = 0;
             let serverToolsRunThisTurn = 0;
+
+            let previousTurnHadError = false;
             
             while (keepGoing && (turnLimit === 0 || turnCount < turnLimit)) {
                 if (this.aborter.signal.aborted) throw new Error('AbortError');
@@ -301,8 +303,9 @@ export class ChatApp implements vscode.WebviewViewProvider {
                 if (this.aborter.signal.aborted) throw new Error('AbortError');
                 this.post({ type: 'streamEnd' });
 
-                // update turn counter for tool pruning
-                await this.contextManager.endTurn(pruneMode, pruneTurnInterval);
+                // update turn counter for tool pruning, do not prune until error is resolved
+                await this.contextManager.updateTurnBoundary(pruneMode, pruneTurnInterval, previousTurnHadError);
+                previousTurnHadError = false;
                 
                 const finalResponse = streamResult.value as ChatResponse;
 
@@ -348,11 +351,13 @@ export class ChatApp implements vscode.WebviewViewProvider {
                                 this.post({ type: 'updateTool', status: 'success', toolId: toolId });
                             } catch (e) {
                                 isError = true;
+                                previousTurnHadError = true;
                                 const message = e instanceof Error ? e.message : String(e);
                                 result = { message: `Error executing ${toolName}: ${message}`};
                                 this.post({ type: 'updateTool', status: 'error', toolId: toolId, error: message });
                             }
                         } else {
+                            previousTurnHadError = true;
                             result =  {message: `Error: Tool '${toolName}' is not registered`};
                             this.post({ type: 'updateTool', status: 'error', toolId: toolId, error: "Invalid tool call" });
                         }
@@ -404,7 +409,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
             this.contextManager.addRunSummary(provider, runStatus, statusMessage);
 
             // Update run counter for tool pruning
-            await this.contextManager.endRun(pruneMode, pruneRunInterval);
+            await this.contextManager.updateRunBoundary(pruneMode, pruneRunInterval);
 
             await this.contextManager.save();
 
