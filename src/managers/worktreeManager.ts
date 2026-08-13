@@ -10,20 +10,68 @@ export class WorktreeManager {
     public readonly worktreePath: string;
     private readonly originalWorkspace: string;
 
-    constructor(workspacePath: string, runID: string) {
+    private emitter = new vscode.EventEmitter();
+    public readonly onDidUpdateStatus = this.emitter.event;
+
+    constructor(private context: vscode.ExtensionContext, workspacePath: string) {
         this.originalWorkspace = workspacePath;
-        this.worktreePath = path.join(workspacePath, '..', `.agent-worktree-${runID}`);
+        this.worktreePath = path.join(workspacePath, '..', '.agent-worktree');
     }
 
     public async setup(): Promise<void> {
-        // Create the worktree linked to the current HEAD
-        await exec(`git worktree add --detach "${this.worktreePath}" HEAD`, { cwd: this.originalWorkspace });
+        // check if git is installed
+        const gitInstalled = await WorktreeManager.isGitInstalled();
+        if (!gitInstalled) {
+            vscode.window.showErrorMessage('Install Git on your system and restart VS Code.', 'Understood');
+            throw new Error('Git is not installed on the system.');
+        }
 
-        // Need to link build deps and copy configs probably ignored by git
-        await this.link();
+        // Check if workspace is a git repo
+        const isRepo = await WorktreeManager.isGitRepo(this.originalWorkspace);
+        if (!isRepo) {
+            const userChoice = await vscode.window.showWarningMessage(
+                'Git repository required for file edits. Initialize now?',
+                'Initialize',
+                'Cancel'
+            );
 
-        // Sync uncommitted changes
+            if (userChoice === 'Initialize') {
+                try {
+                    await WorktreeManager.initGitRepo(this.originalWorkspace);
+                    vscode.window.showInformationMessage('Git repository initialized successfully.');
+                } catch (e) {
+                    vscode.window.showErrorMessage(`Failed to initialize Git: ${e}`);
+                    throw new Error(`Failed to initialize Git: ${e}`);
+                }
+            } else {
+                throw new Error("Agent execution cancelled. A Git repository is required.");
+            }
+        }
+
+        const exists = await fs.stat(this.worktreePath).then(() => true).catch(() => false);
+
+        if (!exists) {
+            // Only create the worktree and link heavy deps if it doesn't exist
+            await exec(`git worktree add --detach "${this.worktreePath}" HEAD`, { cwd: this.originalWorkspace });
+            await this.link();
+        }
+
+        await this.reset();
+    }
+
+    public async reset(): Promise<void> {
+        // Get the current HEAD commit SHA of the main workspace
+        const { stdout: headSha } = await exec(`git rev-parse HEAD`, { cwd: this.originalWorkspace });
+        
+        // Hard reset the worktree to match the main workspace's commit
+        await exec(`git reset --hard ${headSha.trim()}`, { cwd: this.worktreePath });
+        
+        // Clean any untracked files left over from previous agent runs
+        await exec(`git clean -fd`, { cwd: this.worktreePath });
+
+        // Sync uncommitted dirty files from the user
         await this.syncDirtyFiles();
+        await this.clearState();
     }
 
     private async link(): Promise<void> {
@@ -162,14 +210,20 @@ export class WorktreeManager {
             await exec(`git add -A`, { cwd: this.originalWorkspace });
             // apply patch
             await exec(`git apply --3way --ignore-whitespace "${patchPath}"`, { cwd: this.originalWorkspace });
+            await this.context.workspaceState.update('patchStatus', 'accepted');
+            await this.reset();
+            this.emitter.fire({ type: 'updatePatchStatus', status: 'accepted' });
         }
-
         catch (e: any) {
             // Check if any of these outputs have 'with conflicts' to catch merge conflicts
             const errorStr = (e.stdout || '') + (e.stderr || '') + (e.message || '');
             console.log(errorStr);
 
-            if (errorStr.includes('with conflicts')) throw new Error('MERGE_CONFLICT');
+            if (errorStr.includes('with conflicts')) {
+                await this.context.workspaceState.update('patchStatus', 'conflict');
+                this.emitter.fire({ type: 'updatePatchStatus', status: 'conflict' });
+                throw new Error('MERGE_CONFLICT');
+            }
             throw e;
         } 
 
@@ -203,9 +257,33 @@ export class WorktreeManager {
                 } catch (e) {}
             } 
         }
+        await this.context.workspaceState.update('patchStatus', 'accepted');
+        await this.reset();
+        this.emitter.fire({ type: 'updatePatchStatus', status: 'accepted' });
     }
 
+    public async rejectPatch(): Promise<void> {
+        await this.reset();
+        this.emitter.fire({ type: 'updatePatchStatus', status: 'rejected' });
+    }
+
+    
+    public async resolveConflicts(): Promise<void> {
+        await this.reset();
+        await this.context.workspaceState.update('patchStatus', 'accepted');
+        this.emitter.fire({ type: 'updatePatchStatus', status: 'accepted' });
+    }
+    
+    private async clearState(): Promise<void> {
+        await this.context.workspaceState.update('patchStatus', undefined);
+    }
+    
     public async cleanup(): Promise<void> {
-        await exec(`git worktree remove "${this.worktreePath}" --force`, { cwd: this.originalWorkspace });
+        try {
+            await this.clearState();
+            await exec(`git worktree remove "${this.worktreePath}" --force`, { cwd: this.originalWorkspace });
+        } catch {
+            // Ignore if it's already gone
+        }
     }
 }

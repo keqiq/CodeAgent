@@ -44497,7 +44497,7 @@ var require_extension = __commonJS({
 var require_websocket = __commonJS({
   "node_modules/ws/lib/websocket.js"(exports2, module2) {
     "use strict";
-    var EventEmitter4 = require("events");
+    var EventEmitter5 = require("events");
     var https3 = require("https");
     var http5 = require("http");
     var net = require("net");
@@ -44529,7 +44529,7 @@ var require_websocket = __commonJS({
     var protocolVersions = [8, 13];
     var readyStates = ["CONNECTING", "OPEN", "CLOSING", "CLOSED"];
     var subprotocolRegex = /^[!#$%&'*+\-.0-9A-Z^_`|a-z~]+$/;
-    var WebSocket2 = class _WebSocket extends EventEmitter4 {
+    var WebSocket2 = class _WebSocket extends EventEmitter5 {
       /**
        * Create a new `WebSocket`.
        *
@@ -45536,7 +45536,7 @@ var require_subprotocol = __commonJS({
 var require_websocket_server = __commonJS({
   "node_modules/ws/lib/websocket-server.js"(exports2, module2) {
     "use strict";
-    var EventEmitter4 = require("events");
+    var EventEmitter5 = require("events");
     var http5 = require("http");
     var { Duplex } = require("stream");
     var { createHash } = require("crypto");
@@ -45549,7 +45549,7 @@ var require_websocket_server = __commonJS({
     var RUNNING = 0;
     var CLOSING = 1;
     var CLOSED = 2;
-    var WebSocketServer2 = class extends EventEmitter4 {
+    var WebSocketServer2 = class extends EventEmitter5 {
       /**
        * Create a `WebSocketServer` instance.
        *
@@ -97231,24 +97231,62 @@ var Indexer = class _Indexer {
   // }
 };
 
-// src/worktreeManager.ts
+// src/managers/worktreeManager.ts
 var cp2 = __toESM(require("child_process"));
 var util5 = __toESM(require("util"));
 var path10 = __toESM(require("path"));
 var vscode7 = __toESM(require("vscode"));
 var fs7 = __toESM(require("fs/promises"));
 var exec2 = util5.promisify(cp2.exec);
-var WorktreeManager = class {
+var WorktreeManager = class _WorktreeManager {
+  constructor(context, workspacePath) {
+    this.context = context;
+    this.originalWorkspace = workspacePath;
+    this.worktreePath = path10.join(workspacePath, "..", ".agent-worktree");
+  }
+  context;
   worktreePath;
   originalWorkspace;
-  constructor(workspacePath, runID) {
-    this.originalWorkspace = workspacePath;
-    this.worktreePath = path10.join(workspacePath, "..", `.agent-worktree-${runID}`);
-  }
+  emitter = new vscode7.EventEmitter();
+  onDidUpdateStatus = this.emitter.event;
   async setup() {
-    await exec2(`git worktree add --detach "${this.worktreePath}" HEAD`, { cwd: this.originalWorkspace });
-    await this.link();
+    const gitInstalled = await _WorktreeManager.isGitInstalled();
+    if (!gitInstalled) {
+      vscode7.window.showErrorMessage("Install Git on your system and restart VS Code.", "Understood");
+      throw new Error("Git is not installed on the system.");
+    }
+    const isRepo = await _WorktreeManager.isGitRepo(this.originalWorkspace);
+    if (!isRepo) {
+      const userChoice = await vscode7.window.showWarningMessage(
+        "Git repository required for file edits. Initialize now?",
+        "Initialize",
+        "Cancel"
+      );
+      if (userChoice === "Initialize") {
+        try {
+          await _WorktreeManager.initGitRepo(this.originalWorkspace);
+          vscode7.window.showInformationMessage("Git repository initialized successfully.");
+        } catch (e2) {
+          vscode7.window.showErrorMessage(`Failed to initialize Git: ${e2}`);
+          throw new Error(`Failed to initialize Git: ${e2}`);
+        }
+      } else {
+        throw new Error("Agent execution cancelled. A Git repository is required.");
+      }
+    }
+    const exists = await fs7.stat(this.worktreePath).then(() => true).catch(() => false);
+    if (!exists) {
+      await exec2(`git worktree add --detach "${this.worktreePath}" HEAD`, { cwd: this.originalWorkspace });
+      await this.link();
+    }
+    await this.reset();
+  }
+  async reset() {
+    const { stdout: headSha } = await exec2(`git rev-parse HEAD`, { cwd: this.originalWorkspace });
+    await exec2(`git reset --hard ${headSha.trim()}`, { cwd: this.worktreePath });
+    await exec2(`git clean -fd`, { cwd: this.worktreePath });
     await this.syncDirtyFiles();
+    await this.clearState();
   }
   async link() {
     const symlinkDirs = [
@@ -97356,10 +97394,17 @@ var WorktreeManager = class {
     try {
       await exec2(`git add -A`, { cwd: this.originalWorkspace });
       await exec2(`git apply --3way --ignore-whitespace "${patchPath}"`, { cwd: this.originalWorkspace });
+      await this.context.workspaceState.update("patchStatus", "accepted");
+      await this.reset();
+      this.emitter.fire({ type: "updatePatchStatus", status: "accepted" });
     } catch (e2) {
       const errorStr = (e2.stdout || "") + (e2.stderr || "") + (e2.message || "");
       console.log(errorStr);
-      if (errorStr.includes("with conflicts")) throw new Error("MERGE_CONFLICT");
+      if (errorStr.includes("with conflicts")) {
+        await this.context.workspaceState.update("patchStatus", "conflict");
+        this.emitter.fire({ type: "updatePatchStatus", status: "conflict" });
+        throw new Error("MERGE_CONFLICT");
+      }
       throw e2;
     } finally {
       await fs7.unlink(patchPath).catch(() => {
@@ -97383,13 +97428,31 @@ var WorktreeManager = class {
         }
       }
     }
+    await this.context.workspaceState.update("patchStatus", "accepted");
+    await this.reset();
+    this.emitter.fire({ type: "updatePatchStatus", status: "accepted" });
+  }
+  async rejectPatch() {
+    await this.reset();
+    this.emitter.fire({ type: "updatePatchStatus", status: "rejected" });
+  }
+  async clearState() {
+    await this.context.workspaceState.update("patchStatus", void 0);
+  }
+  async resolveConflicts() {
+    await this.reset();
+    await this.context.workspaceState.update("patchStatus", "accepted");
+    this.emitter.fire({ type: "updatePatchStatus", status: "accepted" });
   }
   async cleanup() {
-    await exec2(`git worktree remove "${this.worktreePath}" --force`, { cwd: this.originalWorkspace });
+    try {
+      await exec2(`git worktree remove "${this.worktreePath}" --force`, { cwd: this.originalWorkspace });
+    } catch {
+    }
   }
 };
 
-// src/contextManager.ts
+// src/managers/contextManager.ts
 var vscode8 = __toESM(require("vscode"));
 var ContextManager = class {
   constructor(context) {
@@ -97690,7 +97753,7 @@ var ContextManager = class {
   }
 };
 
-// src/commandManager.ts
+// src/managers/commandManager.ts
 var vscode9 = __toESM(require("vscode"));
 var import_child_process2 = require("child_process");
 var path11 = __toESM(require("path"));
@@ -98016,7 +98079,7 @@ ${text.slice(-half)}`;
   }
 };
 
-// src/apiManager.ts
+// src/managers/apiManager.ts
 var vscode10 = __toESM(require("vscode"));
 var APIManager = class {
   constructor(context) {
@@ -98161,11 +98224,10 @@ var ChatApp = class {
     this.commandManager.onConfigChange((isUnsafe) => {
       this.post({ type: "updateUnsafeFlag", isUnsafe });
     });
-    const activeWorktreeID = context.workspaceState.get("activeWorktreeID");
-    if (activeWorktreeID) {
-      const workspaceRoot = vscode11.workspace.workspaceFolders?.[0].uri.fsPath;
-      if (workspaceRoot) this.worktreeManager = new WorktreeManager(workspaceRoot, activeWorktreeID);
-    }
+    const workspaceRoot = vscode11.workspace.workspaceFolders?.[0].uri.fsPath;
+    this.workspaceRoot = workspaceRoot;
+    this.worktreeManager = new WorktreeManager(context, this.workspaceRoot);
+    this.worktreeManager.onDidUpdateStatus((event) => this.post(event));
     this.toolRegistry = createToolRegistry({
       getCwd: () => {
         if (this.worktreeManager) return this.worktreeManager.worktreePath;
@@ -98240,47 +98302,9 @@ var ChatApp = class {
   worktreeManager;
   indexer;
   aborter = null;
-  async clearActiveWorktree() {
-    if (this.worktreeManager) {
-      await this.worktreeManager.cleanup();
-      this.worktreeManager = void 0;
-      await this.context.workspaceState.update("activeWorktreeID", void 0);
-      await this.context.workspaceState.update("patchStatus", void 0);
-    }
-  }
+  workspaceRoot;
   async runAgentTurn(provider, model, effort, userMessage) {
-    const workspaceRoot = vscode11.workspace.workspaceFolders?.[0].uri.fsPath;
-    if (!workspaceRoot) throw new Error("No active workspace");
-    if (!this.worktreeManager) {
-      const gitInstalled = await WorktreeManager.isGitInstalled();
-      if (!gitInstalled) {
-        vscode11.window.showErrorMessage("Install Git on your system and restart VS Code.", "Understood");
-        return;
-      }
-      const isRepo = await WorktreeManager.isGitRepo(workspaceRoot);
-      if (!isRepo) {
-        const userChoice = await vscode11.window.showWarningMessage(
-          "Git repository required for file edits. Initialize now?",
-          "Initialize",
-          "Cancel"
-        );
-        if (userChoice === "Initialize") {
-          try {
-            await WorktreeManager.initGitRepo(workspaceRoot);
-            vscode11.window.showInformationMessage("Git repository initialized successfully.");
-          } catch (e2) {
-            vscode11.window.showErrorMessage(`Failed to initialize Git: ${e2}`);
-            return;
-          }
-        } else {
-          throw new Error("Agent execution cancelled. A Git repository is required.");
-        }
-      }
-      const runID = this.contextManager.getTurnID() || Date.now().toString();
-      this.worktreeManager = new WorktreeManager(workspaceRoot, runID);
-      await this.worktreeManager.setup();
-      await this.context.workspaceState.update("activeWorktreeID", runID);
-    }
+    await this.worktreeManager.setup();
     this.aborter = new AbortController();
     let runStatus = "ok";
     let statusMessage = void 0;
@@ -98410,7 +98434,7 @@ var ChatApp = class {
       if (!this.aborter.signal.aborted) {
         const patchString = await this.worktreeManager.getPatch();
         if (patchString.trim()) this.post({ type: "reviewPatch", patch: patchString });
-        else await this.clearActiveWorktree();
+        else await this.worktreeManager.reset();
       }
     } catch (e2) {
       this.contextManager.rollback();
@@ -98502,14 +98526,12 @@ var ChatApp = class {
               const embedProvider = this.context.globalState.get("embedProvider");
               this.post({ type: "updateEmbedProvider", provider: embedProvider });
             }
-            if (this.worktreeManager) {
-              const patchString = await this.worktreeManager.getPatch();
-              if (patchString.trim()) {
-                this.post({ type: "reviewPatch", patch: patchString });
-                const currentStatus = this.context.workspaceState.get("patchStatus");
-                if (currentStatus) this.post({ type: "updatePatchStatus", status: currentStatus });
-              } else await this.clearActiveWorktree();
-            }
+            const patchString = await this.worktreeManager.getPatch();
+            if (patchString.trim()) {
+              this.post({ type: "reviewPatch", patch: patchString });
+              const currentStatus = this.context.workspaceState.get("patchStatus");
+              if (currentStatus) this.post({ type: "updatePatchStatus", status: currentStatus });
+            } else await this.worktreeManager.reset();
             const agentMode = this.context.workspaceState.get("agentMode") ?? "manual";
             this.post({ type: "restoreAgentMode", mode: agentMode });
             await this.commandManager.loadConfig();
@@ -98619,7 +98641,7 @@ var ChatApp = class {
         }
         case "clearChat": {
           await this.contextManager.clear();
-          if (this.worktreeManager) await this.clearActiveWorktree();
+          await this.worktreeManager.reset();
           this.post({ type: "clearChatContainer" });
         }
         // Called when selecting a new provider in embedding provider dropdown
@@ -98678,58 +98700,41 @@ var ChatApp = class {
         }
         // Take the changes from worktree and apply to main workspace
         case "applyChanges": {
-          if (this.worktreeManager) {
-            try {
-              await this.worktreeManager.applyPatch();
-              this.contextManager.addSystemMessage("The user applied your proposed changes to the workspace");
-              await this.contextManager.save();
-              await this.clearActiveWorktree();
-              this.post({ type: "updatePatchStatus", status: "accepted" });
-            } catch (e2) {
-              if (e2.message === "MERGE_CONFLICT") {
-                await this.context.workspaceState.update("patchStatus", "conflict");
-                this.post({ type: "updatePatchStatus", status: "conflict" });
-              } else {
-                vscode11.window.showErrorMessage(`Failed to apply patch: ${e2.message || String(e2)}`);
-              }
+          try {
+            await this.worktreeManager.applyPatch();
+            this.contextManager.addSystemMessage("The user applied your proposed changes to the workspace");
+            await this.contextManager.save();
+          } catch (e2) {
+            if (e2.message !== "MERGE_CONFLICT") {
+              vscode11.window.showErrorMessage(`Failed to apply patch: ${e2.message || String(e2)}`);
             }
           }
           break;
         }
         // Discard worktree
         case "discardChanges": {
-          if (this.worktreeManager) {
-            await this.clearActiveWorktree();
-            this.contextManager.addSystemMessage(
-              "The user discarded your proposed changes. Workspace is reverted to last applied changes or original state."
-            );
-            await this.contextManager.save();
-            this.post({ type: "updatePatchStatus", status: "rejected" });
-          }
+          await this.worktreeManager.rejectPatch();
+          this.contextManager.addSystemMessage(
+            "The user discarded your proposed changes. Workspace is reverted to last applied changes or original state."
+          );
+          await this.contextManager.save();
           break;
         }
         // After resolving merge conflicts
         case "markResolved": {
-          if (this.worktreeManager) {
-            await this.clearActiveWorktree();
-            this.contextManager.addSystemMessage("The user resolved merge conflicts and applied the changes.");
-            await this.contextManager.save();
-            this.post({ type: "updatePatchStatus", status: "accepted" });
-          }
+          await this.worktreeManager.resolveConflicts();
+          this.contextManager.addSystemMessage("The user resolved merge conflicts and applied the changes.");
+          await this.contextManager.save();
           break;
         }
         // Forcing the patch by replacing the files in the main workspace
         case "forceApplyPatch": {
-          if (this.worktreeManager) {
-            try {
-              await this.worktreeManager.forceApply();
-              await this.clearActiveWorktree();
-              this.contextManager.addSystemMessage("The user force-applied your changes, overwriting their local edits.");
-              await this.contextManager.save();
-              this.post({ type: "updatePatchStatus", status: "accepted" });
-            } catch (e2) {
-              vscode11.window.showErrorMessage(`Failed to force apply: ${e2}`);
-            }
+          try {
+            await this.worktreeManager.forceApply();
+            this.contextManager.addSystemMessage("The user force-applied your changes, overwriting their local edits.");
+            await this.contextManager.save();
+          } catch (e2) {
+            vscode11.window.showErrorMessage(`Failed to force apply: ${e2}`);
           }
           break;
         }
@@ -98739,8 +98744,15 @@ var ChatApp = class {
             if (!workspaceRoot) return;
             const originalUri = vscode11.Uri.file(path12.join(workspaceRoot, data.file));
             const worktreeUri = vscode11.Uri.file(path12.join(this.worktreeManager.worktreePath, data.file));
-            const title = `${data.file} (Agent Proposal)`;
-            vscode11.commands.executeCommand("vscode.diff", originalUri, worktreeUri, title);
+            if (data.isNew) {
+              vscode11.commands.executeCommand("vscode.open", worktreeUri, { preview: true });
+            } else if (data.isDeleted) {
+              vscode11.commands.executeCommand("vscode.open", originalUri, { preview: true });
+              vscode11.window.showInformationMessage(`${data.file} is marked for deletion.`);
+            } else {
+              const title = `${data.file} (Agent Proposal)`;
+              vscode11.commands.executeCommand("vscode.diff", originalUri, worktreeUri, title);
+            }
           }
           break;
         }

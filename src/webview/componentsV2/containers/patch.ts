@@ -90,7 +90,7 @@ export class PatchContainer {
             `;
 
             fileItem.onclick = () => {
-                this.vscodeAPI.postMessage({ type: 'openDiffView', file: file.filename });
+                this.vscodeAPI.postMessage({ type: 'openDiffView', file: file.filename, isNew: file.isNew, isDeleted: file.isDeleted });
             };
 
             fileList.appendChild(fileItem);

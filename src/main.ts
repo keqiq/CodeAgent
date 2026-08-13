@@ -22,11 +22,13 @@ export class ChatApp implements vscode.WebviewViewProvider {
     private apiManager: APIManager;
     private contextManager: ContextManager;
     private commandManager: CommandManager;
-    private worktreeManager?: WorktreeManager;
+    private worktreeManager: WorktreeManager;
 
     private indexer?: Indexer;
 
     private aborter: AbortController | null = null;
+
+    private workspaceRoot: string;
 
     constructor(private readonly context: vscode.ExtensionContext) {
         this.apiManager = new APIManager(context);
@@ -39,11 +41,13 @@ export class ChatApp implements vscode.WebviewViewProvider {
             this.post({ type: 'updateUnsafeFlag', isUnsafe });
         });
 
-        const activeWorktreeID = context.workspaceState.get<string>('activeWorktreeID');
-        if (activeWorktreeID) {
-            const workspaceRoot = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
-            if (workspaceRoot) this.worktreeManager = new WorktreeManager(workspaceRoot, activeWorktreeID);
-        }
+        // Don't even activate the extension outside of an active workspace there is no point
+        // This is set in package.json in activationEvents
+        const workspaceRoot = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
+        this.workspaceRoot = workspaceRoot!;
+
+        this.worktreeManager = new WorktreeManager(context, this.workspaceRoot);
+        this.worktreeManager.onDidUpdateStatus(event => this.post(event));
 
         this.toolRegistry = createToolRegistry({
             getCwd: () => {
@@ -134,55 +138,9 @@ export class ChatApp implements vscode.WebviewViewProvider {
         });
     }
 
-    private async clearActiveWorktree(): Promise<void> {
-        if (this.worktreeManager) {
-            await this.worktreeManager.cleanup();
-            this.worktreeManager = undefined;
-            await this.context.workspaceState.update('activeWorktreeID', undefined);
-            await this.context.workspaceState.update('patchStatus', undefined);
-        }
-    }
-
     private async runAgentTurn(provider: string, model: string, effort: string, userMessage: string,): Promise<void> {
-        const workspaceRoot = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
-        if (!workspaceRoot) throw new Error("No active workspace");
 
-        if (!this.worktreeManager) {
-
-            // Check for git, this is a hard requirement
-            const gitInstalled = await WorktreeManager.isGitInstalled();
-            if (!gitInstalled) {
-                vscode.window.showErrorMessage('Install Git on your system and restart VS Code.', 'Understood');
-                return;
-            }
-
-            // Check if workspace has version control initialized
-            const isRepo = await WorktreeManager.isGitRepo(workspaceRoot);
-            if (!isRepo) {
-                const userChoice = await vscode.window.showWarningMessage(
-                    'Git repository required for file edits. Initialize now?',
-                    'Initialize',
-                    'Cancel'
-                );
-
-                if (userChoice === 'Initialize') {
-                    try {
-                        await WorktreeManager.initGitRepo(workspaceRoot);
-                        vscode.window.showInformationMessage('Git repository initialized successfully.');
-                    } catch (e) {
-                        vscode.window.showErrorMessage(`Failed to initialize Git: ${e}`);
-                        return;
-                    }
-                } else {
-                    throw new Error("Agent execution cancelled. A Git repository is required.");
-                }
-            }
-            const runID = this.contextManager.getTurnID() || Date.now().toString();
-            this.worktreeManager = new WorktreeManager(workspaceRoot, runID);
-            await this.worktreeManager.setup();
-
-            await this.context.workspaceState.update('activeWorktreeID', runID);
-        }
+        await this.worktreeManager.setup();
 
         this.aborter = new AbortController();
 
@@ -358,7 +316,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
                 if (patchString.trim()) this.post({ type: 'reviewPatch', patch: patchString });
 
                 // No changes close worktree
-                else await this.clearActiveWorktree();
+                else await this.worktreeManager.reset();
             }
 
         } catch (e: any) {
@@ -485,16 +443,13 @@ export class ChatApp implements vscode.WebviewViewProvider {
                             this.post({ type: 'updateEmbedProvider', provider: embedProvider });
                         }
 
-                        if (this.worktreeManager) {
-                            const patchString = await this.worktreeManager.getPatch();
-
-                            if (patchString.trim()) {
-                                this.post({ type: 'reviewPatch', patch: patchString });
-                                const currentStatus = this.context.workspaceState.get<string>('patchStatus');
-                                if (currentStatus) this.post({ type: 'updatePatchStatus', status: currentStatus });
-                            }
-                            else await this.clearActiveWorktree();
+                        const patchString = await this.worktreeManager.getPatch();
+                        if (patchString.trim()) {
+                            this.post({ type: 'reviewPatch', patch: patchString });
+                            const currentStatus = this.context.workspaceState.get<string>('patchStatus');
+                            if (currentStatus) this.post({ type: 'updatePatchStatus', status: currentStatus });
                         }
+                        else await this.worktreeManager.reset();
 
                         const agentMode = this.context.workspaceState.get<string>('agentMode') ?? 'manual';
                         this.post({ type: 'restoreAgentMode', mode: agentMode });
@@ -623,9 +578,8 @@ export class ChatApp implements vscode.WebviewViewProvider {
 
                 case 'clearChat': {
                     await this.contextManager.clear();
-
-                    // Close active work tree
-                    if (this.worktreeManager) await this.clearActiveWorktree();
+                    
+                    await this.worktreeManager.cleanup();
 
                     this.post({ type: 'clearChatContainer' });
                 }
@@ -700,23 +654,17 @@ export class ChatApp implements vscode.WebviewViewProvider {
 
                 // Take the changes from worktree and apply to main workspace
                 case 'applyChanges': {
-                    if (this.worktreeManager) {
-                        try {
-                            await this.worktreeManager.applyPatch();
+    
+                    try {
+                        await this.worktreeManager.applyPatch();
 
-                            this.contextManager.addSystemMessage('The user applied your proposed changes to the workspace');
-                            await this.contextManager.save();
-                            await this.clearActiveWorktree();
-                            this.post({ type: 'updatePatchStatus', status: 'accepted' });
+                        this.contextManager.addSystemMessage('The user applied your proposed changes to the workspace');
+                        await this.contextManager.save();
 
-                            // Probably merge conflicts
-                        } catch (e: any) {
-                            if (e.message === 'MERGE_CONFLICT') {
-                                await this.context.workspaceState.update('patchStatus', 'conflict');
-                                this.post({ type: 'updatePatchStatus', status: 'conflict' });
-                            } else {
-                                vscode.window.showErrorMessage(`Failed to apply patch: ${e.message || String(e)}`);
-                            }
+                    } catch (e: any) {
+                        if (e.message !== 'MERGE_CONFLICT') {
+                            // Unexpected error
+                            vscode.window.showErrorMessage(`Failed to apply patch: ${e.message || String(e)}`);
                         }
                     }
                     break;
@@ -724,43 +672,33 @@ export class ChatApp implements vscode.WebviewViewProvider {
 
                 // Discard worktree
                 case 'discardChanges': {
-                    if (this.worktreeManager) {
-                        await this.clearActiveWorktree();
+                    await this.worktreeManager.rejectPatch();
 
-                        this.contextManager.addSystemMessage(
-                            'The user discarded your proposed changes. Workspace is reverted to last applied changes or original state.'
-                        );
-                        await this.contextManager.save();
-                        this.post({ type: 'updatePatchStatus', status: 'rejected' });
-                    }
+                    this.contextManager.addSystemMessage(
+                        'The user discarded your proposed changes. Workspace is reverted to last applied changes or original state.'
+                    );
+                    await this.contextManager.save();
                     break;
                 }
 
                 // After resolving merge conflicts
                 case 'markResolved': {
-                    if (this.worktreeManager) {
-                        await this.clearActiveWorktree();
+                    await this.worktreeManager.resolveConflicts();
 
-                        this.contextManager.addSystemMessage('The user resolved merge conflicts and applied the changes.');
-                        await this.contextManager.save();
-                        this.post({ type: 'updatePatchStatus', status: 'accepted' });
-                    }
+                    this.contextManager.addSystemMessage('The user resolved merge conflicts and applied the changes.');
+                    await this.contextManager.save();
                     break;
                 }
 
                 // Forcing the patch by replacing the files in the main workspace
                 case 'forceApplyPatch': {
-                    if (this.worktreeManager) {
-                        try {
-                            await this.worktreeManager.forceApply();
+                    try {
+                        await this.worktreeManager.forceApply();
 
-                            await this.clearActiveWorktree();
-                            this.contextManager.addSystemMessage('The user force-applied your changes, overwriting their local edits.');
-                            await this.contextManager.save();
-                            this.post({ type: 'updatePatchStatus', status: 'accepted' });
-                        } catch (e) {
-                            vscode.window.showErrorMessage(`Failed to force apply: ${e}`);
-                        }
+                        this.contextManager.addSystemMessage('The user force-applied your changes, overwriting their local edits.');
+                        await this.contextManager.save();
+                    } catch (e) {
+                        vscode.window.showErrorMessage(`Failed to force apply: ${e}`);
                     }
                     break;
                 }
@@ -773,8 +711,18 @@ export class ChatApp implements vscode.WebviewViewProvider {
                         const originalUri = vscode.Uri.file(path.join(workspaceRoot, data.file));
                         const worktreeUri = vscode.Uri.file(path.join(this.worktreeManager.worktreePath, data.file));
 
-                        const title = `${data.file} (Agent Proposal)`;
-                        vscode.commands.executeCommand('vscode.diff', originalUri, worktreeUri, title);
+                        if (data.isNew) {
+                            // File doesn't exist in original workspace, just open the new proposed file
+                            vscode.commands.executeCommand('vscode.open', worktreeUri, { preview: true });
+                        } else if (data.isDeleted) {
+                            // File doesn't exist in the worktree, just open the original file so they can see what is being removed
+                            vscode.commands.executeCommand('vscode.open', originalUri, { preview: true });
+                            vscode.window.showInformationMessage(`${data.file} is marked for deletion.`);
+                        } else {
+                            // Normal diff for modified files
+                            const title = `${data.file} (Agent Proposal)`;
+                            vscode.commands.executeCommand('vscode.diff', originalUri, worktreeUri, title);
+                        }
                     }
                     break;
                 }
