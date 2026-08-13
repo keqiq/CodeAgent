@@ -1,7 +1,7 @@
 import { GoogleGenAI } from '@google/genai';
 import { ChatProvider, ModelInfo, StreamYield, WebSearchMode } from './chatProvider';
 import { requiredSchemas, ToolSchema, webSchema } from '../../tools/toolIndex';
-import { ChatItem, ChatResponse, TokenUsage } from '../../contextManager';
+import { ChatItem, ChatResponse, TokenUsage } from '../../managers/contextManager';
 
 export class GeminiChatProvider extends ChatProvider {
     public static stateManagementSupport: boolean = true;

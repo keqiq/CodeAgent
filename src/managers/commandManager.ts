@@ -1,17 +1,19 @@
 import * as vscode from 'vscode';
 import { spawn } from 'child_process';
-import { ToolResult } from './tools/toolIndex';
+import { ToolResult } from '../tools/toolIndex';
 import * as path from 'path';
 import { parse } from 'shell-quote';
 
 export interface CommandConfig {
-    allowedCommands: Record<string, string[]>;
     promptForUnlistedCommands: boolean;
     unsafeFullAutonomous: boolean;
+    allowedCommands: Record<string, string[]>;
 }
 
 export class CommandManager {
     public static readonly DEFAULT_CONFIG: CommandConfig = {
+        "promptForUnlistedCommands": true,
+        "unsafeFullAutonomous": false,
         "allowedCommands": {
             "git": [
                 "^status(?:\\s+--short)?$",
@@ -120,9 +122,8 @@ export class CommandManager {
             "diff": [
                 "^(?:-[A-Za-z]+\\s+)?[^;&|`$()]+\\s+[^;&|`$()]+$"
             ]
-        },
-        "promptForUnlistedCommands": true,
-        "unsafeFullAutonomous": false,
+        }
+
     };
 
     private config: CommandConfig = CommandManager.DEFAULT_CONFIG;
@@ -244,29 +245,36 @@ export class CommandManager {
         requestConfirmation: (bin: string, args: string) => Promise<boolean>,
         onOutput: (chunk: string) => void
     ): Promise<ToolResult> {
-
+        
         const resolvedCwd = path.resolve(workspaceRoot, requestedCwd);
         const relativePath = path.relative(workspaceRoot, resolvedCwd);
-
+        
         if (relativePath.startsWith('..') || path.isAbsolute(relativePath)) {
             throw new Error(`You cannot access directories outside of the workspace: ${requestedCwd}.`);
         }
-
+        
         const parsed = parse(commandStr);
-
+        
         if (parsed.length === 0) throw new Error('No command provided.');
-
+        
         const hasOperators = parsed.some(part => typeof part !== 'string');
         if (hasOperators) throw new Error(`Command chaining is not allowed: ${commandStr}`);
-
+        
         const argsArray = parsed as string[];
         const bin = argsArray[0]; // the executable binary
         const args = argsArray.slice(1); // the arguments
-
-        if (!this.config.unsafeFullAutonomous) {
+        const argsString = args.join(' ');
+        
+        const agentMode = this.context.workspaceState.get<string>('agentMode') ?? 'manual';
+        // Manual mode, alway ask for confirmation
+        if (agentMode === 'manual') {
+            const userApproved = await requestConfirmation(bin, argsString);
+            if (!userApproved) throw new Error(`User denied execution of command: ${commandStr}`);
+        } 
+        
+        // Auto mode, if command is not allowed ask for confirmation unless promptForUnlistedCommands is false, then reject
+        else if (!this.config.unsafeFullAutonomous) {
             const allowedPatterns = this.config!.allowedCommands[bin] || [];
-            const argsString = args.join(' ');
-    
             const isAllowed = allowedPatterns.some(pattern => {
                 try {
                     const regex = new RegExp(pattern);
@@ -276,7 +284,6 @@ export class CommandManager {
                 }
             });
     
-            // If outside of allowedCommands, ask for confirmation
             if (!isAllowed) {
                 if (!this.config.promptForUnlistedCommands) {
                     throw new Error(`Command blocked. '${bin} ${argsString}' is not in allowedCommands.`);

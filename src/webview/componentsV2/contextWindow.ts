@@ -1,4 +1,4 @@
-import { TokenCategoryUsage, TokenUsage } from "../../contextManager";
+import { TokenCategoryUsage, TokenUsage } from "../../managers/contextManager";
 import { WebviewApi } from "../frontend";
 
 export class ContextWindow {

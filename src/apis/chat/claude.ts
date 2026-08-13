@@ -1,7 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { ChatProvider, ModelInfo, StreamYield, WebSearchMode } from './chatProvider';
 import { requiredSchemas, webSchema, ToolSchema } from '../../tools/toolIndex';
-import { ChatItem, ChatResponse, TokenUsage } from '../../contextManager';
+import { ChatItem, ChatResponse, TokenUsage } from '../../managers/contextManager';
 
 export class ClaudeChatProvider extends ChatProvider {
     public static stateManagementSupport: boolean = true;

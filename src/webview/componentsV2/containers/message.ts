@@ -1,6 +1,6 @@
 import hljs from "highlight.js";
 import { marked } from "marked";
-import { ChatItem } from "../../../contextManager";
+import { ChatItem } from "../../../managers/contextManager";
 
 export class MessageContainer {
     private activeStreamDiv: HTMLElement | null = null;

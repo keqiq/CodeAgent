@@ -104,6 +104,7 @@
   },
   "dependencies": {
     "@lancedb/lancedb": "^0.30.0",
+    "@modelcontextprotocol/sdk": "^1.30.0",
     "apache-arrow": "^18.1.0",
     "js-tiktoken": "^1.0.21",
     "shell-quote": "^1.10.0",

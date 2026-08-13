@@ -1,4 +1,4 @@
-import { TokenUsage } from "../../../contextManager";
+import { TokenUsage } from "../../../managers/contextManager";
 
 export class RunContainer {
     private activeRunContainer: HTMLElement;

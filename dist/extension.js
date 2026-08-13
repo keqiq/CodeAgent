@@ -44497,7 +44497,7 @@ var require_extension = __commonJS({
 var require_websocket = __commonJS({
   "node_modules/ws/lib/websocket.js"(exports2, module2) {
     "use strict";
-    var EventEmitter3 = require("events");
+    var EventEmitter4 = require("events");
     var https3 = require("https");
     var http5 = require("http");
     var net = require("net");
@@ -44529,7 +44529,7 @@ var require_websocket = __commonJS({
     var protocolVersions = [8, 13];
     var readyStates = ["CONNECTING", "OPEN", "CLOSING", "CLOSED"];
     var subprotocolRegex = /^[!#$%&'*+\-.0-9A-Z^_`|a-z~]+$/;
-    var WebSocket2 = class _WebSocket extends EventEmitter3 {
+    var WebSocket2 = class _WebSocket extends EventEmitter4 {
       /**
        * Create a new `WebSocket`.
        *
@@ -45536,7 +45536,7 @@ var require_subprotocol = __commonJS({
 var require_websocket_server = __commonJS({
   "node_modules/ws/lib/websocket-server.js"(exports2, module2) {
     "use strict";
-    var EventEmitter3 = require("events");
+    var EventEmitter4 = require("events");
     var http5 = require("http");
     var { Duplex } = require("stream");
     var { createHash } = require("crypto");
@@ -45549,7 +45549,7 @@ var require_websocket_server = __commonJS({
     var RUNNING = 0;
     var CLOSING = 1;
     var CLOSED = 2;
-    var WebSocketServer2 = class extends EventEmitter3 {
+    var WebSocketServer2 = class extends EventEmitter4 {
       /**
        * Create a `WebSocketServer` instance.
        *
@@ -47197,10 +47197,10 @@ __export(extension_exports, {
   deactivate: () => deactivate
 });
 module.exports = __toCommonJS(extension_exports);
-var vscode11 = __toESM(require("vscode"));
+var vscode12 = __toESM(require("vscode"));
 
 // src/main.ts
-var vscode10 = __toESM(require("vscode"));
+var vscode11 = __toESM(require("vscode"));
 var fs8 = __toESM(require("fs"));
 var path12 = __toESM(require("path"));
 
@@ -54499,11 +54499,11 @@ function createToolRegistry(deps) {
       );
     },
     web: async (args) => {
-      const apiKey = await deps.getTavilyKey();
+      const apiKey = await deps.getWebDeps();
       return await executeWebSearch(args.query, apiKey, deps.getSignal());
     },
     url: async (args) => {
-      const apiKey = await deps.getTavilyKey();
+      const apiKey = await deps.getWebDeps();
       return await executeURL(args.urls, apiKey, args.query, deps.getSignal());
     },
     find: async (args) => {
@@ -97231,21 +97231,6 @@ var Indexer = class _Indexer {
   // }
 };
 
-// src/utils/apiUtils.ts
-async function getChatModelsFromProvider(provider, apiKey, fetchAll) {
-  const providerInstance = ChatFactory.create(provider, apiKey, "none");
-  return await providerInstance.getModels(fetchAll);
-}
-async function getEmbedModelsFromProvider(provider, apiKey) {
-  const providerInstance = EmbedFactory.create(provider, apiKey);
-  return await providerInstance.getModels();
-}
-async function verifyTavilyAPIKey(apiKey) {
-  if (!apiKey) throw new Error("Tavily API key not configured!");
-  const client = tavily({ apiKey });
-  await client.search("ping", { maxResults: 1 });
-}
-
 // src/worktreeManager.ts
 var cp2 = __toESM(require("child_process"));
 var util5 = __toESM(require("util"));
@@ -97717,6 +97702,8 @@ var CommandManager = class _CommandManager {
   }
   context;
   static DEFAULT_CONFIG = {
+    "promptForUnlistedCommands": true,
+    "unsafeFullAutonomous": false,
     "allowedCommands": {
       "git": [
         "^status(?:\\s+--short)?$",
@@ -97825,9 +97812,7 @@ var CommandManager = class _CommandManager {
       "diff": [
         "^(?:-[A-Za-z]+\\s+)?[^;&|`$()]+\\s+[^;&|`$()]+$"
       ]
-    },
-    "promptForUnlistedCommands": true,
-    "unsafeFullAutonomous": false
+    }
   };
   config = _CommandManager.DEFAULT_CONFIG;
   watcher;
@@ -97928,9 +97913,13 @@ var CommandManager = class _CommandManager {
     const argsArray = parsed;
     const bin = argsArray[0];
     const args = argsArray.slice(1);
-    if (!this.config.unsafeFullAutonomous) {
+    const argsString = args.join(" ");
+    const agentMode = this.context.workspaceState.get("agentMode") ?? "manual";
+    if (agentMode === "manual") {
+      const userApproved = await requestConfirmation(bin, argsString);
+      if (!userApproved) throw new Error(`User denied execution of command: ${commandStr}`);
+    } else if (!this.config.unsafeFullAutonomous) {
       const allowedPatterns = this.config.allowedCommands[bin] || [];
-      const argsString = args.join(" ");
       const isAllowed = allowedPatterns.some((pattern) => {
         try {
           const regex = new RegExp(pattern);
@@ -98027,10 +98016,146 @@ ${text.slice(-half)}`;
   }
 };
 
+// src/apiManager.ts
+var vscode10 = __toESM(require("vscode"));
+var APIManager = class {
+  constructor(context) {
+    this.context = context;
+  }
+  context;
+  chatModelInfo = /* @__PURE__ */ new Map();
+  emitter = new vscode10.EventEmitter();
+  onDidUpdateStatus = this.emitter.event;
+  async getChatAPIKey(provider) {
+    if (provider.toLowerCase() === "ollama") return "local-no-key-required";
+    const chatSecretKey = `${provider.toUpperCase()}_CHAT_API_KEY`;
+    let chatAPIKey = await this.context.secrets.get(chatSecretKey);
+    if (!chatAPIKey) {
+      const embedSecretKey = `${provider.toUpperCase()}_EMBED_API_KEY`;
+      chatAPIKey = await this.context.secrets.get(embedSecretKey);
+    }
+    if (!chatAPIKey) {
+      this.emitter.fire({ type: "requestChatAPIKey", provider });
+      throw new Error(`Missing ${provider} API key`);
+    }
+    return chatAPIKey;
+  }
+  async getEmbedAPIKey(provider) {
+    if (provider.toLowerCase() === "ollama") return "local-no-key-required";
+    const embedSecretKey = `${provider.toUpperCase()}_EMBED_API_KEY`;
+    let embedAPIKey = await this.context.secrets.get(embedSecretKey);
+    if (!embedAPIKey) {
+      const chatSecretKey = `${provider.toUpperCase()}_CHAT_API_KEY`;
+      embedAPIKey = await this.context.secrets.get(chatSecretKey);
+    }
+    if (!embedAPIKey) {
+      this.emitter.fire({ type: "requestEmbedAPIKey", provider });
+      throw new Error(`Missing ${provider} API key`);
+    }
+    return embedAPIKey;
+  }
+  async verifyTavilyAPIKey(apiKey) {
+    if (!apiKey) throw new Error("Tavily API key not configured!");
+    const client = tavily({ apiKey });
+    await client.search("ping", { maxResults: 1 });
+  }
+  async getChatModels(provider) {
+    try {
+      this.emitter.fire({ type: "setChatModelsLoading", provider });
+      const apiKey = await this.getChatAPIKey(provider);
+      const fetchAll = this.context.globalState.get("showAllChatModels") ?? false;
+      const providerInstance = ChatFactory.create(provider, apiKey, "none");
+      const infos = await providerInstance.getModels(fetchAll);
+      this.chatModelInfo.clear();
+      infos.forEach((info) => this.chatModelInfo.set(info.id, info));
+      this.emitter.fire({ type: "setChatModels", models: infos.map((info) => info.id) });
+      const chatModel = this.context.globalState.get(`${provider}_chatModel`);
+      const isValidModel = infos.some((info) => info.id === chatModel);
+      this.emitter.fire({ type: "updateChatModel", model: isValidModel ? chatModel : void 0 });
+    } catch (e2) {
+      vscode10.window.showErrorMessage(`Failed to fetch chat models: ${e2}`);
+      this.emitter.fire({ type: "requestChatAPIKey", provider });
+    }
+  }
+  async getEmbedModels(provider) {
+    try {
+      this.emitter.fire({ type: "setEmbedModelsLoading", provider });
+      const apiKey = await this.getEmbedAPIKey(provider);
+      const providerInstance = EmbedFactory.create(provider, apiKey);
+      const models = await providerInstance.getModels();
+      this.emitter.fire({ type: "setEmbedModels", models });
+      const savedModel = this.context.globalState.get(`${provider}_embedModel`);
+      const isValidModel = models.includes(savedModel);
+      this.emitter.fire({ type: "updateEmbedModel", model: isValidModel ? savedModel : void 0 });
+    } catch (e2) {
+      vscode10.window.showErrorMessage(`Failed to fetch embed models: ${e2}`);
+      this.emitter.fire({ type: "requestEmbedAPIKey", provider });
+    }
+  }
+  getChatModelInfo(model) {
+    const info = this.chatModelInfo.get(model);
+    if (info) {
+      const chatProvider = this.context.globalState.get("chatProvider");
+      const savedEffort = this.context.globalState.get(`${chatProvider}_${model}_Effort`);
+      this.emitter.fire({
+        type: "updateChatModelInfo",
+        reason: info.reason,
+        efforts: info.efforts,
+        defaultEffort: savedEffort ? savedEffort : info.defaultEffort,
+        contextWindow: info.contextWindow
+      });
+    }
+  }
+  async saveChatProvider(provider) {
+    await this.context.globalState.update("chatProvider", provider);
+    const serverStateManagement = this.context.globalState.get("serverStateManagement") ?? true;
+    this.emitter.fire({ type: "restoreChatSettings", stateful: serverStateManagement });
+    const stateManagementSupport = ChatFactory.supportsStateManagement(provider);
+    const serverWebSearchSupport = ChatFactory.supportsServerWebSearch(provider);
+    this.emitter.fire({
+      type: "updateChatProvider",
+      provider,
+      stateful: stateManagementSupport,
+      serverSearch: serverWebSearchSupport
+    });
+  }
+  async saveEmbedProvider(provider) {
+    await this.context.globalState.update("embedProvider", provider);
+    this.emitter.fire({ type: "updateEmbedProvider", provider });
+  }
+  async saveChatModel(provider, model) {
+    await this.context.globalState.update(`${provider}_chatModel`, model);
+    this.emitter.fire({ type: "updateChatModel", model });
+  }
+  async saveEmbedModel(provider, model) {
+    await this.context.globalState.update(`${provider}_embedModel`, model);
+    this.emitter.fire({ type: "updateEmbedModel", model });
+  }
+  async saveChatAPIKey(provider, key) {
+    const secretKey = `${provider.toUpperCase()}_CHAT_API_KEY`;
+    await this.context.secrets.store(secretKey, key);
+  }
+  async saveEmbedAPIKey(provider, key) {
+    const secretKey = `${provider.toUpperCase()}_EMBED_API_KEY`;
+    await this.context.secrets.store(secretKey, key);
+  }
+  async saveTavilyAPIKey(key) {
+    try {
+      await this.verifyTavilyAPIKey(key);
+      await this.context.secrets.store("TAVILY_API_KEY", key);
+    } catch (e2) {
+      vscode10.window.showErrorMessage("Invalid Tavily API key");
+      this.emitter.fire({ type: "requestTavilyAPIKey" });
+    }
+  }
+};
+
 // src/main.ts
 var ChatApp = class {
   constructor(context) {
     this.context = context;
+    this.apiManager = new APIManager(context);
+    this.apiManager.onDidUpdateStatus((event) => this.post(event));
     this.contextManager = new ContextManager(context);
     this.commandManager = new CommandManager(context);
     this.commandManager.onConfigChange((isUnsafe) => {
@@ -98038,13 +98163,13 @@ var ChatApp = class {
     });
     const activeWorktreeID = context.workspaceState.get("activeWorktreeID");
     if (activeWorktreeID) {
-      const workspaceRoot = vscode10.workspace.workspaceFolders?.[0].uri.fsPath;
+      const workspaceRoot = vscode11.workspace.workspaceFolders?.[0].uri.fsPath;
       if (workspaceRoot) this.worktreeManager = new WorktreeManager(workspaceRoot, activeWorktreeID);
     }
     this.toolRegistry = createToolRegistry({
       getCwd: () => {
         if (this.worktreeManager) return this.worktreeManager.worktreePath;
-        const root = vscode10.workspace.workspaceFolders?.[0].uri.fsPath;
+        const root = vscode11.workspace.workspaceFolders?.[0].uri.fsPath;
         if (!root) throw new Error("No active workspace");
         return root;
       },
@@ -98058,14 +98183,14 @@ var ChatApp = class {
         if (!provider || !model) throw new Error("Embedding provider/model is not configured");
         if (!this.indexer) throw new Error("Index is not loaded. Enable indexing first.");
         if (!this.indexer.indexEnabled()) throw new Error("Indexing is disabled cannot use semantic search");
-        const apiKey = await this.getEmbedAPIKey(provider);
+        const apiKey = await this.apiManager.getEmbedAPIKey(provider);
         return {
           indexer: this.indexer,
           embedProvider: EmbedFactory.create(provider, apiKey),
           model
         };
       },
-      getTavilyKey: async () => {
+      getWebDeps: async () => {
         const webSearchEnabled = this.context.globalState.get("webSearchEnabled") ?? false;
         const webSearchMode = this.context.globalState.get("webSearchMode") ?? "tavily";
         if (!webSearchEnabled || webSearchMode !== "tavily") {
@@ -98109,74 +98234,12 @@ var ChatApp = class {
   context;
   view;
   toolRegistry;
-  chatModelInfo = /* @__PURE__ */ new Map();
+  apiManager;
   contextManager;
   commandManager;
   worktreeManager;
   indexer;
   aborter = null;
-  post(message) {
-    this.view?.webview.postMessage(message);
-  }
-  async getChatAPIKey(provider) {
-    if (provider.toLowerCase() === "ollama") return "local-no-key-required";
-    const chatSecretKey = `${provider.toUpperCase()}_CHAT_API_KEY`;
-    let chatAPIKey = await this.context.secrets.get(chatSecretKey);
-    if (!chatAPIKey) {
-      const embedSecretKey = `${provider.toUpperCase()}_EMBED_API_KEY`;
-      chatAPIKey = await this.context.secrets.get(embedSecretKey);
-    }
-    if (!chatAPIKey) {
-      this.post({ type: "requestChatAPIKey", provider });
-      throw new Error(`Missing ${provider} API key`);
-    }
-    return chatAPIKey;
-  }
-  async getEmbedAPIKey(provider) {
-    if (provider.toLowerCase() === "ollama") return "local-no-key-required";
-    const embedSecretKey = `${provider.toUpperCase()}_EMBED_API_KEY`;
-    let embedAPIKey = await this.context.secrets.get(embedSecretKey);
-    if (!embedAPIKey) {
-      const chatSecretKey = `${provider.toUpperCase()}_CHAT_API_KEY`;
-      embedAPIKey = await this.context.secrets.get(chatSecretKey);
-    }
-    if (!embedAPIKey) {
-      this.post({ type: "requestEmbedAPIKey", provider });
-      throw new Error(`Missing ${provider} API key`);
-    }
-    return embedAPIKey;
-  }
-  async refreshChatModels(provider) {
-    try {
-      this.post({ type: "setChatModelsLoading", provider });
-      const apiKey = await this.getChatAPIKey(provider);
-      const fetchALL = this.context.globalState.get("showAllChatModels") ?? false;
-      const infos = await getChatModelsFromProvider(provider, apiKey, fetchALL);
-      this.chatModelInfo.clear();
-      infos.forEach((info) => this.chatModelInfo.set(info.id, info));
-      this.post({ type: "setChatModels", models: infos.map((info) => info.id) });
-      const chatModel = this.context.globalState.get(`${provider}_chatModel`);
-      const isValidModel = infos.some((info) => info.id === chatModel);
-      this.post({ type: "updateChatModel", model: isValidModel ? chatModel : void 0 });
-    } catch (e2) {
-      vscode10.window.showErrorMessage(`Failed to fetch chat models: ${e2}`);
-      this.post({ type: "requestChatAPIKey", provider });
-    }
-  }
-  async refreshEmbedModels(provider) {
-    try {
-      this.post({ type: "setEmbedModelsLoading", provider });
-      const apiKey = await this.getEmbedAPIKey(provider);
-      const models = await getEmbedModelsFromProvider(provider, apiKey);
-      this.post({ type: "setEmbedModels", models });
-      const savedModel = this.context.globalState.get(`${provider}_embedModel`);
-      const isValidModel = models.includes(savedModel);
-      this.post({ type: "updateEmbedModel", model: isValidModel ? savedModel : void 0 });
-    } catch (e2) {
-      vscode10.window.showErrorMessage(`Failed to fetch embed models: ${e2}`);
-      this.post({ type: "requestEmbedAPIKey", provider });
-    }
-  }
   async clearActiveWorktree() {
     if (this.worktreeManager) {
       await this.worktreeManager.cleanup();
@@ -98186,17 +98249,17 @@ var ChatApp = class {
     }
   }
   async runAgentTurn(provider, model, effort, userMessage) {
-    const workspaceRoot = vscode10.workspace.workspaceFolders?.[0].uri.fsPath;
+    const workspaceRoot = vscode11.workspace.workspaceFolders?.[0].uri.fsPath;
     if (!workspaceRoot) throw new Error("No active workspace");
     if (!this.worktreeManager) {
       const gitInstalled = await WorktreeManager.isGitInstalled();
       if (!gitInstalled) {
-        vscode10.window.showErrorMessage("Install Git on your system and restart VS Code.", "Understood");
+        vscode11.window.showErrorMessage("Install Git on your system and restart VS Code.", "Understood");
         return;
       }
       const isRepo = await WorktreeManager.isGitRepo(workspaceRoot);
       if (!isRepo) {
-        const userChoice = await vscode10.window.showWarningMessage(
+        const userChoice = await vscode11.window.showWarningMessage(
           "Git repository required for file edits. Initialize now?",
           "Initialize",
           "Cancel"
@@ -98204,9 +98267,9 @@ var ChatApp = class {
         if (userChoice === "Initialize") {
           try {
             await WorktreeManager.initGitRepo(workspaceRoot);
-            vscode10.window.showInformationMessage("Git repository initialized successfully.");
+            vscode11.window.showInformationMessage("Git repository initialized successfully.");
           } catch (e2) {
-            vscode10.window.showErrorMessage(`Failed to initialize Git: ${e2}`);
+            vscode11.window.showErrorMessage(`Failed to initialize Git: ${e2}`);
             return;
           }
         } else {
@@ -98229,7 +98292,7 @@ var ChatApp = class {
     const pruneTurnInterval = this.context.globalState.get("pruneTurnInterval") ?? 1;
     const pruneRunInterval = this.context.globalState.get("pruneRunInterval") ?? 1;
     try {
-      const apiKey = await this.getChatAPIKey(provider);
+      const apiKey = await this.apiManager.getChatAPIKey(provider);
       const webSearchMode = enabledWebSearch ? savedWebMode : "none";
       providerInstance = ChatFactory.create(provider, apiKey, webSearchMode);
       this.contextManager.prepareRun(provider, serverStateManagment);
@@ -98456,23 +98519,13 @@ var ChatApp = class {
               isUnsafe: currentConfig?.unsafeFullAutonomous ?? false
             });
           } catch (e2) {
-            vscode10.window.showErrorMessage(`Failed to restore state ${e2}`);
+            vscode11.window.showErrorMessage(`Failed to restore state ${e2}`);
           }
           break;
         }
         // Called after selecting chat provider from dropdown
         case "saveChatProvider": {
-          await this.context.globalState.update("chatProvider", data.provider);
-          const serverStateManagement = this.context.globalState.get("serverStateManagement") ?? true;
-          this.post({ type: "restoreChatSettings", stateful: serverStateManagement });
-          const stateManagementSupport = ChatFactory.supportsStateManagement(data.provider);
-          const serverWebSearchSupport = ChatFactory.supportsServerWebSearch(data.provider);
-          this.post({
-            type: "updateChatProvider",
-            provider: data.provider,
-            stateful: stateManagementSupport,
-            serverSearch: serverWebSearchSupport
-          });
+          this.apiManager.saveChatProvider(data.provider);
           this.post({
             type: "updateContextWindowUsage",
             usage: this.contextManager.estimateCategorizedTokens(data.provider)
@@ -98482,37 +98535,24 @@ var ChatApp = class {
         // Called when pressing the key button or when provider is selected without valid API key
         // Respond with list of models from provider if the key is valid
         case "saveChatAPIKey": {
-          const secretKey = `${data.provider.toUpperCase()}_CHAT_API_KEY`;
-          await this.context.secrets.store(secretKey, data.key);
-          await this.refreshChatModels(data.provider);
+          await this.apiManager.saveChatAPIKey(data.provider, data.key);
+          await this.apiManager.getChatModels(data.provider);
           break;
         }
         // Called after updateChatProvider and having a valid API key
         // Respond with curated list of models from provider, or all chat models if fetchall is set 
         case "fetchChatModels": {
-          await this.refreshChatModels(data.provider);
+          await this.apiManager.getChatModels(data.provider);
           break;
         }
         // Called when selecting a new chat model from dropdown
         case "saveChatModel": {
-          await this.context.globalState.update(`${data.provider}_chatModel`, data.model);
-          this.post({ type: "updateChatModel", model: data.model });
+          this.apiManager.saveChatModel(data.provider, data.model);
           break;
         }
         // Called after updateChatModel, fetch model information
         case "fetchChatModelInfo": {
-          const info = this.chatModelInfo.get(data.model);
-          if (info) {
-            const chatProvider = this.context.globalState.get("chatProvider");
-            const savedEffort = this.context.globalState.get(`${chatProvider}_${data.model}_Effort`);
-            this.post({
-              type: "updateChatModelInfo",
-              reason: info.reason,
-              efforts: info.efforts,
-              defaultEffort: savedEffort ? savedEffort : info.defaultEffort,
-              contextWindow: info.contextWindow
-            });
-          }
+          this.apiManager.getChatModelInfo(data.model);
           break;
         }
         // Effort is save per provider per model, and selected by default on reload
@@ -98524,7 +98564,7 @@ var ChatApp = class {
         case "setShowAllModels": {
           await this.context.globalState.update("showAllChatModels", data.showAll);
           const chatProvider = this.context.globalState.get("chatProvider");
-          if (chatProvider) await this.refreshChatModels(chatProvider);
+          if (chatProvider) await this.apiManager.getChatModels(chatProvider);
           break;
         }
         // Switch between server side or local context history
@@ -98538,13 +98578,7 @@ var ChatApp = class {
           break;
         }
         case "saveTavilyAPIKey": {
-          try {
-            await verifyTavilyAPIKey(data.key);
-            await this.context.secrets.store("TAVILY_API_KEY", data.key);
-          } catch (e2) {
-            vscode10.window.showErrorMessage("Invalid Tavily API key");
-            this.post({ type: "requestTavilyAPIKey" });
-          }
+          await this.apiManager.saveTavilyAPIKey(data.key);
           break;
         }
         case "setWebSearchMode": {
@@ -98553,9 +98587,9 @@ var ChatApp = class {
           if (data.enabled && data.mode === "tavily") {
             const tavilyAPIKey = await this.context.secrets.get("TAVILY_API_KEY");
             try {
-              await verifyTavilyAPIKey(tavilyAPIKey);
+              await this.apiManager.verifyTavilyAPIKey(tavilyAPIKey);
             } catch (e2) {
-              vscode10.window.showErrorMessage("Invalid Tavily API key");
+              vscode11.window.showErrorMessage("Invalid Tavily API key");
               this.post({ type: "requestTavilyAPIKey" });
             }
           }
@@ -98590,33 +98624,30 @@ var ChatApp = class {
         }
         // Called when selecting a new provider in embedding provider dropdown
         case "saveEmbedProvider": {
-          await this.context.globalState.update("embedProvider", data.provider);
-          this.post({ type: "updateEmbedProvider", provider: data.provider });
+          await this.apiManager.saveEmbedProvider(data.provider);
           break;
         }
         // Called after saveEmbedProvider and having a valid API key
         // Respond with a list of embedding models from the provider
         case "fetchEmbedModels": {
-          await this.refreshEmbedModels(data.provider);
+          await this.apiManager.getEmbedModels(data.provider);
           break;
         }
         // Called when selecting a new embedding model from the dropdown
         case "saveEmbedModel": {
-          await this.context.globalState.update(`${data.provider}_embedModel`, data.model);
-          this.post({ type: "updateEmbedModel", model: data.model });
+          await this.apiManager.saveEmbedModel(data.provider, data.model);
           break;
         }
         case "saveEmbedAPIKey": {
-          const secretKey = `${data.provider.toUpperCase()}_EMBED_API_KEY`;
-          await this.context.secrets.store(secretKey, data.key);
-          await this.refreshEmbedModels(data.provider);
+          await this.apiManager.saveEmbedAPIKey(data.provider, data.key);
+          await this.apiManager.getEmbedModels(data.provider);
           break;
         }
         // Called after selecting an embedding model
         // Checks if a table for the model already exists and broadcast index status
         case "loadVectorDB": {
           if (this.indexer) this.indexer.dispose();
-          this.indexer = await Indexer.create(this.context, data.model, (provider) => this.getEmbedAPIKey(provider));
+          this.indexer = await Indexer.create(this.context, data.model, (provider) => this.apiManager.getEmbedAPIKey(provider));
           this.indexer.onDidUpdateStatus((event) => this.post(event));
           await this.indexer.broadcastCurrentState();
           break;
@@ -98635,7 +98666,7 @@ var ChatApp = class {
         }
         case "indexWorkspace": {
           if (!this.indexer) return;
-          const apiKey = await this.getEmbedAPIKey(data.provider);
+          const apiKey = await this.apiManager.getEmbedAPIKey(data.provider);
           const embedProvider = EmbedFactory.create(data.provider, apiKey);
           await this.indexer.indexWorkspace(embedProvider, data.model);
           break;
@@ -98659,7 +98690,7 @@ var ChatApp = class {
                 await this.context.workspaceState.update("patchStatus", "conflict");
                 this.post({ type: "updatePatchStatus", status: "conflict" });
               } else {
-                vscode10.window.showErrorMessage(`Failed to apply patch: ${e2.message || String(e2)}`);
+                vscode11.window.showErrorMessage(`Failed to apply patch: ${e2.message || String(e2)}`);
               }
             }
           }
@@ -98697,19 +98728,19 @@ var ChatApp = class {
               await this.contextManager.save();
               this.post({ type: "updatePatchStatus", status: "accepted" });
             } catch (e2) {
-              vscode10.window.showErrorMessage(`Failed to force apply: ${e2}`);
+              vscode11.window.showErrorMessage(`Failed to force apply: ${e2}`);
             }
           }
           break;
         }
         case "openDiffView": {
           if (this.worktreeManager) {
-            const workspaceRoot = vscode10.workspace.workspaceFolders?.[0].uri.fsPath;
+            const workspaceRoot = vscode11.workspace.workspaceFolders?.[0].uri.fsPath;
             if (!workspaceRoot) return;
-            const originalUri = vscode10.Uri.file(path12.join(workspaceRoot, data.file));
-            const worktreeUri = vscode10.Uri.file(path12.join(this.worktreeManager.worktreePath, data.file));
+            const originalUri = vscode11.Uri.file(path12.join(workspaceRoot, data.file));
+            const worktreeUri = vscode11.Uri.file(path12.join(this.worktreeManager.worktreePath, data.file));
             const title = `${data.file} (Agent Proposal)`;
-            vscode10.commands.executeCommand("vscode.diff", originalUri, worktreeUri, title);
+            vscode11.commands.executeCommand("vscode.diff", originalUri, worktreeUri, title);
           }
           break;
         }
@@ -98719,7 +98750,7 @@ var ChatApp = class {
             const hasSeenWarning = this.context.workspaceState.get("hasSeenAutoWarning");
             if (!hasSeenWarning) {
               await this.context.workspaceState.update("hasSeenAutoWarning", true);
-              vscode10.window.showWarningMessage(
+              vscode11.window.showWarningMessage(
                 "Auto Mode enabled. The agent can now execute terminal commands without confirmation. Review the list of allowed commands.",
                 "Understood"
               );
@@ -98735,10 +98766,13 @@ var ChatApp = class {
       }
     });
   }
+  post(message) {
+    this.view?.webview.postMessage(message);
+  }
   getHTML() {
-    const htmlPath = vscode10.Uri.joinPath(this.context.extensionUri, "dist", "frontend.html");
-    const scriptPath = vscode10.Uri.joinPath(this.context.extensionUri, "dist", "webview.bundle.js");
-    const cssPath = vscode10.Uri.joinPath(this.context.extensionUri, "dist", "webview.bundle.css");
+    const htmlPath = vscode11.Uri.joinPath(this.context.extensionUri, "dist", "frontend.html");
+    const scriptPath = vscode11.Uri.joinPath(this.context.extensionUri, "dist", "webview.bundle.js");
+    const cssPath = vscode11.Uri.joinPath(this.context.extensionUri, "dist", "webview.bundle.css");
     try {
       let html = fs8.readFileSync(htmlPath.fsPath, "utf-8");
       const scriptUri = this.view.webview.asWebviewUri(scriptPath);
@@ -98747,7 +98781,7 @@ var ChatApp = class {
       html = html.replace("{{scriptUri}}", scriptUri.toString());
       return html;
     } catch (e2) {
-      vscode10.window.showErrorMessage(`Error loading frontend html: ${e2}`);
+      vscode11.window.showErrorMessage(`Error loading frontend html: ${e2}`);
       return `<!DOCTYPE html><html><body>Error loading UI</body></html>`;
     }
   }
@@ -98763,7 +98797,7 @@ function formatError(e2) {
 function activate(context) {
   const chatApp = new ChatApp(context);
   context.subscriptions.push(
-    vscode11.window.registerWebviewViewProvider(
+    vscode12.window.registerWebviewViewProvider(
       "codeagent-sidebar",
       chatApp
     )

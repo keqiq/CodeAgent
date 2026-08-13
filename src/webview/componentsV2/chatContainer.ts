@@ -1,6 +1,6 @@
 
 import { WebviewApi } from "../frontend";
-import { ChatItem } from "../../contextManager";
+import { ChatItem } from "../../managers/contextManager";
 import { ExecuteContainer } from "./containers/execute";
 import { ThoughtContainer } from "./containers/thought";
 import { ToolsContainer } from "./containers/tools";

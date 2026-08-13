@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { getEncoding } from 'js-tiktoken';
-import { ChatFactory } from './apis/chat/chatFactory';
-import { PRUNE_TOOLS } from './tools/toolIndex';
+import { ChatFactory } from '../apis/chat/chatFactory';
+import { PRUNE_TOOLS } from '../tools/toolIndex';
 
 export interface MessageItem {
     type: 'message';

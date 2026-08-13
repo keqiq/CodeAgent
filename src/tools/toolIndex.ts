@@ -2,9 +2,9 @@ import { searchSchemas, executeGlob, executeGrep, executeRefs, findDeps, execute
 import { fileSchemas, executeRead, executeWrite, executeEdit } from "./files";
 import { commandSchemas } from "./execute";
 import { webSchema, executeWebSearch, executeURL } from "./web";
-import { ContextManager } from "../contextManager";
+import { ContextManager } from "../managers/contextManager";
 import { artifactSchema, executeRecall } from "./artifact";
-import { CommandManager } from "../commandManager";
+import { CommandManager } from "../managers/commandManager";
 
 export interface ToolProperty {
     type: string;
@@ -47,7 +47,7 @@ export type ToolDeps = {
     getFindDeps: () => Promise<findDeps>;
     getCwd: () => string;
     getSignal: () => AbortSignal;
-    getTavilyKey:() => Promise<string>;
+    getWebDeps:() => Promise<string>;
     getContextManager:() => ContextManager;
     getCommandManager:() => CommandManager;
     requestConfirmation:(bin: string, args: string) => Promise<boolean>;
@@ -85,12 +85,12 @@ export function createToolRegistry(deps: ToolDeps): Record<string, (args: any, t
         },
 
         web: async (args) => {
-            const apiKey = await deps.getTavilyKey();
+            const apiKey = await deps.getWebDeps();
             return await executeWebSearch(args.query, apiKey, deps.getSignal());
         },
 
         url: async (args) => {
-            const apiKey = await deps.getTavilyKey();
+            const apiKey = await deps.getWebDeps();
             return await executeURL(args.urls, apiKey, args.query, deps.getSignal());
         },
 

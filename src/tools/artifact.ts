@@ -1,4 +1,4 @@
-import { ContextManager } from '../contextManager';
+import { ContextManager } from '../managers/contextManager';
 import { ToolResult, ToolSchema } from './toolIndex';
 
 export const artifactSchema: ToolSchema[] = [

@@ -2,14 +2,14 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import { ChatFactory } from './apis/chat/chatFactory';
-import { ChatProvider, ModelInfo, WebSearchMode } from './apis/chat/chatProvider';
+import { ChatProvider, WebSearchMode } from './apis/chat/chatProvider';
 import { createToolRegistry, ToolResult } from './tools/toolIndex';
 import { EmbedFactory } from './apis/embed/embedFactory';
 import { Indexer } from './indexing/indexer';
-import { getEmbedModelsFromProvider, getChatModelsFromProvider, verifyTavilyAPIKey } from './utils/apiUtils';
-import { WorktreeManager } from './worktreeManager';
-import { ChatResponse, ContextManager } from './contextManager';
-import { CommandManager } from './commandManager';
+import { WorktreeManager } from './managers/worktreeManager';
+import { ChatResponse, ContextManager } from './managers/contextManager';
+import { CommandManager } from './managers/commandManager';
+import { APIManager } from './managers/apiManager';
 
 declare const console: any;
 
@@ -18,8 +18,8 @@ export class ChatApp implements vscode.WebviewViewProvider {
     private view?: vscode.WebviewView;
 
     private toolRegistry: any;
-    private chatModelInfo: Map<string, ModelInfo> = new Map();
     
+    private apiManager: APIManager;
     private contextManager: ContextManager;
     private commandManager: CommandManager;
     private worktreeManager?: WorktreeManager;
@@ -29,9 +29,12 @@ export class ChatApp implements vscode.WebviewViewProvider {
     private aborter: AbortController | null = null;
 
     constructor(private readonly context: vscode.ExtensionContext) {
-        this.contextManager = new ContextManager(context);
-        this.commandManager = new CommandManager(context);
+        this.apiManager = new APIManager(context);
+        this.apiManager.onDidUpdateStatus(event => this.post(event));
 
+        this.contextManager = new ContextManager(context);
+
+        this.commandManager = new CommandManager(context);
         this.commandManager.onConfigChange((isUnsafe) => {
             this.post({ type: 'updateUnsafeFlag', isUnsafe });
         });
@@ -63,7 +66,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
                 if (!this.indexer) throw new Error("Index is not loaded. Enable indexing first.");
                 if (!this.indexer.indexEnabled()) throw new Error('Indexing is disabled cannot use semantic search');
 
-                const apiKey = await this.getEmbedAPIKey(provider);
+                const apiKey = await this.apiManager.getEmbedAPIKey(provider);
 
                 return {
                     indexer: this.indexer,
@@ -72,7 +75,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
                 };
             },
 
-            getTavilyKey: async () => {
+            getWebDeps: async () => {
 
                 const webSearchEnabled = this.context.globalState.get<boolean>('webSearchEnabled') ?? false;
                 const webSearchMode = this.context.globalState.get<string>('webSearchMode') ?? 'tavily';
@@ -129,93 +132,6 @@ export class ChatApp implements vscode.WebviewViewProvider {
                 this.post({ type: 'updateExecute', status: 'streaming', toolId, chunk });
             },
         });
-    }
-
-    private post(message: any) { this.view?.webview.postMessage(message); }
-
-    private async getChatAPIKey(provider: string): Promise<string> {
-        if (provider.toLowerCase() === 'ollama') return 'local-no-key-required';
-
-        const chatSecretKey = `${provider.toUpperCase()}_CHAT_API_KEY`;
-        let chatAPIKey = await this.context.secrets.get(chatSecretKey);
-
-        // Fallback to embed api key if embed is not found
-        if (!chatAPIKey) {
-            const embedSecretKey = `${provider.toUpperCase()}_EMBED_API_KEY`;
-            chatAPIKey = await this.context.secrets.get(embedSecretKey);
-        }
-
-        // if we have neither chat nor embed apikey, request chat key
-        if (!chatAPIKey) {
-            this.post({ type: 'requestChatAPIKey', provider: provider });
-            throw new Error(`Missing ${provider} API key`);
-        }
-        return chatAPIKey;
-    }
-
-    private async getEmbedAPIKey(provider: string): Promise<string> {
-        if (provider.toLowerCase() === 'ollama') return 'local-no-key-required';
-
-        const embedSecretKey = `${provider.toUpperCase()}_EMBED_API_KEY`;
-        let embedAPIKey = await this.context.secrets.get(embedSecretKey);
-
-        // Fallback to chat api key if embed is not found
-        if (!embedAPIKey) {
-            const chatSecretKey = `${provider.toUpperCase()}_CHAT_API_KEY`;
-            embedAPIKey = await this.context.secrets.get(chatSecretKey);
-        }
-
-        // if we have neither chat nor embed apikey, request embedding key
-        if (!embedAPIKey) {
-            this.post({ type: 'requestEmbedAPIKey', provider: provider });
-            throw new Error(`Missing ${provider} API key`);
-        }
-        return embedAPIKey;
-    }
-
-    private async refreshChatModels(provider: string) {
-        try {
-            this.post({ type: 'setChatModelsLoading', provider: provider });
-
-            const apiKey = await this.getChatAPIKey(provider);
-
-            const fetchALL = this.context.globalState.get<boolean>('showAllChatModels') ?? false;
-            const infos = await getChatModelsFromProvider(provider, apiKey, fetchALL);
-
-            this.chatModelInfo.clear();
-            infos.forEach((info: ModelInfo) => this.chatModelInfo.set(info.id, info));
-
-            this.post({ type: 'setChatModels', models: infos.map((info: ModelInfo) => info.id) });
-
-            const chatModel = this.context.globalState.get<string>(`${provider}_chatModel`);
-            const isValidModel = infos.some((info: ModelInfo) => info.id === chatModel);
-
-            this.post({ type: 'updateChatModel', model: isValidModel ? chatModel : undefined });
-
-        } catch (e) {
-            vscode.window.showErrorMessage(`Failed to fetch chat models: ${e}`);
-            this.post({ type: 'requestChatAPIKey', provider: provider });
-        }
-    }
-
-    private async refreshEmbedModels(provider: string) {
-        try {
-            this.post({ type: 'setEmbedModelsLoading', provider: provider });
-
-            const apiKey = await this.getEmbedAPIKey(provider);
-            const models = await getEmbedModelsFromProvider(provider, apiKey);
-
-            this.post({ type: 'setEmbedModels', models });
-
-            const savedModel = this.context.globalState.get<string>(`${provider}_embedModel`);
-            const isValidModel = models.includes(savedModel as any);
-
-            this.post({ type: 'updateEmbedModel', model: isValidModel ? savedModel : undefined });
-
-        } catch (e) {
-            vscode.window.showErrorMessage(`Failed to fetch embed models: ${e}`);
-            this.post({ type: 'requestEmbedAPIKey', provider: provider });
-        }
     }
 
     private async clearActiveWorktree(): Promise<void> {
@@ -284,7 +200,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
         const pruneRunInterval = this.context.globalState.get<number>('pruneRunInterval') ?? 1;
 
         try {
-            const apiKey = await this.getChatAPIKey(provider);
+            const apiKey = await this.apiManager.getChatAPIKey(provider);
 
             const webSearchMode: WebSearchMode = enabledWebSearch ? (savedWebMode as WebSearchMode) : 'none';
 
@@ -598,19 +514,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
 
                 // Called after selecting chat provider from dropdown
                 case 'saveChatProvider': {
-                    await this.context.globalState.update('chatProvider', data.provider);
-
-                    const serverStateManagement = this.context.globalState.get<boolean>('serverStateManagement') ?? true;
-                    this.post({ type: 'restoreChatSettings', stateful: serverStateManagement });
-                    const stateManagementSupport = ChatFactory.supportsStateManagement(data.provider);
-                    const serverWebSearchSupport = ChatFactory.supportsServerWebSearch(data.provider);
-                    this.post({
-                        type: 'updateChatProvider',
-                        provider: data.provider,
-                        stateful: stateManagementSupport,
-                        serverSearch: serverWebSearchSupport
-                    });
-
+                    this.apiManager.saveChatProvider(data.provider);
                     this.post({
                         type: 'updateContextWindowUsage',
                         usage: this.contextManager.estimateCategorizedTokens(data.provider)
@@ -622,40 +526,27 @@ export class ChatApp implements vscode.WebviewViewProvider {
                 // Called when pressing the key button or when provider is selected without valid API key
                 // Respond with list of models from provider if the key is valid
                 case 'saveChatAPIKey': {
-                    const secretKey = `${data.provider.toUpperCase()}_CHAT_API_KEY`;
-                    await this.context.secrets.store(secretKey, data.key);
-                    await this.refreshChatModels(data.provider);
+                    await this.apiManager.saveChatAPIKey(data.provider, data.key);
+                    await this.apiManager.getChatModels(data.provider);
                     break;
                 }
 
                 // Called after updateChatProvider and having a valid API key
                 // Respond with curated list of models from provider, or all chat models if fetchall is set 
                 case 'fetchChatModels': {
-                    await this.refreshChatModels(data.provider);
+                    await this.apiManager.getChatModels(data.provider);
                     break;
                 }
 
                 // Called when selecting a new chat model from dropdown
                 case 'saveChatModel': {
-                    await this.context.globalState.update(`${data.provider}_chatModel`, data.model);
-                    this.post({ type: 'updateChatModel', model: data.model });
+                    this.apiManager.saveChatModel(data.provider, data.model);
                     break;
                 }
 
                 // Called after updateChatModel, fetch model information
                 case 'fetchChatModelInfo': {
-                    const info = this.chatModelInfo.get(data.model);
-                    if (info) {
-                        const chatProvider = this.context.globalState.get<string>('chatProvider');
-                        const savedEffort = this.context.globalState.get<string>(`${chatProvider}_${data.model}_Effort`);
-                        this.post({
-                            type: 'updateChatModelInfo',
-                            reason: info.reason,
-                            efforts: info.efforts,
-                            defaultEffort: savedEffort ? savedEffort : info.defaultEffort,
-                            contextWindow: info.contextWindow
-                        });
-                    }
+                    this.apiManager.getChatModelInfo(data.model);
                     break;
                 }
 
@@ -669,7 +560,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
                 case 'setShowAllModels': {
                     await this.context.globalState.update('showAllChatModels', data.showAll);
                     const chatProvider = this.context.globalState.get<string>('chatProvider');
-                    if (chatProvider) await this.refreshChatModels(chatProvider);
+                    if (chatProvider) await this.apiManager.getChatModels(chatProvider);
                     break;
                 }
 
@@ -686,13 +577,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
                 }
 
                 case 'saveTavilyAPIKey': {
-                    try {
-                        await verifyTavilyAPIKey(data.key);
-                        await this.context.secrets.store('TAVILY_API_KEY', data.key);
-                    } catch (e) {
-                        vscode.window.showErrorMessage('Invalid Tavily API key');
-                        this.post({ type: 'requestTavilyAPIKey' });
-                    }
+                    await this.apiManager.saveTavilyAPIKey(data.key);
                     break;
                 }
 
@@ -703,7 +588,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
                         const tavilyAPIKey = await this.context.secrets.get('TAVILY_API_KEY');
 
                         try {
-                            await verifyTavilyAPIKey(tavilyAPIKey);
+                            await this.apiManager.verifyTavilyAPIKey(tavilyAPIKey);
                         } catch (e) {
                             vscode.window.showErrorMessage('Invalid Tavily API key');
                             this.post({ type: 'requestTavilyAPIKey' });
@@ -747,29 +632,26 @@ export class ChatApp implements vscode.WebviewViewProvider {
 
                 // Called when selecting a new provider in embedding provider dropdown
                 case 'saveEmbedProvider': {
-                    await this.context.globalState.update('embedProvider', data.provider);
-                    this.post({ type: 'updateEmbedProvider', provider: data.provider });
+                    await this.apiManager.saveEmbedProvider(data.provider);
                     break;
                 }
 
                 // Called after saveEmbedProvider and having a valid API key
                 // Respond with a list of embedding models from the provider
                 case 'fetchEmbedModels': {
-                    await this.refreshEmbedModels(data.provider);
+                    await this.apiManager.getEmbedModels(data.provider);
                     break;
                 }
 
                 // Called when selecting a new embedding model from the dropdown
                 case 'saveEmbedModel': {
-                    await this.context.globalState.update(`${data.provider}_embedModel`, data.model);
-                    this.post({ type: 'updateEmbedModel', model: data.model });
+                    await this.apiManager.saveEmbedModel(data.provider, data.model);
                     break;
                 }
 
                 case 'saveEmbedAPIKey': {
-                    const secretKey = `${data.provider.toUpperCase()}_EMBED_API_KEY`;
-                    await this.context.secrets.store(secretKey, data.key);
-                    await this.refreshEmbedModels(data.provider);
+                    await this.apiManager.saveEmbedAPIKey(data.provider, data.key);
+                    await this.apiManager.getEmbedModels(data.provider);
                     break;
                 }
 
@@ -779,7 +661,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
                     // Clear the old indexer if we have one
                     if (this.indexer) this.indexer.dispose();
 
-                    this.indexer = await Indexer.create(this.context, data.model, (provider: string) => this.getEmbedAPIKey(provider));
+                    this.indexer = await Indexer.create(this.context, data.model, (provider: string) => this.apiManager.getEmbedAPIKey(provider));
                     this.indexer.onDidUpdateStatus(event => this.post(event));
                     await this.indexer.broadcastCurrentState();
                     break;
@@ -802,7 +684,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
 
                 case 'indexWorkspace': {
                     if (!this.indexer) return;
-                    const apiKey = await this.getEmbedAPIKey(data.provider);
+                    const apiKey = await this.apiManager.getEmbedAPIKey(data.provider);
 
                     const embedProvider = EmbedFactory.create(data.provider, apiKey);
 
@@ -924,6 +806,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
             }
         });
     }
+    private post(message: any) { this.view?.webview.postMessage(message); }
 
     private getHTML(): string {
         const htmlPath = vscode.Uri.joinPath(this.context.extensionUri, 'dist', 'frontend.html');

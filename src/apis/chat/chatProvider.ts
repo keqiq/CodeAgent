@@ -1,4 +1,4 @@
-import { ChatItem, ChatResponse, TokenUsage } from "../../contextManager";
+import { ChatItem, ChatResponse, TokenUsage } from "../../managers/contextManager";
 import { requiredSchemas, ToolResult } from "../../tools/toolIndex";
 
 export interface StreamYield {
