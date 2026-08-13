@@ -202,12 +202,12 @@ export class ChatSettings {
         this.currentProvider = msg.provider;
         
         if (msg.provider.toLowerCase() === 'ollama') {
-            this.keyBtn.classList.add('disabled');
+            this.keyBtn.classList.add('hidden');
             this.keyBtn.innerHTML = `No Key Required (Local)`;
             this.keyContainer.classList.add('hidden');
         }
         else {
-            this.keyBtn.classList.remove('disabled');
+            this.keyBtn.classList.remove('hidden', 'disabled');
             this.keyBtn.innerHTML = `Set ${msg.provider} API Key`;
         }
 

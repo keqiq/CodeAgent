@@ -22,11 +22,24 @@ export class ChatInput {
     private sendIcon = `<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1L1 8h5v7h4V8h5L8 1z" /></svg>`;
     private stopIcon = `<svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><rect x="2" y="2" width="12" height="12" rx="2" /></svg>`;
 
+    private approvalContainer: HTMLElement;
+    private approvalCommandText: HTMLElement;
+    private approveBtn: HTMLButtonElement;
+    private saveApproveBtn: HTMLButtonElement;
+    private denyBtn: HTMLButtonElement;
+    private currentApprovalRequestId: string | null = null;
+
     constructor(private vscodeAPI: WebviewApi, private chatContainer: ChatContainer, private chatSettings: ChatSettings) {
         this.actionBtn = document.getElementById('actionBtn') as HTMLButtonElement;
         this.promptInput = document.getElementById('prompt') as HTMLTextAreaElement;
         this.effortContainer = document.getElementById('effortDropdown');
         this.effortDivider = document.getElementById('effortDivider');
+
+        this.approvalContainer = document.getElementById('commandApprovalContainer') as HTMLElement;
+        this.approvalCommandText = document.getElementById('approvalCommandText') as HTMLElement;
+        this.approveBtn = document.getElementById('approveCommandBtn') as HTMLButtonElement;
+        this.saveApproveBtn = document.getElementById('saveApproveCommandBtn') as HTMLButtonElement;
+        this.denyBtn = document.getElementById('denyCommandBtn') as HTMLButtonElement;
 
         this.providerDropdown = new CustomDropdown('providerDropdown', 'Providers', (val: string) => {
             this.vscodeAPI.postMessage({ type: 'saveChatProvider', provider: val });
@@ -89,7 +102,7 @@ export class ChatInput {
             const effort = this.effortDropdown.value? this.effortDropdown.value.toLowerCase() : undefined;
 
             if (text && this.currentChatProvider && this.currentChatModel) {
-                this.chatContainer.appendMessage({ type: 'message', role: 'user', content: text });
+                this.chatContainer.addMessage({ type: 'message', role: 'user', content: text });
 
                 this.vscodeAPI.postMessage({
                     type: 'askAgent',
@@ -105,6 +118,10 @@ export class ChatInput {
                 this.setStopState();
             }
         });
+
+this.approveBtn.addEventListener('click', () => this.resolveCommandApproval(true, false));
+        this.saveApproveBtn.addEventListener('click', () => this.resolveCommandApproval(true, true));
+        this.denyBtn.addEventListener('click', () => this.resolveCommandApproval(false, false));
     }
 
     // If we have sent a prompt and is waiting for the model to finish generating
@@ -248,5 +265,42 @@ export class ChatInput {
 
         if (this.effortContainer) this.effortContainer.classList.add('hidden');
         if (this.effortDivider) this.effortDivider.classList.add('hidden');
+    }
+
+    public showCommandApproval(requestId: string, bin: string, args: string): void {
+        this.currentApprovalRequestId = requestId;
+        this.approvalCommandText.textContent = `${bin} ${args}`;
+
+        // Hide prompt input
+        this.promptInput.classList.add('hidden');
+        this.actionBtn.classList.add('hidden');
+
+        // Show approval UI
+        this.approvalContainer.classList.remove('hidden');
+
+        // Add a warning glow to the parent unified-box
+        const unifiedBox = this.promptInput.closest('.unified-box');
+        if (unifiedBox) unifiedBox.classList.add('warning-glow');
+    }
+
+    private resolveCommandApproval(approved: boolean, save: boolean): void {
+        if (!this.currentApprovalRequestId) return;
+
+        this.vscodeAPI.postMessage({
+            type: 'commandApprovalResponse',
+            requestId: this.currentApprovalRequestId,
+            approved: approved,
+            save: save
+        });
+
+        this.currentApprovalRequestId = null;
+
+        // Restore the prompt input
+        this.approvalContainer.classList.add('hidden');
+        this.promptInput.classList.remove('hidden');
+        this.actionBtn.classList.remove('hidden');
+
+        const unifiedBox = this.promptInput.closest('.unified-box');
+        if (unifiedBox) unifiedBox.classList.remove('warning-glow');
     }
 }

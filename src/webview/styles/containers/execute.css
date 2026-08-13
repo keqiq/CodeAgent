@@ -1,0 +1,57 @@
+/* --- Execution Streaming Containers --- */
+.exec-log-entry {
+    margin-bottom: 8px;
+    display: flex;
+    flex-direction: column;
+    /* border: 1px solid var(--vscode-widget-border); */
+    border-radius: 4px;
+    overflow: hidden;
+    background: color-mix(in srgb, var(--vscode-editor-background) 80%, transparent);
+}
+
+.exec-log-entry:last-child {
+    margin-bottom: 0;
+}
+
+.exec-log-summary {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    cursor: pointer;
+    user-select: none;
+    background: rgba(0, 0, 0, 0.1);
+    outline: none;
+}
+
+/* Hide default HTML detail arrow */
+.exec-log-entry summary::-webkit-details-marker { display: none; }
+.exec-log-entry summary { list-style: none; }
+
+.exec-chevron {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    color: var(--vscode-icon-foreground);
+    transition: transform 0.2s ease;
+}
+
+.exec-log-entry[open] .exec-chevron {
+    transform: rotate(90deg);
+}
+
+.exec-output-container {
+    /* border-top: 1px solid var(--vscode-widget-border); */
+    background: rgba(0, 0, 0, 0.3);;
+    padding: 8px 10px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.exec-output-text {
+    font-family: var(--vscode-editor-font-family);
+    font-size: 11px;
+    color: var(--vscode-terminal-foreground, var(--vscode-descriptionForeground));
+    white-space: pre-wrap;
+    word-break: break-all;
+}

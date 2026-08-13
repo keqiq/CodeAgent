@@ -1,0 +1,110 @@
+.patch-review-container {
+    background: var(--vscode-editorWidget-background);
+    border: 1px solid var(--vscode-widget-border);
+    border-radius: 6px;
+    width: 90%;
+    /* align-self: center; */
+    font-size: 12px;
+    margin-top: 4px;
+    margin-bottom: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    overflow: hidden;
+}
+
+.patch-summary-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    cursor: pointer;
+    background: var(--vscode-editor-background);
+    transition: background-color 0.1s;
+}
+
+.patch-summary-header:hover {
+    background: var(--vscode-list-hoverBackground);
+}
+
+.patch-summary-text {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--vscode-foreground);
+}
+
+.patch-stat-add { color: var(--vscode-gitDecoration-addedResourceForeground); font-family: monospace; font-weight: bold;}
+.patch-stat-del { color: var(--vscode-gitDecoration-deletedResourceForeground); font-family: monospace; font-weight: bold;}
+
+.patch-actions {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.patch-btn {
+    border: none;
+    border-radius: 4px;
+    padding: 4px 10px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 11px;
+}
+
+.apply-btn {
+    background: var(--vscode-button-background);
+    color: var(--vscode-button-foreground);
+}
+.apply-btn:hover { background: var(--vscode-button-hoverBackground); }
+
+.discard-btn {
+    background: transparent;
+    border: 1px solid var(--vscode-button-secondaryBackground);
+    color: var(--vscode-foreground);
+}
+.discard-btn:hover { background: var(--vscode-button-secondaryHoverBackground); }
+
+/* File List Accordion */
+.patch-file-list {
+    border-top: 1px solid var(--vscode-widget-border);
+    max-height: 200px;
+    overflow-y: auto;
+    background: var(--vscode-editorWidget-background);
+}
+
+.patch-file-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 12px 4px 24px;
+    cursor: pointer;
+}
+
+.patch-file-item:hover {
+    background: var(--vscode-list-hoverBackground);
+}
+
+.file-item-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.file-status-icon {
+    font-weight: bold;
+    font-size: 10px;
+    width: 14px;
+    text-align: center;
+}
+.file-status-icon.added { color: var(--vscode-gitDecoration-addedResourceForeground); }
+.file-status-icon.modified { color: var(--vscode-gitDecoration-modifiedResourceForeground); }
+.file-status-icon.deleted { color: var(--vscode-gitDecoration-deletedResourceForeground); }
+
+.file-name {
+    font-family: var(--vscode-editor-font-family);
+    color: var(--vscode-foreground);
+}
+
+.file-item-right {
+    display: flex;
+    gap: 8px;
+}

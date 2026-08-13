@@ -132,7 +132,7 @@ export class ContextManager {
             if (state.summarizedHistory) this.summarizedHistory = state.summarizedHistory;
             if (state.summarizeIndex) this.summarizeIndex = state.summarizeIndex;
         } catch (e) {
-            console.log('Not existing chat history found');
+            console.log('No existing chat history found');
         }
     }
 

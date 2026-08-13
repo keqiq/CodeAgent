@@ -1,9 +1,10 @@
 import { searchSchemas, executeGlob, executeGrep, executeRefs, findDeps, executeFind } from "./search";
 import { fileSchemas, executeRead, executeWrite, executeEdit } from "./files";
-import { commandSchemas, executeRun } from "./execute";
+import { commandSchemas } from "./execute";
 import { webSchema, executeWebSearch, executeURL } from "./web";
 import { ContextManager } from "../contextManager";
 import { artifactSchema, executeRecall } from "./artifact";
+import { CommandManager } from "../commandManager";
 
 export interface ToolProperty {
     type: string;
@@ -47,13 +48,16 @@ export type ToolDeps = {
     getCwd: () => string;
     getSignal: () => AbortSignal;
     getTavilyKey:() => Promise<string>;
-    getContext:() => ContextManager
+    getContextManager:() => ContextManager;
+    getCommandManager:() => CommandManager;
+    requestConfirmation:(bin: string, args: string) => Promise<boolean>;
+    onRunOutput: (toolID: string, output: string) => void;
 };
 
 // Tools with potentionally large output that could use pruning
 export const PRUNE_TOOLS = new Set(['read', 'glob', 'grep', 'find', 'refs', 'run', 'web', 'url']);
 
-export function createToolRegistry(deps: ToolDeps): Record<string, (args: any) => Promise<ToolResult>> {
+export function createToolRegistry(deps: ToolDeps): Record<string, (args: any, toolID: string) => Promise<ToolResult>> {
     return {
         glob: async (args) => await executeGlob(args.pattern, deps.getCwd(), deps.getSignal()),
 
@@ -67,7 +71,18 @@ export function createToolRegistry(deps: ToolDeps): Record<string, (args: any) =
 
         edit: async (args) => await executeEdit(args.filePath, args.oldText, args.newText, deps.getCwd()),
 
-        run: async (args) => await executeRun(args.command, deps.getCwd(), deps.getSignal()),
+        run: async (args, toolID) => {
+            const manager = deps.getCommandManager();
+            
+            return await manager.execute(
+                args.command,
+                args.cwd,
+                deps.getCwd(),
+                deps.getSignal(),
+                deps.requestConfirmation,
+                (chunk) => deps.onRunOutput(toolID, chunk)
+            );
+        },
 
         web: async (args) => {
             const apiKey = await deps.getTavilyKey();
@@ -85,7 +100,7 @@ export function createToolRegistry(deps: ToolDeps): Record<string, (args: any) =
         },
 
         recall: async (args) => {
-            return await executeRecall(args.artifactID, deps.getContext(), deps.getSignal());
+            return await executeRecall(args.artifactID, deps.getContextManager(), deps.getSignal());
         }
     };
 }

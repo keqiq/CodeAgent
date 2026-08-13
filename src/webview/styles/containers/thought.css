@@ -1,0 +1,31 @@
+.thought-group {
+    align-self: flex-start;
+    background: transparent;
+    border-left: 3px solid var(--vscode-descriptionForeground);
+    margin-bottom: 8px;
+    width: 95%;
+    color: var(--vscode-descriptionForeground);
+    font-size: 12px;
+}
+
+.thought-group summary {
+    padding: 4px 8px;
+    cursor: pointer;
+    font-style: italic;
+    user-select: none;
+    outline: none;
+    transition: opacity 0.1s;
+    display: flex;
+    align-items: center;
+}
+
+.thought-group summary:hover {
+    opacity: 0.8;
+}
+
+.thought-content {
+    padding: 4px 12px 8px 12px;
+    opacity: 0.9;
+    border: none;
+    box-shadow: none;
+}

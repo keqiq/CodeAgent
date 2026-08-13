@@ -5,6 +5,7 @@ import { ChatInput } from "./componentsV2/chatInput";
 import { ChatHeader } from "./componentsV2/chatHeader";
 import { ChatSettings } from "./componentsV2/chatSettings";
 import { ContextWindow } from './componentsV2/contextWindow';
+import { AgentMode } from './componentsV2/agentMode';
 
 export interface WebviewApi<StateType = any> {
     postMessage(message: unknown): void;
@@ -21,6 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const chatInput = new ChatInput(vscodeAPI, chatContainer, chatSettings);
     const chatHeader = new ChatHeader(vscodeAPI);
     const contextWindow = new ContextWindow(vscodeAPI);
+    const agentMode = new AgentMode(vscodeAPI);
 
     window.addEventListener('message', (event: MessageEvent) => {
         const msg = event.data;
@@ -47,6 +49,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             case 'restorePruneSettings':
                 contextWindow.restorePruneSettings(msg.mode, msg.turnInterval, msg.runInterval);
+                break;
+
+            case 'restoreAgentMode':
+                agentMode.setAgentMode(msg.mode);
                 break;
 
             // --- CHAT PROVIDER & MODELS ---
@@ -87,31 +93,27 @@ document.addEventListener('DOMContentLoaded', () => {
                 break;
                 
             case 'receiveMessage':
-                chatContainer.appendMessage({ type: 'message', role: 'assistant', content: msg.text, style: msg.style });
+                chatContainer.addMessage({ type: 'message', role: 'assistant', content: msg.text, style: msg.style });
                 break;
             
             case 'streamChunk':
-                chatContainer.streamMessage(msg.chunk);
+                chatContainer.updateMessage(msg.chunk);
                 break;
                 
             case 'streamThought':
-                chatContainer.streamThought(msg.chunk);
+                chatContainer.updateThought(msg.chunk);
                 break;
             
             case 'streamEnd':
-                chatContainer.endStream();
-                break;
-
-            case 'startToolGroup':
-                chatContainer.makeToolGroup();
+                chatContainer.endMessage();
                 break;
 
             case 'updateTool':
-                chatContainer.updateToolGroup(msg);
+                chatContainer.updateTools(msg);
                 break;
 
-            case 'endToolGroup':
-                chatContainer.endToolGroup(msg);
+            case 'endTools':
+                chatContainer.endTools(msg);
                 break;
 
             case 'agentRunComplete':
@@ -122,19 +124,35 @@ document.addEventListener('DOMContentLoaded', () => {
                 break;
 
             case 'reviewPatch':
-                chatContainer.makePatchReview(msg.patch);
+                chatContainer.makePatch(msg.patch);
                 break;
 
             case 'updatePatchStatus':
-                chatContainer.updatePatchStatus(msg.status);
+                chatContainer.updatePatch(msg.status);
                 break;
 
             case 'updateTokenUsage':
-                chatContainer.updateTokenUsage(msg.usage);
+                chatContainer.updateRun(msg.usage);
                 break;
 
             case 'updateContextWindowUsage':
                 contextWindow.updateTokenUsage(msg.usage);
+                break;
+
+            case 'updateExecute':
+                chatContainer.updateExecute(msg);
+                break;
+
+            case 'endExecute':
+                chatContainer.endExecute(msg);
+                break;
+
+            case 'requestCommandApproval':
+                chatInput.showCommandApproval(msg.requestId, msg.bin, msg.args);
+                break;
+
+            case 'updateUnsafeFlag':
+                agentMode.setUnsafe(msg.isUnsafe);
                 break;
 
             // --- INDEXING & HEADER ---

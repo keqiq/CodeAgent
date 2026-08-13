@@ -9,35 +9,42 @@ import { Indexer } from './indexing/indexer';
 import { getEmbedModelsFromProvider, getChatModelsFromProvider, verifyTavilyAPIKey } from './utils/apiUtils';
 import { WorktreeManager } from './worktreeManager';
 import { ChatResponse, ContextManager } from './contextManager';
+import { CommandManager } from './commandManager';
 
 declare const console: any;
 
 export class ChatApp implements vscode.WebviewViewProvider {
 
     private view?: vscode.WebviewView;
-    
-    private contextManager: ContextManager;
+
     private toolRegistry: any;
     private chatModelInfo: Map<string, ModelInfo> = new Map();
     
-    private indexer? : Indexer;
+    private contextManager: ContextManager;
+    private commandManager: CommandManager;
+    private worktreeManager?: WorktreeManager;
 
-    private activeWorktree? : WorktreeManager;
+    private indexer?: Indexer;
 
     private aborter: AbortController | null = null;
-    
+
     constructor(private readonly context: vscode.ExtensionContext) {
         this.contextManager = new ContextManager(context);
+        this.commandManager = new CommandManager(context);
+
+        this.commandManager.onConfigChange((isUnsafe) => {
+            this.post({ type: 'updateUnsafeFlag', isUnsafe });
+        });
 
         const activeWorktreeID = context.workspaceState.get<string>('activeWorktreeID');
         if (activeWorktreeID) {
             const workspaceRoot = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
-            if (workspaceRoot) this.activeWorktree = new WorktreeManager(workspaceRoot, activeWorktreeID);
+            if (workspaceRoot) this.worktreeManager = new WorktreeManager(workspaceRoot, activeWorktreeID);
         }
-        
+
         this.toolRegistry = createToolRegistry({
             getCwd: () => {
-                if (this.activeWorktree) return this.activeWorktree.worktreePath;
+                if (this.worktreeManager) return this.worktreeManager.worktreePath;
                 const root = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
                 if (!root) throw new Error('No active workspace');
                 return root;
@@ -51,13 +58,13 @@ export class ChatApp implements vscode.WebviewViewProvider {
             getFindDeps: async () => {
                 const provider = this.context.globalState.get<string>('embedProvider');
                 const model = this.context.globalState.get<string>(`${provider}_embedModel`);
-                
+
                 if (!provider || !model) throw new Error("Embedding provider/model is not configured");
                 if (!this.indexer) throw new Error("Index is not loaded. Enable indexing first.");
                 if (!this.indexer.indexEnabled()) throw new Error('Indexing is disabled cannot use semantic search');
 
                 const apiKey = await this.getEmbedAPIKey(provider);
-                
+
                 return {
                     indexer: this.indexer,
                     embedProvider: EmbedFactory.create(provider, apiKey),
@@ -73,23 +80,62 @@ export class ChatApp implements vscode.WebviewViewProvider {
                 if (!webSearchEnabled || webSearchMode !== 'tavily') {
                     throw new Error("You do not have access to the 'web' tool this turn. It is currently disabled.");
                 }
-                
+
                 const tavilyAPIKey = await this.context.secrets.get('TAVILY_API_KEY');
                 if (!tavilyAPIKey) throw new Error('Tavily API key not configured!');
                 return tavilyAPIKey;
             },
 
-            getContext: () => {
+            getContextManager: () => {
                 return this.contextManager;
-            } 
+            },
+
+            getCommandManager: () => {
+                return this.commandManager;
+            },
+
+            requestConfirmation: async (bin: string, args: string) => {
+                return new Promise((resolve) => {
+
+                    const requestId = Date.now().toString();
+
+                    // Listen for response from webview
+                    const messageListener = this.view?.webview.onDidReceiveMessage(async (msg) => {
+    
+                        if (msg.type === 'commandApprovalResponse' && msg.requestId === requestId) {
+                            
+                            // Destroy this listener after getting a response
+                            messageListener?.dispose(); 
+
+                            if (msg.approved && msg.save) {
+                                await this.commandManager.addCommandToAllowList(bin, args);
+                            }
+                            
+                            // Resolve the promise back to the CommandManager
+                            resolve(msg.approved);
+                        }
+                    });
+
+                    // Send the request payload to the frontend UI
+                    this.post({ 
+                        type: 'requestCommandApproval', 
+                        requestId: requestId, 
+                        bin: bin, 
+                        args: args 
+                    });
+                });
+            },
+            onRunOutput: (toolId: string, chunk: string) => {
+                this.post({ type: 'updateExecute', status: 'streaming', toolId, chunk });
+            },
         });
     }
 
     private post(message: any) { this.view?.webview.postMessage(message); }
 
     private async getChatAPIKey(provider: string): Promise<string> {
-        if (provider.toLowerCase() === 'ollama') return 'local-no-key-required'; 
-        
+        if (provider.toLowerCase() === 'ollama') return 'local-no-key-required';
+
         const chatSecretKey = `${provider.toUpperCase()}_CHAT_API_KEY`;
         let chatAPIKey = await this.context.secrets.get(chatSecretKey);
 
@@ -108,10 +154,10 @@ export class ChatApp implements vscode.WebviewViewProvider {
     }
 
     private async getEmbedAPIKey(provider: string): Promise<string> {
-        if (provider.toLowerCase() === 'ollama') return 'local-no-key-required'; 
-        
+        if (provider.toLowerCase() === 'ollama') return 'local-no-key-required';
+
         const embedSecretKey = `${provider.toUpperCase()}_EMBED_API_KEY`;
-        let embedAPIKey =  await this.context.secrets.get(embedSecretKey);
+        let embedAPIKey = await this.context.secrets.get(embedSecretKey);
 
         // Fallback to chat api key if embed is not found
         if (!embedAPIKey) {
@@ -140,13 +186,13 @@ export class ChatApp implements vscode.WebviewViewProvider {
             infos.forEach((info: ModelInfo) => this.chatModelInfo.set(info.id, info));
 
             this.post({ type: 'setChatModels', models: infos.map((info: ModelInfo) => info.id) });
-            
+
             const chatModel = this.context.globalState.get<string>(`${provider}_chatModel`);
             const isValidModel = infos.some((info: ModelInfo) => info.id === chatModel);
 
             this.post({ type: 'updateChatModel', model: isValidModel ? chatModel : undefined });
 
-        } catch(e) {
+        } catch (e) {
             vscode.window.showErrorMessage(`Failed to fetch chat models: ${e}`);
             this.post({ type: 'requestChatAPIKey', provider: provider });
         }
@@ -155,7 +201,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
     private async refreshEmbedModels(provider: string) {
         try {
             this.post({ type: 'setEmbedModelsLoading', provider: provider });
-            
+
             const apiKey = await this.getEmbedAPIKey(provider);
             const models = await getEmbedModelsFromProvider(provider, apiKey);
 
@@ -173,9 +219,9 @@ export class ChatApp implements vscode.WebviewViewProvider {
     }
 
     private async clearActiveWorktree(): Promise<void> {
-        if (this.activeWorktree) {
-            await this.activeWorktree.cleanup();
-            this.activeWorktree = undefined;
+        if (this.worktreeManager) {
+            await this.worktreeManager.cleanup();
+            this.worktreeManager = undefined;
             await this.context.workspaceState.update('activeWorktreeID', undefined);
             await this.context.workspaceState.update('patchStatus', undefined);
         }
@@ -185,12 +231,12 @@ export class ChatApp implements vscode.WebviewViewProvider {
         const workspaceRoot = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
         if (!workspaceRoot) throw new Error("No active workspace");
 
-        if (!this.activeWorktree) {
+        if (!this.worktreeManager) {
 
             // Check for git, this is a hard requirement
             const gitInstalled = await WorktreeManager.isGitInstalled();
             if (!gitInstalled) {
-                vscode.window.showErrorMessage('Install Git on your system and restart VS Code.', 'Understood' );
+                vscode.window.showErrorMessage('Install Git on your system and restart VS Code.', 'Understood');
                 return;
             }
 
@@ -216,8 +262,8 @@ export class ChatApp implements vscode.WebviewViewProvider {
                 }
             }
             const runID = this.contextManager.getTurnID() || Date.now().toString();
-            this.activeWorktree = new WorktreeManager(workspaceRoot, runID);
-            await this.activeWorktree.setup();
+            this.worktreeManager = new WorktreeManager(workspaceRoot, runID);
+            await this.worktreeManager.setup();
 
             await this.context.workspaceState.update('activeWorktreeID', runID);
         }
@@ -232,16 +278,16 @@ export class ChatApp implements vscode.WebviewViewProvider {
         const serverStateManagment = this.context.globalState.get<boolean>('serverStateManagement') ?? true;
         const enabledWebSearch = this.context.globalState.get<boolean>('webSearchEnabled') ?? false;
         const savedWebMode = this.context.globalState.get<string>('webSearchMode') ?? 'tavily';
-        
+
         const pruneMode = this.context.globalState.get<string>('pruneMode') ?? 'run';
         const pruneTurnInterval = this.context.globalState.get<number>('pruneTurnInterval') ?? 1;
         const pruneRunInterval = this.context.globalState.get<number>('pruneRunInterval') ?? 1;
 
         try {
-            const apiKey = await this.getChatAPIKey(provider); 
-            
+            const apiKey = await this.getChatAPIKey(provider);
+
             const webSearchMode: WebSearchMode = enabledWebSearch ? (savedWebMode as WebSearchMode) : 'none';
-            
+
             providerInstance = ChatFactory.create(provider, apiKey, webSearchMode);
 
             this.contextManager.prepareRun(provider, serverStateManagment);
@@ -250,13 +296,15 @@ export class ChatApp implements vscode.WebviewViewProvider {
             let keepGoing = true;
             let turnCount = 0;
             const turnLimit = this.context.globalState.get<number>('turnLimit') ?? 0;
-            
-            let hasStartedToolGroup = false;
+
+            let hasRunTools = false;
             let customToolsRunThisTurn = 0;
             let serverToolsRunThisTurn = 0;
+            let exectueRunThisTurn = 0;
+            let hasRunCommands = false;
 
             let previousTurnHadError = false;
-            
+
             while (keepGoing && (turnLimit === 0 || turnCount < turnLimit)) {
                 if (this.aborter.signal.aborted) throw new Error('AbortError');
                 turnCount++;
@@ -264,18 +312,18 @@ export class ChatApp implements vscode.WebviewViewProvider {
                 const streamGenerator = providerInstance.fetchStream(
                     model,
                     effort,
-                    this.contextManager.getLLMContext(), 
+                    this.contextManager.getLLMContext(),
                     this.contextManager.getTurnID(),
                     serverStateManagment,
                     this.aborter.signal
                 );
                 let streamResult = await streamGenerator.next();
-                
+
                 // Wait for the stream to finish, then run all tools called if any
                 while (!streamResult.done) {
                     if (streamResult.value) {
                         const content = streamResult.value.content;
-                        
+
                         if (streamResult.value.type === 'text') this.post({ type: 'streamChunk', chunk: content });
                         else if (streamResult.value.type === 'thought') this.post({ type: 'streamThought', chunk: content });
 
@@ -283,10 +331,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
                         // Other parameters might show up later upon completion but it could take a while
                         // Currently only web search
                         else if (streamResult.value.type === 'server_action') {
-                            if (!hasStartedToolGroup) {
-                                hasStartedToolGroup = true;
-                                this.post({ type: 'startToolGroup' });
-                            }
+                            hasRunTools = true;
                             this.post({
                                 type: 'updateTool',
                                 status: 'running',
@@ -298,7 +343,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
                     }
                     streamResult = await streamGenerator.next();
                 }
-                
+
                 // Can't catch the abort error during streaming for some reason so we have to catch it here again
                 if (this.aborter.signal.aborted) throw new Error('AbortError');
                 this.post({ type: 'streamEnd' });
@@ -306,12 +351,12 @@ export class ChatApp implements vscode.WebviewViewProvider {
                 // update turn counter for tool pruning, do not prune until error is resolved
                 await this.contextManager.updateTurnBoundary(pruneMode, pruneTurnInterval, previousTurnHadError);
                 previousTurnHadError = false;
-                
+
                 const finalResponse = streamResult.value as ChatResponse;
 
                 if (finalResponse?.tokenUsage) {
-                    this.post({ 
-                        type: 'updateTokenUsage', 
+                    this.post({
+                        type: 'updateTokenUsage',
                         usage: this.contextManager.recordTokenUsage(provider, finalResponse.tokenUsage)
                     });
                 }
@@ -322,47 +367,59 @@ export class ChatApp implements vscode.WebviewViewProvider {
 
                 if (functionCalls.length > 0) {
 
-                    if (!hasStartedToolGroup) {
-                        hasStartedToolGroup = true;
-                        this.post({ type: 'startToolGroup' });
-                    }
-
                     for (const toolCall of functionCalls) {
                         if (this.aborter?.signal.aborted) throw new Error('AbortError');
                         const toolName = toolCall.name;
                         const toolArgs = toolCall.arguments;
-                        const toolId = toolCall.id;
-                        
+                        const toolID = toolCall.id;
+
                         if (toolCall.server) {
                             serverToolsRunThisTurn++;
-                            this.post({ type: 'updateTool', status: 'server', toolId: toolId, toolName: toolName, args: toolArgs });
+                            this.post({ type: 'updateTool', status: 'server', toolId: toolID, toolName: toolName, args: toolArgs });
                             continue;
                         }
                         customToolsRunThisTurn++;
 
-                        this.post({ type: 'updateTool', status: 'running', toolId: toolId, toolName: toolName, args: toolArgs });
+                        const isExecute = toolName === 'run';
+                        const uiType = isExecute ? 'updateExecute' : 'updateTool';
+
+                        let bin = toolName;
+                        let argsString = '';
+                        if (isExecute) {
+                            exectueRunThisTurn++;
+                            hasRunCommands = true;
+                            if (toolArgs.command) {
+                                const parts = toolArgs.command.split(/\s+/);
+                                bin = parts[0];
+                                argsString = parts.slice(1).join(' ');
+                            }
+                        } else {
+                            hasRunTools = true;
+                        }
+
+                        this.post({ type: uiType, status: 'running', toolId: toolID, toolName, args: toolArgs, bin, argsString });
 
                         let result: ToolResult;
                         let isError = false;
 
                         if (this.toolRegistry[toolName]) {
                             try {
-                                result = await this.toolRegistry[toolName](toolArgs);
-                                this.post({ type: 'updateTool', status: 'success', toolId: toolId });
+                                result = await this.toolRegistry[toolName](toolArgs, toolID);
+                                this.post({ type: uiType, status: 'success', toolId: toolID });
                             } catch (e) {
                                 isError = true;
                                 previousTurnHadError = true;
                                 const message = e instanceof Error ? e.message : String(e);
-                                result = { message: `Error executing ${toolName}: ${message}`};
-                                this.post({ type: 'updateTool', status: 'error', toolId: toolId, error: message });
+                                result = { message: `Error executing ${toolName}: ${message}` };
+                                this.post({ type: uiType, status: 'error', toolId: toolID, error: message });
                             }
                         } else {
                             previousTurnHadError = true;
-                            result =  {message: `Error: Tool '${toolName}' is not registered`};
-                            this.post({ type: 'updateTool', status: 'error', toolId: toolId, error: "Invalid tool call" });
+                            result = { message: `Error: Tool '${toolName}' is not registered` };
+                            this.post({ type: 'updateTool', status: 'error', toolId: toolID, error: "Invalid tool call" });
                         }
 
-                        this.contextManager.addFunctionResult(toolId, toolName, result.message, isError, result.data);
+                        this.contextManager.addFunctionResult(toolID, toolName, result.message, isError, result.data);
                     }
 
                     // Do not continue the conversation if we only run server tools as they have no function results to follow up with
@@ -375,11 +432,12 @@ export class ChatApp implements vscode.WebviewViewProvider {
             }
 
             this.post({ type: 'updateTokenUsage', usage: this.contextManager.getTokenUsage() });
-            if (hasStartedToolGroup) this.post({ type: 'endToolGroup', customCount: customToolsRunThisTurn, serverCount: serverToolsRunThisTurn });
+            if (hasRunTools) this.post({ type: 'endTools', customCount: customToolsRunThisTurn - exectueRunThisTurn, serverCount: serverToolsRunThisTurn });
+            if (hasRunCommands) this.post({ type: 'endExecute' });
 
             // Run complete review any changes
             if (!this.aborter.signal.aborted) {
-                const patchString = await this.activeWorktree.getPatch();
+                const patchString = await this.worktreeManager.getPatch();
 
                 if (patchString.trim()) this.post({ type: 'reviewPatch', patch: patchString });
 
@@ -392,7 +450,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
             this.contextManager.rollback();
 
             if (e.name === 'AbortError' || e.message?.toLowerCase().includes('abort')) {
-                if (providerInstance) await providerInstance.abortStream(); 
+                if (providerInstance) await providerInstance.abortStream();
                 runStatus = 'aborted';
                 statusMessage = 'Execution halted manually';
                 // let the agent know we aborted
@@ -435,7 +493,6 @@ export class ChatApp implements vscode.WebviewViewProvider {
 
         webviewView.webview.html = this.getHTML();
 
-
         webviewView.webview.onDidReceiveMessage(async (data) => {
             switch (data.type) {
 
@@ -456,7 +513,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
                             stateful: serverStateManagement,
                             turnLimit: turnLimit,
                             webSearch: enabledWebSearch,
-                            searchMode: webSearchMode 
+                            searchMode: webSearchMode
                         });
 
                         const retrievalCount = this.context.globalState.get<number>('retrievalCount') ?? 10;
@@ -469,25 +526,25 @@ export class ChatApp implements vscode.WebviewViewProvider {
                             debounceTime: debounceTime,
                             enabled: enabledIndex
                         });
-                        
+
                         this.post({ type: 'initChatProviders', providers: ChatFactory.getAvailableProviders() });
                         this.post({ type: 'initEmbedProviders', providers: EmbedFactory.getAvailableProviders() });
 
                         this.post({ type: 'restoreChatHistory', history: this.contextManager.getHistory() });
 
-                        
+
                         const chatProvider = this.context.globalState.get<string>('chatProvider');
                         if (chatProvider) {
                             const stateManagementSupport = ChatFactory.supportsStateManagement(chatProvider);
                             const serverWebSearchSupport = ChatFactory.supportsServerWebSearch(chatProvider);
-                            this.post({ 
-                                type: 'updateChatProvider', 
-                                provider: chatProvider, 
+                            this.post({
+                                type: 'updateChatProvider',
+                                provider: chatProvider,
                                 stateful: stateManagementSupport,
                                 serverSearch: serverWebSearchSupport
                             });
 
-                            this.post({ 
+                            this.post({
                                 type: 'updateContextWindowUsage',
                                 usage: this.contextManager.estimateCategorizedTokens(chatProvider)
                             });
@@ -503,26 +560,36 @@ export class ChatApp implements vscode.WebviewViewProvider {
                             turnInterval: pruneTurnInterval,
                             runInterval: pruneRunInterval
                         });
-                        
+
 
                         const indexEnabled = this.context.globalState.get<boolean>('indexEnabled') ?? false;
-                        
+
                         if (indexEnabled) {
                             const embedProvider = this.context.globalState.get<string>('embedProvider');
                             this.post({ type: 'updateEmbedProvider', provider: embedProvider });
                         }
 
-                        if (this.activeWorktree) {
-                            const patchString = await this.activeWorktree.getPatch();
-                            
-                            if (patchString.trim()){
-                                this.post({ type: 'reviewPatch', patch: patchString});
+                        if (this.worktreeManager) {
+                            const patchString = await this.worktreeManager.getPatch();
+
+                            if (patchString.trim()) {
+                                this.post({ type: 'reviewPatch', patch: patchString });
                                 const currentStatus = this.context.workspaceState.get<string>('patchStatus');
-                                if (currentStatus) this.post({ type: 'updatePatchStatus', status: currentStatus }); 
+                                if (currentStatus) this.post({ type: 'updatePatchStatus', status: currentStatus });
                             }
                             else await this.clearActiveWorktree();
                         }
-                    
+
+                        const agentMode = this.context.workspaceState.get<string>('agentMode') ?? 'manual';
+                        this.post({ type: 'restoreAgentMode', mode: agentMode });
+
+                        await this.commandManager.loadConfig();
+                        const currentConfig = this.commandManager.getConfig();
+                        this.post({ 
+                            type: 'updateUnsafeFlag', 
+                            isUnsafe: currentConfig?.unsafeFullAutonomous ?? false 
+                        });
+
                     } catch (e) {
                         vscode.window.showErrorMessage(`Failed to restore state ${e}`);
                     }
@@ -532,15 +599,15 @@ export class ChatApp implements vscode.WebviewViewProvider {
                 // Called after selecting chat provider from dropdown
                 case 'saveChatProvider': {
                     await this.context.globalState.update('chatProvider', data.provider);
-      
+
                     const serverStateManagement = this.context.globalState.get<boolean>('serverStateManagement') ?? true;
-                    this.post({ type: 'restoreChatSettings', stateful: serverStateManagement});
+                    this.post({ type: 'restoreChatSettings', stateful: serverStateManagement });
                     const stateManagementSupport = ChatFactory.supportsStateManagement(data.provider);
                     const serverWebSearchSupport = ChatFactory.supportsServerWebSearch(data.provider);
-                    this.post({ 
-                        type: 'updateChatProvider', 
-                        provider: data.provider, 
-                        stateful: stateManagementSupport, 
+                    this.post({
+                        type: 'updateChatProvider',
+                        provider: data.provider,
+                        stateful: stateManagementSupport,
                         serverSearch: serverWebSearchSupport
                     });
 
@@ -550,7 +617,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
                     });
                     break;
                 }
-                
+
 
                 // Called when pressing the key button or when provider is selected without valid API key
                 // Respond with list of models from provider if the key is valid
@@ -581,10 +648,10 @@ export class ChatApp implements vscode.WebviewViewProvider {
                     if (info) {
                         const chatProvider = this.context.globalState.get<string>('chatProvider');
                         const savedEffort = this.context.globalState.get<string>(`${chatProvider}_${data.model}_Effort`);
-                        this.post({ 
-                            type: 'updateChatModelInfo', 
-                            reason: info.reason, 
-                            efforts: info.efforts, 
+                        this.post({
+                            type: 'updateChatModelInfo',
+                            reason: info.reason,
+                            efforts: info.efforts,
                             defaultEffort: savedEffort ? savedEffort : info.defaultEffort,
                             contextWindow: info.contextWindow
                         });
@@ -597,7 +664,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
                     await this.context.globalState.update(`${data.provider}_${data.model}_Effort`, data.effort);
                     break;
                 }
-                
+
                 // Switch between curated list of models or all chat models
                 case 'setShowAllModels': {
                     await this.context.globalState.update('showAllChatModels', data.showAll);
@@ -635,8 +702,8 @@ export class ChatApp implements vscode.WebviewViewProvider {
                     if (data.enabled && data.mode === 'tavily') {
                         const tavilyAPIKey = await this.context.secrets.get('TAVILY_API_KEY');
 
-                        try { 
-                            await verifyTavilyAPIKey(tavilyAPIKey); 
+                        try {
+                            await verifyTavilyAPIKey(tavilyAPIKey);
                         } catch (e) {
                             vscode.window.showErrorMessage('Invalid Tavily API key');
                             this.post({ type: 'requestTavilyAPIKey' });
@@ -673,40 +740,39 @@ export class ChatApp implements vscode.WebviewViewProvider {
                     await this.contextManager.clear();
 
                     // Close active work tree
-                    if  (this.activeWorktree)  await this.clearActiveWorktree();
+                    if (this.worktreeManager) await this.clearActiveWorktree();
 
                     this.post({ type: 'clearChatContainer' });
-                    break;
                 }
-                
+
                 // Called when selecting a new provider in embedding provider dropdown
                 case 'saveEmbedProvider': {
                     await this.context.globalState.update('embedProvider', data.provider);
                     this.post({ type: 'updateEmbedProvider', provider: data.provider });
                     break;
                 }
-                
+
                 // Called after saveEmbedProvider and having a valid API key
                 // Respond with a list of embedding models from the provider
                 case 'fetchEmbedModels': {
                     await this.refreshEmbedModels(data.provider);
                     break;
                 }
-                
+
                 // Called when selecting a new embedding model from the dropdown
                 case 'saveEmbedModel': {
                     await this.context.globalState.update(`${data.provider}_embedModel`, data.model);
                     this.post({ type: 'updateEmbedModel', model: data.model });
                     break;
                 }
-                
+
                 case 'saveEmbedAPIKey': {
                     const secretKey = `${data.provider.toUpperCase()}_EMBED_API_KEY`;
                     await this.context.secrets.store(secretKey, data.key);
                     await this.refreshEmbedModels(data.provider);
                     break;
                 }
-                
+
                 // Called after selecting an embedding model
                 // Checks if a table for the model already exists and broadcast index status
                 case 'loadVectorDB': {
@@ -718,12 +784,12 @@ export class ChatApp implements vscode.WebviewViewProvider {
                     await this.indexer.broadcastCurrentState();
                     break;
                 }
-                
+
                 case 'updateVectorCount': {
                     await this.context.globalState.update('retrievalCount', data.value);
                     break;
                 }
-                
+
                 case 'updateDebounceTime': {
                     await this.context.globalState.update('debounceTime', data.value);
                     break;
@@ -733,13 +799,13 @@ export class ChatApp implements vscode.WebviewViewProvider {
                     await this.context.globalState.update('indexEnabled', data.enabled);
                     break;
                 }
-                
+
                 case 'indexWorkspace': {
                     if (!this.indexer) return;
                     const apiKey = await this.getEmbedAPIKey(data.provider);
-                    
+
                     const embedProvider = EmbedFactory.create(data.provider, apiKey);
-                    
+
                     await this.indexer.indexWorkspace(embedProvider, data.model);
                     break;
                 }
@@ -752,16 +818,16 @@ export class ChatApp implements vscode.WebviewViewProvider {
 
                 // Take the changes from worktree and apply to main workspace
                 case 'applyChanges': {
-                    if (this.activeWorktree) {
+                    if (this.worktreeManager) {
                         try {
-                            await this.activeWorktree.applyPatch();
+                            await this.worktreeManager.applyPatch();
 
                             this.contextManager.addSystemMessage('The user applied your proposed changes to the workspace');
                             await this.contextManager.save();
                             await this.clearActiveWorktree();
                             this.post({ type: 'updatePatchStatus', status: 'accepted' });
 
-                        // Probably merge conflicts
+                            // Probably merge conflicts
                         } catch (e: any) {
                             if (e.message === 'MERGE_CONFLICT') {
                                 await this.context.workspaceState.update('patchStatus', 'conflict');
@@ -776,7 +842,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
 
                 // Discard worktree
                 case 'discardChanges': {
-                    if (this.activeWorktree) {
+                    if (this.worktreeManager) {
                         await this.clearActiveWorktree();
 
                         this.contextManager.addSystemMessage(
@@ -790,21 +856,21 @@ export class ChatApp implements vscode.WebviewViewProvider {
 
                 // After resolving merge conflicts
                 case 'markResolved': {
-                    if (this.activeWorktree) {
+                    if (this.worktreeManager) {
                         await this.clearActiveWorktree();
-                        
+
                         this.contextManager.addSystemMessage('The user resolved merge conflicts and applied the changes.');
                         await this.contextManager.save();
                         this.post({ type: 'updatePatchStatus', status: 'accepted' });
                     }
                     break;
                 }
-                
+
                 // Forcing the patch by replacing the files in the main workspace
                 case 'forceApplyPatch': {
-                    if (this.activeWorktree) {
+                    if (this.worktreeManager) {
                         try {
-                            await this.activeWorktree.forceApply();
+                            await this.worktreeManager.forceApply();
 
                             await this.clearActiveWorktree();
                             this.contextManager.addSystemMessage('The user force-applied your changes, overwriting their local edits.');
@@ -818,16 +884,41 @@ export class ChatApp implements vscode.WebviewViewProvider {
                 }
 
                 case 'openDiffView': {
-                    if (this.activeWorktree) {
+                    if (this.worktreeManager) {
                         const workspaceRoot = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
                         if (!workspaceRoot) return;
 
                         const originalUri = vscode.Uri.file(path.join(workspaceRoot, data.file));
-                        const worktreeUri = vscode.Uri.file(path.join(this.activeWorktree.worktreePath, data.file));
+                        const worktreeUri = vscode.Uri.file(path.join(this.worktreeManager.worktreePath, data.file));
 
                         const title = `${data.file} (Agent Proposal)`;
                         vscode.commands.executeCommand('vscode.diff', originalUri, worktreeUri, title);
                     }
+                    break;
+                }
+
+                case 'setAgentMode': {
+                    await this.context.workspaceState.update('agentMode', data.mode);
+
+                    if (data.mode === 'auto') {
+                        const hasSeenWarning = this.context.workspaceState.get<boolean>('hasSeenAutoWarning');
+
+                        if (!hasSeenWarning) {
+                            await this.context.workspaceState.update('hasSeenAutoWarning', true);
+
+                            vscode.window.showWarningMessage(
+                                'Auto Mode enabled. The agent can now execute terminal commands without confirmation. Review the list of allowed commands.',
+                                'Understood'
+                            );
+
+                            await this.commandManager.openConfigFile();
+                        }
+                    }
+                    break;
+                }
+
+                case 'openAgentConfig': {
+                    await this.commandManager.openConfigFile();
                     break;
                 }
             }
@@ -841,13 +932,13 @@ export class ChatApp implements vscode.WebviewViewProvider {
 
         try {
             let html = fs.readFileSync(htmlPath.fsPath, 'utf-8');
-            
+
             const scriptUri = this.view!.webview.asWebviewUri(scriptPath);
             const styleUri = this.view!.webview.asWebviewUri(cssPath);
 
             html = html.replace('{{styleUri}}', styleUri.toString());
             html = html.replace('{{scriptUri}}', scriptUri.toString());
-            
+
             return html;
         } catch (e) {
             vscode.window.showErrorMessage(`Error loading frontend html: ${e}`);
@@ -856,7 +947,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
     }
 }
 
-function formatError(e: unknown): string{
+function formatError(e: unknown): string {
     if (e instanceof Error) {
         return e.stack ?? e.message;
     }

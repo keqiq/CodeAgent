@@ -31,8 +31,6 @@ export abstract class ChatProvider {
     public static stateManagementSupport: boolean = false;
     public static serverWebSearchSupport: boolean = false;
     public static baseTools: any[] = [...requiredSchemas];
-    
-    private static modelCache: Record<string, ModelInfo[]> = {};
 
     protected abstract featuredModels: string[];
 
@@ -44,19 +42,19 @@ export abstract class ChatProvider {
         return this.tools;
     };
 
-    public async getModels(fetchAll?: boolean): Promise<ModelInfo[]> {
-        const providerName = this.constructor.name;
+    private static modelCache: Map<Function, ModelInfo[]> = new Map();
 
-        // Fetch and cache models if not already cached for this specific provider
-        if (!ChatProvider.modelCache[providerName]) {
-            ChatProvider.modelCache[providerName] = await this.getModelInfos();
+    public async getModels(fetchAll?: boolean): Promise<ModelInfo[]> {
+        const providerKey = this.constructor;
+
+        if (!ChatProvider.modelCache.has(providerKey)) {
+            ChatProvider.modelCache.set(providerKey, await this.getModelInfos());
         }
 
-        const cachedModels = ChatProvider.modelCache[providerName];
+        const cachedModels = ChatProvider.modelCache.get(providerKey)!;
 
         if (fetchAll || this.featuredModels.length === 0) return cachedModels;
 
-        // Filter based on the subclass's featuredModels array
         return cachedModels.filter(info => this.featuredModels.includes(info.id));
     }
 
@@ -71,7 +69,7 @@ export abstract class ChatProvider {
 
     abstract abortStream(): Promise<void>;
 
-    static formatResponse(
+    protected static formatResponse(
         text: string, 
         toolCalls: Map<any, any>, 
         tokenUsage: TokenUsage, 
@@ -112,9 +110,5 @@ export abstract class ChatProvider {
         }
 
         return { items, tokenUsage, ...(turnID && {turnID}) };
-    }
-
-    async executeProviderTool?(name: string, args: any): Promise<ToolResult | undefined> {
-        return undefined;
     }
 }

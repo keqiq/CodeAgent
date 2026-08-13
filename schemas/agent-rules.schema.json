@@ -1,0 +1,36 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Agent Execution Rules",
+    "description": "Agent auto mode configurations",
+    "type": "object",
+    "properties": {
+        "allowedCommands": {
+            "type": "object",
+            "description": "A mapping of CLI binaries to an array of allowed Regex patterns for their arguments. Commands under 'allowedCommands' can be run without confirmation",
+            "additionalProperties": {
+                "type": "array",
+                "items": {
+                    "type": "string",
+                    "format": "regex"
+                }
+            },
+            "examples": [
+                {
+                    "git": ["^status$", "^log"],
+                    "npm": ["^test$"]
+                }
+            ]
+        },
+        "promptForUnlistedCommands": {
+            "type": "boolean",
+            "description": "If true, the agent will pause and request confirmation before running unrecognized commands. If false the command will be automatically denied.",
+            "default": true
+        },
+        "unsafeFullAutonomous": {
+            "type": "boolean",
+            "description": "If true, the agent is allowed to run any arbitrary commands without user input.",
+            "default": false
+        }
+    },
+    "additionalProperties": false
+}

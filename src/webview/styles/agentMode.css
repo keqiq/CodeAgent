@@ -1,0 +1,29 @@
+.agent-mode-container {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+.mode-toggle-btn {
+    font-weight: bold;
+    transition: color 0.15s ease-in-out;
+}
+
+/* We will toggle these two classes from TypeScript */
+.mode-toggle-btn.mode-auto,
+.agent-config-btn.mode-auto {
+    color: var(--vscode-testing-iconPassed);
+}
+
+.mode-toggle-btn.mode-manual {
+    color: var(--vscode-icon-foreground);
+}
+.mode-toggle-btn.mode-unsafe,
+.agent-config-btn.mode-unsafe {
+    color: var(--vscode-charts-yellow);
+}
+
+.icon-btn.agent-config-btn {
+    padding: 2px;
+    padding-bottom: 4px;
+}
