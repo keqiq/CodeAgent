@@ -44497,7 +44497,7 @@ var require_extension = __commonJS({
 var require_websocket = __commonJS({
   "node_modules/ws/lib/websocket.js"(exports2, module2) {
     "use strict";
-    var EventEmitter5 = require("events");
+    var EventEmitter6 = require("events");
     var https3 = require("https");
     var http5 = require("http");
     var net = require("net");
@@ -44529,7 +44529,7 @@ var require_websocket = __commonJS({
     var protocolVersions = [8, 13];
     var readyStates = ["CONNECTING", "OPEN", "CLOSING", "CLOSED"];
     var subprotocolRegex = /^[!#$%&'*+\-.0-9A-Z^_`|a-z~]+$/;
-    var WebSocket2 = class _WebSocket extends EventEmitter5 {
+    var WebSocket2 = class _WebSocket extends EventEmitter6 {
       /**
        * Create a new `WebSocket`.
        *
@@ -45536,7 +45536,7 @@ var require_subprotocol = __commonJS({
 var require_websocket_server = __commonJS({
   "node_modules/ws/lib/websocket-server.js"(exports2, module2) {
     "use strict";
-    var EventEmitter5 = require("events");
+    var EventEmitter6 = require("events");
     var http5 = require("http");
     var { Duplex } = require("stream");
     var { createHash } = require("crypto");
@@ -45549,7 +45549,7 @@ var require_websocket_server = __commonJS({
     var RUNNING = 0;
     var CLOSING = 1;
     var CLOSED = 2;
-    var WebSocketServer2 = class extends EventEmitter5 {
+    var WebSocketServer2 = class extends EventEmitter6 {
       /**
        * Create a `WebSocketServer` instance.
        *
@@ -54664,7 +54664,13 @@ var ClaudeChatProvider = class _ClaudeChatProvider extends ChatProvider {
     }
     return messages;
   }
-  // claude does not need an explicit turnID for caching
+  // TODO: ?
+  // claude does not support state management like openAI's responses or gemini's interactions API
+  // The stateful flag here simply toggles their caching (i think).
+  // Their cache has a 5 minute ttl... or double the input price for 1h
+  // But contextManager is constantly pruning tools, so it will be invalidated based on how frequently it's pruning
+  // But if i don't prune, the cache write is expensive and if not caching, the input is expensive...
+  // Not sure what to do here
   async *fetchStream(model, effort, history, previousTurnID, useCache, abortSignal) {
     let fullText = "";
     const currentCalls = /* @__PURE__ */ new Map();
@@ -64566,18 +64572,9 @@ var OpenAIChatProvider = class _OpenAIChatProvider extends ChatProvider {
     const currentCalls = /* @__PURE__ */ new Map();
     let responseID = null;
     let tokenUsage = void 0;
-    let currentInput;
-    if (previousTurnID && useCache) {
-      const newItemsToSubmit = history.filter(
-        (item) => item.turnID === previousTurnID && (item.type === "function_result" || item.type === "message" && item.role === "user")
-      );
-      currentInput = this.formatMessages(newItemsToSubmit, false);
-    } else {
-      currentInput = this.formatMessages(history, true);
-    }
     const stream4 = await this.client.responses.create({
       model,
-      input: currentInput,
+      input: this.formatMessages(history, previousTurnID === void 0),
       tools: this.tools,
       stream: true,
       reasoning: { effort, summary: "auto" },
@@ -83390,6 +83387,7 @@ var GeminiChatProvider = class _GeminiChatProvider extends ChatProvider {
   // private static geminiTools: any = requiredSchemas;
   activeInteractionId = null;
   featuredModels = [
+    "gemini-3.7-flash",
     "gemini-3.6-flash",
     "gemini-3.5-flash",
     "gemini-3.5-flash-lite",
@@ -83480,18 +83478,9 @@ var GeminiChatProvider = class _GeminiChatProvider extends ChatProvider {
   }
   async *fetchStream(model, effort, history, previousTurnID, useCache, abortSignal) {
     let fullText = "";
-    let currentInput;
-    if (previousTurnID && useCache) {
-      const newItemsToSubmit = history.filter(
-        (item) => item.turnID === previousTurnID && (item.type === "function_result" || item.type === "message" && item.role === "user")
-      );
-      currentInput = this.formatMessages(newItemsToSubmit);
-    } else {
-      currentInput = this.formatMessages(history);
-    }
     const stream4 = await this.client.interactions.create({
       model,
-      input: currentInput,
+      input: this.formatMessages(history),
       tools: this.tools,
       system_instruction: _GeminiChatProvider.systemPrompt,
       stream: true,
@@ -97382,6 +97371,11 @@ var WorktreeManager = class _WorktreeManager {
     await exec2(`git add -A`, { cwd: this.worktreePath });
   }
   async getPatch() {
+    try {
+      await fs7.stat(this.worktreePath);
+    } catch {
+      return "";
+    }
     await exec2(`git add -N .`, { cwd: this.worktreePath });
     const { stdout: patch } = await exec2(`git diff`, { cwd: this.worktreePath });
     return patch;
@@ -97436,16 +97430,17 @@ var WorktreeManager = class _WorktreeManager {
     await this.reset();
     this.emitter.fire({ type: "updatePatchStatus", status: "rejected" });
   }
-  async clearState() {
-    await this.context.workspaceState.update("patchStatus", void 0);
-  }
   async resolveConflicts() {
     await this.reset();
     await this.context.workspaceState.update("patchStatus", "accepted");
     this.emitter.fire({ type: "updatePatchStatus", status: "accepted" });
   }
+  async clearState() {
+    await this.context.workspaceState.update("patchStatus", void 0);
+  }
   async cleanup() {
     try {
+      await this.clearState();
       await exec2(`git worktree remove "${this.worktreePath}" --force`, { cwd: this.originalWorkspace });
     } catch {
     }
@@ -97459,6 +97454,7 @@ var ContextManager = class {
     this.context = context;
     this.storageUri = context.storageUri;
     if (this.storageUri) this.artifactsUri = vscode8.Uri.joinPath(this.storageUri, "artifacts");
+    this.currentProvider = this.context.globalState.get("chatProvider");
   }
   context;
   isInitialized = false;
@@ -97469,11 +97465,17 @@ var ContextManager = class {
   runsSinceLastPrune = 0;
   summarizedHistory = [];
   summarizeIndex = 0;
-  activeTurnID = void 0;
-  activeProvider = "";
+  currentProvider;
+  currentTurnID;
+  currentPrompt = { type: "message", role: "user", content: "" };
+  currentTurnToolResults = [];
   // For roll back
-  previousTurnID = void 0;
-  previousProvider = "";
+  previousTurnID;
+  previousProvider;
+  stateful = true;
+  pruneMode = "run";
+  pruneTurnInterval = 2;
+  pruneRunInterval = 1;
   runTokenUsage = {
     totalTokens: 0,
     inputTokens: 0,
@@ -97482,6 +97484,8 @@ var ContextManager = class {
   };
   storageUri;
   artifactsUri;
+  emitter = new vscode8.EventEmitter();
+  onDidUpdateStatus = this.emitter.event;
   async initialize() {
     if (!this.storageUri || this.isInitialized) return;
     try {
@@ -97521,17 +97525,25 @@ var ContextManager = class {
     return [...this.history];
   }
   getTurnID() {
-    return this.activeTurnID;
+    return this.currentTurnID;
   }
   setTurnID(turnID) {
-    this.activeTurnID = turnID;
+    if (this.currentTurnID !== turnID) this.currentTurnToolResults = [];
+    this.currentTurnID = turnID;
   }
-  prepareRun(provider, serverStateful) {
+  prepareRun(provider) {
     this.resetTokenUsage();
-    this.previousTurnID = this.activeTurnID;
-    this.previousProvider = this.activeProvider;
-    if (this.activeProvider !== provider || !serverStateful) this.activeTurnID = void 0;
-    this.activeProvider = provider;
+    this.stateful = this.context.globalState.get("serverStateManagement") ?? true;
+    this.pruneMode = this.context.globalState.get("pruneMode") ?? "run";
+    this.pruneTurnInterval = this.context.globalState.get("pruneTurnInterval") ?? 2;
+    this.pruneRunInterval = this.context.globalState.get("pruneRunInterval") ?? 1;
+    this.changeProvider(provider);
+  }
+  changeProvider(provider) {
+    this.previousTurnID = this.currentTurnID;
+    this.previousProvider = this.currentProvider;
+    if (this.currentProvider !== provider || !this.stateful) this.currentTurnID = void 0;
+    this.currentProvider = provider;
   }
   // Extract all function calls for the agent loop
   // Save all messages and function calls expect for server function calls
@@ -97547,8 +97559,8 @@ var ContextManager = class {
     return functionCalls;
   }
   rollback() {
-    this.activeTurnID = this.previousTurnID;
-    this.activeProvider = this.previousProvider;
+    this.currentTurnID = this.previousTurnID;
+    this.currentProvider = this.previousProvider;
   }
   resetTokenUsage() {
     this.runTokenUsage = {
@@ -97558,8 +97570,8 @@ var ContextManager = class {
       thoughtTokens: 0
     };
   }
-  recordTokenUsage(provider, usage) {
-    if (provider.toLowerCase() === "claude") {
+  recordTokenUsage(usage) {
+    if (this.currentProvider.toLowerCase() === "claude") {
       this.runTokenUsage = {
         totalTokens: usage.totalTokens || 0,
         inputTokens: usage.inputTokens || 0,
@@ -97572,18 +97584,19 @@ var ContextManager = class {
       this.runTokenUsage.outputTokens += usage.outputTokens || 0;
       this.runTokenUsage.thoughtTokens += usage.thoughtTokens || 0;
     }
-    return { ...this.runTokenUsage };
   }
-  getTokenUsage() {
-    return { ...this.runTokenUsage };
+  updateTokenUsage() {
+    this.emitter.fire({ type: "updateTokenUsage", usage: this.runTokenUsage });
   }
   addUserMessage(content) {
-    this.history.push({
+    const userMessage = {
       type: "message",
       role: "user",
       content,
-      ...this.activeTurnID && { turnID: this.activeTurnID }
-    });
+      ...this.currentTurnID && { turnID: this.currentTurnID }
+    };
+    this.history.push(userMessage);
+    this.currentPrompt = userMessage;
   }
   addAssistantMessage(content, thought) {
     this.history.push({
@@ -97591,7 +97604,7 @@ var ContextManager = class {
       role: "assistant",
       content,
       ...thought && { thought },
-      ...this.activeTurnID && { turnID: this.activeTurnID }
+      ...this.currentTurnID && { turnID: this.currentTurnID }
     });
   }
   addSystemMessage(content) {
@@ -97599,7 +97612,7 @@ var ContextManager = class {
       type: "message",
       role: "user",
       content: `[System: ${content}]`,
-      ...this.activeTurnID && { turnID: this.activeTurnID },
+      ...this.currentTurnID && { turnID: this.currentTurnID },
       isHidden: true
     });
   }
@@ -97609,7 +97622,7 @@ var ContextManager = class {
       id,
       name,
       arguments: args,
-      ...this.activeTurnID && { turnID: this.activeTurnID }
+      ...this.currentTurnID && { turnID: this.currentTurnID }
     });
   }
   addFunctionResult(id, name, result, error, data) {
@@ -97619,30 +97632,34 @@ var ContextManager = class {
       name,
       result,
       error,
-      ...this.activeTurnID && { turnID: this.activeTurnID },
+      ...this.currentTurnID && { turnID: this.currentTurnID },
       ...data && { data }
     };
     this.history.push(item);
     this.activeToolResults.push(item);
+    this.currentTurnToolResults.push(item);
   }
-  addRunSummary(provider, status, message) {
+  addRunSummary(status, message) {
     this.history.push({
       type: "run_summary",
-      provider,
+      provider: this.currentProvider,
       status,
       ...message && { message },
       ...this.runTokenUsage && { tokenUsage: { ...this.runTokenUsage } },
-      ...this.activeTurnID && { turnID: this.activeTurnID }
+      ...this.currentTurnID && { turnID: this.currentTurnID }
     });
   }
   async clear() {
     this.history = [];
     this.summarizedHistory = [];
     this.summarizeIndex = 0;
+    this.currentPrompt = { type: "message", role: "user", content: "" };
+    ;
     this.activeToolResults = [];
-    this.activeTurnID = void 0;
+    this.currentTurnToolResults = [];
+    this.currentTurnID = void 0;
     this.previousTurnID = void 0;
-    this.activeProvider = "";
+    this.currentProvider = "";
     this.previousProvider = "";
     this.turnsSinceLastPrune = 0;
     this.runsSinceLastPrune = 0;
@@ -97650,16 +97667,16 @@ var ContextManager = class {
     await this.save();
     await this.clearArtifacts();
   }
-  async updateTurnBoundary(mode, interval, previousTurnHadError) {
+  async updateTurnBoundary(previousTurnHadError) {
     this.turnsSinceLastPrune++;
     if (previousTurnHadError) return;
-    if (mode === "turn" && this.turnsSinceLastPrune >= interval) {
+    if (this.pruneMode === "turn" && this.turnsSinceLastPrune >= this.pruneTurnInterval) {
       await this.pruneToolResults();
     }
   }
-  async updateRunBoundary(mode, interval) {
+  async updateRunBoundary() {
     this.runsSinceLastPrune++;
-    if (mode === "run" && this.runsSinceLastPrune >= interval) {
+    if (this.pruneMode === "run" && this.runsSinceLastPrune >= this.pruneRunInterval) {
       await this.pruneToolResults();
     }
   }
@@ -97706,13 +97723,29 @@ var ContextManager = class {
       console.error("Failed to clear artifacts directory:", e2);
     }
   }
-  getLLMContext() {
+  getLLMContext(fullContext = false) {
+    const supportsState = this.currentProvider ? ChatFactory.supportsStateManagement(this.currentProvider) : false;
+    if (!fullContext && this.stateful && supportsState && this.currentTurnID) {
+      const delta = [];
+      if (this.currentPrompt && this.currentPrompt.turnID === this.currentTurnID) {
+        delta.push(this.currentPrompt);
+      }
+      for (const toolResult of this.currentTurnToolResults) {
+        if (toolResult.turnID === this.currentTurnID) {
+          delta.push(toolResult);
+        }
+      }
+      return delta;
+    }
     return [
       ...this.summarizedHistory,
       ...this.history.slice(this.summarizeIndex)
     ];
   }
-  estimateCategorizedTokens(provider) {
+  // This is different from updateTokenUsage
+  // This updates the pie chart in the context window menu, it is an estimate for the token usage for different categories of messages
+  // Whereas updateTokenUsage is an accurate provider issued token usage counter for input and output tokens
+  estimateCategorizedTokens() {
     const encoder3 = getEncoding("o200k_base");
     const usage = {
       userTokens: 0,
@@ -97723,9 +97756,9 @@ var ContextManager = class {
       totalTokens: 0
     };
     const baseOverhead = 4;
-    usage.systemTokens += encoder3.encode(ChatFactory.getSystemPrompt(provider)).length + baseOverhead;
-    usage.systemTokens += encoder3.encode(JSON.stringify(ChatFactory.getToolSchemas(provider))).length + baseOverhead;
-    const currentContext = this.getLLMContext();
+    usage.systemTokens += encoder3.encode(ChatFactory.getSystemPrompt(this.currentProvider)).length + baseOverhead;
+    usage.systemTokens += encoder3.encode(JSON.stringify(ChatFactory.getToolSchemas(this.currentProvider))).length + baseOverhead;
+    const currentContext = this.getLLMContext(true);
     for (const item of currentContext) {
       let textToEncode = "";
       switch (item.type) {
@@ -97749,7 +97782,7 @@ var ContextManager = class {
       }
     }
     usage.totalTokens = usage.userTokens + usage.assistantTokens + usage.systemTokens + usage.toolCallTokens + usage.toolResultTokens;
-    return usage;
+    this.emitter.fire({ type: "updateContextWindowUsage", usage });
   }
 };
 
@@ -98220,13 +98253,13 @@ var ChatApp = class {
     this.apiManager = new APIManager(context);
     this.apiManager.onDidUpdateStatus((event) => this.post(event));
     this.contextManager = new ContextManager(context);
+    this.contextManager.onDidUpdateStatus((event) => this.post(event));
     this.commandManager = new CommandManager(context);
     this.commandManager.onConfigChange((isUnsafe) => {
       this.post({ type: "updateUnsafeFlag", isUnsafe });
     });
     const workspaceRoot = vscode11.workspace.workspaceFolders?.[0].uri.fsPath;
-    this.workspaceRoot = workspaceRoot;
-    this.worktreeManager = new WorktreeManager(context, this.workspaceRoot);
+    this.worktreeManager = new WorktreeManager(context, workspaceRoot);
     this.worktreeManager.onDidUpdateStatus((event) => this.post(event));
     this.toolRegistry = createToolRegistry({
       getCwd: () => {
@@ -98302,7 +98335,6 @@ var ChatApp = class {
   worktreeManager;
   indexer;
   aborter = null;
-  workspaceRoot;
   async runAgentTurn(provider, model, effort, userMessage) {
     await this.worktreeManager.setup();
     this.aborter = new AbortController();
@@ -98312,14 +98344,11 @@ var ChatApp = class {
     const serverStateManagment = this.context.globalState.get("serverStateManagement") ?? true;
     const enabledWebSearch = this.context.globalState.get("webSearchEnabled") ?? false;
     const savedWebMode = this.context.globalState.get("webSearchMode") ?? "tavily";
-    const pruneMode = this.context.globalState.get("pruneMode") ?? "run";
-    const pruneTurnInterval = this.context.globalState.get("pruneTurnInterval") ?? 1;
-    const pruneRunInterval = this.context.globalState.get("pruneRunInterval") ?? 1;
     try {
       const apiKey = await this.apiManager.getChatAPIKey(provider);
       const webSearchMode = enabledWebSearch ? savedWebMode : "none";
       providerInstance = ChatFactory.create(provider, apiKey, webSearchMode);
-      this.contextManager.prepareRun(provider, serverStateManagment);
+      this.contextManager.prepareRun(provider);
       this.contextManager.addUserMessage(userMessage);
       let keepGoing = true;
       let turnCount = 0;
@@ -98363,14 +98392,12 @@ var ChatApp = class {
         }
         if (this.aborter.signal.aborted) throw new Error("AbortError");
         this.post({ type: "streamEnd" });
-        await this.contextManager.updateTurnBoundary(pruneMode, pruneTurnInterval, previousTurnHadError);
+        await this.contextManager.updateTurnBoundary(previousTurnHadError);
         previousTurnHadError = false;
         const finalResponse = streamResult.value;
         if (finalResponse?.tokenUsage) {
-          this.post({
-            type: "updateTokenUsage",
-            usage: this.contextManager.recordTokenUsage(provider, finalResponse.tokenUsage)
-          });
+          this.contextManager.recordTokenUsage(finalResponse.tokenUsage);
+          this.contextManager.updateTokenUsage();
         }
         const currentTurnID = finalResponse?.turnID;
         this.contextManager.setTurnID(currentTurnID);
@@ -98428,7 +98455,7 @@ var ChatApp = class {
           keepGoing = false;
         }
       }
-      this.post({ type: "updateTokenUsage", usage: this.contextManager.getTokenUsage() });
+      this.contextManager.updateTokenUsage();
       if (hasRunTools) this.post({ type: "endTools", customCount: customToolsRunThisTurn - exectueRunThisTurn, serverCount: serverToolsRunThisTurn });
       if (hasRunCommands) this.post({ type: "endExecute" });
       if (!this.aborter.signal.aborted) {
@@ -98450,16 +98477,14 @@ var ChatApp = class {
       }
     } finally {
       this.aborter = null;
-      this.contextManager.addRunSummary(provider, runStatus, statusMessage);
-      await this.contextManager.updateRunBoundary(pruneMode, pruneRunInterval);
+      this.contextManager.addRunSummary(runStatus, statusMessage);
+      await this.contextManager.updateRunBoundary();
       await this.contextManager.save();
-      this.post({
-        type: "updateContextWindowUsage",
-        usage: this.contextManager.estimateCategorizedTokens(provider)
-      });
+      this.contextManager.estimateCategorizedTokens();
       this.post({ type: "agentRunComplete", status: runStatus, text: statusMessage });
     }
   }
+  // ----------------------------- WEBVIEW ROUTING ----------------------------------- //
   resolveWebviewView(webviewView, ctx, token) {
     this.view = webviewView;
     webviewView.webview.options = {
@@ -98507,10 +98532,7 @@ var ChatApp = class {
                 stateful: stateManagementSupport,
                 serverSearch: serverWebSearchSupport
               });
-              this.post({
-                type: "updateContextWindowUsage",
-                usage: this.contextManager.estimateCategorizedTokens(chatProvider)
-              });
+              this.contextManager.estimateCategorizedTokens();
             }
             const pruneMode = this.context.globalState.get("pruneMode") ?? "run";
             const pruneTurnInterval = this.context.globalState.get("pruneTurnInterval") ?? 1;
@@ -98531,7 +98553,7 @@ var ChatApp = class {
               this.post({ type: "reviewPatch", patch: patchString });
               const currentStatus = this.context.workspaceState.get("patchStatus");
               if (currentStatus) this.post({ type: "updatePatchStatus", status: currentStatus });
-            } else await this.worktreeManager.reset();
+            }
             const agentMode = this.context.workspaceState.get("agentMode") ?? "manual";
             this.post({ type: "restoreAgentMode", mode: agentMode });
             await this.commandManager.loadConfig();
@@ -98548,10 +98570,8 @@ var ChatApp = class {
         // Called after selecting chat provider from dropdown
         case "saveChatProvider": {
           this.apiManager.saveChatProvider(data.provider);
-          this.post({
-            type: "updateContextWindowUsage",
-            usage: this.contextManager.estimateCategorizedTokens(data.provider)
-          });
+          this.contextManager.changeProvider(data.provider);
+          this.contextManager.estimateCategorizedTokens();
           break;
         }
         // Called when pressing the key button or when provider is selected without valid API key
@@ -98641,7 +98661,7 @@ var ChatApp = class {
         }
         case "clearChat": {
           await this.contextManager.clear();
-          await this.worktreeManager.reset();
+          await this.worktreeManager.cleanup();
           this.post({ type: "clearChatContainer" });
         }
         // Called when selecting a new provider in embedding provider dropdown

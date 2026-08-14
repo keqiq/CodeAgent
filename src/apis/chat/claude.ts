@@ -111,7 +111,13 @@ export class ClaudeChatProvider extends ChatProvider {
         return messages ;
     }
 
-    // claude does not need an explicit turnID for caching
+    // TODO: ?
+    // claude does not support state management like openAI's responses or gemini's interactions API
+    // The stateful flag here simply toggles their caching (i think).
+    // Their cache has a 5 minute ttl... or double the input price for 1h
+    // But contextManager is constantly pruning tools, so it will be invalidated based on how frequently it's pruning
+    // But if i don't prune, the cache write is expensive and if not caching, the input is expensive...
+    // Not sure what to do here
     async *fetchStream(
         model: string,
         effort: string,

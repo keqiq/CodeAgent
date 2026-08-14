@@ -28,13 +28,12 @@ export class ChatApp implements vscode.WebviewViewProvider {
 
     private aborter: AbortController | null = null;
 
-    private workspaceRoot: string;
-
     constructor(private readonly context: vscode.ExtensionContext) {
         this.apiManager = new APIManager(context);
         this.apiManager.onDidUpdateStatus(event => this.post(event));
 
         this.contextManager = new ContextManager(context);
+        this.contextManager.onDidUpdateStatus(event => this.post(event));
 
         this.commandManager = new CommandManager(context);
         this.commandManager.onConfigChange((isUnsafe) => {
@@ -44,9 +43,8 @@ export class ChatApp implements vscode.WebviewViewProvider {
         // Don't even activate the extension outside of an active workspace there is no point
         // This is set in package.json in activationEvents
         const workspaceRoot = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
-        this.workspaceRoot = workspaceRoot!;
 
-        this.worktreeManager = new WorktreeManager(context, this.workspaceRoot);
+        this.worktreeManager = new WorktreeManager(context, workspaceRoot!);
         this.worktreeManager.onDidUpdateStatus(event => this.post(event));
 
         this.toolRegistry = createToolRegistry({
@@ -153,10 +151,6 @@ export class ChatApp implements vscode.WebviewViewProvider {
         const enabledWebSearch = this.context.globalState.get<boolean>('webSearchEnabled') ?? false;
         const savedWebMode = this.context.globalState.get<string>('webSearchMode') ?? 'tavily';
 
-        const pruneMode = this.context.globalState.get<string>('pruneMode') ?? 'run';
-        const pruneTurnInterval = this.context.globalState.get<number>('pruneTurnInterval') ?? 1;
-        const pruneRunInterval = this.context.globalState.get<number>('pruneRunInterval') ?? 1;
-
         try {
             const apiKey = await this.apiManager.getChatAPIKey(provider);
 
@@ -164,7 +158,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
 
             providerInstance = ChatFactory.create(provider, apiKey, webSearchMode);
 
-            this.contextManager.prepareRun(provider, serverStateManagment);
+            this.contextManager.prepareRun(provider);
             this.contextManager.addUserMessage(userMessage);
 
             let keepGoing = true;
@@ -183,6 +177,9 @@ export class ChatApp implements vscode.WebviewViewProvider {
                 if (this.aborter.signal.aborted) throw new Error('AbortError');
                 turnCount++;
 
+                // TODO: EDGE CASE
+                // If we keep the extension open with an valid turnID for too long without sending a new prompt
+                // The serverside context will expire...
                 const streamGenerator = providerInstance.fetchStream(
                     model,
                     effort,
@@ -223,16 +220,14 @@ export class ChatApp implements vscode.WebviewViewProvider {
                 this.post({ type: 'streamEnd' });
 
                 // update turn counter for tool pruning, do not prune until error is resolved
-                await this.contextManager.updateTurnBoundary(pruneMode, pruneTurnInterval, previousTurnHadError);
+                await this.contextManager.updateTurnBoundary(previousTurnHadError);
                 previousTurnHadError = false;
 
                 const finalResponse = streamResult.value as ChatResponse;
 
                 if (finalResponse?.tokenUsage) {
-                    this.post({
-                        type: 'updateTokenUsage',
-                        usage: this.contextManager.recordTokenUsage(provider, finalResponse.tokenUsage)
-                    });
+                    this.contextManager.recordTokenUsage(finalResponse.tokenUsage);
+                    this.contextManager.updateTokenUsage();
                 }
 
                 const currentTurnID = finalResponse?.turnID;
@@ -304,8 +299,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
                     keepGoing = false;
                 }
             }
-
-            this.post({ type: 'updateTokenUsage', usage: this.contextManager.getTokenUsage() });
+            this.contextManager.updateTokenUsage();
             if (hasRunTools) this.post({ type: 'endTools', customCount: customToolsRunThisTurn - exectueRunThisTurn, serverCount: serverToolsRunThisTurn });
             if (hasRunCommands) this.post({ type: 'endExecute' });
 
@@ -338,25 +332,20 @@ export class ChatApp implements vscode.WebviewViewProvider {
         } finally {
             this.aborter = null;
 
-            this.contextManager.addRunSummary(provider, runStatus, statusMessage);
+            this.contextManager.addRunSummary(runStatus, statusMessage);
 
             // Update run counter for tool pruning
-            await this.contextManager.updateRunBoundary(pruneMode, pruneRunInterval);
+            await this.contextManager.updateRunBoundary();
 
             await this.contextManager.save();
 
-            // This is different from updateTokenUsage
-            // This updates the pie chart in the context window menu, it is an estimate for the token usage for different categories of messages
-            // Whereas updateTokenUsage is an accurate provider issued token usage counter for input and output tokens
-            this.post({
-                type: 'updateContextWindowUsage',
-                usage: this.contextManager.estimateCategorizedTokens(provider)
-            });
+            this.contextManager.estimateCategorizedTokens();
 
             this.post({ type: 'agentRunComplete', status: runStatus, text: statusMessage });
         }
     }
 
+    // ----------------------------- WEBVIEW ROUTING ----------------------------------- //
     public resolveWebviewView(webviewView: vscode.WebviewView, ctx: vscode.WebviewViewResolveContext, token: vscode.CancellationToken): Thenable<void> | void {
         this.view = webviewView;
 
@@ -417,11 +406,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
                                 stateful: stateManagementSupport,
                                 serverSearch: serverWebSearchSupport
                             });
-
-                            this.post({
-                                type: 'updateContextWindowUsage',
-                                usage: this.contextManager.estimateCategorizedTokens(chatProvider)
-                            });
+                            this.contextManager.estimateCategorizedTokens();
                         }
 
                         const pruneMode = this.context.globalState.get<string>('pruneMode') ?? 'run';
@@ -434,7 +419,6 @@ export class ChatApp implements vscode.WebviewViewProvider {
                             turnInterval: pruneTurnInterval,
                             runInterval: pruneRunInterval
                         });
-
 
                         const indexEnabled = this.context.globalState.get<boolean>('indexEnabled') ?? false;
 
@@ -449,8 +433,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
                             const currentStatus = this.context.workspaceState.get<string>('patchStatus');
                             if (currentStatus) this.post({ type: 'updatePatchStatus', status: currentStatus });
                         }
-                        else await this.worktreeManager.reset();
-
+                        
                         const agentMode = this.context.workspaceState.get<string>('agentMode') ?? 'manual';
                         this.post({ type: 'restoreAgentMode', mode: agentMode });
 
@@ -470,10 +453,8 @@ export class ChatApp implements vscode.WebviewViewProvider {
                 // Called after selecting chat provider from dropdown
                 case 'saveChatProvider': {
                     this.apiManager.saveChatProvider(data.provider);
-                    this.post({
-                        type: 'updateContextWindowUsage',
-                        usage: this.contextManager.estimateCategorizedTokens(data.provider)
-                    });
+                    this.contextManager.changeProvider(data.provider);
+                    this.contextManager.estimateCategorizedTokens();
                     break;
                 }
 
@@ -578,7 +559,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
 
                 case 'clearChat': {
                     await this.contextManager.clear();
-                    
+
                     await this.worktreeManager.cleanup();
 
                     this.post({ type: 'clearChatContainer' });
@@ -754,6 +735,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
             }
         });
     }
+
     private post(message: any) { this.view?.webview.postMessage(message); }
 
     private getHTML(): string {

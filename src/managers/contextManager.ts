@@ -28,7 +28,7 @@ export interface FunctionResultItem {
     result: string;
     error: boolean;
     turnID?: string;
-    data?:any;
+    data?: any;
 }
 
 export interface RunSummaryItem {
@@ -83,12 +83,20 @@ export class ContextManager {
     private summarizedHistory: ChatItem[] = [];
     private summarizeIndex = 0;
 
-    private activeTurnID: string | undefined = undefined;
-    private activeProvider: string = '';
+    private currentProvider: string | undefined;
+    private currentTurnID: string | undefined;
+    private currentPrompt: MessageItem = { type: 'message', role: 'user', content: '' };
+    private currentTurnToolResults: FunctionResultItem[] = [];
 
     // For roll back
-    private previousTurnID: string | undefined = undefined;
-    private previousProvider: string = '';
+    private previousTurnID: string | undefined;
+    private previousProvider: string | undefined;
+
+    private stateful: boolean = true;
+    private pruneMode: string = 'run';
+    private pruneTurnInterval: number = 2;
+    private pruneRunInterval: number = 1;
+
 
     private runTokenUsage: TokenUsage = {
         totalTokens: 0,
@@ -100,9 +108,13 @@ export class ContextManager {
     private storageUri: vscode.Uri | undefined;
     private artifactsUri: vscode.Uri | undefined;
 
+    private emitter = new vscode.EventEmitter();
+    public readonly onDidUpdateStatus = this.emitter.event;
+
     constructor(private readonly context: vscode.ExtensionContext) {
         this.storageUri = context.storageUri;
         if (this.storageUri) this.artifactsUri = vscode.Uri.joinPath(this.storageUri, 'artifacts');
+        this.currentProvider = this.context.globalState.get<string>('chatProvider');
     }
 
     public async initialize(): Promise<void> {
@@ -138,7 +150,7 @@ export class ContextManager {
 
     public async save(): Promise<void> {
         if (!this.storageUri) return;
-    
+
         const state: ChatState = {
             history: this.history,
             summarizedHistory: this.summarizedHistory,
@@ -147,7 +159,7 @@ export class ContextManager {
 
         const fileUri = vscode.Uri.joinPath(this.storageUri, 'chat_history.json');
         const data = new TextEncoder().encode(JSON.stringify(state, null, 2));
-        
+
         await vscode.workspace.fs.writeFile(fileUri, data);
     }
 
@@ -156,25 +168,37 @@ export class ContextManager {
     }
 
     public getTurnID(): string | undefined {
-        return this.activeTurnID;
+        return this.currentTurnID;
     }
 
     public setTurnID(turnID: string | undefined): void {
-        this.activeTurnID = turnID;
+
+        if (this.currentTurnID !== turnID) this.currentTurnToolResults = [];
+
+        this.currentTurnID = turnID;
     }
 
-    public prepareRun(provider: string, serverStateful: boolean): void {
+    public prepareRun(provider: string): void {
         this.resetTokenUsage();
 
+        this.stateful = this.context.globalState.get<boolean>('serverStateManagement') ?? true;
+        this.pruneMode = this.context.globalState.get<string>('pruneMode') ?? 'run';
+        this.pruneTurnInterval = this.context.globalState.get<number>('pruneTurnInterval') ?? 2;
+        this.pruneRunInterval = this.context.globalState.get<number>('pruneRunInterval') ?? 1;
+
+        this.changeProvider(provider);
+    }
+
+    public changeProvider(provider: string): void {
         // Save previous state
-        this.previousTurnID = this.activeTurnID;
-        this.previousProvider = this.activeProvider;
+        this.previousTurnID = this.currentTurnID;
+        this.previousProvider = this.currentProvider;
 
         // If the provider changed or stateful is disabled, reset turn id
-        if (this.activeProvider !== provider || !serverStateful) this.activeTurnID = undefined;
-        this.activeProvider = provider;
+        if (this.currentProvider !== provider || !this.stateful) this.currentTurnID = undefined;
+        this.currentProvider = provider;
     }
-    
+
     // Extract all function calls for the agent loop
     // Save all messages and function calls expect for server function calls
     public processResponseItems(items: ChatItem[]): FunctionCallItem[] {
@@ -192,13 +216,13 @@ export class ContextManager {
             }
             else if (item.type === 'message') this.addAssistantMessage(item.content);
         }
-        
+
         return functionCalls;
     }
 
     public rollback(): void {
-        this.activeTurnID = this.previousTurnID;
-        this.activeProvider = this.previousProvider;
+        this.currentTurnID = this.previousTurnID;
+        this.currentProvider = this.previousProvider;
     }
 
     private resetTokenUsage(): void {
@@ -210,8 +234,8 @@ export class ContextManager {
         };
     }
 
-    public recordTokenUsage(provider: string, usage: TokenUsage): TokenUsage {
-        if (provider.toLowerCase() === 'claude') {
+    public recordTokenUsage(usage: TokenUsage): void {
+        if (this.currentProvider!.toLowerCase() === 'claude') {
             // Claude returns cumulative token usage across turns
             this.runTokenUsage = {
                 totalTokens: usage.totalTokens || 0,
@@ -226,20 +250,21 @@ export class ContextManager {
             this.runTokenUsage.outputTokens! += (usage.outputTokens || 0);
             this.runTokenUsage.thoughtTokens! += (usage.thoughtTokens || 0);
         }
-        return { ...this.runTokenUsage };
     }
 
-    public getTokenUsage(): TokenUsage {
-        return { ...this.runTokenUsage };
+    public updateTokenUsage(): void {
+        this.emitter.fire({ type: 'updateTokenUsage', usage: this.runTokenUsage });
     }
 
     public addUserMessage(content: string): void {
-        this.history.push({
+        const userMessage: MessageItem = {
             type: 'message',
             role: 'user',
             content,
-            ...(this.activeTurnID && { turnID: this.activeTurnID })
-        });
+            ...(this.currentTurnID && { turnID: this.currentTurnID })
+        };
+        this.history.push(userMessage);
+        this.currentPrompt = userMessage;
     }
 
     public addAssistantMessage(content: string, thought?: string): void {
@@ -248,7 +273,7 @@ export class ContextManager {
             role: 'assistant',
             content,
             ...(thought && { thought }),
-            ...(this.activeTurnID && { turnID: this.activeTurnID })
+            ...(this.currentTurnID && { turnID: this.currentTurnID })
         });
     }
 
@@ -257,7 +282,7 @@ export class ContextManager {
             type: 'message',
             role: 'user',
             content: `[System: ${content}]`,
-            ...(this.activeTurnID && { turnID: this.activeTurnID }),
+            ...(this.currentTurnID && { turnID: this.currentTurnID }),
             isHidden: true
         });
     }
@@ -268,7 +293,7 @@ export class ContextManager {
             id,
             name,
             arguments: args,
-            ...(this.activeTurnID && { turnID: this.activeTurnID })
+            ...(this.currentTurnID && { turnID: this.currentTurnID })
         });
     }
 
@@ -279,21 +304,22 @@ export class ContextManager {
             name,
             result,
             error,
-            ...(this.activeTurnID && { turnID: this.activeTurnID }),
+            ...(this.currentTurnID && { turnID: this.currentTurnID }),
             ...(data && { data })
         };
         this.history.push(item);
         this.activeToolResults.push(item);
+        this.currentTurnToolResults.push(item);
     }
 
-    public addRunSummary(provider: string, status: 'ok' | 'aborted' | 'error', message?: string): void {
+    public addRunSummary(status: 'ok' | 'aborted' | 'error', message?: string): void {
         this.history.push({
             type: 'run_summary',
-            provider,
+            provider: this.currentProvider!,
             status,
-            ...(message && { message }), 
+            ...(message && { message }),
             ...(this.runTokenUsage && { tokenUsage: { ...this.runTokenUsage } }),
-            ...(this.activeTurnID && { turnID: this.activeTurnID })
+            ...(this.currentTurnID && { turnID: this.currentTurnID })
         });
     }
 
@@ -301,10 +327,12 @@ export class ContextManager {
         this.history = [];
         this.summarizedHistory = [];
         this.summarizeIndex = 0;
+        this.currentPrompt = { type: 'message', role: 'user', content: '' };;
         this.activeToolResults = [];
-        this.activeTurnID = undefined;
+        this.currentTurnToolResults = [];
+        this.currentTurnID = undefined;
         this.previousTurnID = undefined;
-        this.activeProvider = '';
+        this.currentProvider = '';
         this.previousProvider = '';
         this.turnsSinceLastPrune = 0;
         this.runsSinceLastPrune = 0;
@@ -313,21 +341,21 @@ export class ContextManager {
         await this.clearArtifacts();
     }
 
-    public async updateTurnBoundary(mode: string, interval: number, previousTurnHadError: boolean): Promise<void> {
+    public async updateTurnBoundary(previousTurnHadError: boolean): Promise<void> {
         this.turnsSinceLastPrune++;
 
         // If previous tool results contain errors, keep tool results for debug context
         if (previousTurnHadError) return;
 
-        if (mode === 'turn' && this.turnsSinceLastPrune >= interval) {
+        if (this.pruneMode === 'turn' && this.turnsSinceLastPrune >= this.pruneTurnInterval) {
             await this.pruneToolResults();
         }
     }
 
-    public async updateRunBoundary(mode: string, interval: number): Promise<void> {
+    public async updateRunBoundary(): Promise<void> {
         this.runsSinceLastPrune++;
 
-        if (mode === 'run' && this.runsSinceLastPrune >= interval) {
+        if (this.pruneMode === 'run' && this.runsSinceLastPrune >= this.pruneRunInterval) {
             await this.pruneToolResults();
         }
     }
@@ -336,7 +364,7 @@ export class ContextManager {
         if (!this.artifactsUri) throw new Error('Artifact storage not initialized');
 
         const fileUri = vscode.Uri.joinPath(this.artifactsUri, artifactID);
-        
+
         const data = await vscode.workspace.fs.readFile(fileUri);
         return new TextDecoder().decode(data);
     }
@@ -391,10 +419,29 @@ export class ContextManager {
         } catch (e) {
             console.error('Failed to clear artifacts directory:', e);
         }
-        
+
     }
 
-    public getLLMContext(): ChatItem[] {
+    public getLLMContext(fullContext: boolean = false): ChatItem[] {
+        const supportsState = this.currentProvider ? ChatFactory.supportsStateManagement(this.currentProvider) : false;
+
+        // For providers with serverside context management, send only newest tool result and user prompt
+        if (!fullContext && this.stateful && supportsState && this.currentTurnID) {
+            const delta: ChatItem[] = [];
+
+            // Only include the cached user message if it belongs to the active turn
+            if (this.currentPrompt && this.currentPrompt.turnID === this.currentTurnID) {
+                delta.push(this.currentPrompt);
+            }
+
+            // Only include cached tool results that match the active turn
+            for (const toolResult of this.currentTurnToolResults) {
+                if (toolResult.turnID === this.currentTurnID) {
+                    delta.push(toolResult);
+                }
+            }
+            return delta;
+        }
         // We return the summarized long term history (if it exists)
         // along with verbatim recent history
         return [
@@ -403,7 +450,10 @@ export class ContextManager {
         ];
     }
 
-    public estimateCategorizedTokens(provider: string): TokenCategoryUsage {
+    // This is different from updateTokenUsage
+    // This updates the pie chart in the context window menu, it is an estimate for the token usage for different categories of messages
+    // Whereas updateTokenUsage is an accurate provider issued token usage counter for input and output tokens
+    public estimateCategorizedTokens(): void {
         const encoder = getEncoding('o200k_base');
 
         const usage: TokenCategoryUsage = {
@@ -414,14 +464,15 @@ export class ContextManager {
             toolResultTokens: 0,
             totalTokens: 0
         };
-        
-        const baseOverhead = 4;
-        
-        usage.systemTokens += encoder.encode(ChatFactory.getSystemPrompt(provider)).length + baseOverhead;
 
-        usage.systemTokens += encoder.encode(JSON.stringify(ChatFactory.getToolSchemas(provider))).length + baseOverhead;
-        
-        const currentContext = this.getLLMContext();
+        const baseOverhead = 4;
+
+        usage.systemTokens += encoder.encode(ChatFactory.getSystemPrompt(this.currentProvider!)).length + baseOverhead;
+
+        usage.systemTokens += encoder.encode(JSON.stringify(ChatFactory.getToolSchemas(this.currentProvider!))).length + baseOverhead;
+
+        // Token usage for full context
+        const currentContext = this.getLLMContext(true);
         for (const item of currentContext) {
             let textToEncode = "";
 
@@ -448,11 +499,11 @@ export class ContextManager {
 
                 case 'run_summary':
                     break;
-            }   
+            }
         }
 
         usage.totalTokens = usage.userTokens + usage.assistantTokens + usage.systemTokens + usage.toolCallTokens + usage.toolResultTokens;
 
-        return usage;
+        this.emitter.fire({ type: 'updateContextWindowUsage', usage: usage });
     }
 }

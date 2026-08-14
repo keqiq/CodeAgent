@@ -190,6 +190,13 @@ export class WorktreeManager {
     }
 
     public async getPatch(): Promise<string> {
+
+        try {
+            await fs.stat(this.worktreePath);
+        } catch {
+            return '';
+        }
+
         // Track new files
         await exec(`git add -N .`, { cwd: this.worktreePath });
         // get patch string

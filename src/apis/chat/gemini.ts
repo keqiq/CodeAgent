@@ -11,9 +11,10 @@ export class GeminiChatProvider extends ChatProvider {
     private activeInteractionId: string | null = null;
 
     protected featuredModels: string[] = [
-            'gemini-3.6-flash',
-            'gemini-3.5-flash', 'gemini-3.5-flash-lite',
-            'gemini-3.1-pro', 'gemini-3.1-flash-lite'
+        'gemini-3.7-flash',
+        'gemini-3.6-flash',
+        'gemini-3.5-flash', 'gemini-3.5-flash-lite',
+        'gemini-3.1-pro', 'gemini-3.1-flash-lite'
     ];
 
     constructor(apiKey: string, webSearchMode: WebSearchMode) {
@@ -117,24 +118,10 @@ export class GeminiChatProvider extends ChatProvider {
     ): AsyncGenerator<StreamYield, ChatResponse, unknown> {
         
         let fullText = '';
-        
-        // OK if we are doing stateful multi turn conversation we need to send back only the previous tool result or the user's new prompt
-        // Gemini just updated their interactions API 
-        // TODO: changes may be needed
-        let currentInput;
-        if (previousTurnID && useCache) {
-            const newItemsToSubmit = history.filter(item => 
-                item.turnID === previousTurnID && (item.type === 'function_result' || (item.type === 'message' && item.role === 'user'))
-            );
-
-            currentInput = this.formatMessages(newItemsToSubmit);
-        } else {
-            currentInput = this.formatMessages(history);
-        }
 
         const stream = await this.client.interactions.create({
             model: model,
-            input: currentInput,
+            input: this.formatMessages(history),
             tools: this.tools,
             system_instruction: GeminiChatProvider.systemPrompt,
             stream: true,

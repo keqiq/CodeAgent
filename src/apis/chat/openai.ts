@@ -144,23 +144,12 @@ export class OpenAIChatProvider extends ChatProvider {
         let responseID = null;
         let tokenUsage: TokenUsage | undefined = undefined;
 
-        let currentInput;
-        if (previousTurnID && useCache) {
-            const newItemsToSubmit = history.filter(item => 
-                item.turnID === previousTurnID && (item.type === 'function_result' || (item.type === 'message' && item.role === 'user'))
-            );
-
-            currentInput = this.formatMessages(newItemsToSubmit, false);
-        } else {
-            currentInput = this.formatMessages(history, true);
-        }
-
         const stream = await this.client.responses.create({
             model: model,
-            input: currentInput,
+            input: this.formatMessages(history, previousTurnID === undefined),
             tools: this.tools,
             stream: true,
-            reasoning: {effort: effort as any, summary: 'auto' },
+            reasoning: { effort: effort as any, summary: 'auto' },
 
             ...(previousTurnID && { previous_response_id: previousTurnID })
         }, { signal: abortSignal });
@@ -371,7 +360,7 @@ export abstract class OpenAICompatibleProvider extends ChatProvider {
         let fullThought = '';
         const formattedMessages = this.formatMessages(history);
 
-        // I don't think any of the third party provider support the responses api
+        // I don't think any of the third party provider support the responses api (NEW !! EXCEPT QWEN, which i should add for 3.8-max)
         // Just use the old chat.completions, ignore previousTurnID
         const stream = await this.client.chat.completions.create({
             model: model,
