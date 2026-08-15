@@ -44497,7 +44497,7 @@ var require_extension = __commonJS({
 var require_websocket = __commonJS({
   "node_modules/ws/lib/websocket.js"(exports2, module2) {
     "use strict";
-    var EventEmitter6 = require("events");
+    var EventEmitter8 = require("events");
     var https3 = require("https");
     var http5 = require("http");
     var net = require("net");
@@ -44529,7 +44529,7 @@ var require_websocket = __commonJS({
     var protocolVersions = [8, 13];
     var readyStates = ["CONNECTING", "OPEN", "CLOSING", "CLOSED"];
     var subprotocolRegex = /^[!#$%&'*+\-.0-9A-Z^_`|a-z~]+$/;
-    var WebSocket2 = class _WebSocket extends EventEmitter6 {
+    var WebSocket2 = class _WebSocket extends EventEmitter8 {
       /**
        * Create a new `WebSocket`.
        *
@@ -45536,7 +45536,7 @@ var require_subprotocol = __commonJS({
 var require_websocket_server = __commonJS({
   "node_modules/ws/lib/websocket-server.js"(exports2, module2) {
     "use strict";
-    var EventEmitter6 = require("events");
+    var EventEmitter8 = require("events");
     var http5 = require("http");
     var { Duplex } = require("stream");
     var { createHash } = require("crypto");
@@ -45549,7 +45549,7 @@ var require_websocket_server = __commonJS({
     var RUNNING = 0;
     var CLOSING = 1;
     var CLOSED = 2;
-    var WebSocketServer2 = class extends EventEmitter6 {
+    var WebSocketServer2 = class extends EventEmitter8 {
       /**
        * Create a `WebSocketServer` instance.
        *
@@ -47197,10 +47197,10 @@ __export(extension_exports, {
   deactivate: () => deactivate
 });
 module.exports = __toCommonJS(extension_exports);
-var vscode12 = __toESM(require("vscode"));
+var vscode13 = __toESM(require("vscode"));
 
 // src/main.ts
-var vscode11 = __toESM(require("vscode"));
+var vscode12 = __toESM(require("vscode"));
 var fs8 = __toESM(require("fs"));
 var path12 = __toESM(require("path"));
 
@@ -54494,8 +54494,7 @@ function createToolRegistry(deps) {
         args.cwd,
         deps.getCwd(),
         deps.getSignal(),
-        deps.requestConfirmation,
-        (chunk) => deps.onRunOutput(toolID, chunk)
+        toolID
       );
     },
     web: async (args) => {
@@ -54507,8 +54506,8 @@ function createToolRegistry(deps) {
       return await executeURL(args.urls, apiKey, args.query, deps.getSignal());
     },
     find: async (args) => {
-      const searchDeps = await deps.getFindDeps();
-      return await executeFind(args.query, searchDeps, deps.getSignal());
+      const findDeps2 = await deps.getFindDeps();
+      return await executeFind(args.query, findDeps2, deps.getSignal());
     },
     recall: async (args) => {
       return await executeRecall(args.artifactID, deps.getContextManager(), deps.getSignal());
@@ -97912,24 +97911,45 @@ var CommandManager = class _CommandManager {
   };
   config = _CommandManager.DEFAULT_CONFIG;
   watcher;
-  onConfigChangeCallback;
+  emitter = new vscode9.EventEmitter();
+  onDidUpdateStatus = this.emitter.event;
+  pendingApprovals = /* @__PURE__ */ new Map();
+  requestApproval(bin, args) {
+    return new Promise((resolve5) => {
+      const requestID = `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+      this.pendingApprovals.set(requestID, { resolve: resolve5, bin, args });
+      this.emitter.fire({
+        type: "requestCommandApproval",
+        requestID,
+        bin,
+        args
+      });
+    });
+  }
   getConfigUri = () => {
     if (!this.context.storageUri) return void 0;
     return vscode9.Uri.joinPath(this.context.storageUri, "agent-rules.json");
   };
+  async receiveApproval(requestID, approved, save = false) {
+    const pending = this.pendingApprovals.get(requestID);
+    if (!pending) return;
+    this.pendingApprovals.delete(requestID);
+    if (approved && save) {
+      await this.addCommandToAllowList(pending.bin, pending.args);
+    }
+    pending.resolve(approved);
+  }
   initWatcher() {
     if (!this.context.storageUri) return;
     const pattern = new vscode9.RelativePattern(this.context.storageUri, "agent-rules.json");
     this.watcher = vscode9.workspace.createFileSystemWatcher(pattern);
     this.watcher.onDidChange(async () => {
       await this.loadConfig();
-      if (this.onConfigChangeCallback) {
-        this.onConfigChangeCallback(this.config.unsafeFullAutonomous);
-      }
+      this.emitter.fire({
+        type: "updateUnsafeFlag",
+        isUnsafe: this.config.unsafeFullAutonomous
+      });
     });
-  }
-  onConfigChange(callback) {
-    this.onConfigChangeCallback = callback;
   }
   getConfig() {
     return this.config;
@@ -97996,7 +98016,7 @@ var CommandManager = class _CommandManager {
       }
     }
   }
-  async execute(commandStr, requestedCwd = ".", workspaceRoot, signal, requestConfirmation, onOutput) {
+  async execute(commandStr, requestedCwd = ".", workspaceRoot, signal, toolID) {
     const resolvedCwd = path11.resolve(workspaceRoot, requestedCwd);
     const relativePath = path11.relative(workspaceRoot, resolvedCwd);
     if (relativePath.startsWith("..") || path11.isAbsolute(relativePath)) {
@@ -98012,7 +98032,7 @@ var CommandManager = class _CommandManager {
     const argsString = args.join(" ");
     const agentMode = this.context.workspaceState.get("agentMode") ?? "manual";
     if (agentMode === "manual") {
-      const userApproved = await requestConfirmation(bin, argsString);
+      const userApproved = await this.requestApproval(bin, argsString);
       if (!userApproved) throw new Error(`User denied execution of command: ${commandStr}`);
     } else if (!this.config.unsafeFullAutonomous) {
       const allowedPatterns = this.config.allowedCommands[bin] || [];
@@ -98028,8 +98048,8 @@ var CommandManager = class _CommandManager {
         if (!this.config.promptForUnlistedCommands) {
           throw new Error(`Command blocked. '${bin} ${argsString}' is not in allowedCommands.`);
         }
-        const userApproved = await requestConfirmation(bin, argsString);
-        if (!userApproved) throw new Error(`User denied execution of command: ${commandStr}`);
+        const userApproved = await this.requestApproval(bin, argsString);
+        if (!userApproved) throw new Error(`User denied execution of unlisted command: ${commandStr}`);
       }
     }
     return new Promise((resolve5, reject) => {
@@ -98062,22 +98082,32 @@ ${this.truncateOutput(stderrData)}
         reject(new Error(`[Process killed: Exceeded 60-second timeout]
 ${output}`.trim()));
       }, 6e4);
+      const emitChunk = (chunk) => {
+        this.emitter.fire({
+          type: "updateExecute",
+          status: "streaming",
+          toolID,
+          chunk
+        });
+      };
       child.stdout.on("data", (data) => {
         const chunk = data.toString();
         stdoutData += chunk;
-        onOutput(chunk);
+        emitChunk(chunk);
       });
       child.stderr.on("data", (data) => {
         const chunk = data.toString();
         stderrData += chunk;
-        onOutput(chunk);
+        emitChunk(chunk);
       });
       child.on("error", (error) => {
         signal.removeEventListener("abort", abortListener);
+        clearTimeout(timeoutTimer);
         reject(new Error(`[Process Error]: ${error.message}`));
       });
       child.on("close", (code) => {
         signal.removeEventListener("abort", abortListener);
+        clearTimeout(timeoutTimer);
         let output = "";
         if (stdoutData) output += `STDOUT:
 ${this.truncateOutput(stdoutData)}
@@ -98246,6 +98276,156 @@ var APIManager = class {
   }
 };
 
+// src/managers/toolManager.ts
+var vscode11 = __toESM(require("vscode"));
+var ToolManager = class {
+  constructor(deps) {
+    this.deps = deps;
+    this.toolRegistry = this.initializeRegistry();
+  }
+  deps;
+  toolRegistry;
+  activeSignal = null;
+  emitter = new vscode11.EventEmitter();
+  onDidUpdateStatus = this.emitter.event;
+  totalCustomTools = 0;
+  totalServerTools = 0;
+  totalExecuteRun = 0;
+  initializeRegistry() {
+    return createToolRegistry({
+      getCwd: () => {
+        if (this.deps.worktreeManager?.worktreePath) {
+          return this.deps.worktreeManager.worktreePath;
+        }
+        const root = vscode11.workspace.workspaceFolders?.[0]?.uri.fsPath;
+        if (!root) throw new Error("No active workspace");
+        return root;
+      },
+      getSignal: () => {
+        if (!this.activeSignal) {
+          throw new Error("No active turn signal available");
+        }
+        return this.activeSignal;
+      },
+      getFindDeps: async () => {
+        const { context, apiManager, getIndexer } = this.deps;
+        const provider = context.globalState.get("embedProvider");
+        const model = context.globalState.get(`${provider}_embedModel`);
+        const indexer = getIndexer();
+        if (!provider || !model) throw new Error("Embedding provider/model is not configured");
+        if (!indexer) throw new Error("Index is not loaded. Enable indexing first.");
+        if (!indexer.indexEnabled()) throw new Error("Indexing is disabled cannot use semantic search");
+        const apiKey = await apiManager.getEmbedAPIKey(provider);
+        return {
+          indexer,
+          embedProvider: EmbedFactory.create(provider, apiKey),
+          model
+        };
+      },
+      getWebDeps: async () => {
+        const { context } = this.deps;
+        const webSearchEnabled = context.globalState.get("webSearchEnabled") ?? false;
+        const webSearchMode = context.globalState.get("webSearchMode") ?? "tavily";
+        if (!webSearchEnabled || webSearchMode !== "tavily") {
+          throw new Error("You do not have access to the 'web' tool this turn. It is currently disabled.");
+        }
+        const tavilyAPIKey = await context.secrets.get("TAVILY_API_KEY");
+        if (!tavilyAPIKey) throw new Error("Tavily API key not configured!");
+        return tavilyAPIKey;
+      },
+      getContextManager: () => this.deps.contextManager,
+      getCommandManager: () => this.deps.commandManager
+    });
+  }
+  async executeTools(toolCalls, signal) {
+    if (toolCalls.length === 0) return { hasErrors: false, shouldContinue: false };
+    this.activeSignal = signal;
+    let hasErrors = false;
+    let customToolsRun = 0;
+    try {
+      for (const toolCall of toolCalls) {
+        if (signal.aborted) throw new Error("AbortError");
+        const { id: toolID, name: toolName2, arguments: toolArgs, server: isServer } = toolCall;
+        if (isServer) {
+          this.totalServerTools++;
+          this.emitter.fire({
+            type: "updateTool",
+            status: "server",
+            toolID,
+            toolName: toolName2,
+            args: toolArgs
+          });
+          continue;
+        }
+        customToolsRun++;
+        this.totalCustomTools++;
+        const isExecute = toolName2 === "run";
+        const uiType = isExecute ? "updateExecute" : "updateTool";
+        let bin = toolName2;
+        let argsString = "";
+        if (isExecute) {
+          this.totalExecuteRun++;
+          if (toolArgs.command) {
+            const parts = toolArgs.command.trim().split(/\s+/);
+            bin = parts[0];
+            argsString = parts.slice(1).join(" ");
+          }
+        }
+        this.emitter.fire({
+          type: uiType,
+          status: "running",
+          toolID,
+          toolName: toolName2,
+          args: toolArgs,
+          bin,
+          argsString
+        });
+        let result;
+        let isError = false;
+        if (this.toolRegistry[toolName2]) {
+          try {
+            result = await this.toolRegistry[toolName2](toolArgs, toolID);
+            this.emitter.fire({ type: uiType, status: "success", toolID });
+          } catch (e2) {
+            isError = true;
+            hasErrors = true;
+            const message = e2 instanceof Error ? e2.message : String(e2);
+            result = { message: `Error executing ${toolName2}: ${message}` };
+            this.emitter.fire({ type: uiType, status: "error", toolID, error: message });
+          }
+        } else {
+          isError = true;
+          hasErrors = true;
+          result = { message: `Error: tool '${toolName2}' is not registered.` };
+          this.emitter.fire({ type: "updateTool", status: "error", toolID, error: "Invalid tool call." });
+        }
+        this.deps.contextManager.addFunctionResult(toolID, toolName2, result.message, isError, result.data);
+      }
+      return {
+        hasErrors,
+        shouldContinue: customToolsRun > 0
+      };
+    } finally {
+      this.activeSignal = null;
+    }
+  }
+  finalizeRun() {
+    if (this.totalCustomTools > 0 || this.totalServerTools > 0) {
+      this.emitter.fire({
+        type: "endTools",
+        customCount: this.totalCustomTools - this.totalExecuteRun,
+        serverCount: this.totalServerTools
+      });
+    }
+    if (this.totalExecuteRun > 0) {
+      this.emitter.fire({ type: "endExecute" });
+    }
+    this.totalCustomTools = 0;
+    this.totalServerTools = 0;
+    this.totalExecuteRun = 0;
+  }
+};
+
 // src/main.ts
 var ChatApp = class {
   constructor(context) {
@@ -98255,84 +98435,27 @@ var ChatApp = class {
     this.contextManager = new ContextManager(context);
     this.contextManager.onDidUpdateStatus((event) => this.post(event));
     this.commandManager = new CommandManager(context);
-    this.commandManager.onConfigChange((isUnsafe) => {
-      this.post({ type: "updateUnsafeFlag", isUnsafe });
-    });
-    const workspaceRoot = vscode11.workspace.workspaceFolders?.[0].uri.fsPath;
+    this.commandManager.onDidUpdateStatus((event) => this.post(event));
+    const workspaceRoot = vscode12.workspace.workspaceFolders?.[0].uri.fsPath;
     this.worktreeManager = new WorktreeManager(context, workspaceRoot);
     this.worktreeManager.onDidUpdateStatus((event) => this.post(event));
-    this.toolRegistry = createToolRegistry({
-      getCwd: () => {
-        if (this.worktreeManager) return this.worktreeManager.worktreePath;
-        const root = vscode11.workspace.workspaceFolders?.[0].uri.fsPath;
-        if (!root) throw new Error("No active workspace");
-        return root;
-      },
-      getSignal: () => {
-        if (!this.aborter) throw new Error("No active turn to get signal from");
-        return this.aborter.signal;
-      },
-      getFindDeps: async () => {
-        const provider = this.context.globalState.get("embedProvider");
-        const model = this.context.globalState.get(`${provider}_embedModel`);
-        if (!provider || !model) throw new Error("Embedding provider/model is not configured");
-        if (!this.indexer) throw new Error("Index is not loaded. Enable indexing first.");
-        if (!this.indexer.indexEnabled()) throw new Error("Indexing is disabled cannot use semantic search");
-        const apiKey = await this.apiManager.getEmbedAPIKey(provider);
-        return {
-          indexer: this.indexer,
-          embedProvider: EmbedFactory.create(provider, apiKey),
-          model
-        };
-      },
-      getWebDeps: async () => {
-        const webSearchEnabled = this.context.globalState.get("webSearchEnabled") ?? false;
-        const webSearchMode = this.context.globalState.get("webSearchMode") ?? "tavily";
-        if (!webSearchEnabled || webSearchMode !== "tavily") {
-          throw new Error("You do not have access to the 'web' tool this turn. It is currently disabled.");
-        }
-        const tavilyAPIKey = await this.context.secrets.get("TAVILY_API_KEY");
-        if (!tavilyAPIKey) throw new Error("Tavily API key not configured!");
-        return tavilyAPIKey;
-      },
-      getContextManager: () => {
-        return this.contextManager;
-      },
-      getCommandManager: () => {
-        return this.commandManager;
-      },
-      requestConfirmation: async (bin, args) => {
-        return new Promise((resolve5) => {
-          const requestId = Date.now().toString();
-          const messageListener = this.view?.webview.onDidReceiveMessage(async (msg) => {
-            if (msg.type === "commandApprovalResponse" && msg.requestId === requestId) {
-              messageListener?.dispose();
-              if (msg.approved && msg.save) {
-                await this.commandManager.addCommandToAllowList(bin, args);
-              }
-              resolve5(msg.approved);
-            }
-          });
-          this.post({
-            type: "requestCommandApproval",
-            requestId,
-            bin,
-            args
-          });
-        });
-      },
-      onRunOutput: (toolId, chunk) => {
-        this.post({ type: "updateExecute", status: "streaming", toolId, chunk });
-      }
+    this.toolManager = new ToolManager({
+      context: this.context,
+      apiManager: this.apiManager,
+      contextManager: this.contextManager,
+      commandManager: this.commandManager,
+      worktreeManager: this.worktreeManager,
+      getIndexer: () => this.indexer
     });
+    this.toolManager.onDidUpdateStatus((event) => this.post(event));
   }
   context;
   view;
-  toolRegistry;
   apiManager;
   contextManager;
   commandManager;
   worktreeManager;
+  toolManager;
   indexer;
   aborter = null;
   async runAgentTurn(provider, model, effort, userMessage) {
@@ -98353,11 +98476,6 @@ var ChatApp = class {
       let keepGoing = true;
       let turnCount = 0;
       const turnLimit = this.context.globalState.get("turnLimit") ?? 0;
-      let hasRunTools = false;
-      let customToolsRunThisTurn = 0;
-      let serverToolsRunThisTurn = 0;
-      let exectueRunThisTurn = 0;
-      let hasRunCommands = false;
       let previousTurnHadError = false;
       while (keepGoing && (turnLimit === 0 || turnCount < turnLimit)) {
         if (this.aborter.signal.aborted) throw new Error("AbortError");
@@ -98377,7 +98495,6 @@ var ChatApp = class {
             if (streamResult.value.type === "text") this.post({ type: "streamChunk", chunk: content });
             else if (streamResult.value.type === "thought") this.post({ type: "streamThought", chunk: content });
             else if (streamResult.value.type === "server_action") {
-              hasRunTools = true;
               this.post({
                 type: "updateTool",
                 status: "running",
@@ -98402,62 +98519,11 @@ var ChatApp = class {
         const currentTurnID = finalResponse?.turnID;
         this.contextManager.setTurnID(currentTurnID);
         const functionCalls = this.contextManager.processResponseItems(finalResponse.items);
-        if (functionCalls.length > 0) {
-          for (const toolCall of functionCalls) {
-            if (this.aborter?.signal.aborted) throw new Error("AbortError");
-            const toolName2 = toolCall.name;
-            const toolArgs = toolCall.arguments;
-            const toolID = toolCall.id;
-            if (toolCall.server) {
-              serverToolsRunThisTurn++;
-              this.post({ type: "updateTool", status: "server", toolId: toolID, toolName: toolName2, args: toolArgs });
-              continue;
-            }
-            customToolsRunThisTurn++;
-            const isExecute = toolName2 === "run";
-            const uiType = isExecute ? "updateExecute" : "updateTool";
-            let bin = toolName2;
-            let argsString = "";
-            if (isExecute) {
-              exectueRunThisTurn++;
-              hasRunCommands = true;
-              if (toolArgs.command) {
-                const parts = toolArgs.command.split(/\s+/);
-                bin = parts[0];
-                argsString = parts.slice(1).join(" ");
-              }
-            } else {
-              hasRunTools = true;
-            }
-            this.post({ type: uiType, status: "running", toolId: toolID, toolName: toolName2, args: toolArgs, bin, argsString });
-            let result;
-            let isError = false;
-            if (this.toolRegistry[toolName2]) {
-              try {
-                result = await this.toolRegistry[toolName2](toolArgs, toolID);
-                this.post({ type: uiType, status: "success", toolId: toolID });
-              } catch (e2) {
-                isError = true;
-                previousTurnHadError = true;
-                const message = e2 instanceof Error ? e2.message : String(e2);
-                result = { message: `Error executing ${toolName2}: ${message}` };
-                this.post({ type: uiType, status: "error", toolId: toolID, error: message });
-              }
-            } else {
-              previousTurnHadError = true;
-              result = { message: `Error: Tool '${toolName2}' is not registered` };
-              this.post({ type: "updateTool", status: "error", toolId: toolID, error: "Invalid tool call" });
-            }
-            this.contextManager.addFunctionResult(toolID, toolName2, result.message, isError, result.data);
-          }
-          if (customToolsRunThisTurn === 0) keepGoing = false;
-        } else {
-          keepGoing = false;
-        }
+        const summary = await this.toolManager.executeTools(functionCalls, this.aborter.signal);
+        previousTurnHadError = summary.hasErrors;
+        keepGoing = summary.shouldContinue;
       }
       this.contextManager.updateTokenUsage();
-      if (hasRunTools) this.post({ type: "endTools", customCount: customToolsRunThisTurn - exectueRunThisTurn, serverCount: serverToolsRunThisTurn });
-      if (hasRunCommands) this.post({ type: "endExecute" });
       if (!this.aborter.signal.aborted) {
         const patchString = await this.worktreeManager.getPatch();
         if (patchString.trim()) this.post({ type: "reviewPatch", patch: patchString });
@@ -98477,6 +98543,7 @@ var ChatApp = class {
       }
     } finally {
       this.aborter = null;
+      this.toolManager.finalizeRun();
       this.contextManager.addRunSummary(runStatus, statusMessage);
       await this.contextManager.updateRunBoundary();
       await this.contextManager.save();
@@ -98563,7 +98630,7 @@ var ChatApp = class {
               isUnsafe: currentConfig?.unsafeFullAutonomous ?? false
             });
           } catch (e2) {
-            vscode11.window.showErrorMessage(`Failed to restore state ${e2}`);
+            vscode12.window.showErrorMessage(`Failed to restore state ${e2}`);
           }
           break;
         }
@@ -98631,7 +98698,7 @@ var ChatApp = class {
             try {
               await this.apiManager.verifyTavilyAPIKey(tavilyAPIKey);
             } catch (e2) {
-              vscode11.window.showErrorMessage("Invalid Tavily API key");
+              vscode12.window.showErrorMessage("Invalid Tavily API key");
               this.post({ type: "requestTavilyAPIKey" });
             }
           }
@@ -98726,7 +98793,7 @@ var ChatApp = class {
             await this.contextManager.save();
           } catch (e2) {
             if (e2.message !== "MERGE_CONFLICT") {
-              vscode11.window.showErrorMessage(`Failed to apply patch: ${e2.message || String(e2)}`);
+              vscode12.window.showErrorMessage(`Failed to apply patch: ${e2.message || String(e2)}`);
             }
           }
           break;
@@ -98754,24 +98821,24 @@ var ChatApp = class {
             this.contextManager.addSystemMessage("The user force-applied your changes, overwriting their local edits.");
             await this.contextManager.save();
           } catch (e2) {
-            vscode11.window.showErrorMessage(`Failed to force apply: ${e2}`);
+            vscode12.window.showErrorMessage(`Failed to force apply: ${e2}`);
           }
           break;
         }
         case "openDiffView": {
           if (this.worktreeManager) {
-            const workspaceRoot = vscode11.workspace.workspaceFolders?.[0].uri.fsPath;
+            const workspaceRoot = vscode12.workspace.workspaceFolders?.[0].uri.fsPath;
             if (!workspaceRoot) return;
-            const originalUri = vscode11.Uri.file(path12.join(workspaceRoot, data.file));
-            const worktreeUri = vscode11.Uri.file(path12.join(this.worktreeManager.worktreePath, data.file));
+            const originalUri = vscode12.Uri.file(path12.join(workspaceRoot, data.file));
+            const worktreeUri = vscode12.Uri.file(path12.join(this.worktreeManager.worktreePath, data.file));
             if (data.isNew) {
-              vscode11.commands.executeCommand("vscode.open", worktreeUri, { preview: true });
+              vscode12.commands.executeCommand("vscode.open", worktreeUri, { preview: true });
             } else if (data.isDeleted) {
-              vscode11.commands.executeCommand("vscode.open", originalUri, { preview: true });
-              vscode11.window.showInformationMessage(`${data.file} is marked for deletion.`);
+              vscode12.commands.executeCommand("vscode.open", originalUri, { preview: true });
+              vscode12.window.showInformationMessage(`${data.file} is marked for deletion.`);
             } else {
               const title = `${data.file} (Agent Proposal)`;
-              vscode11.commands.executeCommand("vscode.diff", originalUri, worktreeUri, title);
+              vscode12.commands.executeCommand("vscode.diff", originalUri, worktreeUri, title);
             }
           }
           break;
@@ -98782,7 +98849,7 @@ var ChatApp = class {
             const hasSeenWarning = this.context.workspaceState.get("hasSeenAutoWarning");
             if (!hasSeenWarning) {
               await this.context.workspaceState.update("hasSeenAutoWarning", true);
-              vscode11.window.showWarningMessage(
+              vscode12.window.showWarningMessage(
                 "Auto Mode enabled. The agent can now execute terminal commands without confirmation. Review the list of allowed commands.",
                 "Understood"
               );
@@ -98795,6 +98862,10 @@ var ChatApp = class {
           await this.commandManager.openConfigFile();
           break;
         }
+        case "commandApprovalResponse": {
+          await this.commandManager.receiveApproval(data.requestId, data.approved, data.save);
+          break;
+        }
       }
     });
   }
@@ -98802,9 +98873,9 @@ var ChatApp = class {
     this.view?.webview.postMessage(message);
   }
   getHTML() {
-    const htmlPath = vscode11.Uri.joinPath(this.context.extensionUri, "dist", "frontend.html");
-    const scriptPath = vscode11.Uri.joinPath(this.context.extensionUri, "dist", "webview.bundle.js");
-    const cssPath = vscode11.Uri.joinPath(this.context.extensionUri, "dist", "webview.bundle.css");
+    const htmlPath = vscode12.Uri.joinPath(this.context.extensionUri, "dist", "frontend.html");
+    const scriptPath = vscode12.Uri.joinPath(this.context.extensionUri, "dist", "webview.bundle.js");
+    const cssPath = vscode12.Uri.joinPath(this.context.extensionUri, "dist", "webview.bundle.css");
     try {
       let html = fs8.readFileSync(htmlPath.fsPath, "utf-8");
       const scriptUri = this.view.webview.asWebviewUri(scriptPath);
@@ -98813,7 +98884,7 @@ var ChatApp = class {
       html = html.replace("{{scriptUri}}", scriptUri.toString());
       return html;
     } catch (e2) {
-      vscode11.window.showErrorMessage(`Error loading frontend html: ${e2}`);
+      vscode12.window.showErrorMessage(`Error loading frontend html: ${e2}`);
       return `<!DOCTYPE html><html><body>Error loading UI</body></html>`;
     }
   }
@@ -98829,7 +98900,7 @@ function formatError(e2) {
 function activate(context) {
   const chatApp = new ChatApp(context);
   context.subscriptions.push(
-    vscode12.window.registerWebviewViewProvider(
+    vscode13.window.registerWebviewViewProvider(
       "codeagent-sidebar",
       chatApp
     )

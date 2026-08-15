@@ -10,19 +10,19 @@ import { WorktreeManager } from './managers/worktreeManager';
 import { ChatResponse, ContextManager } from './managers/contextManager';
 import { CommandManager } from './managers/commandManager';
 import { APIManager } from './managers/apiManager';
+import { ToolManager } from './managers/toolManager';
 
 declare const console: any;
 
 export class ChatApp implements vscode.WebviewViewProvider {
 
     private view?: vscode.WebviewView;
-
-    private toolRegistry: any;
     
     private apiManager: APIManager;
     private contextManager: ContextManager;
     private commandManager: CommandManager;
     private worktreeManager: WorktreeManager;
+    private toolManager: ToolManager;
 
     private indexer?: Indexer;
 
@@ -36,9 +36,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
         this.contextManager.onDidUpdateStatus(event => this.post(event));
 
         this.commandManager = new CommandManager(context);
-        this.commandManager.onConfigChange((isUnsafe) => {
-            this.post({ type: 'updateUnsafeFlag', isUnsafe });
-        });
+        this.commandManager.onDidUpdateStatus(event => this.post(event));
 
         // Don't even activate the extension outside of an active workspace there is no point
         // This is set in package.json in activationEvents
@@ -47,93 +45,15 @@ export class ChatApp implements vscode.WebviewViewProvider {
         this.worktreeManager = new WorktreeManager(context, workspaceRoot!);
         this.worktreeManager.onDidUpdateStatus(event => this.post(event));
 
-        this.toolRegistry = createToolRegistry({
-            getCwd: () => {
-                if (this.worktreeManager) return this.worktreeManager.worktreePath;
-                const root = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
-                if (!root) throw new Error('No active workspace');
-                return root;
-            },
-
-            getSignal: () => {
-                if (!this.aborter) throw new Error('No active turn to get signal from');
-                return this.aborter.signal;
-            },
-
-            getFindDeps: async () => {
-                const provider = this.context.globalState.get<string>('embedProvider');
-                const model = this.context.globalState.get<string>(`${provider}_embedModel`);
-
-                if (!provider || !model) throw new Error("Embedding provider/model is not configured");
-                if (!this.indexer) throw new Error("Index is not loaded. Enable indexing first.");
-                if (!this.indexer.indexEnabled()) throw new Error('Indexing is disabled cannot use semantic search');
-
-                const apiKey = await this.apiManager.getEmbedAPIKey(provider);
-
-                return {
-                    indexer: this.indexer,
-                    embedProvider: EmbedFactory.create(provider, apiKey),
-                    model
-                };
-            },
-
-            getWebDeps: async () => {
-
-                const webSearchEnabled = this.context.globalState.get<boolean>('webSearchEnabled') ?? false;
-                const webSearchMode = this.context.globalState.get<string>('webSearchMode') ?? 'tavily';
-
-                if (!webSearchEnabled || webSearchMode !== 'tavily') {
-                    throw new Error("You do not have access to the 'web' tool this turn. It is currently disabled.");
-                }
-
-                const tavilyAPIKey = await this.context.secrets.get('TAVILY_API_KEY');
-                if (!tavilyAPIKey) throw new Error('Tavily API key not configured!');
-                return tavilyAPIKey;
-            },
-
-            getContextManager: () => {
-                return this.contextManager;
-            },
-
-            getCommandManager: () => {
-                return this.commandManager;
-            },
-
-            requestConfirmation: async (bin: string, args: string) => {
-                return new Promise((resolve) => {
-
-                    const requestId = Date.now().toString();
-
-                    // Listen for response from webview
-                    const messageListener = this.view?.webview.onDidReceiveMessage(async (msg) => {
-    
-                        if (msg.type === 'commandApprovalResponse' && msg.requestId === requestId) {
-                            
-                            // Destroy this listener after getting a response
-                            messageListener?.dispose(); 
-
-                            if (msg.approved && msg.save) {
-                                await this.commandManager.addCommandToAllowList(bin, args);
-                            }
-                            
-                            // Resolve the promise back to the CommandManager
-                            resolve(msg.approved);
-                        }
-                    });
-
-                    // Send the request payload to the frontend UI
-                    this.post({ 
-                        type: 'requestCommandApproval', 
-                        requestId: requestId, 
-                        bin: bin, 
-                        args: args 
-                    });
-                });
-            },
-            onRunOutput: (toolId: string, chunk: string) => {
-                this.post({ type: 'updateExecute', status: 'streaming', toolId, chunk });
-            },
+        this.toolManager = new ToolManager({
+            context: this.context,
+            apiManager: this.apiManager,
+            contextManager: this.contextManager,
+            commandManager: this.commandManager,
+            worktreeManager: this.worktreeManager,
+            getIndexer: () => this.indexer
         });
+        this.toolManager.onDidUpdateStatus(event => this.post(event));
     }
 
     private async runAgentTurn(provider: string, model: string, effort: string, userMessage: string,): Promise<void> {
@@ -164,12 +84,6 @@ export class ChatApp implements vscode.WebviewViewProvider {
             let keepGoing = true;
             let turnCount = 0;
             const turnLimit = this.context.globalState.get<number>('turnLimit') ?? 0;
-
-            let hasRunTools = false;
-            let customToolsRunThisTurn = 0;
-            let serverToolsRunThisTurn = 0;
-            let exectueRunThisTurn = 0;
-            let hasRunCommands = false;
 
             let previousTurnHadError = false;
 
@@ -202,7 +116,6 @@ export class ChatApp implements vscode.WebviewViewProvider {
                         // Other parameters might show up later upon completion but it could take a while
                         // Currently only web search
                         else if (streamResult.value.type === 'server_action') {
-                            hasRunTools = true;
                             this.post({
                                 type: 'updateTool',
                                 status: 'running',
@@ -234,81 +147,18 @@ export class ChatApp implements vscode.WebviewViewProvider {
                 this.contextManager.setTurnID(currentTurnID);
                 const functionCalls = this.contextManager.processResponseItems(finalResponse.items);
 
-                if (functionCalls.length > 0) {
-
-                    for (const toolCall of functionCalls) {
-                        if (this.aborter?.signal.aborted) throw new Error('AbortError');
-                        const toolName = toolCall.name;
-                        const toolArgs = toolCall.arguments;
-                        const toolID = toolCall.id;
-
-                        if (toolCall.server) {
-                            serverToolsRunThisTurn++;
-                            this.post({ type: 'updateTool', status: 'server', toolId: toolID, toolName: toolName, args: toolArgs });
-                            continue;
-                        }
-                        customToolsRunThisTurn++;
-
-                        const isExecute = toolName === 'run';
-                        const uiType = isExecute ? 'updateExecute' : 'updateTool';
-
-                        let bin = toolName;
-                        let argsString = '';
-                        if (isExecute) {
-                            exectueRunThisTurn++;
-                            hasRunCommands = true;
-                            if (toolArgs.command) {
-                                const parts = toolArgs.command.split(/\s+/);
-                                bin = parts[0];
-                                argsString = parts.slice(1).join(' ');
-                            }
-                        } else {
-                            hasRunTools = true;
-                        }
-
-                        this.post({ type: uiType, status: 'running', toolId: toolID, toolName, args: toolArgs, bin, argsString });
-
-                        let result: ToolResult;
-                        let isError = false;
-
-                        if (this.toolRegistry[toolName]) {
-                            try {
-                                result = await this.toolRegistry[toolName](toolArgs, toolID);
-                                this.post({ type: uiType, status: 'success', toolId: toolID });
-                            } catch (e) {
-                                isError = true;
-                                previousTurnHadError = true;
-                                const message = e instanceof Error ? e.message : String(e);
-                                result = { message: `Error executing ${toolName}: ${message}` };
-                                this.post({ type: uiType, status: 'error', toolId: toolID, error: message });
-                            }
-                        } else {
-                            previousTurnHadError = true;
-                            result = { message: `Error: Tool '${toolName}' is not registered` };
-                            this.post({ type: 'updateTool', status: 'error', toolId: toolID, error: "Invalid tool call" });
-                        }
-
-                        this.contextManager.addFunctionResult(toolID, toolName, result.message, isError, result.data);
-                    }
-
-                    // Do not continue the conversation if we only run server tools as they have no function results to follow up with
-                    // Still getting errors with this check...
-                    if (customToolsRunThisTurn === 0) keepGoing = false;
-
-                } else {
-                    keepGoing = false;
-                }
+                const summary = await this.toolManager.executeTools(functionCalls, this.aborter.signal);
+                previousTurnHadError = summary.hasErrors;
+                keepGoing = summary.shouldContinue;
+  
             }
+
             this.contextManager.updateTokenUsage();
-            if (hasRunTools) this.post({ type: 'endTools', customCount: customToolsRunThisTurn - exectueRunThisTurn, serverCount: serverToolsRunThisTurn });
-            if (hasRunCommands) this.post({ type: 'endExecute' });
 
             // Run complete review any changes
             if (!this.aborter.signal.aborted) {
                 const patchString = await this.worktreeManager.getPatch();
-
                 if (patchString.trim()) this.post({ type: 'reviewPatch', patch: patchString });
-
                 // No changes close worktree
                 else await this.worktreeManager.reset();
             }
@@ -331,7 +181,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
 
         } finally {
             this.aborter = null;
-
+            this.toolManager.finalizeRun();
             this.contextManager.addRunSummary(runStatus, statusMessage);
 
             // Update run counter for tool pruning
@@ -730,6 +580,11 @@ export class ChatApp implements vscode.WebviewViewProvider {
 
                 case 'openAgentConfig': {
                     await this.commandManager.openConfigFile();
+                    break;
+                }
+
+                case 'commandApprovalResponse': {
+                    await this.commandManager.receiveApproval(data.requestId, data.approved, data.save);
                     break;
                 }
             }

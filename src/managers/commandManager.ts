@@ -128,15 +128,53 @@ export class CommandManager {
 
     private config: CommandConfig = CommandManager.DEFAULT_CONFIG;
     private watcher?: vscode.FileSystemWatcher;
-    private onConfigChangeCallback?: (isUnsafe: boolean) => void;
 
+    private emitter = new vscode.EventEmitter();
+    public readonly onDidUpdateStatus = this.emitter.event;
+
+    private pendingApprovals = new Map<string, {
+        resolve: (approved: boolean) => void;
+        bin: string;
+        args: string;
+    }>();
+
+    private requestApproval(bin: string, args: string): Promise<boolean> {
+        return new Promise((resolve) => {
+            const requestID = `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+
+            this.pendingApprovals.set(requestID, {resolve, bin, args });
+
+            this.emitter.fire({
+                type: 'requestCommandApproval',
+                requestID,
+                bin,
+                args
+            });
+
+        });
+    }
+
+    
     private getConfigUri = (): vscode.Uri | undefined => {
         if (!this.context.storageUri) return undefined;
         return vscode.Uri.joinPath(this.context.storageUri, 'agent-rules.json');
     };
-
+    
     constructor(private context: vscode.ExtensionContext) {
         this.initWatcher();
+    }
+
+    public async receiveApproval(requestID: string, approved: boolean, save: boolean = false): Promise<void> {
+        const pending = this.pendingApprovals.get(requestID);
+        if (!pending) return;
+
+        this.pendingApprovals.delete(requestID);
+
+        if (approved && save) {
+            await this.addCommandToAllowList(pending.bin, pending.args);
+        }
+
+        pending.resolve(approved);
     }
 
     private initWatcher() {
@@ -147,14 +185,12 @@ export class CommandManager {
 
         this.watcher.onDidChange(async () => {
             await this.loadConfig();
-            if (this.onConfigChangeCallback) {
-                this.onConfigChangeCallback(this.config.unsafeFullAutonomous);
-            }
-        });
-    }
 
-    public onConfigChange(callback: (isUnsafe: boolean) => void) {
-        this.onConfigChangeCallback = callback;
+            this.emitter.fire({
+                type: 'updateUnsafeFlag',
+                isUnsafe: this.config.unsafeFullAutonomous
+            });
+        });
     }
 
     public getConfig(): CommandConfig {
@@ -242,8 +278,7 @@ export class CommandManager {
         requestedCwd: string = '.',
         workspaceRoot: string,
         signal: AbortSignal,
-        requestConfirmation: (bin: string, args: string) => Promise<boolean>,
-        onOutput: (chunk: string) => void
+        toolID: string
     ): Promise<ToolResult> {
         
         const resolvedCwd = path.resolve(workspaceRoot, requestedCwd);
@@ -268,7 +303,7 @@ export class CommandManager {
         const agentMode = this.context.workspaceState.get<string>('agentMode') ?? 'manual';
         // Manual mode, alway ask for confirmation
         if (agentMode === 'manual') {
-            const userApproved = await requestConfirmation(bin, argsString);
+            const userApproved = await this.requestApproval(bin, argsString);
             if (!userApproved) throw new Error(`User denied execution of command: ${commandStr}`);
         } 
         
@@ -288,8 +323,8 @@ export class CommandManager {
                 if (!this.config.promptForUnlistedCommands) {
                     throw new Error(`Command blocked. '${bin} ${argsString}' is not in allowedCommands.`);
                 }
-                const userApproved = await requestConfirmation(bin, argsString);
-                if (!userApproved) throw new Error(`User denied execution of command: ${commandStr}`);
+                const userApproved = await this.requestApproval(bin, argsString);
+                if (!userApproved) throw new Error(`User denied execution of unlisted command: ${commandStr}`);
             }
         }
 
@@ -326,26 +361,37 @@ export class CommandManager {
                 reject(new Error(`[Process killed: Exceeded 60-second timeout]\n${output}`.trim()));
             }, 60_000);
 
+            const emitChunk = (chunk: string) => {
+                this.emitter.fire({
+                    type: 'updateExecute',
+                    status: 'streaming',
+                    toolID,
+                    chunk
+                });
+            };
+
             child.stdout.on('data', (data) => {
                 const chunk = data.toString();
                 stdoutData += chunk;
-                onOutput(chunk);
+                emitChunk(chunk);
             });
 
             child.stderr.on('data', (data) => {
                 const chunk = data.toString();
                 stderrData += chunk;
-                onOutput(chunk);
+                emitChunk(chunk);
             });
 
             child.on('error', (error) => {
                 signal.removeEventListener('abort', abortListener);
+                clearTimeout(timeoutTimer);
                 reject(new Error(`[Process Error]: ${error.message}`));
             });
 
             child.on('close', (code) => {
                 signal.removeEventListener('abort', abortListener);
-
+                clearTimeout(timeoutTimer);
+                
                 let output = '';
                 if (stdoutData) output += `STDOUT:\n${this.truncateOutput(stdoutData)}\n`;
                 if (stderrData) output += `STDERR:\n${this.truncateOutput(stderrData)}\n`;

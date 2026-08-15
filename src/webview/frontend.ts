@@ -148,7 +148,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 break;
 
             case 'requestCommandApproval':
-                chatInput.showCommandApproval(msg.requestId, msg.bin, msg.args);
+                chatInput.showCommandApproval(msg.requestID, msg.bin, msg.args);
                 break;
 
             case 'updateUnsafeFlag':

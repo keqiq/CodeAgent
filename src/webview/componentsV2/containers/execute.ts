@@ -32,20 +32,22 @@ export class ExecuteContainer {
         this.container.appendChild(this.execGroup);
     }
 
-    public update(msg: { status: string, toolId: string, bin: string, argsString?: string, error?: string, chunk?: string }): void {
+    public update(msg: { status: string, toolID: string, bin: string, argsString?: string, error?: string, chunk?: string }): void {
 
-        let targetEntry = this.executions.get(msg.toolId);
+        let targetEntry = this.executions.get(msg.toolID);
 
         // Execution running
         if (msg.status === 'running') {
             // add a spinner
             this.execSummary.innerHTML = `
-                <div class="tool-summary-content">
-                    ${this.iconSVG} 
-                    <span>Running <b>${msg.bin}</b>...</span>
-                    <div class="vscode-spinner" style="margin-left: auto;"></div>
-                </div>`;
-
+            <div class="tool-summary-content">
+            ${this.iconSVG} 
+            <span>Running <b>${msg.bin}</b>...</span>
+            <div class="vscode-spinner" style="margin-left: auto;"></div>
+            </div>`;
+            
+            // Auto open current running command output container
+            this.execGroup.open = true;
             if (!targetEntry) {
 
                 targetEntry = document.createElement('details');
@@ -82,7 +84,7 @@ export class ExecuteContainer {
                 targetEntry.appendChild(outputContainer);
 
                 this.execLogs!.appendChild(targetEntry);
-                this.executions.set(msg.toolId, targetEntry);
+                this.executions.set(msg.toolID, targetEntry);
                 this.totalExecCount++;
             }
         }

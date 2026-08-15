@@ -50,8 +50,6 @@ export type ToolDeps = {
     getWebDeps:() => Promise<string>;
     getContextManager:() => ContextManager;
     getCommandManager:() => CommandManager;
-    requestConfirmation:(bin: string, args: string) => Promise<boolean>;
-    onRunOutput: (toolID: string, output: string) => void;
 };
 
 // Tools with potentionally large output that could use pruning
@@ -79,8 +77,7 @@ export function createToolRegistry(deps: ToolDeps): Record<string, (args: any, t
                 args.cwd,
                 deps.getCwd(),
                 deps.getSignal(),
-                deps.requestConfirmation,
-                (chunk) => deps.onRunOutput(toolID, chunk)
+                toolID
             );
         },
 
@@ -95,8 +92,8 @@ export function createToolRegistry(deps: ToolDeps): Record<string, (args: any, t
         },
 
         find: async (args) => {
-            const searchDeps = await deps.getFindDeps();
-            return await executeFind(args.query, searchDeps, deps.getSignal());
+            const findDeps = await deps.getFindDeps();
+            return await executeFind(args.query, findDeps, deps.getSignal());
         },
 
         recall: async (args) => {

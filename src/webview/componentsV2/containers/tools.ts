@@ -28,10 +28,10 @@ export class ToolsContainer {
     }
 
     // Called when the agent executes a tool and on tool completion or error
-    public update(msg: { status: string, toolId: string, toolName: string, args: any, error?: string }): void {
+    public update(msg: { status: string, toolID: string, toolName: string, args: any, error?: string }): void {
 
         // Tool running
-        let targetTool = this.activeTools.get(msg.toolId);
+        let targetTool = this.activeTools.get(msg.toolID);
         if (msg.status === 'running') {
             this.toolSummary.innerHTML = `
                 <div class="tool-summary-content">
@@ -58,7 +58,7 @@ export class ToolsContainer {
                 `;
 
                 this.toolLogs!.appendChild(targetTool);
-                this.activeTools.set(msg.toolId, targetTool);
+                this.activeTools.set(msg.toolID, targetTool);
             }
         }
 
