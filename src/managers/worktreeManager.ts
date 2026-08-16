@@ -189,7 +189,7 @@ export class WorktreeManager {
         await exec(`git add -A`, { cwd: this.worktreePath });
     }
 
-    public async getPatch(): Promise<string> {
+    private async getPatch(): Promise<string> {
 
         try {
             await fs.stat(this.worktreePath);
@@ -200,8 +200,17 @@ export class WorktreeManager {
         // Track new files
         await exec(`git add -N .`, { cwd: this.worktreePath });
         // get patch string
-        const { stdout: patch } = await exec(`git diff`, { cwd: this.worktreePath });
+        const { stdout: patch } = await exec(`git diff --binary`, { cwd: this.worktreePath });
         return patch;
+    }
+
+    public async displayPatch(): Promise<void> {
+        const patchContent = await this.getPatch();
+        if (!patchContent.trim()) return;
+        
+        this.emitter.fire({ type: 'reviewPatch', patch: patchContent });
+        const currentStatus = this.context.workspaceState.get<string>('patchStatus');
+        if (currentStatus) this.emitter.fire({ type: 'updatePatchStatus', status: currentStatus });
     }
 
     public async applyPatch(): Promise<void> {
@@ -273,7 +282,6 @@ export class WorktreeManager {
         await this.reset();
         this.emitter.fire({ type: 'updatePatchStatus', status: 'rejected' });
     }
-
     
     public async resolveConflicts(): Promise<void> {
         await this.reset();

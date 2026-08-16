@@ -1,24 +1,37 @@
 const esbuild = require("esbuild");
 const fs = require("fs");
+const path = require("path");
 
 const production = process.argv.includes('--production');
 const watch = process.argv.includes('--watch');
 
-async function main() {
-	if (!fs.existsSync('dist')) {
-        fs.mkdirSync('dist');
+function copyStaticFiles() {
+    if (!fs.existsSync('dist')) {
+        fs.mkdirSync('dist', { recursive: true });
     }
-    fs.copyFileSync('src/webview/frontend.html', 'dist/frontend.html');
+    const chatHtmlSrc = path.join('src', 'webviews', 'chat', 'chatWebview.html');
+	fs.copyFileSync(chatHtmlSrc, path.join('dist', 'chat.html'));
+
+
+    const mcpHtmlSrc = path.join('src', 'webviews', 'mcp', 'mcpWebview.html');
+	fs.copyFileSync(mcpHtmlSrc, path.join('dist', 'mcp.html'));
+}
+
+async function main() {
+	copyStaticFiles();
+  
+	const entryPoints = {
+        'chat.bundle': './src/webviews/chat/chatWebview.ts',
+        'mcp.bundle': './src/webviews/mcp/mcpWebview.ts'
+    };
 	const ctx = await esbuild.context({
-		entryPoints: [
-			'src/webview/frontend.ts'
-		],
+		entryPoints: entryPoints,
 		bundle: true,
 		format: 'iife', // Standard for browser scripts
 		minify: production,
 		sourcemap: !production,
 		platform: 'browser',
-		outfile: 'dist/webview.bundle.js',
+		outdir: 'dist',
 		logLevel: 'silent',
 		// Prevent node-specific errors in the browser
 		define: { 'process.env.NODE_ENV': production ? '"production"' : '"development"' },

@@ -1,5 +1,5 @@
-import { IndexStatusMessage } from "../../indexing/indexer";
-import { WebviewApi } from "../frontend";
+import { WebviewApi } from "../../Webview";
+import { IndexStatusMessage } from "../../../indexing/indexer";
 import { CustomDropdown } from "./customDropdown";
 
 export class ChatHeader {

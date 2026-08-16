@@ -1,4 +1,4 @@
-import { WebviewApi } from "../../frontend";
+import { WebviewApi } from "../../../Webview";
 
 interface ParsedPatchFile {
     filename: string;

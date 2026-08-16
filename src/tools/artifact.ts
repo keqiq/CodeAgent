@@ -1,5 +1,4 @@
-import { ContextManager } from '../managers/contextManager';
-import { ToolResult, ToolSchema } from './toolIndex';
+import { ToolSchema } from './toolIndex';
 
 export const artifactSchema: ToolSchema[] = [
     {
@@ -18,10 +17,3 @@ export const artifactSchema: ToolSchema[] = [
         }
     }
 ];
-
-export async function executeRecall(artifactID: string, contextManager: ContextManager, signal: AbortSignal): Promise<ToolResult> {
-    return { 
-        message: await contextManager.readArtifact(artifactID),
-        data: { artifactID }
-    };
-}

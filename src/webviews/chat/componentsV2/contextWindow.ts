@@ -1,5 +1,5 @@
-import { TokenCategoryUsage, TokenUsage } from "../../managers/contextManager";
-import { WebviewApi } from "../frontend";
+import { WebviewApi } from "../../Webview";
+import { TokenCategoryUsage, TokenUsage } from "../../../managers/contextManager";
 
 export class ContextWindow {
     private contextContainer: HTMLElement;

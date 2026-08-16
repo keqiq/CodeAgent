@@ -1,4 +1,4 @@
-import './styles/main.css';
+import './styles/chat.css';
 
 import { ChatContainer } from "./componentsV2/chatContainer";
 import { ChatInput } from "./componentsV2/chatInput";
@@ -6,14 +6,9 @@ import { ChatHeader } from "./componentsV2/chatHeader";
 import { ChatSettings } from "./componentsV2/chatSettings";
 import { ContextWindow } from './componentsV2/contextWindow';
 import { AgentMode } from './componentsV2/agentMode';
+import { WebviewApi } from '../Webview';
 
-export interface WebviewApi<StateType = any> {
-    postMessage(message: unknown): void;
-    getState(): StateType | undefined;
-    setState(newState: StateType): void;
-}
 declare function acquireVsCodeApi<StateType = any>(): WebviewApi<StateType>;
-
 const vscodeAPI: WebviewApi = acquireVsCodeApi();
 
 document.addEventListener('DOMContentLoaded', () => {

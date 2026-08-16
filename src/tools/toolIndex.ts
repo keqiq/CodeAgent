@@ -2,9 +2,11 @@ import { searchSchemas, executeGlob, executeGrep, executeRefs, findDeps, execute
 import { fileSchemas, executeRead, executeWrite, executeEdit } from "./files";
 import { commandSchemas } from "./execute";
 import { webSchema, executeWebSearch, executeURL } from "./web";
+import { mcpSchemas } from "./mcp";
 import { ContextManager } from "../managers/contextManager";
-import { artifactSchema, executeRecall } from "./artifact";
+import { artifactSchema } from "./artifact";
 import { CommandManager } from "../managers/commandManager";
+import { MCPManager } from "../managers/mcpManager";
 
 export interface ToolProperty {
     type: string;
@@ -38,18 +40,20 @@ export const requiredSchemas: ToolSchema[] = [
     ...searchSchemas,
     ...fileSchemas,
     ...commandSchemas,
-    ...artifactSchema
+    ...artifactSchema,
+    ...mcpSchemas
 ];
 
 export { webSchema };
 
 export type ToolDeps = {
-    getFindDeps: () => Promise<findDeps>;
-    getCwd: () => string;
     getSignal: () => AbortSignal;
+    getCwd: () => string;
+    getFindDeps: () => Promise<findDeps>;
     getWebDeps:() => Promise<string>;
     getContextManager:() => ContextManager;
     getCommandManager:() => CommandManager;
+    getMCPManager:() => MCPManager;
 };
 
 // Tools with potentionally large output that could use pruning
@@ -97,7 +101,16 @@ export function createToolRegistry(deps: ToolDeps): Record<string, (args: any, t
         },
 
         recall: async (args) => {
-            return await executeRecall(args.artifactID, deps.getContextManager(), deps.getSignal());
+            const manager = deps.getContextManager();
+            return {
+                message: await manager.readArtifact(args.artifactID),
+                data: args.artifactID
+            };
+        },
+
+        mcp: async (args) => {
+            const manager = deps.getMCPManager();
+            return await manager.handleMetaTool(args.serverName);
         }
     };
 }

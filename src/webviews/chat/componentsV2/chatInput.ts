@@ -1,4 +1,4 @@
-import { WebviewApi } from "../frontend";
+import { WebviewApi } from "../../Webview";
 import { PROVIDER_ICONS } from "../providerIcons";
 import { ChatContainer } from "./chatContainer";
 import { ChatSettings } from "./chatSettings";

@@ -3,7 +3,6 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { ChatFactory } from './apis/chat/chatFactory';
 import { ChatProvider, WebSearchMode } from './apis/chat/chatProvider';
-import { createToolRegistry, ToolResult } from './tools/toolIndex';
 import { EmbedFactory } from './apis/embed/embedFactory';
 import { Indexer } from './indexing/indexer';
 import { WorktreeManager } from './managers/worktreeManager';
@@ -11,6 +10,7 @@ import { ChatResponse, ContextManager } from './managers/contextManager';
 import { CommandManager } from './managers/commandManager';
 import { APIManager } from './managers/apiManager';
 import { ToolManager } from './managers/toolManager';
+import { MCPManager } from './managers/mcpManager';
 
 declare const console: any;
 
@@ -28,7 +28,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
 
     private aborter: AbortController | null = null;
 
-    constructor(private readonly context: vscode.ExtensionContext) {
+    constructor(private readonly context: vscode.ExtensionContext, private readonly mcpManager: MCPManager) {
         this.apiManager = new APIManager(context);
         this.apiManager.onDidUpdateStatus(event => this.post(event));
 
@@ -51,6 +51,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
             contextManager: this.contextManager,
             commandManager: this.commandManager,
             worktreeManager: this.worktreeManager,
+            mcpManager: this.mcpManager,
             getIndexer: () => this.indexer
         });
         this.toolManager.onDidUpdateStatus(event => this.post(event));
@@ -153,15 +154,11 @@ export class ChatApp implements vscode.WebviewViewProvider {
   
             }
 
+            this.toolManager.finalizeRun();
             this.contextManager.updateTokenUsage();
 
             // Run complete review any changes
-            if (!this.aborter.signal.aborted) {
-                const patchString = await this.worktreeManager.getPatch();
-                if (patchString.trim()) this.post({ type: 'reviewPatch', patch: patchString });
-                // No changes close worktree
-                else await this.worktreeManager.reset();
-            }
+            await this.worktreeManager.displayPatch();
 
         } catch (e: any) {
             // the idea is to revert back to the previous completed state if the current run was not completed
@@ -181,7 +178,6 @@ export class ChatApp implements vscode.WebviewViewProvider {
 
         } finally {
             this.aborter = null;
-            this.toolManager.finalizeRun();
             this.contextManager.addRunSummary(runStatus, statusMessage);
 
             // Update run counter for tool pruning
@@ -277,12 +273,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
                             this.post({ type: 'updateEmbedProvider', provider: embedProvider });
                         }
 
-                        const patchString = await this.worktreeManager.getPatch();
-                        if (patchString.trim()) {
-                            this.post({ type: 'reviewPatch', patch: patchString });
-                            const currentStatus = this.context.workspaceState.get<string>('patchStatus');
-                            if (currentStatus) this.post({ type: 'updatePatchStatus', status: currentStatus });
-                        }
+                        await this.worktreeManager.displayPatch();
                         
                         const agentMode = this.context.workspaceState.get<string>('agentMode') ?? 'manual';
                         this.post({ type: 'restoreAgentMode', mode: agentMode });
@@ -594,7 +585,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
     private post(message: any) { this.view?.webview.postMessage(message); }
 
     private getHTML(): string {
-        const htmlPath = vscode.Uri.joinPath(this.context.extensionUri, 'dist', 'frontend.html');
+        const htmlPath = vscode.Uri.joinPath(this.context.extensionUri, 'dist', 'chat.html');
         const scriptPath = vscode.Uri.joinPath(this.context.extensionUri, 'dist', 'webview.bundle.js');
         const cssPath = vscode.Uri.joinPath(this.context.extensionUri, 'dist', 'webview.bundle.css');
 

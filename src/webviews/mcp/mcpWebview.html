@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="{{styleUri}}" rel="stylesheet">
+</head>
+
+<body>
+    <div class="mcp-container">
+        <div class="mcp-header">
+            <div class="header-left">
+                <span class="header-title">MCP Servers</span>
+                <span id="serverCountBadge" class="count-badge">0</span>
+            </div>
+
+            <div class="header-right">
+                <button id="toggleAddServerBtn" class="primary-action-btn" title="Add new MCP Server">
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+                        <path fill-rule="evenodd" clip-rule="evenodd"
+                            d="M8 2a.75.75 0 01.75.75v4.5h4.5a.75.75 0 010 1.5h-4.5v4.5a.75.75 0 01-1.5 0v-4.5h-4.5a.75.75 0 010-1.5h4.5v-4.5A.75.75 0 018 2z" />
+                    </svg>
+                    <span>Add Server</span>
+                </button>
+            </div>
+        </div>
+
+        <div id="addServerForm" class="add-server-panel hidden">
+            <div class="panel-header">
+                <span>Configure New Server</span>
+                <button id="cancelAddServerBtn" class="icon-btn" title="Cancel">
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+                        <path fill-rule="evenodd" clip-rule="evenodd"
+                            d="M3.72 3.72a.75.75 0 011.06 0L8 6.94l3.22-3.22a.75.75 0 111.06 1.06L9.06 8l3.22 3.22a.75.75 0 11-1.06 1.06L8 9.06l-3.22 3.22a.75.75 0 01-1.06-1.06L6.94 8 3.72 4.78a.75.75 0 010-1.06z" />
+                    </svg>
+                </button>
+            </div>
+
+            <div class="form-group">
+                <label for="serverNameInput">Server Name</label>
+                <input type="text" id="serverNameInput" placeholder="e.g. filesystem" autocomplete="off">
+            </div>
+
+            <div class="form-group">
+                <label for="serverTransportSelect">Transport</label>
+                <select id="serverTransportSelect">
+                    <option value="stdio">Stdio (Command)</option>
+                    <option value="sse">SSE (Server-Sent Events)</option>
+                </select>
+            </div>
+
+            <div id="stdioFields">
+                <div class="form-group">
+                    <label for="serverCommandInput">Command / Binary</label>
+                    <input type="text" id="serverCommandInput" placeholder="e.g. npx or uvx" autocomplete="off">
+                </div>
+
+                <div class="form-group">
+                    <label for="serverArgsInput">Arguments (space-separated)</label>
+                    <input type="text" id="serverArgsInput" placeholder="e.g. -y @modelcontextprotocol/server-filesystem /dir" autocomplete="off">
+                </div>
+
+                <div class="form-group">
+                    <label for="serverEnvInput">Environment Variables (JSON format)</label>
+                    <textarea id="serverEnvInput" rows="2" placeholder='{"API_KEY": "xxx"}'></textarea>
+                </div>
+            </div>
+
+            <div id="sseFields" class="hidden">
+                <div class="form-group">
+                    <label for="serverUrlInput">SSE URL</label>
+                    <input type="text" id="serverUrlInput" placeholder="e.g. http://localhost:8000/sse" autocomplete="off">
+                </div>
+            </div>
+
+            <div class="form-row-checkbox">
+                <label class="checkbox-container">
+                    <input type="checkbox" id="autoConnectCheckbox" checked>
+                    <span>Connect immediately</span>
+                </label>
+            </div>
+
+            <div class="form-actions">
+                <button id="saveServerBtn" class="send-btn">Save Server</button>
+            </div>
+        </div>
+
+        <div class="server-list-container" id="serverListContainer">
+            <div id="emptyState" class="empty-state">
+                <svg width="32" height="32" viewBox="0 0 16 16" fill="currentColor">
+                    <path d="M8 1a2 2 0 0 0-2 2v2H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2V3a2 2 0 0 0-2-2zm1 4H7V3a1 1 0 1 1 2 0v2zm-5 2h8v6H4V7z"/>
+                </svg>
+                <p>No MCP servers configured yet.</p>
+                <button id="emptyAddBtn" class="link-action-btn">Add your first server</button>
+            </div>
+            
+            <div id="serverList" class="server-list"></div>
+        </div>
+    </div>
+
+    <script src="{{scriptUri}}"></script>
+</body>
+
+</html>

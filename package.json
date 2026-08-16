@@ -33,6 +33,11 @@
           "type": "webview",
           "id": "codeagent-sidebar",
           "name": "Chat"
+        },
+        {
+          "type": "webview",
+          "id": "codeagent-mcp",
+          "name": "MCP Servers"
         }
       ]
     }

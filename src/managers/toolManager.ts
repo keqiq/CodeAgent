@@ -6,6 +6,7 @@ import { WorktreeManager } from './worktreeManager';
 import { ContextManager, FunctionCallItem } from './contextManager';
 import { CommandManager } from './commandManager';
 import { APIManager } from './apiManager';
+import { MCPManager } from './mcpManager';
 
 export interface ToolManagerDependencies {
     context: vscode.ExtensionContext;
@@ -13,6 +14,7 @@ export interface ToolManagerDependencies {
     contextManager: ContextManager;
     commandManager: CommandManager;
     worktreeManager: WorktreeManager;
+    mcpManager: MCPManager
     getIndexer: () => Indexer | undefined;
 }
 
@@ -90,6 +92,8 @@ export class ToolManager {
             getContextManager: () => this.deps.contextManager,
 
             getCommandManager: () => this.deps.commandManager,
+
+            getMCPManager: () => this.deps.mcpManager
         });
     }
 
@@ -150,6 +154,7 @@ export class ToolManager {
                 let result: ToolResult;
                 let isError = false;
 
+                // Built in tool
                 if (this.toolRegistry[toolName]) {
                     try {
                         result = await this.toolRegistry[toolName](toolArgs, toolID);
@@ -162,7 +167,20 @@ export class ToolManager {
                         this.emitter.fire({ type: uiType, status: 'error', toolID: toolID, error: message });
                     }
                 }
-                // Tool not found in registry
+                // MCP tool
+                else if (this.deps.mcpManager.hasTool(toolName)) {
+                    try {
+                        result = await this.deps.mcpManager.callTool(toolName, toolArgs);
+                        this.emitter.fire({ type: 'updateTool', status: 'success', toolId: toolID });
+                    } catch (e) {
+                        isError = true;
+                        hasErrors = true;
+                        const message = e instanceof Error ? e.message : String(e);
+                        result = { message: `MCP Tool Error [${toolName}]: ${message}` };
+                        this.emitter.fire({ type: 'updateTool', status: 'error', toolId: toolID, error: message });
+                    }
+                }
+                // Tool not found in registry or connected MCP servers
                 else {
                     isError = true;
                     hasErrors = true;
