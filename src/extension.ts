@@ -16,7 +16,16 @@ export function activate(context: vscode.ExtensionContext) {
 
     const chatApp = new ChatApp(context, mcpManager);
     context.subscriptions.push(
-        vscode.window.registerWebviewViewProvider('codeagent-sidebar', chatApp)
+        vscode.window.registerWebviewViewProvider(
+            'codeagent-sidebar', 
+            chatApp,
+            {   
+                // Do not unload when hidden
+                webviewOptions: {
+                    retainContextWhenHidden: true
+                }
+            }
+        )
     );
 	
 }

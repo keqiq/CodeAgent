@@ -110913,10 +110913,11 @@ var ContextManager = class {
     this.activeToolResults.push(item);
     this.currentTurnToolResults.push(item);
   }
-  addRunSummary(status, message) {
+  addRunSummary(provider, model, status, message) {
     this.history.push({
       type: "run_summary",
-      provider: this.currentProvider,
+      provider,
+      model,
       status,
       ...message && { message },
       ...this.runTokenUsage && { tokenUsage: { ...this.runTokenUsage } },
@@ -111738,6 +111739,7 @@ var ChatApp = class {
   indexer;
   aborter = null;
   async runAgentTurn(provider, model, effort, userMessage) {
+    this.post({ type: "startRun", provider, model });
     await this.worktreeManager.setup();
     this.aborter = new AbortController();
     let runStatus = "ok";
@@ -111819,7 +111821,7 @@ var ChatApp = class {
       }
     } finally {
       this.aborter = null;
-      this.contextManager.addRunSummary(runStatus, statusMessage);
+      this.contextManager.addRunSummary(provider, model, runStatus, statusMessage);
       await this.contextManager.updateRunBoundary();
       await this.contextManager.save();
       this.contextManager.estimateCategorizedTokens();
@@ -111987,7 +111989,6 @@ var ChatApp = class {
           if (!data.value) {
             return;
           }
-          this.post({ type: "startRun" });
           this.runAgentTurn(data.provider, data.model, data.effort, data.value);
           break;
         }
@@ -112000,6 +112001,7 @@ var ChatApp = class {
           await this.contextManager.clear();
           await this.worktreeManager.cleanup();
           this.post({ type: "clearChatContainer" });
+          break;
         }
         // Called when selecting a new provider in embedding provider dropdown
         case "saveEmbedProvider": {
@@ -112144,8 +112146,8 @@ var ChatApp = class {
   }
   getHTML() {
     const htmlPath = vscode12.Uri.joinPath(this.context.extensionUri, "dist", "chat.html");
-    const scriptPath = vscode12.Uri.joinPath(this.context.extensionUri, "dist", "webview.bundle.js");
-    const cssPath = vscode12.Uri.joinPath(this.context.extensionUri, "dist", "webview.bundle.css");
+    const scriptPath = vscode12.Uri.joinPath(this.context.extensionUri, "dist", "chat.bundle.js");
+    const cssPath = vscode12.Uri.joinPath(this.context.extensionUri, "dist", "chat.bundle.css");
     try {
       let html = fs8.readFileSync(htmlPath.fsPath, "utf-8");
       const scriptUri = this.view.webview.asWebviewUri(scriptPath);
@@ -122998,7 +123000,16 @@ function activate(context) {
   );
   const chatApp = new ChatApp(context, mcpManager);
   context.subscriptions.push(
-    vscode15.window.registerWebviewViewProvider("codeagent-sidebar", chatApp)
+    vscode15.window.registerWebviewViewProvider(
+      "codeagent-sidebar",
+      chatApp,
+      {
+        // Do not unload when hidden
+        webviewOptions: {
+          retainContextWhenHidden: true
+        }
+      }
+    )
   );
 }
 function deactivate() {

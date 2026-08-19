@@ -58,6 +58,8 @@ export class ChatApp implements vscode.WebviewViewProvider {
     }
 
     private async runAgentTurn(provider: string, model: string, effort: string, userMessage: string,): Promise<void> {
+        
+        this.post({ type: 'startRun', provider: provider, model: model });
 
         await this.worktreeManager.setup();
 
@@ -78,6 +80,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
             const webSearchMode: WebSearchMode = enabledWebSearch ? (savedWebMode as WebSearchMode) : 'none';
 
             providerInstance = ChatFactory.create(provider, apiKey, webSearchMode);
+
 
             this.contextManager.prepareRun(provider);
             this.contextManager.addUserMessage(userMessage);
@@ -178,7 +181,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
 
         } finally {
             this.aborter = null;
-            this.contextManager.addRunSummary(runStatus, statusMessage);
+            this.contextManager.addRunSummary(provider, model, runStatus, statusMessage);
 
             // Update run counter for tool pruning
             await this.contextManager.updateRunBoundary();
@@ -387,7 +390,6 @@ export class ChatApp implements vscode.WebviewViewProvider {
 
                 case 'askAgent': {
                     if (!data.value) { return; }
-                    this.post({ type: 'startRun' });
                     this.runAgentTurn(data.provider, data.model, data.effort, data.value);
                     break;
                 }
@@ -404,6 +406,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
                     await this.worktreeManager.cleanup();
 
                     this.post({ type: 'clearChatContainer' });
+                    break;
                 }
 
                 // Called when selecting a new provider in embedding provider dropdown
@@ -586,8 +589,8 @@ export class ChatApp implements vscode.WebviewViewProvider {
 
     private getHTML(): string {
         const htmlPath = vscode.Uri.joinPath(this.context.extensionUri, 'dist', 'chat.html');
-        const scriptPath = vscode.Uri.joinPath(this.context.extensionUri, 'dist', 'webview.bundle.js');
-        const cssPath = vscode.Uri.joinPath(this.context.extensionUri, 'dist', 'webview.bundle.css');
+        const scriptPath = vscode.Uri.joinPath(this.context.extensionUri, 'dist', 'chat.bundle.js');
+        const cssPath = vscode.Uri.joinPath(this.context.extensionUri, 'dist', 'chat.bundle.css');
 
         try {
             let html = fs.readFileSync(htmlPath.fsPath, 'utf-8');

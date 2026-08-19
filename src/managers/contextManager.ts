@@ -34,6 +34,7 @@ export interface FunctionResultItem {
 export interface RunSummaryItem {
     type: 'run_summary';
     provider: string;
+    model: string;
     status: 'ok' | 'aborted' | 'error';
     tokenUsage?: TokenUsage;
     message?: string;
@@ -312,10 +313,11 @@ export class ContextManager {
         this.currentTurnToolResults.push(item);
     }
 
-    public addRunSummary(status: 'ok' | 'aborted' | 'error', message?: string): void {
+    public addRunSummary(provider: string, model: string, status: 'ok' | 'aborted' | 'error', message?: string): void {
         this.history.push({
             type: 'run_summary',
-            provider: this.currentProvider!,
+            provider: provider,
+            model: model,
             status,
             ...(message && { message }),
             ...(this.runTokenUsage && { tokenUsage: { ...this.runTokenUsage } }),

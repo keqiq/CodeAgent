@@ -84,7 +84,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // --- CHAT STREAMING & TOOLS & PATCH & TOKEN ---
             case 'startRun':
-                chatContainer.startRun();
+                chatContainer.startRun(msg.provider, msg.model);
                 break;
                 
             case 'receiveMessage':

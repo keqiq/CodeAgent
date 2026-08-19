@@ -1,12 +1,12 @@
 /* --- Header Bar --- */
 .mcp-header {
     position: sticky;
+    top: 0;
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 10px 16px;
     background-color: var(--vscode-sideBar-background);
-    position: relative;
     z-index: 50;
 }
 
@@ -188,4 +188,11 @@ button:disabled {
 
 .secondary-btn:hover:not(:disabled) {
     background-color: var(--vscode-button-secondaryHoverBackground);
+}
+
+#stdioFields,
+#sseFields {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
 }

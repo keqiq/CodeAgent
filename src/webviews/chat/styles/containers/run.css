@@ -1,7 +1,7 @@
 .run-container {
     display: flex;
     flex-direction: column;
-    margin-bottom: 16px;
+    margin-bottom: 24px;
 }
 
 .run-content {
@@ -10,63 +10,127 @@
     gap: 12px;
 }
 
-/* --- Run Footer (Token Usage & Status) --- */
+/* --- Run Footer Divider Rail --- */
 .run-footer {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-end;
-    padding: 12px 8px 4px 8px; /* Extra top padding for the gradient fade-in */
-    margin-top: 4px;
-    font-size: 10px;
-    font-family: var(--vscode-editor-font-family);
-    color: var(--vscode-descriptionForeground);
-    border-bottom: 1px solid transparent; /* Base border */
-    max-width: 88%;
-}
-
-/* Token Usage Left Side */
-.token-usage-container {
+    position: relative;
     display: flex;
     align-items: center;
-    gap: 6px;
+    margin-top: 16px;
+    padding-top: 0;
+    border-top: 1px solid color-mix(in srgb, var(--vscode-widget-border) 45%, transparent);
+    transition: border-color 0.25s ease;
+}
+
+/* Tab Strip Wrapper */
+.run-tabs {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: -1px; /* Overlaps divider slightly for an integrated tab feel */
+    flex-wrap: wrap;
+}
+
+/* Base Tab Pill */
+.run-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 8px;
+    font-size: 10px;
+    font-weight: 500;
+    line-height: 1.2;
+    border-radius: 0 0 5px 5px; /* Downward tab cap */
+    background-color: color-mix(in srgb, var(--vscode-sideBar-background) 80%, var(--vscode-editor-background));
+    border: 1px solid color-mix(in srgb, var(--vscode-widget-border) 50%, transparent);
+    border-top: 1px solid var(--vscode-sideBar-background); /* Seamless transition with divider */
+    color: var(--vscode-descriptionForeground);
+    user-select: none;
+    transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.run-tab svg {
+    opacity: 0.75;
+    flex-shrink: 0;
+}
+
+.run-tab .tab-text {
+    white-space: nowrap;
+}
+
+/* 1. Model Tab */
+.run-tab.model-tab {
+    font-family: var(--vscode-editor-font-family);
+    color: var(--vscode-textLink-foreground);
+    background-color: color-mix(in srgb, var(--vscode-textLink-foreground) 8%, var(--vscode-sideBar-background));
+    border-color: color-mix(in srgb, var(--vscode-textLink-foreground) 25%, transparent);
+    border-top-color: transparent;
+}
+
+.run-tab.model-tab svg {
+    color: var(--vscode-textLink-foreground);
+    opacity: 0.9;
+}
+
+/* 2. Token Counter Tab */
+.run-tab.token-tab {
     cursor: help;
-    opacity: 0.8;
-    transition: opacity 0.2s;
+    font-family: var(--vscode-editor-font-family);
 }
 
-.token-usage-container:hover {
-    opacity: 1;
+.run-tab.token-tab:hover {
+    color: var(--vscode-foreground);
+    background-color: var(--vscode-toolbar-hoverBackground);
+    /* border-color: var(--vscode-focusBorder); */
 }
 
-/* Run Status Right Side */
-.run-status {
+/* 3. Status Tab */
+.run-tab.status-tab {
     font-weight: 600;
     text-transform: uppercase;
+    letter-spacing: 0.3px;
 }
 
-/* --- Gradient Variants --- */
-/* Normal (Muted separation) */
-.footer-normal {
-    background: linear-gradient(to top, color-mix(in srgb, var(--vscode-editorWidget-border) 20%, transparent), transparent);
-    border-bottom-color: color-mix(in srgb, var(--vscode-editorWidget-border) 60%, transparent);
-}
-
-/* Aborted (Yellow) */
-.footer-aborted {
-    background: linear-gradient(to top, color-mix(in srgb, var(--vscode-charts-yellow) 15%, transparent), transparent);
-    border-bottom-color: color-mix(in srgb, var(--vscode-charts-yellow) 50%, transparent);
-}
-
-/* Error (Red) */
-.footer-error {
-    background: linear-gradient(to top, color-mix(in srgb, var(--vscode-testing-iconFailed) 15%, transparent), transparent);
-    border-bottom-color: color-mix(in srgb, var(--vscode-testing-iconFailed) 50%, transparent);
-}
-
-.footer-aborted .run-status {
+.run-tab.status-aborted {
+    background-color: color-mix(in srgb, var(--vscode-charts-yellow) 12%, var(--vscode-sideBar-background));
     color: var(--vscode-charts-yellow);
+    border-color: color-mix(in srgb, var(--vscode-charts-yellow) 35%, transparent);
+    border-top-color: transparent;
 }
 
-.footer-error .run-status {
+.run-tab.status-error {
+    background-color: color-mix(in srgb, var(--vscode-testing-iconFailed) 12%, var(--vscode-sideBar-background));
     color: var(--vscode-testing-iconFailed);
+    border-color: color-mix(in srgb, var(--vscode-testing-iconFailed) 35%, transparent);
+    border-top-color: transparent;
+}
+
+/* State Accents for Footer Line */
+.footer-normal {
+    border-top-color: color-mix(in srgb, var(--vscode-widget-border) 40%, transparent);
+}
+
+.footer-aborted {
+    border-top-color: color-mix(in srgb, var(--vscode-charts-yellow) 40%, transparent);
+}
+
+.footer-error {
+    border-top-color: color-mix(in srgb, var(--vscode-testing-iconFailed) 40%, transparent);
+}
+
+.run-tab .provider-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.run-tab .provider-icon svg {
+    width: 12px;
+    height: 12px;
+    opacity: 0.9;
+    flex-shrink: 0;
+}
+
+.run-tab.model-tab .provider-icon svg {
+    color: var(--vscode-textLink-foreground);
 }

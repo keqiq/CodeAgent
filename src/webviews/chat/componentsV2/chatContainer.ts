@@ -18,6 +18,9 @@ export class ChatContainer {
     private patchContainer: PatchContainer | null = null;
     private executeContainer: ExecuteContainer | null = null;
 
+    private isAutoScrollEnabled: boolean = true;
+    private readonly SCROLL_THRESHOLD = 50; //px
+
     constructor(private vscodeAPI: WebviewApi) {
         this.container = document.getElementById('chatContainer') as HTMLElement;
         this.scrollToBottomBtn = document.getElementById('scrollToBottomBtn') as HTMLButtonElement;
@@ -30,11 +33,16 @@ export class ChatContainer {
         // Toggle scroll to bottom button based on container scroll distance to bottom
         this.container.addEventListener('scroll', () => {
             const distanceToBottom = this.container.scrollHeight - this.container.scrollTop - this.container.clientHeight;
+
+            // If the user is near the bottom, auto scroll to bottom as items get added, otherwise pause auto scroll
+            this.isAutoScrollEnabled = distanceToBottom <= this.SCROLL_THRESHOLD;
+
             if (distanceToBottom > 50) this.scrollToBottomBtn.classList.add('visible');
             else this.scrollToBottomBtn.classList.remove('visible');
         });
 
         this.scrollToBottomBtn.addEventListener('click', () => {
+            this.isAutoScrollEnabled = true;
             this.scrollToBottom();
         });
     }
@@ -61,6 +69,10 @@ export class ChatContainer {
                 }
                 
                 else if (m.type === 'run_summary') {
+                    if (this.runContainer) {
+                        const item = m as any;
+                        this.runContainer.setModel(item.model, item.provider);
+                    }
                     if (m.tokenUsage) this.updateRun(m.tokenUsage);
                     this.endRun(m.status, m.message);
                 }
@@ -74,9 +86,10 @@ export class ChatContainer {
     // -------------------------- RUN CONTAINER SECTION ----------------------------
     // -----------------------------------------------------------------------------
 
-    public startRun(): void {
+    public startRun(provider?: string, model?: string): void {
         this.endMessage();
-        this.runContainer = new RunContainer(this.container);
+        this.isAutoScrollEnabled = true;
+        this.runContainer = new RunContainer(this.container, provider, model);
         this.showTypingIndicator();
     }
 
@@ -99,12 +112,14 @@ export class ChatContainer {
         if (this.patchContainer) this.patchContainer.end();
         if (!this.messageContainer) this.messageContainer = new MessageContainer(this.runContainer?.activeRunContent || this.container);
         this.messageContainer.add(msg);
+        this.autoScroll();
     }
 
     public updateMessage(chunk: string): void {
         if (this.thoughtContainer) this.thoughtContainer.pauseThoughtTimer();
         if (!this.messageContainer) this.messageContainer = new MessageContainer(this.runContainer?.activeRunContent || this.container);
         this.messageContainer.streamUpdate(chunk);
+        this.autoScroll();
     }
 
     public endMessage(): void {
@@ -133,6 +148,7 @@ export class ChatContainer {
 
     public updateTools(msg: any): void {
         this.removeTypingIndicator();
+        if (this.thoughtContainer) this.thoughtContainer.pauseThoughtTimer();
         if (!this.toolsContainer) this.toolsContainer = new ToolsContainer(this.runContainer?.activeRunContent || this.container);
         this.toolsContainer.update(msg);
     }
@@ -158,6 +174,7 @@ export class ChatContainer {
     // -----------------------------------------------------------------------------
     public updateExecute(msg: any) {
         this.removeTypingIndicator();
+        if (this.thoughtContainer) this.thoughtContainer.pauseThoughtTimer();
         if (!this.executeContainer) this.executeContainer = new ExecuteContainer(this.runContainer?.activeRunContent || this.container, this.vscodeAPI);
         this.executeContainer.update(msg);
     }
@@ -184,6 +201,12 @@ export class ChatContainer {
         msgDiv.innerHTML = '<div class="typing-indicator"><span></span><span></span><span></span></div>';
         this.runContainer.activeRunContent.appendChild(msgDiv);
         this.scrollToBottom();
+    }
+
+    private autoScroll(): void {
+        if (this.isAutoScrollEnabled) {
+            this.container.scrollTop = this.container.scrollHeight;
+        }
     }
 
     private scrollToBottom(): void {

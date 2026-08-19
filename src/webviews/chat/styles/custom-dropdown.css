@@ -35,6 +35,17 @@
     cursor: not-allowed;
 }
 
+@keyframes popFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
 /* The Opened Glassy List */
 .dropdown-list {
     position: absolute;
@@ -58,6 +69,8 @@
     display: flex;
     flex-direction: column;
     gap: 2px;
+
+    animation: popFadeIn 0.15s ease-out;
 }
 
 .dropdown-list.hidden {

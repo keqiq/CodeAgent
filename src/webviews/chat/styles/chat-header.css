@@ -70,23 +70,45 @@
 }
 
 /* --- Status Indicators --- */
+
 .status-dot {
-    width: 6px;
-    height: 6px;
+    width: 7px;
+    height: 7px;
     border-radius: 50%;
     display: inline-block;
     flex-shrink: 0;
-    transition: background-color 0.2s;
+    transition: background-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.status-dot.disabled { background-color: color-mix(in srgb, var(--vscode-descriptionForeground) 50%, transparent); }
-.status-dot.ready    { background-color: var(--vscode-testing-iconPassed); }
-.status-dot.warning  { background-color: var(--vscode-charts-yellow); }
-.status-dot.error    { background-color: var(--vscode-testing-iconFailed); }
+.status-dot.disabled {
+    background-color: var(--vscode-descriptionForeground);
+    opacity: 0.5;
+}
+
+.status-dot.ready {
+    background-color: var(--vscode-testing-iconPassed);
+    box-shadow: 0 0 6px var(--vscode-testing-iconPassed);
+}
+
+.status-dot.error {
+    background-color: var(--vscode-testing-iconFailed);
+    box-shadow: 0 0 6px var(--vscode-testing-iconFailed);
+}
+
+.status-dot.warning {
+    background-color: var(--vscode-charts-yellow);
+    box-shadow: 0 0 6px var(--vscode-charts-yellow);
+}
 
 .status-dot.spinning {
     background-color: var(--vscode-charts-yellow);
-    animation: pulseGlow 1.5s infinite ease-in-out;
+    box-shadow: 0 0 6px var(--vscode-charts-yellow);
+    animation: statusPulse 1.4s infinite ease-in-out;
+}
+
+@keyframes statusPulse {
+    0%, 100% { opacity: 0.4; transform: scale(0.9); }
+    50% { opacity: 1; transform: scale(1.1); }
 }
 
 #indexStatus {
@@ -94,10 +116,15 @@
     font-weight: 500;
 }
 
-@keyframes pulseGlow {
-    0% { opacity: 0.3; transform: scale(0.9); }
-    50% { opacity: 1; transform: scale(1.1); }
-    100% { opacity: 0.3; transform: scale(0.9); }
+@keyframes dropFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 
@@ -106,6 +133,10 @@
     top: calc(100% + 6px) !important;
     bottom: auto !important;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.chat-header .dropdown-list {
+    animation: dropFadeIn 0.15s ease-out;
 }
 
 .header-settings-btn {
