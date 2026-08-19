@@ -256,7 +256,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
                         }
 
                         const pruneMode = this.context.globalState.get<string>('pruneMode') ?? 'run';
-                        const pruneTurnInterval = this.context.globalState.get<number>('pruneTurnInterval') ?? 1;
+                        const pruneTurnInterval = this.context.globalState.get<number>('pruneTurnInterval') ?? 3;
                         const pruneRunInterval = this.context.globalState.get<number>('pruneRunInterval') ?? 1;
 
                         this.post({

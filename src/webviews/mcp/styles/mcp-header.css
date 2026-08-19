@@ -1,0 +1,191 @@
+/* --- Header Bar --- */
+.mcp-header {
+    position: sticky;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    background-color: var(--vscode-sideBar-background);
+    position: relative;
+    z-index: 50;
+}
+
+.header-left, .header-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* --- Stats Badges --- */
+.stat-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--vscode-foreground);
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 500;
+}
+
+.stat-pill strong {
+    color: var(--vscode-textLink-foreground);
+    font-weight: 600;
+}
+
+/* --- Add Server Button --- */
+.action-index-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all 0.15s ease;
+}
+
+.action-index-btn.state-unindexed {
+    background-color: var(--vscode-button-background);
+    color: var(--vscode-button-foreground);
+}
+
+.action-index-btn.state-unindexed:hover {
+    background-color: var(--vscode-button-hoverBackground);
+}
+
+/* --- Floating Dropdown Menu --- */
+#addServerContainer {
+    position: relative;
+}
+
+#addServerDropdown {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    width: 330px;
+    background-color: var(--vscode-editorWidget-background, var(--vscode-sideBar-background));
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    border-radius: 8px;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    cursor: default;
+    animation: dropFadeIn 0.15s ease-out;
+}
+
+@keyframes dropFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.dropdown-body {
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-height: 65vh;
+    overflow-y: auto;
+}
+
+.dropdown-footer {
+    padding: 10px 14px;
+    border-top: 1px solid var(--vscode-widget-border);
+    background-color: color-mix(in srgb, var(--vscode-sideBar-background) 40%, transparent);
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+}
+
+/* --- Form Fields & Inputs --- */
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.form-group label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--vscode-descriptionForeground);
+}
+
+.checkbox-group {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    padding-top: 4px;
+}
+
+.checkbox-group label {
+    color: var(--vscode-foreground);
+    cursor: pointer;
+}
+
+input[type="text"], select, textarea {
+    background-color: var(--vscode-input-background);
+    color: var(--vscode-input-foreground);
+    border: 1px solid var(--vscode-input-border, var(--vscode-widget-border));
+    padding: 6px 9px;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 12px;
+    width: 100%;
+    outline: none;
+    transition: border-color 0.15s ease;
+}
+
+input[type="text"]:focus, select:focus, textarea:focus {
+    border-color: var(--vscode-focusBorder);
+}
+
+textarea {
+    resize: vertical;
+    font-family: var(--vscode-editor-font-family);
+    font-size: 11px;
+}
+
+/* --- Buttons --- */
+button {
+    cursor: pointer;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 600;
+    transition: opacity 0.15s, background-color 0.15s;
+}
+
+button:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.primary-btn {
+    background-color: var(--vscode-button-background);
+    color: var(--vscode-button-foreground);
+}
+
+.primary-btn:hover:not(:disabled) {
+    background-color: var(--vscode-button-hoverBackground);
+}
+
+.secondary-btn {
+    background-color: var(--vscode-button-secondaryBackground);
+    color: var(--vscode-button-secondaryForeground);
+}
+
+.secondary-btn:hover:not(:disabled) {
+    background-color: var(--vscode-button-secondaryHoverBackground);
+}

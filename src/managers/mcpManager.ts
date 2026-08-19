@@ -1,339 +1,363 @@
 import * as vscode from 'vscode';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
-import { ToolResult, ToolSchema } from '../tools/toolIndex';
+import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
+import { ToolResult } from '../tools/toolIndex';
 
-export interface MCPServerConfig {
-    command: string;
-    args: string[];
+export interface ServerConfig {
+    command?: string;
+    args?: string[];
     env?: Record<string, string>;
+    url?: string;
     cwd?: string;
-    maxBufferSize?: number;
 }
 
-export interface ToolState {
+export interface MCPTool {
     name: string;
-    description: string;
-    enabled: boolean;
+    description?: string;
+    signature: string;
+    details: string;
+    disabled?: boolean;
 }
 
 export interface ServerState {
     name: string;
-    config: MCPServerConfig;
-    status: 'connected' | 'connecting' | 'disconnected' | 'error';
-    error?: string;
-    tools: ToolState[];
+    status: 'connected' | 'disconnected' | 'connecting' | 'error';
+    config: ServerConfig;
+    disabledTools?: Set<string>;
+}
+
+export interface MCPHeaderStats {
+    serversActive: number;
+    serversTotal: number;
+    toolsActive: number;
+    toolsTotal: number;
 }
 
 export class MCPManager {
+    private serverStates: Map<string, ServerState> = new Map();
+    private serverTools: Map<string, Map<string, MCPTool>> = new Map();
     private clients: Map<string, Client> = new Map();
-    private transports: Map<string, StdioClientTransport> = new Map();
 
-    private toolToClientMap: Map<string, { serverName: string; client: Client }> = new Map();
+    private emitter = new vscode.EventEmitter();
+    public readonly onDidUpdateStatus = this.emitter.event;
 
-    private emitter = new vscode.EventEmitter<void>();
-    public onDidUpdateStatus = this.emitter.event;
+    constructor(private context: vscode.ExtensionContext) {
+        const savedStates = this.context.globalState.get<Record<string, ServerState>>('MCP_Servers', {});
 
-    constructor(private context: vscode.ExtensionContext) {}
-
-    public async getServerStates(): Promise<ServerState[]> {
-        const configs = this.getSavedServers();
-        const states: ServerState[] = [];
-        const allDisabled = this.context.globalState.get<Record<string, string[]>>('disabledMCPTools') || {};
-
-        for (const [name, config] of Object.entries(configs)) {
-            const client = this.clients.get(name);
-            let tools: ToolState[] = [];
-            let error: string | undefined = undefined;
-
-            if (client) {
-                try {
-                    const response = await client.listTools();
-                    const serverDisabled = new Set(allDisabled[name] || []);
-
-                    tools = response.tools.map(t => ({
-                        name: t.name,
-                        description: t.description || '',
-                        enabled: !serverDisabled.has(t.name)
-                    }));
-
-                    for (const tool of response.tools) {
-                        this.toolToClientMap.set(tool.name, { serverName: name, client });
-                    }
-                } catch (e: any) {
-                    error = e?.message || 'Failed to retrieve tools';
-                }
-            }
-
-            states.push({
-                name,
-                config,
-                status: client ? 'connected' : 'disconnected',
-                error,
-                tools
+        for (const [name, state] of Object.entries(savedStates)) {
+            this.serverStates.set(name, {
+                name: name,
+                status: state.status,
+                config: state.config,
+                disabledTools: new Set(state.disabledTools || [])
             });
         }
-
-        return states;
     }
 
-    public async handleMetaTool(args: { serverName?: string }): Promise<ToolResult> {
-        if (!args?.serverName) {
-            return this.listConnectedServers();
+    public getAllServerStates(): Record<string, ServerState> {
+        const result: Record<string, ServerState> = {};
+        for (const [name, state] of this.serverStates.entries()) {
+            result[name] = state;
         }
-
-        return this.listServerTools(args.serverName);
+        return result;
     }
 
-    private async listConnectedServers(): Promise<ToolResult> {
-        const connectedNames = Array.from(this.clients.keys());
+    public getHeaderStats(): MCPHeaderStats {
+        const serversTotal = this.serverStates.size;
+        let serversActive = 0;
 
-        if (connectedNames.length === 0) {
-            return {
-                message: "No MCP servers are currently connected. Enable or configure servers in the MCP settings.",
-                data: { connectedServers: [] }
-            };
-        }
-
-        const serverSummaries: { name: string; toolCount: number; tools: string[] }[] = [];
-
-        for (const name of connectedNames) {
-            const client = this.clients.get(name);
-            if (!client) continue;
-
-            try {
-                const response = await client.listTools();
-                const allDisabled = this.context.globalState.get<Record<string, string[]>>('disabledMCPTools') || {};
-                const serverDisabled = new Set(allDisabled[name] || []);
-
-                const enabledTools = response.tools
-                    .filter(t => !serverDisabled.has(t.name))
-                    .map(t => t.name);
-
-                serverSummaries.push({
-                    name,
-                    toolCount: enabledTools.length,
-                    tools: enabledTools
-                });
-            } catch (e: any) {
-                serverSummaries.push({
-                    name,
-                    toolCount: 0,
-                    tools: []
-                });
+        for (const state of this.serverStates.values()) {
+            if (state.status === 'connected') {
+                serversActive++;
             }
         }
 
-        const formatted = serverSummaries.map(s => 
-            `• Server '${s.name}': ${s.toolCount} active tool(s) [${s.tools.join(', ') || 'none'}]`
-        ).join('\n');
+        let toolsTotal = 0;
+        let toolsActive = 0;
 
-        const message = `Connected MCP Servers (${serverSummaries.length}):\n${formatted}\n\nTo see detailed schemas and instructions for a server's tools, call mcp({ serverName: "<name>" }).`;
-
-        return {
-            message,
-            data: { servers: serverSummaries }
-        };
-    }
-
-    private async listServerTools(serverName: string): Promise<ToolResult> {
-        const client = this.clients.get(serverName);
-
-        if (!client) {
-            const connected = Array.from(this.clients.keys()).join(', ') || 'none';
-            return {
-                message: `MCP server '${serverName}' is not connected. Currently connected servers: [${connected}].`,
-                data: { error: 'SERVER_NOT_CONNECTED', requestedServer: serverName }
-            };
-        }
-
-        try {
-            const response = await client.listTools();
-            const allDisabled = this.context.globalState.get<Record<string, string[]>>('disabledMCPTools') || {};
-            const serverDisabled = new Set(allDisabled[serverName] || []);
-
-            const activeTools = response.tools.filter(t => !serverDisabled.has(t.name));
-
-            if (activeTools.length === 0) {
-                return {
-                    message: `Server '${serverName}' is connected, but has 0 active tools (or all tools are disabled in settings).`,
-                    data: { tools: [] }
-                };
-            }
-
-            // Map tools for invocation routing
-            for (const tool of activeTools) {
-                this.toolToClientMap.set(tool.name, { serverName, client });
-            }
-
-            const toolDetails = activeTools.map(t => {
-                const schemaStr = JSON.stringify(t.inputSchema || {}, null, 2);
-                return `### Tool: ${t.name}\nDescription: ${t.description || 'No description'}\nParameters Schema:\n\`\`\`json\n${schemaStr}\n\`\`\``;
-            }).join('\n\n');
-
-            const message = `Available tools on '${serverName}':\n\n${toolDetails}\n\nYou can now call any of these tools directly.`;
-
-            return {
-                message,
-                data: {
-                    server: serverName,
-                    tools: activeTools.map(t => ({
-                        name: t.name,
-                        description: t.description,
-                        inputSchema: t.inputSchema
-                    }))
+        for (const [serverName, toolMap] of this.serverTools.entries()) {
+            const state = this.serverStates.get(serverName);
+            // Only count tools from actively connected servers
+            if (state && state.status === 'connected') {
+                for (const tool of toolMap.values()) {
+                    toolsTotal++;
+                    if (!tool.disabled) {
+                        toolsActive++;
+                    }
                 }
+            }
+        }
+
+        return { serversActive, serversTotal, toolsActive, toolsTotal };
+    }
+
+    public emitHeaderStats(): void {
+        const stats = this.getHeaderStats();
+        this.emitter.fire({
+            type: 'updateHeaderStats',
+            ...stats
+        });
+    }
+
+    private async saveServerState(): Promise<void> {
+        const stateObj: Record<string, any> = {};
+
+        for (const [name, state] of this.serverStates.entries()) {
+            stateObj[name] = {
+                status: state.status,
+                config: state.config,
+                disabledTools: Array.from(state.disabledTools || [])
             };
-        } catch (e: any) {
-            return {
-                message: `Failed to retrieve tools for MCP server '${serverName}': ${e.message || String(e)}`,
-                data: { error: e.message }
-            };
-        }
-    }
-
-    public getSavedServers(): Record<string, MCPServerConfig> {
-        return this.context.globalState.get('mcpServers') || {};
-    }
-
-    public async addServer(name: string, config: MCPServerConfig): Promise<void> {
-        const servers = this.getSavedServers();
-        servers[name] = config;
-        await this.context.globalState.update('mcpServers', servers);
-    }
-
-    public async removeServer(name: string): Promise<void> {
-        const servers = this.getSavedServers();
-        delete servers[name];
-        await this.context.globalState.update('mcpServers', servers);
-
-        // Clean up disabled tools mapping
-        const allDisabled = this.context.globalState.get<Record<string, string[]>>('disabledMCPTools') || {};
-        if (allDisabled[name]) {
-            delete allDisabled[name];
-            await this.context.globalState.update('disabledMCPTools', allDisabled);
         }
 
-        await this.disconnect(name);
+        await this.context.globalState.update('MCP_Servers', stateObj);
     }
 
-    public async toggleTool(serverName: string, toolName: string, enabled: boolean): Promise<void> {
-        const allDisabled = this.context.globalState.get<Record<string, string[]>>('disabledMCPTools') || {};
-        const serverDisabled = new Set(allDisabled[serverName] || []);
+    private updateServerState(serverName: string, status: 'connected' | 'disconnected' | 'connecting' | 'error'): void {
+        if (!this.serverStates.has(serverName)) return;
+        this.serverStates.get(serverName)!.status = status;
 
-        if (enabled) {
-            serverDisabled.delete(toolName);
-        } else {
-            serverDisabled.add(toolName);
-        }
+        this.emitter.fire({
+            type: 'updateServerState',
+            serverName,
+            status
+        });
 
-        allDisabled[serverName] = Array.from(serverDisabled);
-        await this.context.globalState.update('disabledMCPTools', allDisabled);
+        this.emitHeaderStats();
     }
 
-    public async connect(name: string): Promise<void> {
-        if (this.clients.has(name)) return;
+    public async restoreServerState(): Promise<void> {
+        // Reconnect servers that were previously connected or connecting
+        const connectionTasks = Array.from(this.serverStates.entries())
+            .filter(([_, state]) => state.status === 'connected' || state.status === 'connecting')
+            .map(async ([serverName]) => {
+                await this.connect(serverName);
+            });
 
-        const servers = this.getSavedServers();
-        const config = servers[name];
-        if (!config) {
-            vscode.window.showErrorMessage(`MCP server ${name} not found in config!`);
+        await Promise.all(connectionTasks);
+    }
+
+    public async addServer(serverName: string, config: ServerConfig): Promise<void> {
+        this.serverStates.set(serverName, { name: serverName, status: 'disconnected', config: config });
+        await this.saveServerState();
+
+        this.emitter.fire({
+            type: 'addServer',
+            serverName,
+            config,
+            status: 'disconnected'
+        });
+
+        this.emitHeaderStats();
+    }
+
+    public async removeServer(serverName: string): Promise<void> {
+        if (!this.serverStates.has(serverName)) {
+            console.warn(`Attempted to remove unknown server: ${serverName}.`);
             return;
         }
 
-        const mergedEnv = config.env 
-            ? { ...process.env, ...config.env } as Record<string, string>
-            : process.env as Record<string, string>;
+        // Do not save the state during disconnect since we need to delete the entry in serverState first
+        await this.disconnect(serverName, false);
 
-        const transport = new StdioClientTransport({
-            command: config.command,
-            args: config.args,
-            env: mergedEnv,
-            cwd: config.cwd,
-            maxBufferSize: config.maxBufferSize
-        });
+        this.serverStates.delete(serverName);
+        await this.saveServerState();
 
-        const client = new Client({ name: 'agent-client', version: '1.0.0' }, {
-            capabilities: {}
-        });
-
-        await client.connect(transport);
-
-        this.transports.set(name, transport);
-        this.clients.set(name, client);
+        this.emitter.fire({ type: 'removeMCPServer', name: serverName });
+        this.emitHeaderStats();
     }
 
-    public async disconnect(name: string): Promise<void> {
-        const transport = this.transports.get(name);
-        if (transport) {
-            await transport.close();
-            this.transports.delete(name);
-        }
-        this.clients.delete(name);
+    public getConnectedServers(): string[] {
+        const connectedServers = Array.from(this.clients.keys());
+        return connectedServers;
+    }
 
-        for (const [toolName, entry] of this.toolToClientMap.entries()) {
-            if (entry.serverName === name) {
-                this.toolToClientMap.delete(toolName);
+    public async connect(serverName: string): Promise<void> {
+        if (!this.serverStates.has(serverName)) {
+            vscode.window.showErrorMessage(`Cannot connect to unconfigured server: ${serverName}!`);
+            return;
+        }
+
+        const serverState = this.serverStates.get(serverName);
+        if (this.clients.has(serverName)) {
+            console.warn(`Already connected or connecting to ${serverName} server.`);
+            return;
+        }
+
+        this.updateServerState(serverName, 'connecting');
+
+        try {
+            const config = serverState!.config;
+            const mergedEnv = config?.env
+                ? { ...process.env, ...config.env } as Record<string, string>
+                : process.env as Record<string, string>;
+
+            let transport;
+            if (config.command) {
+                transport = new StdioClientTransport({
+                    command: config.command,
+                    args: config.args,
+                    env: mergedEnv,
+                    cwd: config.cwd
+                });
+            } else if (config.url) {
+                transport = new StreamableHTTPClientTransport(new URL(config.url));
+            } else {
+                throw new Error('Invalid MCP server configuration.');
+            }
+
+            const client = new Client({ name: 'vscodeagent-client', version: '1.0.0' }, { capabilities: {} });
+
+            await client.connect(transport);
+            this.clients.set(serverName, client);
+            await this.loadTools(serverName);
+            this.updateServerState(serverName, 'connected');
+            await this.saveServerState();
+        } catch (e) {
+            console.error(`Error connecting to ${serverName}`, e);
+            this.updateServerState(serverName, 'error');
+        }
+    }
+
+    public async disconnect(serverName: string, saveState: boolean = true): Promise<void> {
+        if (!this.clients.has(serverName)) {
+            console.warn(`Attempted to disconnect unknown server: ${serverName}.`);
+            return;
+        }
+
+        const client = this.clients.get(serverName);
+        if (client) {
+            try {
+                await client.close();
+            } catch (error) {
+                console.error(`Error closing MCP client for ${serverName}:`, error);
+            } finally {
+                this.clients.delete(serverName);
             }
         }
+
+        // Remove tools from the cache
+        this.serverTools.delete(serverName);
+
+        this.updateServerState(serverName, 'disconnected');
+
+        if (saveState) await this.saveServerState();
     }
 
-    public isToolEnabled(serverName: string, toolName: string): boolean {
-        const allDisabled = this.context.globalState.get<Record<string, string[]>>('disabledMCPTools') || {};
-        const serverDisabled = new Set(allDisabled[serverName] || []);
-        return !serverDisabled.has(toolName);
-    }
+    public async loadTools(serverName: string): Promise<void> {
+        const client = this.clients.get(serverName);
 
-    public hasTool(toolName: string): boolean {
-        const entry = this.toolToClientMap.get(toolName);
-        if (!entry) return false;
-        return this.isToolEnabled(entry.serverName, toolName);
-    }
+        if (!client) return;
 
-    // public async getConnectedTools(): Promise<ToolSchema[]> {
-    //     const mcpSchemas: ToolSchema[] = [];
-    //     const allDisabled = this.context.globalState.get<Record<string, string[]>>('disabledMCPTools') || {};
+        try {
+            const response = await client.listTools();
+            const toolMap = new Map<string, MCPTool>();
 
-    //     for (const [serverName, client] of this.clients.entries()) {
-    //         const response = await client.listTools();
-    //         const serverDisabled = new Set(allDisabled[serverName] || []);
+            const disabledTools = this.serverStates.get(serverName)!.disabledTools;
+            for (const t of response.tools) {
+                toolMap.set(t.name, {
+                    name: t.name,
+                    description: t.description,
+                    signature: this.formatToolSignature(t),
+                    details: this.formatToolDetails(t),
+                    disabled: disabledTools?.has(t.name)
+                });
+            }
 
-    //         for (const tool of response.tools) {
-    //             this.toolToClientMap.set(tool.name, { serverName, client });
+            this.serverTools.set(serverName, toolMap);
 
-    //             // Only register tool with LLM if enabled
-    //             if (!serverDisabled.has(tool.name)) {
-    //                 mcpSchemas.push({
-    //                     type: 'function',
-    //                     name: tool.name,
-    //                     description: tool.description || '',
-    //                     parameters: tool.inputSchema as any
-    //                 });
-    //             }
-    //         }
-    //     }
+            this.emitter.fire({ type: 'updateServerTools', serverName, tools: Array.from(toolMap.values()) });
 
-    //     return mcpSchemas;
-    // }
-
-    public async callTool(toolName: string, args: any): Promise<ToolResult> {
-        const entry = this.toolToClientMap.get(toolName);
-        if (!entry || !this.isToolEnabled(entry.serverName, toolName)) {
-            throw new Error(`MCP tool '${toolName}' is disabled or its server is disconnected.`);
+        } catch (e) {
+            console.warn(`Error loading tools from server: ${serverName}`, e);
         }
-        
-        const { client } = entry;
-        const result = await client.callTool({
-            name: toolName,
-            arguments: args
+    }
+
+    private formatToolSignature(tool: { name: string; description?: string; inputSchema?: any }): string {
+        const schema = tool.inputSchema || {};
+        const props = schema.properties || {};
+        const requiredSet = new Set(schema.required || []);
+
+        const paramList = Object.entries(props).map(([propName, propDef]: [string, any]) => {
+            const typeStr = propDef.type || 'any';
+            const optionalFlag = requiredSet.has(propName) ? '' : '?';
+            return `${propName}${optionalFlag}: ${typeStr}`;
         });
+
+        const sig = `${tool.name}(${paramList.join(', ')})`;
+        return sig;
+    }
+
+    private formatToolDetails(tool: { name: string; description?: string; inputSchema?: any }): string {
+        const schema = tool.inputSchema || {};
+        const props = schema.properties || {};
+        const requiredSet = new Set(schema.required || []);
+
+        const paramEntries = Object.entries(props).map(([name, propDef]: [string, any]) => {
+            const isReq = requiredSet.has(name) ? 'required' : 'optional';
+            const typeStr = propDef.type || 'any';
+            const descStr = propDef.description ? ` - ${propDef.description}` : '';
+            const enumStr = propDef.enum ? ` [allowed: ${propDef.enum.join(', ')}]` : '';
+            return `    - \`${name}\` (${typeStr}, ${isReq}${enumStr})${descStr}`;
+        });
+
+        const paramBlock = paramEntries.length > 0
+            ? `  Parameters:\n${paramEntries.join('\n')}`
+            : `  Parameters: None`;
+
+        return `### Tool: \`${tool.name}\`\n${paramBlock}`;
+    }
+
+    public getServerTools(serverName: string): MCPTool[] {
+        const toolMap = this.serverTools.get(serverName);
+        if (!toolMap) return [];
+
+        return Array.from(toolMap.values()).filter(tool => !tool.disabled);
+    }
+
+    public async toggleTool(serverName: string, toolName: string, enabled: boolean): Promise<void> {
+        const state = this.serverStates.get(serverName);
+        if (!state) return;
+
+        if (enabled) state.disabledTools?.delete(toolName);
+        else state.disabledTools?.add(toolName);
+
+        const toolMap = this.serverTools.get(serverName);
+        if (toolMap && toolMap.has(toolName)) {
+            toolMap.get(toolName)!.disabled = !enabled;
+        }
+
+        await this.saveServerState();
+        this.emitHeaderStats();
+    }
+
+    public async callTool(serverName: string, toolName: string, args: any): Promise<ToolResult> {
+        const client = this.clients.get(serverName);
+        if (!client) throw new Error(`Error: Server '${serverName}' is not configured or not connected.`);
+
+        const toolMap = this.serverTools.get(serverName);
+        const tool = toolMap?.get(toolName);
+        if (!tool) throw new Error(`Error: Tool '${toolName}' not found on server '${serverName}'.`);
+        if (tool.disabled) throw new Error(`Error: Tool '${toolName}' is disabled by the user.`);
+
+        let parsedArgs = args;
+        if (typeof args === 'string') {
+            try {
+                parsedArgs = JSON.parse(args);
+            } catch {
+                throw new Error(`Error parsing argument. Arguments must be a valid JSON object!`);
+            }
+        }
 
         let message = "";
 
-        if ('content' in result && Array.isArray(result.content)) {
-            if (result.isError) throw new Error('MCP tool returned an execution error.');
-            
-            message = result.content.map((block: any) => {
+        const response = await client.callTool({ name: toolName, arguments: parsedArgs });
+
+        if ('content' in response && Array.isArray(response.content)) {
+            if (response.isError) throw new Error('MCP tool returned an execution error.');
+
+            message = response.content.map((block: any) => {
                 switch (block.type) {
                     case 'text':
                         return block.text;
@@ -352,15 +376,14 @@ export class MCPManager {
                 }
             }).join('\n');
 
-        } else if ('toolResult' in result) {
-            message = typeof result.toolResult === 'string' 
-                ? result.toolResult 
-                : JSON.stringify(result.toolResult, null, 2);
-                
+        } else if ('toolResult' in response) {
+            message = typeof response.toolResult === 'string'
+                ? response.toolResult
+                : JSON.stringify(response.toolResult, null, 2);
         } else {
             message = "Tool executed successfully, but returned an unrecognized format.";
         }
 
-        return { message, data: result };
+        return { message };
     }
 }

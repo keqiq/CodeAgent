@@ -154,7 +154,7 @@ export class ToolManager {
                 let result: ToolResult;
                 let isError = false;
 
-                // Built in tool
+                // Built in tool, including MCP tools
                 if (this.toolRegistry[toolName]) {
                     try {
                         result = await this.toolRegistry[toolName](toolArgs, toolID);
@@ -168,18 +168,18 @@ export class ToolManager {
                     }
                 }
                 // MCP tool
-                else if (this.deps.mcpManager.hasTool(toolName)) {
-                    try {
-                        result = await this.deps.mcpManager.callTool(toolName, toolArgs);
-                        this.emitter.fire({ type: 'updateTool', status: 'success', toolId: toolID });
-                    } catch (e) {
-                        isError = true;
-                        hasErrors = true;
-                        const message = e instanceof Error ? e.message : String(e);
-                        result = { message: `MCP Tool Error [${toolName}]: ${message}` };
-                        this.emitter.fire({ type: 'updateTool', status: 'error', toolId: toolID, error: message });
-                    }
-                }
+                // else if (this.deps.mcpManager.hasTool(toolName)) {
+                //     try {
+                //         result = await this.deps.mcpManager.callTool(toolName, toolArgs);
+                //         this.emitter.fire({ type: 'updateTool', status: 'success', toolId: toolID });
+                //     } catch (e) {
+                //         isError = true;
+                //         hasErrors = true;
+                //         const message = e instanceof Error ? e.message : String(e);
+                //         result = { message: `MCP Tool Error [${toolName}]: ${message}` };
+                //         this.emitter.fire({ type: 'updateTool', status: 'error', toolId: toolID, error: message });
+                //     }
+                // }
                 // Tool not found in registry or connected MCP servers
                 else {
                     isError = true;

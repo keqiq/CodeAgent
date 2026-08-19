@@ -2,9 +2,9 @@ import { searchSchemas, executeGlob, executeGrep, executeRefs, findDeps, execute
 import { fileSchemas, executeRead, executeWrite, executeEdit } from "./files";
 import { commandSchemas } from "./execute";
 import { webSchema, executeWebSearch, executeURL } from "./web";
-import { mcpSchemas } from "./mcp";
-import { ContextManager } from "../managers/contextManager";
+import { executeMCPCall, executeMCPFind, mcpSchemas } from "./mcpTools";
 import { artifactSchema } from "./artifact";
+import { ContextManager } from "../managers/contextManager";
 import { CommandManager } from "../managers/commandManager";
 import { MCPManager } from "../managers/mcpManager";
 
@@ -108,9 +108,14 @@ export function createToolRegistry(deps: ToolDeps): Record<string, (args: any, t
             };
         },
 
-        mcp: async (args) => {
+        mcp_find: async (args) => {
             const manager = deps.getMCPManager();
-            return await manager.handleMetaTool(args.serverName);
+            return await executeMCPFind(args.serverName, manager);
+        },
+        
+        mcp_call: async (args) => {
+            const manager = deps.getMCPManager();
+            return await executeMCPCall(args.serverName, args.toolName, args.toolArgs, manager);
         }
     };
 }

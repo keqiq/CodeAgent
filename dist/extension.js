@@ -60,13 +60,13 @@ var uuid4;
 var init_uuid = __esm({
   "node_modules/@anthropic-ai/sdk/internal/utils/uuid.mjs"() {
     uuid4 = function() {
-      const { crypto: crypto4 } = globalThis;
-      if (crypto4?.randomUUID) {
-        uuid4 = crypto4.randomUUID.bind(crypto4);
-        return crypto4.randomUUID();
+      const { crypto: crypto5 } = globalThis;
+      if (crypto5?.randomUUID) {
+        uuid4 = crypto5.randomUUID.bind(crypto5);
+        return crypto5.randomUUID();
       }
       const u8 = new Uint8Array(1);
-      const randomByte = crypto4 ? () => crypto4.getRandomValues(u8)[0] : () => Math.random() * 255 & 255;
+      const randomByte = crypto5 ? () => crypto5.getRandomValues(u8)[0] : () => Math.random() * 255 & 255;
       return "10000000-1000-4000-8000-100000000000".replace(/[018]/g, (c) => (+c ^ randomByte() & 15 >> +c / 4).toString(16));
     };
   }
@@ -235,8 +235,8 @@ var init_values = __esm({
   "node_modules/@anthropic-ai/sdk/internal/utils/values.mjs"() {
     init_error();
     startsWithSchemeRegexp = /^[a-z][a-z0-9+.-]*:/i;
-    isAbsoluteURL = (url2) => {
-      return startsWithSchemeRegexp.test(url2);
+    isAbsoluteURL = (url3) => {
+      return startsWithSchemeRegexp.test(url3);
     };
     isArray = (val) => (isArray = Array.isArray, isArray(val));
     isReadonlyArray = isArray;
@@ -566,20 +566,20 @@ var init_utils = __esm({
       if (str2.length === 0) {
         return str2;
       }
-      let string3 = str2;
+      let string4 = str2;
       if (typeof str2 === "symbol") {
-        string3 = Symbol.prototype.toString.call(str2);
+        string4 = Symbol.prototype.toString.call(str2);
       } else if (typeof str2 !== "string") {
-        string3 = String(str2);
+        string4 = String(str2);
       }
       if (charset === "iso-8859-1") {
-        return escape(string3).replace(/%u[0-9a-f]{4}/gi, function($0) {
+        return escape(string4).replace(/%u[0-9a-f]{4}/gi, function($0) {
           return "%26%23" + parseInt($0.slice(2), 16) + "%3B";
         });
       }
       let out = "";
-      for (let j = 0; j < string3.length; j += limit) {
-        const segment = string3.length >= limit ? string3.slice(j, j + limit) : string3;
+      for (let j = 0; j < string4.length; j += limit) {
+        const segment = string4.length >= limit ? string4.slice(j, j + limit) : string4;
         const arr = [];
         for (let i2 = 0; i2 < segment.length; ++i2) {
           let c = segment.charCodeAt(i2);
@@ -892,8 +892,8 @@ var init_stringify = __esm({
       formatter: default_formatter,
       /** @deprecated */
       indices: false,
-      serializeDate(date3) {
-        return (toISOString ?? (toISOString = Function.prototype.call.bind(Date.prototype.toISOString)))(date3);
+      serializeDate(date4) {
+        return (toISOString ?? (toISOString = Function.prototype.call.bind(Date.prototype.toISOString)))(date4);
       },
       skipNulls: false,
       strictNullHandling: false
@@ -1578,10 +1578,10 @@ function oidcFederationProvider(config2) {
     if (config2.workspaceId) {
       body["workspace_id"] = config2.workspaceId;
     }
-    const url2 = `${config2.baseURL}${TOKEN_ENDPOINT}`;
+    const url3 = `${config2.baseURL}${TOKEN_ENDPOINT}`;
     let resp;
     try {
-      resp = await config2.fetch(url2, {
+      resp = await config2.fetch(url3, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -1591,7 +1591,7 @@ function oidcFederationProvider(config2) {
         body: JSON.stringify(body)
       });
     } catch (err) {
-      throw new WorkloadIdentityError(`Failed to reach token endpoint ${url2}: ${err}`);
+      throw new WorkloadIdentityError(`Failed to reach token endpoint ${url3}: ${err}`);
     }
     const requestId = resp.headers.get("Request-Id");
     if (!resp.ok) {
@@ -1658,10 +1658,10 @@ function userOAuthProvider(config2) {
       refresh_token: refreshToken,
       client_id: config2.clientId
     };
-    const url2 = `${config2.baseURL}${TOKEN_ENDPOINT}`;
+    const url3 = `${config2.baseURL}${TOKEN_ENDPOINT}`;
     let resp;
     try {
-      resp = await config2.fetch(url2, {
+      resp = await config2.fetch(url3, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -1734,12 +1734,12 @@ async function defaultCredentials(options, profile) {
 function buildProvider(config2, credentialsPath, baseURL, options) {
   switch (config2.authentication.type) {
     case "oidc_federation": {
-      const auth = config2.authentication;
-      const identityProvider = resolveIdentityTokenProvider(auth);
+      const auth2 = config2.authentication;
+      const identityProvider = resolveIdentityTokenProvider(auth2);
       if (!identityProvider) {
         throw new WorkloadIdentityError("oidc_federation config requires an identity token (set authentication.identity_token, ANTHROPIC_IDENTITY_TOKEN_FILE, or ANTHROPIC_IDENTITY_TOKEN)");
       }
-      if (!auth.federation_rule_id) {
+      if (!auth2.federation_rule_id) {
         throw new WorkloadIdentityError("oidc_federation config requires 'federation_rule_id'. Set it in authentication.federation_rule_id in your profile, or via ANTHROPIC_FEDERATION_RULE_ID (profile takes precedence).");
       }
       if (!config2.organization_id) {
@@ -1747,9 +1747,9 @@ function buildProvider(config2, credentialsPath, baseURL, options) {
       }
       const exchange = oidcFederationProvider({
         identityTokenProvider: identityProvider,
-        federationRuleId: auth.federation_rule_id,
+        federationRuleId: auth2.federation_rule_id,
         organizationId: config2.organization_id,
-        serviceAccountId: auth.service_account_id,
+        serviceAccountId: auth2.service_account_id,
         workspaceId: config2.workspace_id,
         baseURL,
         fetch: options.fetch,
@@ -1779,16 +1779,16 @@ function buildProvider(config2, credentialsPath, baseURL, options) {
     }
   }
 }
-function resolveIdentityTokenProvider(auth) {
-  if (auth.identity_token) {
-    const source = auth.identity_token.source;
+function resolveIdentityTokenProvider(auth2) {
+  if (auth2.identity_token) {
+    const source = auth2.identity_token.source;
     if (source !== "file") {
       throw new WorkloadIdentityError(`identity_token.source "${source}" is not supported by this SDK version (only "file")`);
     }
-    if (!auth.identity_token.path) {
+    if (!auth2.identity_token.path) {
       throw new WorkloadIdentityError(`identity_token.source "file" requires a non-empty path`);
     }
-    return identityTokenFromFile(auth.identity_token.path);
+    return identityTokenFromFile(auth2.identity_token.path);
   }
   const tokenFile = readEnv("ANTHROPIC_IDENTITY_TOKEN_FILE");
   if (tokenFile) {
@@ -2220,8 +2220,8 @@ async function defaultParseResponse(client, props) {
     if (props.options.__binaryResponse) {
       return response;
     }
-    const contentType = response.headers.get("content-type");
-    const mediaType = contentType?.split(";")[0]?.trim();
+    const contentType2 = response.headers.get("content-type");
+    const mediaType = contentType2?.split(";")[0]?.trim();
     const isJSON = mediaType?.includes("application/json") || mediaType?.endsWith("+json");
     if (isJSON) {
       const contentLength = response.headers.get("content-length");
@@ -2275,15 +2275,15 @@ function isRetryableError(err) {
   return false;
 }
 function wrapFetchWithMiddleware(fetchFn, middleware, options, client) {
-  return async (url2, init = {}) => {
+  return async (url3, init = {}) => {
     if (middleware.length === 0) {
-      return fetchFn.call(void 0, url2, init);
+      return fetchFn.call(void 0, url3, init);
     }
     const headers = init.headers instanceof Headers ? init.headers : new Headers(init.headers);
     const response = await applyMiddleware(fetchFn, middleware, options, client)({
       ...init,
       headers,
-      url: typeof url2 === "string" ? url2 : url2 instanceof URL ? url2.href : url2.url
+      url: typeof url3 === "string" ? url3 : url3 instanceof URL ? url3.href : url3.url
     });
     if (response.bodyUsed || response.body?.locked) {
       throw new AnthropicError("middleware consumed the response body; use response.clone() to inspect it, or return new Response(body, response) to consume and replace it");
@@ -2324,8 +2324,8 @@ async function parseMiddlewareResponse(response, options) {
   if (options?.__binaryResponse) {
     return response;
   }
-  const contentType = response.headers.get("content-type");
-  const mediaType = contentType?.split(";")[0]?.trim();
+  const contentType2 = response.headers.get("content-type");
+  const mediaType = contentType2?.split(";")[0]?.trim();
   const isJSON = mediaType?.includes("application/json") || mediaType?.endsWith("+json");
   if (isJSON) {
     if (response.headers.get("content-length") === "0") {
@@ -2336,9 +2336,9 @@ async function parseMiddlewareResponse(response, options) {
   return await response.clone().text();
 }
 function applyMiddleware(fetchFn, middleware, options, client) {
-  let next = async ({ url: url2, ...init }) => {
+  let next = async ({ url: url3, ...init }) => {
     try {
-      return await fetchFn.call(void 0, url2, init);
+      return await fetchFn.call(void 0, url3, init);
     } catch (err) {
       const error2 = castToError(err);
       fetchOriginErrors.add(error2);
@@ -2656,9 +2656,9 @@ var init_uploads = __esm({
         form.append(key, String(value));
       } else if (value instanceof Response) {
         let options = {};
-        const contentType = value.headers.get("Content-Type");
-        if (contentType) {
-          options = { type: contentType };
+        const contentType2 = value.headers.get("Content-Type");
+        if (contentType2) {
+          options = { type: contentType2 };
         }
         form.append(key, makeFile([await value.blob()], getName(value, stripFilenames), options));
       } else if (isAsyncIterable(value)) {
@@ -12015,16 +12015,16 @@ var init_client = __esm({
       }
       buildURL(path13, query, defaultBaseURL) {
         const baseURL = !__classPrivateFieldGet(this, _BaseAnthropic_instances, "m", _BaseAnthropic_baseURLOverridden).call(this) && defaultBaseURL || this.baseURL;
-        const url2 = isAbsoluteURL(path13) ? new URL(path13) : new URL(baseURL + (baseURL.endsWith("/") && path13.startsWith("/") ? path13.slice(1) : path13));
+        const url3 = isAbsoluteURL(path13) ? new URL(path13) : new URL(baseURL + (baseURL.endsWith("/") && path13.startsWith("/") ? path13.slice(1) : path13));
         const defaultQuery = this.defaultQuery();
-        const pathQuery = Object.fromEntries(url2.searchParams);
+        const pathQuery = Object.fromEntries(url3.searchParams);
         if (!isEmptyObj(defaultQuery) || !isEmptyObj(pathQuery)) {
           query = { ...pathQuery, ...defaultQuery, ...query };
         }
         if (typeof query === "object" && query && !Array.isArray(query)) {
-          url2.search = this.stringifyQuery(query);
+          url3.search = this.stringifyQuery(query);
         }
-        return url2.toString();
+        return url3.toString();
       }
       _calculateNonstreamingTimeout(maxTokens) {
         const defaultTimeout = 10 * 60;
@@ -12052,7 +12052,7 @@ var init_client = __esm({
        * overrides must be idempotent and overwrite headers from a previous
        * invocation rather than append to them.
        */
-      async prepareRequest(request, { url: url2, options }) {
+      async prepareRequest(request, { url: url3, options }) {
         if (this._authState.tokenCache && this.apiKey == null) {
           const headers = request.headers instanceof Headers ? request.headers : new Headers(request.headers);
           for (const [k, v] of Object.entries(this._authState.extraHeaders)) {
@@ -12118,7 +12118,7 @@ var init_client = __esm({
           this._requestAuthFlags.delete(options);
         }
         await this.prepareOptions(options);
-        const { req, url: url2, timeout } = await this.buildRequest(options, {
+        const { req, url: url3, timeout } = await this.buildRequest(options, {
           retryCount: maxRetries - retriesRemaining
         });
         const requestLogID = "log_" + (Math.random() * (1 << 24) | 0).toString(16).padStart(6, "0");
@@ -12128,7 +12128,7 @@ var init_client = __esm({
           throw new APIUserAbortError();
         }
         const controller = new AbortController();
-        const response = await this.fetchWithTimeout(url2, req, timeout, controller, options, {
+        const response = await this.fetchWithTimeout(url3, req, timeout, controller, options, {
           requestLogID,
           retryOfRequestLogID
         }).catch(castToError);
@@ -12144,7 +12144,7 @@ var init_client = __esm({
             loggerFor(this).info(`[${requestLogID}] middleware error (not retryable)`);
             loggerFor(this).debug(`[${requestLogID}] middleware error (not retryable)`, formatRequestDetails({
               retryOfRequestLogID,
-              url: url2,
+              url: url3,
               durationMs: headersTime - startTime,
               message: response.message
             }));
@@ -12154,7 +12154,7 @@ var init_client = __esm({
             loggerFor(this).info(`[${requestLogID}] connection ${isTimeout ? "timed out" : "failed"} - ${retryMessage}`);
             loggerFor(this).debug(`[${requestLogID}] connection ${isTimeout ? "timed out" : "failed"} (${retryMessage})`, formatRequestDetails({
               retryOfRequestLogID,
-              url: url2,
+              url: url3,
               durationMs: headersTime - startTime,
               message: response.message
             }));
@@ -12163,7 +12163,7 @@ var init_client = __esm({
           loggerFor(this).info(`[${requestLogID}] connection ${isTimeout ? "timed out" : "failed"} - error; no more retries left`);
           loggerFor(this).debug(`[${requestLogID}] connection ${isTimeout ? "timed out" : "failed"} (error; no more retries left)`, formatRequestDetails({
             retryOfRequestLogID,
-            url: url2,
+            url: url3,
             durationMs: headersTime - startTime,
             message: response.message
           }));
@@ -12176,7 +12176,7 @@ var init_client = __esm({
           throw new APIConnectionError({ cause: response });
         }
         const specialHeaders = [...response.headers.entries()].filter(([name]) => name === "request-id").map(([name, value]) => ", " + name + ": " + JSON.stringify(value)).join("");
-        const responseInfo = `[${requestLogID}${retryLogStr}${specialHeaders}] ${req.method} ${url2} ${response.ok ? "succeeded" : "failed"} with status ${response.status} in ${headersTime - startTime}ms`;
+        const responseInfo = `[${requestLogID}${retryLogStr}${specialHeaders}] ${req.method} ${url3} ${response.ok ? "succeeded" : "failed"} with status ${response.status} in ${headersTime - startTime}ms`;
         if (!response.ok) {
           const shouldRetry = await this.shouldRetry(response, options);
           if (retriesRemaining && shouldRetry) {
@@ -12225,7 +12225,7 @@ var init_client = __esm({
         const request = this.makeRequest(options, null, void 0);
         return new PagePromise(this, request, Page3);
       }
-      async fetchWithTimeout(url2, init, ms, controller, requestOptions, logCtx) {
+      async fetchWithTimeout(url3, init, ms, controller, requestOptions, logCtx) {
         const { signal, method, ...options } = init || {};
         const abort = this._makeAbort(controller);
         if (signal)
@@ -12267,7 +12267,7 @@ var init_client = __esm({
         const requestMiddleware = requestOptions?.middleware;
         const backendMiddleware = this.backendMiddleware();
         const allMiddleware = requestMiddleware?.length || backendMiddleware.length ? [...this.middleware, ...requestMiddleware ?? [], ...backendMiddleware] : this.middleware;
-        return await wrapFetchWithMiddleware(innerFetch, allMiddleware, requestOptions, this)(url2, fetchOptions);
+        return await wrapFetchWithMiddleware(innerFetch, allMiddleware, requestOptions, this)(url3, fetchOptions);
       }
       async shouldRetry(response, options) {
         const flags = this._authFlags(options);
@@ -12342,7 +12342,7 @@ var init_client = __esm({
         if (!this._baseURLIsExplicit && this._authState.baseURL && this.baseURL !== this._authState.baseURL) {
           this.baseURL = this._authState.baseURL;
         }
-        const url2 = this.buildURL(path13, query, defaultBaseURL);
+        const url3 = this.buildURL(path13, query, defaultBaseURL);
         if ("timeout" in options)
           validatePositiveInteger("timeout", options.timeout);
         options.timeout = options.timeout ?? this.timeout;
@@ -12357,7 +12357,7 @@ var init_client = __esm({
           ...this.fetchOptions ?? {},
           ...options.fetchOptions ?? {}
         };
-        return { req, url: url2, timeout: options.timeout };
+        return { req, url: url3, timeout: options.timeout };
       }
       async buildHeaders({ options, method, bodyHeaders, retryCount }) {
         let idempotencyHeaders = {};
@@ -21282,7 +21282,7 @@ var require_mime_types = __commonJS({
     var TEXT_TYPE_REGEXP = /^text\//i;
     exports2.charset = charset;
     exports2.charsets = { lookup: charset };
-    exports2.contentType = contentType;
+    exports2.contentType = contentType2;
     exports2.extension = extension2;
     exports2.extensions = /* @__PURE__ */ Object.create(null);
     exports2.lookup = lookup;
@@ -21302,7 +21302,7 @@ var require_mime_types = __commonJS({
       }
       return false;
     }
-    function contentType(str2) {
+    function contentType2(str2) {
       if (!str2 || typeof str2 !== "string") {
         return false;
       }
@@ -21698,11 +21698,11 @@ var require_sign = __commonJS({
   "node_modules/math-intrinsics/sign.js"(exports2, module2) {
     "use strict";
     var $isNaN = require_isNaN();
-    module2.exports = function sign(number3) {
-      if ($isNaN(number3) || number3 === 0) {
-        return number3;
+    module2.exports = function sign(number4) {
+      if ($isNaN(number4) || number4 === 0) {
+        return number4;
       }
-      return number3 < 0 ? -1 : 1;
+      return number4 < 0 ? -1 : 1;
     };
   }
 });
@@ -22273,17 +22273,17 @@ var require_get_intrinsic = __commonJS({
     var $exec = bind2.call($call, RegExp.prototype.exec);
     var rePropName = /[^%.[\]]+|\[(?:(-?\d+(?:\.\d+)?)|(["'])((?:(?!\2)[^\\]|\\.)*?)\2)\]|(?=(?:\.|\[\])(?:\.|\[\]|%$))/g;
     var reEscapeChar = /\\(\\)?/g;
-    var stringToPath = function stringToPath2(string3) {
-      var first = $strSlice(string3, 0, 1);
-      var last = $strSlice(string3, -1);
+    var stringToPath = function stringToPath2(string4) {
+      var first = $strSlice(string4, 0, 1);
+      var last = $strSlice(string4, -1);
       if (first === "%" && last !== "%") {
         throw new $SyntaxError("invalid intrinsic syntax, expected closing `%`");
       } else if (last === "%" && first !== "%") {
         throw new $SyntaxError("invalid intrinsic syntax, expected opening `%`");
       }
       var result = [];
-      $replace(string3, rePropName, function(match2, number3, quote, subString) {
-        result[result.length] = quote ? $replace(subString, reEscapeChar, "$1") : number3 || match2;
+      $replace(string4, rePropName, function(match2, number4, quote, subString) {
+        result[result.length] = quote ? $replace(subString, reEscapeChar, "$1") : number4 || match2;
       });
       return result;
     };
@@ -22442,7 +22442,7 @@ var require_form_data = __commonJS({
     var parseUrl2 = require("url").parse;
     var fs10 = require("fs");
     var Stream6 = require("stream").Stream;
-    var crypto4 = require("crypto");
+    var crypto5 = require("crypto");
     var mime = require_mime_types();
     var asynckit = require_asynckit();
     var setToStringTag = require_es_set_tostringtag();
@@ -22536,13 +22536,13 @@ var require_form_data = __commonJS({
         return options.header;
       }
       var contentDisposition = this._getContentDisposition(value, options);
-      var contentType = this._getContentType(value, options);
+      var contentType2 = this._getContentType(value, options);
       var contents = "";
       var headers = {
         // add custom disposition as third element or keep it two elements if not
         "Content-Disposition": ["form-data", 'name="' + escapeHeaderParam(field) + '"'].concat(contentDisposition || []),
         // if no content type. allow it to be empty array
-        "Content-Type": [].concat(contentType || [])
+        "Content-Type": [].concat(contentType2 || [])
       };
       if (typeof options.header === "object") {
         populate(headers, options.header);
@@ -22578,23 +22578,23 @@ var require_form_data = __commonJS({
       }
     };
     FormData5.prototype._getContentType = function(value, options) {
-      var contentType = options.contentType;
-      if (!contentType && value && value.name) {
-        contentType = mime.lookup(value.name);
+      var contentType2 = options.contentType;
+      if (!contentType2 && value && value.name) {
+        contentType2 = mime.lookup(value.name);
       }
-      if (!contentType && value && value.path) {
-        contentType = mime.lookup(value.path);
+      if (!contentType2 && value && value.path) {
+        contentType2 = mime.lookup(value.path);
       }
-      if (!contentType && value && value.readable && hasOwn4(value, "httpVersion")) {
-        contentType = value.headers["content-type"];
+      if (!contentType2 && value && value.readable && hasOwn4(value, "httpVersion")) {
+        contentType2 = value.headers["content-type"];
       }
-      if (!contentType && (options.filepath || options.filename)) {
-        contentType = mime.lookup(options.filepath || options.filename);
+      if (!contentType2 && (options.filepath || options.filename)) {
+        contentType2 = mime.lookup(options.filepath || options.filename);
       }
-      if (!contentType && value && typeof value === "object") {
-        contentType = FormData5.DEFAULT_CONTENT_TYPE;
+      if (!contentType2 && value && typeof value === "object") {
+        contentType2 = FormData5.DEFAULT_CONTENT_TYPE;
       }
-      return contentType;
+      return contentType2;
     };
     FormData5.prototype._multiPartFooter = function() {
       return function(next) {
@@ -22651,7 +22651,7 @@ var require_form_data = __commonJS({
       return Buffer.concat([dataBuffer, Buffer.from(this._lastBoundary())]);
     };
     FormData5.prototype._generateBoundary = function() {
-      this._boundary = "--------------------------" + crypto4.randomBytes(12).toString("hex");
+      this._boundary = "--------------------------" + crypto5.randomBytes(12).toString("hex");
     };
     FormData5.prototype.getLengthSync = function() {
       var knownLength = this._overheadLength + this._valueLength;
@@ -22765,7 +22765,7 @@ var require_ms = __commonJS({
       options = options || {};
       var type = typeof val;
       if (type === "string" && val.length > 0) {
-        return parse5(val);
+        return parse6(val);
       } else if (type === "number" && isFinite(val)) {
         return options.long ? fmtLong(val) : fmtShort(val);
       }
@@ -22773,7 +22773,7 @@ var require_ms = __commonJS({
         "val is not a non-empty string or a valid number. val=" + JSON.stringify(val)
       );
     };
-    function parse5(str2) {
+    function parse6(str2) {
       str2 = String(str2);
       if (str2.length > 100) {
         return;
@@ -24022,8 +24022,8 @@ var require_debug = __commonJS({
 // node_modules/follow-redirects/index.js
 var require_follow_redirects = __commonJS({
   "node_modules/follow-redirects/index.js"(exports2, module2) {
-    var url2 = require("url");
-    var URL2 = url2.URL;
+    var url3 = require("url");
+    var URL2 = url3.URL;
     var http5 = require("http");
     var https3 = require("https");
     var Writable = require("stream").Writable;
@@ -24090,7 +24090,7 @@ var require_follow_redirects = __commonJS({
       "ERR_STREAM_WRITE_AFTER_END",
       "write after end"
     );
-    var destroy = Writable.prototype.destroy || noop6;
+    var destroy = Writable.prototype.destroy || noop7;
     function RedirectableRequest(options, responseCallback) {
       Writable.call(this);
       this._sanitizeOptions(options);
@@ -24284,7 +24284,7 @@ var require_follow_redirects = __commonJS({
       for (var event of events) {
         request.on(event, eventHandlers[event]);
       }
-      this._currentUrl = /^\//.test(this._options.path) ? url2.format(this._options) : (
+      this._currentUrl = /^\//.test(this._options.path) ? url3.format(this._options) : (
         // When making a request to a proxy, […]
         // a client MUST send the target URI in absolute-form […].
         this._options.path
@@ -24352,7 +24352,7 @@ var require_follow_redirects = __commonJS({
       var currentHostHeader = removeMatchingHeaders(/^host$/i, this._options.headers);
       var currentUrlParts = parseUrl2(this._currentUrl);
       var currentHost = currentHostHeader || currentUrlParts.host;
-      var currentUrl = /^\w+:/.test(location) ? this._currentUrl : url2.format(Object.assign(currentUrlParts, { host: currentHost }));
+      var currentUrl = /^\w+:/.test(location) ? this._currentUrl : url3.format(Object.assign(currentUrlParts, { host: currentHost }));
       var redirectUrl = resolveUrl(location, currentUrl);
       debug("redirecting to", redirectUrl.href);
       this._isRedirect = true;
@@ -24423,14 +24423,14 @@ var require_follow_redirects = __commonJS({
       });
       return exports3;
     }
-    function noop6() {
+    function noop7() {
     }
     function parseUrl2(input) {
       var parsed;
       if (useNativeURL) {
         parsed = new URL2(input);
       } else {
-        parsed = validateUrl(url2.parse(input));
+        parsed = validateUrl(url3.parse(input));
         if (!isString2(parsed.protocol)) {
           throw new InvalidUrlError({ input });
         }
@@ -24438,7 +24438,7 @@ var require_follow_redirects = __commonJS({
       return parsed;
     }
     function resolveUrl(relative4, base) {
-      return useNativeURL ? new URL2(relative4, base) : parseUrl2(url2.resolve(base, relative4));
+      return useNativeURL ? new URL2(relative4, base) : parseUrl2(url3.resolve(base, relative4));
     }
     function validateUrl(input) {
       if (/^\[/.test(input.hostname) && !/^\[[:0-9a-f]+\]$/i.test(input.hostname)) {
@@ -24499,7 +24499,7 @@ var require_follow_redirects = __commonJS({
       for (var event of events) {
         request.removeListener(event, eventHandlers[event]);
       }
-      request.on("error", noop6);
+      request.on("error", noop7);
       request.destroy(error2);
     }
     function isSubdomain(subdomain, domain) {
@@ -24688,9 +24688,9 @@ var require_helpers = __commonJS({
       }
     }
     exports2.json = json;
-    function req(url2, opts = {}) {
-      const href = typeof url2 === "string" ? url2 : url2.href;
-      const req2 = (href.startsWith("https:") ? https3 : http5).request(url2, opts);
+    function req(url3, opts = {}) {
+      const href = typeof url3 === "string" ? url3 : url3.href;
+      const req2 = (href.startsWith("https:") ? https3 : http5).request(url3, opts);
       const promise = new Promise((resolve5, reject) => {
         req2.once("response", resolve5).once("error", reject).end();
       });
@@ -25045,8 +25045,8 @@ var require_dist4 = __commonJS({
         let payload = `CONNECT ${host}:${opts.port} HTTP/1.1\r
 `;
         if (proxy.username || proxy.password) {
-          const auth = `${decodeURIComponent(proxy.username)}:${decodeURIComponent(proxy.password)}`;
-          headers["Proxy-Authorization"] = `Basic ${Buffer.from(auth).toString("base64")}`;
+          const auth2 = `${decodeURIComponent(proxy.username)}:${decodeURIComponent(proxy.password)}`;
+          headers["Proxy-Authorization"] = `Basic ${Buffer.from(auth2).toString("base64")}`;
         }
         headers.Host = `${host}:${opts.port}`;
         if (!headers["Proxy-Connection"]) {
@@ -25280,8 +25280,8 @@ var require_retry = __commonJS({
       return timeouts;
     };
     exports2.createTimeout = function(attempt, opts) {
-      var random = opts.randomize ? Math.random() + 1 : 1;
-      var timeout = Math.round(random * Math.max(opts.minTimeout, 1) * Math.pow(opts.factor, attempt));
+      var random2 = opts.randomize ? Math.random() + 1 : 1;
+      var timeout = Math.round(random2 * Math.max(opts.minTimeout, 1) * Math.pow(opts.factor, attempt));
       timeout = Math.min(timeout, opts.maxTimeout);
       return timeout;
     };
@@ -26033,13 +26033,13 @@ var require_ponyfill_es2018 = __commonJS({
       typeof exports2 === "object" && typeof module2 !== "undefined" ? factory2(exports2) : typeof define === "function" && define.amd ? define(["exports"], factory2) : (global2 = typeof globalThis !== "undefined" ? globalThis : global2 || self, factory2(global2.WebStreamsPolyfill = {}));
     })(exports2, (function(exports3) {
       "use strict";
-      function noop6() {
+      function noop7() {
         return void 0;
       }
       function typeIsObject(x2) {
         return typeof x2 === "object" && x2 !== null || typeof x2 === "function";
       }
-      const rethrowAssertionErrorRejection = noop6;
+      const rethrowAssertionErrorRejection = noop7;
       function setFunctionName(fn, name) {
         try {
           Object.defineProperty(fn, "name", {
@@ -28668,7 +28668,7 @@ var require_ponyfill_es2018 = __commonJS({
               return newPromise((resolveRead, rejectRead) => {
                 ReadableStreamDefaultReaderRead(reader, {
                   _chunkSteps: (chunk) => {
-                    currentWrite = PerformPromiseThen(WritableStreamDefaultWriterWrite(writer, chunk), void 0, noop6);
+                    currentWrite = PerformPromiseThen(WritableStreamDefaultWriterWrite(writer, chunk), void 0, noop7);
                     resolveRead(false);
                   },
                   _closeSteps: () => resolveRead(true),
@@ -29349,7 +29349,7 @@ var require_ponyfill_es2018 = __commonJS({
       function ReadableStreamFromIterable(asyncIterable) {
         let stream4;
         const iteratorRecord = GetIterator(asyncIterable, "async");
-        const startAlgorithm = noop6;
+        const startAlgorithm = noop7;
         function pullAlgorithm() {
           let nextResult;
           try {
@@ -29401,7 +29401,7 @@ var require_ponyfill_es2018 = __commonJS({
       }
       function ReadableStreamFromDefaultReader(reader) {
         let stream4;
-        const startAlgorithm = noop6;
+        const startAlgorithm = noop7;
         function pullAlgorithm() {
           let readPromise;
           try {
@@ -29720,7 +29720,7 @@ var require_ponyfill_es2018 = __commonJS({
           });
         }
         const sourceCancelPromise = stream4._readableStreamController[CancelSteps](reason);
-        return transformPromiseWith(sourceCancelPromise, noop6);
+        return transformPromiseWith(sourceCancelPromise, noop7);
       }
       function ReadableStreamClose(stream4) {
         stream4._state = "closed";
@@ -29898,7 +29898,7 @@ var require_ponyfill_es2018 = __commonJS({
         assertFunction(fn, context);
         return (reason) => promiseCall(fn, original, [reason]);
       }
-      class TransformStream {
+      class TransformStream2 {
         constructor(rawTransformer = {}, rawWritableStrategy = {}, rawReadableStrategy = {}) {
           if (rawTransformer === void 0) {
             rawTransformer = null;
@@ -29947,12 +29947,12 @@ var require_ponyfill_es2018 = __commonJS({
           return this._writable;
         }
       }
-      Object.defineProperties(TransformStream.prototype, {
+      Object.defineProperties(TransformStream2.prototype, {
         readable: { enumerable: true },
         writable: { enumerable: true }
       });
       if (typeof Symbol.toStringTag === "symbol") {
-        Object.defineProperty(TransformStream.prototype, Symbol.toStringTag, {
+        Object.defineProperty(TransformStream2.prototype, Symbol.toStringTag, {
           value: "TransformStream",
           configurable: true
         });
@@ -29991,7 +29991,7 @@ var require_ponyfill_es2018 = __commonJS({
         if (!Object.prototype.hasOwnProperty.call(x2, "_transformStreamController")) {
           return false;
         }
-        return x2 instanceof TransformStream;
+        return x2 instanceof TransformStream2;
       }
       function TransformStreamError(stream4, e2) {
         ReadableStreamDefaultControllerError(stream4._readable._readableStreamController, e2);
@@ -30292,7 +30292,7 @@ var require_ponyfill_es2018 = __commonJS({
       exports3.ReadableStreamBYOBRequest = ReadableStreamBYOBRequest;
       exports3.ReadableStreamDefaultController = ReadableStreamDefaultController;
       exports3.ReadableStreamDefaultReader = ReadableStreamDefaultReader;
-      exports3.TransformStream = TransformStream;
+      exports3.TransformStream = TransformStream2;
       exports3.TransformStreamDefaultController = TransformStreamDefaultController;
       exports3.WritableStream = WritableStream2;
       exports3.WritableStreamDefaultController = WritableStreamDefaultController;
@@ -30871,7 +30871,7 @@ async function toFormData3(Body2, ct) {
   let headerValue;
   let entryValue;
   let entryName;
-  let contentType;
+  let contentType2;
   let filename;
   const entryChunks = [];
   const formData = new FormData3();
@@ -30882,7 +30882,7 @@ async function toFormData3(Body2, ct) {
     entryChunks.push(ui8a);
   };
   const appendFileToFormData = () => {
-    const file = new file_default(entryChunks, filename, { type: contentType });
+    const file = new file_default(entryChunks, filename, { type: contentType2 });
     formData.append(entryName, file);
   };
   const appendEntryToFormData = () => {
@@ -30897,7 +30897,7 @@ async function toFormData3(Body2, ct) {
     headerValue = "";
     entryValue = "";
     entryName = "";
-    contentType = "";
+    contentType2 = "";
     filename = null;
     entryChunks.length = 0;
   };
@@ -30921,7 +30921,7 @@ async function toFormData3(Body2, ct) {
         parser.onPartEnd = appendFileToFormData;
       }
     } else if (headerField === "content-type") {
-      contentType = headerValue;
+      contentType2 = headerValue;
     }
     headerValue = "";
     headerField = "";
@@ -31676,9 +31676,9 @@ var init_response = __esm({
         const status = options.status != null ? options.status : 200;
         const headers = new Headers2(options.headers);
         if (body !== null && !headers.has("Content-Type")) {
-          const contentType = extractContentType(body, this);
-          if (contentType) {
-            headers.append("Content-Type", contentType);
+          const contentType2 = extractContentType(body, this);
+          if (contentType2) {
+            headers.append("Content-Type", contentType2);
           }
         }
         this[INTERNALS2] = {
@@ -31741,13 +31741,13 @@ var init_response = __esm({
        * @param {number} status An optional status code for the response (e.g., 302.)
        * @returns {Response}    A Response object.
        */
-      static redirect(url2, status = 302) {
+      static redirect(url3, status = 302) {
         if (!isRedirect(status)) {
           throw new RangeError('Failed to execute "redirect" on "response": Invalid status code');
         }
         return new _Response(null, {
           headers: {
-            location: new URL(url2).toString()
+            location: new URL(url3).toString()
           },
           status
         });
@@ -31804,22 +31804,22 @@ var init_get_search = __esm({
 });
 
 // node_modules/node-fetch/src/utils/referrer.js
-function stripURLForUseAsAReferrer(url2, originOnly = false) {
-  if (url2 == null) {
+function stripURLForUseAsAReferrer(url3, originOnly = false) {
+  if (url3 == null) {
     return "no-referrer";
   }
-  url2 = new URL(url2);
-  if (/^(about|blob|data):$/.test(url2.protocol)) {
+  url3 = new URL(url3);
+  if (/^(about|blob|data):$/.test(url3.protocol)) {
     return "no-referrer";
   }
-  url2.username = "";
-  url2.password = "";
-  url2.hash = "";
+  url3.username = "";
+  url3.password = "";
+  url3.hash = "";
   if (originOnly) {
-    url2.pathname = "";
-    url2.search = "";
+    url3.pathname = "";
+    url3.search = "";
   }
-  return url2;
+  return url3;
 }
 function validateReferrerPolicy(referrerPolicy) {
   if (!ReferrerPolicy.has(referrerPolicy)) {
@@ -31827,11 +31827,11 @@ function validateReferrerPolicy(referrerPolicy) {
   }
   return referrerPolicy;
 }
-function isOriginPotentiallyTrustworthy(url2) {
-  if (/^(http|ws)s:$/.test(url2.protocol)) {
+function isOriginPotentiallyTrustworthy(url3) {
+  if (/^(http|ws)s:$/.test(url3.protocol)) {
     return true;
   }
-  const hostIp = url2.host.replace(/(^\[)|(]$)/g, "");
+  const hostIp = url3.host.replace(/(^\[)|(]$)/g, "");
   const hostIPVersion = (0, import_node_net.isIP)(hostIp);
   if (hostIPVersion === 4 && /^127\./.test(hostIp)) {
     return true;
@@ -31839,25 +31839,25 @@ function isOriginPotentiallyTrustworthy(url2) {
   if (hostIPVersion === 6 && /^(((0+:){7})|(::(0+:){0,6}))0*1$/.test(hostIp)) {
     return true;
   }
-  if (url2.host === "localhost" || url2.host.endsWith(".localhost")) {
+  if (url3.host === "localhost" || url3.host.endsWith(".localhost")) {
     return false;
   }
-  if (url2.protocol === "file:") {
+  if (url3.protocol === "file:") {
     return true;
   }
   return false;
 }
-function isUrlPotentiallyTrustworthy(url2) {
-  if (/^about:(blank|srcdoc)$/.test(url2)) {
+function isUrlPotentiallyTrustworthy(url3) {
+  if (/^about:(blank|srcdoc)$/.test(url3)) {
     return true;
   }
-  if (url2.protocol === "data:") {
+  if (url3.protocol === "data:") {
     return true;
   }
-  if (/^(blob|filesystem):$/.test(url2.protocol)) {
+  if (/^(blob|filesystem):$/.test(url3.protocol)) {
     return true;
   }
-  return isOriginPotentiallyTrustworthy(url2);
+  return isOriginPotentiallyTrustworthy(url3);
 }
 function determineRequestsReferrer(request, { referrerURLCallback, referrerOriginCallback } = {}) {
   if (request.referrer === "no-referrer" || request.referrerPolicy === "") {
@@ -31997,9 +31997,9 @@ var init_request = __esm({
         });
         const headers = new Headers2(init.headers || input.headers || {});
         if (inputBody !== null && !headers.has("Content-Type")) {
-          const contentType = extractContentType(inputBody, this);
-          if (contentType) {
-            headers.set("Content-Type", contentType);
+          const contentType2 = extractContentType(inputBody, this);
+          if (contentType2) {
+            headers.set("Content-Type", contentType2);
           }
         }
         let signal = isRequest2(input) ? input.signal : null;
@@ -32184,12 +32184,12 @@ __export(src_exports, {
   fileFromSync: () => fileFromSync,
   isRedirect: () => isRedirect
 });
-async function fetch2(url2, options_) {
+async function fetch2(url3, options_) {
   return new Promise((resolve5, reject) => {
-    const request = new Request(url2, options_);
+    const request = new Request(url3, options_);
     const { parsedURL, options } = getNodeRequestOptions(request);
     if (!supportedSchemas.has(parsedURL.protocol)) {
-      throw new TypeError(`node-fetch cannot load ${url2}. URL scheme "${parsedURL.protocol.replace(/:$/, "")}" is not supported.`);
+      throw new TypeError(`node-fetch cannot load ${url3}. URL scheme "${parsedURL.protocol.replace(/:$/, "")}" is not supported.`);
     }
     if (parsedURL.protocol === "data:") {
       const data = dist_default(request.url);
@@ -32529,14 +32529,14 @@ var require_gaxios = __commonJS({
       fetch(...args) {
         const input = args[0];
         const init = args[1];
-        let url2 = void 0;
+        let url3 = void 0;
         const headers = new Headers();
         if (typeof input === "string") {
-          url2 = new URL(input);
+          url3 = new URL(input);
         } else if (input instanceof URL) {
-          url2 = input;
+          url3 = input;
         } else if (input && input.url) {
-          url2 = new URL(input.url);
+          url3 = new URL(input.url);
         }
         if (input && typeof input === "object" && "headers" in input) {
           _a12.mergeHeaders(headers, input.headers);
@@ -32545,9 +32545,9 @@ var require_gaxios = __commonJS({
           _a12.mergeHeaders(headers, new Headers(init.headers));
         }
         if (typeof input === "object" && !(input instanceof URL)) {
-          return this.request({ ...init, ...input, headers, url: url2 });
+          return this.request({ ...init, ...input, headers, url: url3 });
         } else {
-          return this.request({ ...init, headers, url: url2 });
+          return this.request({ ...init, headers, url: url3 });
         }
       }
       /**
@@ -32651,8 +32651,8 @@ var require_gaxios = __commonJS({
             return this.getResponseDataFromContentType(res);
         }
       }
-      #urlMayUseProxy(url2, noProxy = []) {
-        const candidate = new URL(url2);
+      #urlMayUseProxy(url3, noProxy = []) {
+        const candidate = new URL(url3);
         const noProxyList = [...noProxy];
         const noProxyEnvList = (process.env.NO_PROXY ?? process.env.no_proxy)?.split(",") || [];
         for (const rule of noProxyEnvList) {
@@ -32738,11 +32738,11 @@ var require_gaxios = __commonJS({
             const prefix = opts.url.toString().includes("?") ? "&" : "?";
             opts.url = opts.url + prefix + additionalQueryParams;
           } else {
-            const url2 = opts.url instanceof URL ? opts.url : new URL(opts.url);
+            const url3 = opts.url instanceof URL ? opts.url : new URL(opts.url);
             for (const [key, value] of new URLSearchParams(opts.params)) {
-              url2.searchParams.append(key, value);
+              url3.searchParams.append(key, value);
             }
-            opts.url = url2;
+            opts.url = url3;
           }
         }
         if (typeof options.maxContentLength === "number") {
@@ -32839,19 +32839,19 @@ var require_gaxios = __commonJS({
        * @returns a promise that resolves to the response data.
        */
       async getResponseDataFromContentType(response) {
-        let contentType = response.headers.get("Content-Type");
-        if (contentType === null) {
+        let contentType2 = response.headers.get("Content-Type");
+        if (contentType2 === null) {
           return response.text();
         }
-        contentType = contentType.toLowerCase();
-        if (contentType.includes("application/json")) {
+        contentType2 = contentType2.toLowerCase();
+        if (contentType2.includes("application/json")) {
           let data = await response.text();
           try {
             data = JSON.parse(data);
           } catch {
           }
           return data;
-        } else if (contentType.match(/^text\//)) {
+        } else if (contentType2.match(/^text\//)) {
           return response.text();
         } else {
           return response.blob();
@@ -34353,12 +34353,12 @@ var require_stringify = __commonJS({
         '"': '\\"',
         "\\": "\\\\"
       }, rep;
-      function quote(string3) {
+      function quote(string4) {
         escapable.lastIndex = 0;
-        return escapable.test(string3) ? '"' + string3.replace(escapable, function(a) {
+        return escapable.test(string4) ? '"' + string4.replace(escapable, function(a) {
           var c = meta2[a];
           return typeof c === "string" ? c : "\\u" + ("0000" + a.charCodeAt(0).toString(16)).slice(-4);
-        }) + '"' : '"' + string3 + '"';
+        }) + '"' : '"' + string4 + '"';
       }
       function str2(key, holder) {
         var i2, k, v, length, mind = gap, partial2, value = holder[key], isBigNumber = value != null && (value instanceof BigNumber || BigNumber.isBigNumber(value));
@@ -34516,56 +34516,56 @@ var require_parse = __commonJS({
         ch = text.charAt(at);
         at += 1;
         return ch;
-      }, number3 = function() {
-        var number4, string4 = "";
+      }, number4 = function() {
+        var number5, string5 = "";
         if (ch === "-") {
-          string4 = "-";
+          string5 = "-";
           next("-");
         }
         while (ch >= "0" && ch <= "9") {
-          string4 += ch;
+          string5 += ch;
           next();
         }
         if (ch === ".") {
-          string4 += ".";
+          string5 += ".";
           while (next() && ch >= "0" && ch <= "9") {
-            string4 += ch;
+            string5 += ch;
           }
         }
         if (ch === "e" || ch === "E") {
-          string4 += ch;
+          string5 += ch;
           next();
           if (ch === "-" || ch === "+") {
-            string4 += ch;
+            string5 += ch;
             next();
           }
           while (ch >= "0" && ch <= "9") {
-            string4 += ch;
+            string5 += ch;
             next();
           }
         }
-        number4 = +string4;
-        if (!isFinite(number4)) {
+        number5 = +string5;
+        if (!isFinite(number5)) {
           error2("Bad number");
         } else {
           if (BigNumber == null) BigNumber = require_bignumber();
-          if (string4.length > 15)
-            return _options.storeAsString ? string4 : _options.useNativeBigInt ? BigInt(string4) : new BigNumber(string4);
+          if (string5.length > 15)
+            return _options.storeAsString ? string5 : _options.useNativeBigInt ? BigInt(string5) : new BigNumber(string5);
           else
-            return !_options.alwaysParseAsBig ? number4 : _options.useNativeBigInt ? BigInt(number4) : new BigNumber(number4);
+            return !_options.alwaysParseAsBig ? number5 : _options.useNativeBigInt ? BigInt(number5) : new BigNumber(number5);
         }
-      }, string3 = function() {
-        var hex, i2, string4 = "", uffff;
+      }, string4 = function() {
+        var hex, i2, string5 = "", uffff;
         if (ch === '"') {
           var startAt = at;
           while (next()) {
             if (ch === '"') {
-              if (at - 1 > startAt) string4 += text.substring(startAt, at - 1);
+              if (at - 1 > startAt) string5 += text.substring(startAt, at - 1);
               next();
-              return string4;
+              return string5;
             }
             if (ch === "\\") {
-              if (at - 1 > startAt) string4 += text.substring(startAt, at - 1);
+              if (at - 1 > startAt) string5 += text.substring(startAt, at - 1);
               next();
               if (ch === "u") {
                 uffff = 0;
@@ -34576,9 +34576,9 @@ var require_parse = __commonJS({
                   }
                   uffff = uffff * 16 + hex;
                 }
-                string4 += String.fromCharCode(uffff);
+                string5 += String.fromCharCode(uffff);
               } else if (typeof escapee[ch] === "string") {
-                string4 += escapee[ch];
+                string5 += escapee[ch];
               } else {
                 break;
               }
@@ -34645,7 +34645,7 @@ var require_parse = __commonJS({
             return object4;
           }
           while (ch) {
-            key = string3();
+            key = string4();
             white();
             next(":");
             if (_options.strict === true && Object.hasOwnProperty.call(object4, key)) {
@@ -34689,11 +34689,11 @@ var require_parse = __commonJS({
           case "[":
             return array2();
           case '"':
-            return string3();
+            return string4();
           case "-":
-            return number3();
+            return number4();
           default:
-            return ch >= "0" && ch <= "9" ? number3() : word();
+            return ch >= "0" && ch <= "9" ? number4() : word();
         }
       };
       return function(source, reviver) {
@@ -35545,22 +35545,22 @@ var require_crypto2 = __commonJS({
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.NodeCrypto = void 0;
-    var crypto4 = require("crypto");
+    var crypto5 = require("crypto");
     var NodeCrypto = class {
       async sha256DigestBase64(str2) {
-        return crypto4.createHash("sha256").update(str2).digest("base64");
+        return crypto5.createHash("sha256").update(str2).digest("base64");
       }
       randomBytesBase64(count) {
-        return crypto4.randomBytes(count).toString("base64");
+        return crypto5.randomBytes(count).toString("base64");
       }
       async verify(pubkey, data, signature) {
-        const verifier = crypto4.createVerify("RSA-SHA256");
+        const verifier = crypto5.createVerify("RSA-SHA256");
         verifier.update(data);
         verifier.end();
         return verifier.verify(pubkey, signature, "base64");
       }
       async sign(privateKey, data) {
-        const signer = crypto4.createSign("RSA-SHA256");
+        const signer = crypto5.createSign("RSA-SHA256");
         signer.update(data);
         signer.end();
         return signer.sign(privateKey, "base64");
@@ -35578,7 +35578,7 @@ var require_crypto2 = __commonJS({
        *   string in hexadecimal encoding.
        */
       async sha256DigestHex(str2) {
-        return crypto4.createHash("sha256").update(str2).digest("hex");
+        return crypto5.createHash("sha256").update(str2).digest("hex");
       }
       /**
        * Computes the HMAC hash of a message using the provided crypto key and the
@@ -35590,7 +35590,7 @@ var require_crypto2 = __commonJS({
        */
       async signWithHmacSha256(key, msg) {
         const cryptoKey = typeof key === "string" ? key : toBuffer(key);
-        return toArrayBuffer(crypto4.createHmac("sha256", cryptoKey).update(msg).digest());
+        return toArrayBuffer(crypto5.createHmac("sha256", cryptoKey).update(msg).digest());
       }
     };
     exports2.NodeCrypto = NodeCrypto;
@@ -36172,14 +36172,14 @@ var require_authclient = __commonJS({
       fetch(...args) {
         const input = args[0];
         const init = args[1];
-        let url2 = void 0;
+        let url3 = void 0;
         const headers = new Headers();
         if (typeof input === "string") {
-          url2 = new URL(input);
+          url3 = new URL(input);
         } else if (input instanceof URL) {
-          url2 = input;
+          url3 = input;
         } else if (input && input.url) {
-          url2 = new URL(input.url);
+          url3 = new URL(input.url);
         }
         if (input && typeof input === "object" && "headers" in input) {
           gaxios_1.Gaxios.mergeHeaders(headers, input.headers);
@@ -36188,9 +36188,9 @@ var require_authclient = __commonJS({
           gaxios_1.Gaxios.mergeHeaders(headers, new Headers(init.headers));
         }
         if (typeof input === "object" && !(input instanceof URL)) {
-          return this.request({ ...init, ...input, headers, url: url2 });
+          return this.request({ ...init, ...input, headers, url: url3 });
         } else {
-          return this.request({ ...init, headers, url: url2 });
+          return this.request({ ...init, headers, url: url3 });
         }
       }
       /**
@@ -36504,10 +36504,10 @@ var require_oauth2client = __commonJS({
        * https://github.com/googleapis/google-auth-library-nodejs/blob/main/samples/oauth2-codeVerifier.js
        */
       async generateCodeVerifierAsync() {
-        const crypto4 = (0, crypto_1.createCrypto)();
-        const randomString2 = crypto4.randomBytesBase64(96);
+        const crypto5 = (0, crypto_1.createCrypto)();
+        const randomString2 = crypto5.randomBytesBase64(96);
         const codeVerifier = randomString2.replace(/\+/g, "~").replace(/=/g, "_").replace(/\//g, "-");
-        const unencodedCodeChallenge = await crypto4.sha256DigestBase64(codeVerifier);
+        const unencodedCodeChallenge = await crypto5.sha256DigestBase64(codeVerifier);
         const codeChallenge = unencodedCodeChallenge.split("=")[0].replace(/\+/g, "-").replace(/\//g, "_");
         return { codeVerifier, codeChallenge };
       }
@@ -36520,7 +36520,7 @@ var require_oauth2client = __commonJS({
         }
       }
       async getTokenAsync(options) {
-        const url2 = this.endpoints.oauth2TokenUrl.toString();
+        const url3 = this.endpoints.oauth2TokenUrl.toString();
         const headers = new Headers();
         const values = {
           client_id: options.client_id || this._clientId,
@@ -36539,7 +36539,7 @@ var require_oauth2client = __commonJS({
         const opts = {
           ..._OAuth2Client.RETRY_CONFIG,
           method: "POST",
-          url: url2,
+          url: url3,
           data: new URLSearchParams((0, util_1.removeUndefinedValuesInObject)(values)),
           headers
         };
@@ -36579,7 +36579,7 @@ var require_oauth2client = __commonJS({
         if (!refreshToken) {
           throw new Error("No refresh token is set.");
         }
-        const url2 = this.endpoints.oauth2TokenUrl.toString();
+        const url3 = this.endpoints.oauth2TokenUrl.toString();
         const data = {
           refresh_token: refreshToken,
           client_id: this._clientId,
@@ -36591,7 +36591,7 @@ var require_oauth2client = __commonJS({
           const opts = {
             ..._OAuth2Client.RETRY_CONFIG,
             method: "POST",
-            url: url2,
+            url: url3,
             data: new URLSearchParams((0, util_1.removeUndefinedValuesInObject)(data))
           };
           authclient_1.AuthClient.setMethodName(opts, "refreshTokenNoCache");
@@ -36662,12 +36662,12 @@ var require_oauth2client = __commonJS({
        * In OAuth2Client, the result has the form:
        * { authorization: 'Bearer <access_token_value>' }
        */
-      async getRequestHeaders(url2) {
-        const headers = (await this.getRequestMetadataAsync(url2)).headers;
+      async getRequestHeaders(url3) {
+        const headers = (await this.getRequestMetadataAsync(url3)).headers;
         return headers;
       }
-      async getRequestMetadataAsync(url2) {
-        url2;
+      async getRequestMetadataAsync(url3) {
+        url3;
         const thisCreds = this.credentials;
         if (!thisCreds.access_token && !thisCreds.refresh_token && !this.apiKey && !this.refreshHandler) {
           throw new Error("No access, refresh token, API key or refresh handler callback is set.");
@@ -36728,9 +36728,9 @@ var require_oauth2client = __commonJS({
        * @param token The existing token to be revoked.
        */
       getRevokeTokenURL(token) {
-        const url2 = new URL(this.endpoints.oauth2RevokeUrl);
-        url2.searchParams.append("token", token);
-        return url2;
+        const url3 = new URL(this.endpoints.oauth2RevokeUrl);
+        url3.searchParams.append("token", token);
+        return url3;
       }
       revokeToken(token, callback) {
         const opts = {
@@ -36858,13 +36858,13 @@ var require_oauth2client = __commonJS({
           return { certs: this.certificateCache, format };
         }
         let res;
-        let url2;
+        let url3;
         switch (format) {
           case CertificateFormat.PEM:
-            url2 = this.endpoints.oauth2FederatedSignonPemCertsUrl.toString();
+            url3 = this.endpoints.oauth2FederatedSignonPemCertsUrl.toString();
             break;
           case CertificateFormat.JWK:
-            url2 = this.endpoints.oauth2FederatedSignonJwkCertsUrl.toString();
+            url3 = this.endpoints.oauth2FederatedSignonJwkCertsUrl.toString();
             break;
           default:
             throw new Error(`Unsupported certificate format ${format}`);
@@ -36872,7 +36872,7 @@ var require_oauth2client = __commonJS({
         try {
           const opts = {
             ..._OAuth2Client.RETRY_CONFIG,
-            url: url2
+            url: url3
           };
           authclient_1.AuthClient.setMethodName(opts, "getFederatedSignonCertsAsync");
           res = await this.transporter.request(opts);
@@ -36918,11 +36918,11 @@ var require_oauth2client = __commonJS({
       }
       async getIapPublicKeysAsync() {
         let res;
-        const url2 = this.endpoints.oauth2IapPublicKeyUrl.toString();
+        const url3 = this.endpoints.oauth2IapPublicKeyUrl.toString();
         try {
           const opts = {
             ..._OAuth2Client.RETRY_CONFIG,
-            url: url2
+            url: url3
           };
           authclient_1.AuthClient.setMethodName(opts, "getIapPublicKeysAsync");
           res = await this.transporter.request(opts);
@@ -36948,7 +36948,7 @@ var require_oauth2client = __commonJS({
        * @return Returns a promise resolving to LoginTicket on verification.
        */
       async verifySignedJwtWithCertsAsync(jwt, certs, requiredAudience, issuers, maxExpiry) {
-        const crypto4 = (0, crypto_1.createCrypto)();
+        const crypto5 = (0, crypto_1.createCrypto)();
         if (!maxExpiry) {
           maxExpiry = _OAuth2Client.DEFAULT_MAX_TOKEN_LIFETIME_SECS_;
         }
@@ -36961,7 +36961,7 @@ var require_oauth2client = __commonJS({
         let envelope;
         let payload;
         try {
-          envelope = JSON.parse(crypto4.decodeBase64StringUtf8(segments[0]));
+          envelope = JSON.parse(crypto5.decodeBase64StringUtf8(segments[0]));
         } catch (err) {
           if (err instanceof Error) {
             err.message = `Can't parse token envelope: ${segments[0]}': ${err.message}`;
@@ -36972,7 +36972,7 @@ var require_oauth2client = __commonJS({
           throw new Error("Can't parse token envelope: " + segments[0]);
         }
         try {
-          payload = JSON.parse(crypto4.decodeBase64StringUtf8(segments[1]));
+          payload = JSON.parse(crypto5.decodeBase64StringUtf8(segments[1]));
         } catch (err) {
           if (err instanceof Error) {
             err.message = `Can't parse token payload '${segments[0]}`;
@@ -36989,7 +36989,7 @@ var require_oauth2client = __commonJS({
         if (envelope.alg === "ES256") {
           signature = formatEcdsa.joseToDer(signature, "ES256").toString("base64");
         }
-        const verified = await crypto4.verify(cert, signed, signature);
+        const verified = await crypto5.verify(cert, signed, signature);
         if (!verified) {
           throw new Error("Invalid token signature: " + jwt);
         }
@@ -37364,14 +37364,14 @@ var require_buffer_equal_constant_time = __commonJS({
 var require_jwa = __commonJS({
   "node_modules/jwa/index.js"(exports2, module2) {
     var Buffer5 = require_safe_buffer().Buffer;
-    var crypto4 = require("crypto");
+    var crypto5 = require("crypto");
     var formatEcdsa = require_ecdsa_sig_formatter();
     var util6 = require("util");
     var MSG_INVALID_ALGORITHM = '"%s" is not a valid algorithm.\n  Supported algorithms are:\n  "HS256", "HS384", "HS512", "RS256", "RS384", "RS512", "PS256", "PS384", "PS512", "ES256", "ES384", "ES512" and "none".';
     var MSG_INVALID_SECRET = "secret must be a string or buffer";
     var MSG_INVALID_VERIFIER_KEY = "key must be a string or a buffer";
     var MSG_INVALID_SIGNER_KEY = "key must be a string, a buffer or an object";
-    var supportsKeyObjects = typeof crypto4.createPublicKey === "function";
+    var supportsKeyObjects = typeof crypto5.createPublicKey === "function";
     if (supportsKeyObjects) {
       MSG_INVALID_VERIFIER_KEY += " or a KeyObject";
       MSG_INVALID_SECRET += "or a KeyObject";
@@ -37461,17 +37461,17 @@ var require_jwa = __commonJS({
       return function sign(thing, secret) {
         checkIsSecretKey(secret);
         thing = normalizeInput(thing);
-        var hmac = crypto4.createHmac("sha" + bits, secret);
+        var hmac = crypto5.createHmac("sha" + bits, secret);
         var sig = (hmac.update(thing), hmac.digest("base64"));
         return fromBase64(sig);
       };
     }
     var bufferEqual;
-    var timingSafeEqual = "timingSafeEqual" in crypto4 ? function timingSafeEqual2(a, b) {
+    var timingSafeEqual = "timingSafeEqual" in crypto5 ? function timingSafeEqual2(a, b) {
       if (a.byteLength !== b.byteLength) {
         return false;
       }
-      return crypto4.timingSafeEqual(a, b);
+      return crypto5.timingSafeEqual(a, b);
     } : function timingSafeEqual2(a, b) {
       if (!bufferEqual) {
         bufferEqual = require_buffer_equal_constant_time();
@@ -37488,7 +37488,7 @@ var require_jwa = __commonJS({
       return function sign(thing, privateKey) {
         checkIsPrivateKey(privateKey);
         thing = normalizeInput(thing);
-        var signer = crypto4.createSign("RSA-SHA" + bits);
+        var signer = crypto5.createSign("RSA-SHA" + bits);
         var sig = (signer.update(thing), signer.sign(privateKey, "base64"));
         return fromBase64(sig);
       };
@@ -37498,7 +37498,7 @@ var require_jwa = __commonJS({
         checkIsPublicKey(publicKey);
         thing = normalizeInput(thing);
         signature = toBase64(signature);
-        var verifier = crypto4.createVerify("RSA-SHA" + bits);
+        var verifier = crypto5.createVerify("RSA-SHA" + bits);
         verifier.update(thing);
         return verifier.verify(publicKey, signature, "base64");
       };
@@ -37507,11 +37507,11 @@ var require_jwa = __commonJS({
       return function sign(thing, privateKey) {
         checkIsPrivateKey(privateKey);
         thing = normalizeInput(thing);
-        var signer = crypto4.createSign("RSA-SHA" + bits);
+        var signer = crypto5.createSign("RSA-SHA" + bits);
         var sig = (signer.update(thing), signer.sign({
           key: privateKey,
-          padding: crypto4.constants.RSA_PKCS1_PSS_PADDING,
-          saltLength: crypto4.constants.RSA_PSS_SALTLEN_DIGEST
+          padding: crypto5.constants.RSA_PKCS1_PSS_PADDING,
+          saltLength: crypto5.constants.RSA_PSS_SALTLEN_DIGEST
         }, "base64"));
         return fromBase64(sig);
       };
@@ -37521,12 +37521,12 @@ var require_jwa = __commonJS({
         checkIsPublicKey(publicKey);
         thing = normalizeInput(thing);
         signature = toBase64(signature);
-        var verifier = crypto4.createVerify("RSA-SHA" + bits);
+        var verifier = crypto5.createVerify("RSA-SHA" + bits);
         verifier.update(thing);
         return verifier.verify({
           key: publicKey,
-          padding: crypto4.constants.RSA_PKCS1_PSS_PADDING,
-          saltLength: crypto4.constants.RSA_PSS_SALTLEN_DIGEST
+          padding: crypto5.constants.RSA_PKCS1_PSS_PADDING,
+          saltLength: crypto5.constants.RSA_PSS_SALTLEN_DIGEST
         }, signature, "base64");
       };
     }
@@ -37607,8 +37607,8 @@ var require_sign_stream = __commonJS({
     var Stream6 = require("stream");
     var toString3 = require_tostring();
     var util6 = require("util");
-    function base64url2(string3, encoding) {
-      return Buffer5.from(string3, encoding).toString("base64").replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
+    function base64url2(string4, encoding) {
+      return Buffer5.from(string4, encoding).toString("base64").replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
     }
     function jwsSecuredInput(header, payload, encoding) {
       encoding = encoding || "utf8";
@@ -37710,8 +37710,8 @@ var require_verify_stream = __commonJS({
       var payload = jwsSig.split(".")[1];
       return Buffer5.from(payload, "base64").toString(encoding);
     }
-    function isValidJws(string3) {
-      return JWS_REGEX.test(string3) && !!headerFromJWS(string3);
+    function isValidJws(string4) {
+      return JWS_REGEX.test(string4) && !!headerFromJWS(string4);
     }
     function jwsVerify(jwsSig, algorithm, secretOrKey) {
       if (!algorithm) {
@@ -38117,9 +38117,9 @@ var require_revokeToken = __commonJS({
     var GOOGLE_REVOKE_TOKEN_URL = "https://oauth2.googleapis.com/revoke?token=";
     var DEFAULT_RETRY_VALUE = true;
     async function revokeToken(accessToken, transporter) {
-      const url2 = GOOGLE_REVOKE_TOKEN_URL + accessToken;
+      const url3 = GOOGLE_REVOKE_TOKEN_URL + accessToken;
       return await transporter.request({
-        url: url2,
+        url: url3,
         retry: DEFAULT_RETRY_VALUE
       });
     }
@@ -38277,12 +38277,12 @@ var require_jwtaccess = __commonJS({
        * @param scopes The scope or scopes being authorized
        * @returns A string that returns the cached key.
        */
-      getCachedKey(url2, scopes) {
-        let cacheKey = url2;
+      getCachedKey(url3, scopes) {
+        let cacheKey = url3;
         if (scopes && Array.isArray(scopes) && scopes.length) {
-          cacheKey = url2 ? `${url2}_${scopes.join("_")}` : `${scopes.join("_")}`;
+          cacheKey = url3 ? `${url3}_${scopes.join("_")}` : `${scopes.join("_")}`;
         } else if (typeof scopes === "string") {
-          cacheKey = url2 ? `${url2}_${scopes}` : scopes;
+          cacheKey = url3 ? `${url3}_${scopes}` : scopes;
         }
         if (!cacheKey) {
           throw Error("Scopes or url must be provided");
@@ -38297,8 +38297,8 @@ var require_jwtaccess = __commonJS({
        * include in the payload.
        * @returns An object that includes the authorization header.
        */
-      getRequestHeaders(url2, additionalClaims, scopes) {
-        const key = this.getCachedKey(url2, scopes);
+      getRequestHeaders(url3, additionalClaims, scopes) {
+        const key = this.getCachedKey(url3, scopes);
         const cachedToken = this.cache.get(key);
         const now = Date.now();
         if (cachedToken && cachedToken.expiration - now > this.eagerRefreshThresholdMillis) {
@@ -38322,7 +38322,7 @@ var require_jwtaccess = __commonJS({
           defaultClaims = {
             iss: this.email,
             sub: this.email,
-            aud: url2,
+            aud: url3,
             exp,
             iat
           };
@@ -38460,9 +38460,9 @@ var require_jwtclient = __commonJS({
        *
        * @param url the URI being authorized.
        */
-      async getRequestMetadataAsync(url2) {
-        url2 = this.defaultServicePath ? `https://${this.defaultServicePath}/` : url2;
-        const useSelfSignedJWT = !this.hasUserScopes() && url2 || this.useJWTAccessWithScope && this.hasAnyScopes() || this.universeDomain !== authclient_1.DEFAULT_UNIVERSE;
+      async getRequestMetadataAsync(url3) {
+        url3 = this.defaultServicePath ? `https://${this.defaultServicePath}/` : url3;
+        const useSelfSignedJWT = !this.hasUserScopes() && url3 || this.useJWTAccessWithScope && this.hasAnyScopes() || this.universeDomain !== authclient_1.DEFAULT_UNIVERSE;
         if (this.subject && this.universeDomain !== authclient_1.DEFAULT_UNIVERSE) {
           throw new RangeError(`Service Account user is configured for the credential. Domain-wide delegation is not supported in universes other than ${authclient_1.DEFAULT_UNIVERSE}`);
         }
@@ -38481,12 +38481,12 @@ var require_jwtclient = __commonJS({
             let scopes;
             if (this.hasUserScopes()) {
               scopes = this.scopes;
-            } else if (!url2) {
+            } else if (!url3) {
               scopes = this.defaultScopes;
             }
             const useScopes = this.useJWTAccessWithScope || this.universeDomain !== authclient_1.DEFAULT_UNIVERSE;
             const headers = await this.access.getRequestHeaders(
-              url2 ?? void 0,
+              url3 ?? void 0,
               this.additionalClaims,
               // Scopes take precedent over audience for signing,
               // so we only provide them if `useJWTAccessWithScope` is on or
@@ -38496,7 +38496,7 @@ var require_jwtclient = __commonJS({
             return { headers: this.addSharedMetadataHeaders(headers) };
           }
         } else if (this.hasAnyScopes() || this.apiKey) {
-          return super.getRequestMetadataAsync(url2);
+          return super.getRequestMetadataAsync(url3);
         } else {
           return { headers: new Headers() };
         }
@@ -39061,20 +39061,20 @@ var require_oauth2common = __commonJS({
             throw new Error(`${method} HTTP method does not support ${this.#clientAuthentication.confidentialClientType} client authentication`);
           }
           const headers = new Headers(opts.headers);
-          const contentType = headers.get("content-type");
-          if (contentType?.startsWith("application/x-www-form-urlencoded") || opts.data instanceof URLSearchParams) {
+          const contentType2 = headers.get("content-type");
+          if (contentType2?.startsWith("application/x-www-form-urlencoded") || opts.data instanceof URLSearchParams) {
             const data = new URLSearchParams(opts.data ?? "");
             data.append("client_id", this.#clientAuthentication.clientId);
             data.append("client_secret", this.#clientAuthentication.clientSecret || "");
             opts.data = data;
-          } else if (contentType?.startsWith("application/json")) {
+          } else if (contentType2?.startsWith("application/json")) {
             opts.data = opts.data || {};
             Object.assign(opts.data, {
               client_id: this.#clientAuthentication.clientId,
               client_secret: this.#clientAuthentication.clientSecret || ""
             });
           } else {
-            throw new Error(`${contentType} content-types are not supported with ${this.#clientAuthentication.confidentialClientType} client authentication`);
+            throw new Error(`${contentType2} content-types are not supported with ${this.#clientAuthentication.confidentialClientType} client authentication`);
           }
         }
       }
@@ -39954,10 +39954,10 @@ var require_identitypoolclient = __commonJS({
             throw new Error("Missing subject_token_field_name for JSON credential_source format");
           }
           const file = credentialSourceOpts.get("file");
-          const url2 = credentialSourceOpts.get("url");
+          const url3 = credentialSourceOpts.get("url");
           const certificate = credentialSourceOpts.get("certificate");
           const headers = credentialSourceOpts.get("headers");
-          if (file && url2 || url2 && certificate || file && certificate) {
+          if (file && url3 || url3 && certificate || file && certificate) {
             throw new Error('No valid Identity Pool "credential_source" provided, must be either file, url, or certificate.');
           } else if (file) {
             this.credentialSourceType = "file";
@@ -39966,10 +39966,10 @@ var require_identitypoolclient = __commonJS({
               formatType,
               subjectTokenFieldName: formatSubjectTokenFieldName
             });
-          } else if (url2) {
+          } else if (url3) {
             this.credentialSourceType = "url";
             this.subjectTokenSupplier = new urlsubjecttokensupplier_1.UrlSubjectTokenSupplier({
-              url: url2,
+              url: url3,
               formatType,
               subjectTokenFieldName: formatSubjectTokenFieldName,
               headers,
@@ -40056,12 +40056,12 @@ var require_awsrequestsigner = __commonJS({
           throw new RangeError('"url" is required in "amzOptions"');
         }
         const requestPayloadData = typeof amzOptions.data === "object" ? JSON.stringify(amzOptions.data) : amzOptions.data;
-        const url2 = amzOptions.url;
+        const url3 = amzOptions.url;
         const method = amzOptions.method || "GET";
         const requestPayload = amzOptions.body || requestPayloadData;
         const additionalAmzHeaders = amzOptions.headers;
         const awsSecurityCredentials = await this.getCredentials();
-        const uri = new URL(url2);
+        const uri = new URL(url3);
         if (typeof requestPayload !== "string" && requestPayload !== void 0) {
           throw new TypeError(`'requestPayload' is expected to be a string if provided. Got: ${requestPayload}`);
         }
@@ -40091,7 +40091,7 @@ var require_awsrequestsigner = __commonJS({
           });
         }
         const awsSignedReq = {
-          url: url2,
+          url: url3,
           method,
           headers
         };
@@ -40102,14 +40102,14 @@ var require_awsrequestsigner = __commonJS({
       }
     };
     exports2.AwsRequestSigner = AwsRequestSigner;
-    async function sign(crypto4, key, msg) {
-      return await crypto4.signWithHmacSha256(key, msg);
+    async function sign(crypto5, key, msg) {
+      return await crypto5.signWithHmacSha256(key, msg);
     }
-    async function getSigningKey(crypto4, key, dateStamp, region, serviceName) {
-      const kDate = await sign(crypto4, `AWS4${key}`, dateStamp);
-      const kRegion = await sign(crypto4, kDate, region);
-      const kService = await sign(crypto4, kRegion, serviceName);
-      const kSigning = await sign(crypto4, kService, "aws4_request");
+    async function getSigningKey(crypto5, key, dateStamp, region, serviceName) {
+      const kDate = await sign(crypto5, `AWS4${key}`, dateStamp);
+      const kRegion = await sign(crypto5, kDate, region);
+      const kService = await sign(crypto5, kRegion, serviceName);
+      const kSigning = await sign(crypto5, kService, "aws4_request");
       return kSigning;
     }
     async function generateAuthenticationHeaderMap(options) {
@@ -41751,9 +41751,9 @@ var require_googleauth = __commonJS({
        * Obtain the HTTP headers that will provide authorization for a given
        * request.
        */
-      async getRequestHeaders(url2) {
+      async getRequestHeaders(url3) {
         const client = await this.getClient();
-        return client.getRequestHeaders(url2);
+        return client.getRequestHeaders(url3);
       }
       /**
        * Obtain credentials for a request, then attach the appropriate headers to
@@ -41761,9 +41761,9 @@ var require_googleauth = __commonJS({
        * @param opts Axios or Request options on which to attach the headers
        */
       async authorizeRequest(opts = {}) {
-        const url2 = opts.url;
+        const url3 = opts.url;
         const client = await this.getClient();
-        const headers = await client.getRequestHeaders(url2);
+        const headers = await client.getRequestHeaders(url3);
         opts.headers = gaxios_1.Gaxios.mergeHeaders(opts.headers, headers);
         return opts;
       }
@@ -41828,24 +41828,24 @@ var require_googleauth = __commonJS({
           const signed = await client.sign(data);
           return signed.signedBlob;
         }
-        const crypto4 = (0, crypto_1.createCrypto)();
+        const crypto5 = (0, crypto_1.createCrypto)();
         if (client instanceof jwtclient_1.JWT && client.key) {
-          const sign = await crypto4.sign(client.key, data);
+          const sign = await crypto5.sign(client.key, data);
           return sign;
         }
         const creds = await this.getCredentials();
         if (!creds.client_email) {
           throw new Error("Cannot sign data without `client_email`.");
         }
-        return this.signBlob(crypto4, creds.client_email, data, endpoint);
+        return this.signBlob(crypto5, creds.client_email, data, endpoint);
       }
-      async signBlob(crypto4, emailOrUniqueId, data, endpoint) {
-        const url2 = new URL(endpoint + `${emailOrUniqueId}:signBlob`);
+      async signBlob(crypto5, emailOrUniqueId, data, endpoint) {
+        const url3 = new URL(endpoint + `${emailOrUniqueId}:signBlob`);
         const res = await this.request({
           method: "POST",
-          url: url2.href,
+          url: url3.href,
           data: {
-            payload: crypto4.encodeBase64StringUtf8(data)
+            payload: crypto5.encodeBase64StringUtf8(data)
           },
           retry: true,
           retryConfig: {
@@ -42249,8 +42249,8 @@ var require_src6 = __commonJS({
       return passthrough_1.PassThroughClient;
     } });
     __exportStar(require_googleToken(), exports2);
-    var auth = new googleauth_1.GoogleAuth();
-    exports2.auth = auth;
+    var auth2 = new googleauth_1.GoogleAuth();
+    exports2.auth = auth2;
   }
 });
 
@@ -44349,7 +44349,7 @@ var require_extension = __commonJS({
       if (dest[name] === void 0) dest[name] = [elem];
       else dest[name].push(elem);
     }
-    function parse5(header) {
+    function parse6(header) {
       const offers = /* @__PURE__ */ Object.create(null);
       let params = /* @__PURE__ */ Object.create(null);
       let mustUnescape = false;
@@ -44489,7 +44489,7 @@ var require_extension = __commonJS({
         }).join(", ");
       }).join(", ");
     }
-    module2.exports = { format, parse: parse5 };
+    module2.exports = { format, parse: parse6 };
   }
 });
 
@@ -44523,7 +44523,7 @@ var require_websocket = __commonJS({
     var {
       EventTarget: { addEventListener, removeEventListener }
     } = require_event_target();
-    var { format, parse: parse5 } = require_extension();
+    var { format, parse: parse6 } = require_extension();
     var { toBuffer } = require_buffer_util();
     var kAborted = /* @__PURE__ */ Symbol("kAborted");
     var protocolVersions = [8, 13];
@@ -45200,7 +45200,7 @@ var require_websocket = __commonJS({
           }
           let extensions;
           try {
-            extensions = parse5(secWebSocketExtensions);
+            extensions = parse6(secWebSocketExtensions);
           } catch (err) {
             const message = "Invalid Sec-WebSocket-Extensions header";
             abortHandshake(websocket, socket, message);
@@ -45492,7 +45492,7 @@ var require_subprotocol = __commonJS({
   "node_modules/ws/lib/subprotocol.js"(exports2, module2) {
     "use strict";
     var { tokenChars } = require_validation();
-    function parse5(header) {
+    function parse6(header) {
       const protocols = /* @__PURE__ */ new Set();
       let start = -1;
       let end = -1;
@@ -45528,7 +45528,7 @@ var require_subprotocol = __commonJS({
       protocols.add(protocol);
       return protocols;
     }
-    module2.exports = { parse: parse5 };
+    module2.exports = { parse: parse6 };
   }
 });
 
@@ -46941,7 +46941,7 @@ var require_parse2 = __commonJS({
       }
       return pre + r2;
     }
-    function parseInternal(string3, env3, opts) {
+    function parseInternal(string4, env3, opts) {
       if (!opts) {
         opts = {};
       }
@@ -46953,7 +46953,7 @@ var require_parse2 = __commonJS({
         // control chars
         "(" + BAREWORD + "|" + DOUBLE_QUOTE + "|" + SINGLE_QUOTE + ")+"
       ].join("|"), "g");
-      var matches = matchAll2(string3, chunker);
+      var matches = matchAll2(string4, chunker);
       if (matches.length === 0) {
         return [];
       }
@@ -47085,7 +47085,7 @@ var require_parse2 = __commonJS({
             );
           } else if (hash.test(c)) {
             commented = true;
-            var commentObj = { comment: string3.slice(match2.index + i3 + 1) };
+            var commentObj = { comment: string4.slice(match2.index + i3 + 1) };
             if (out.length) {
               return (
                 /** @type {const} */
@@ -47153,7 +47153,7 @@ var require_parse2 = __commonJS({
         []
       );
     }
-    module2.exports = function parse5(s2, env3, opts) {
+    module2.exports = function parse6(s2, env3, opts) {
       var mapped = parseInternal(s2, env3, opts);
       if (typeof env3 !== "function") {
         return mapped;
@@ -50795,7 +50795,7 @@ var require_fast_uri = __commonJS({
         normalizeString(uri, options);
       } else if (typeof uri === "object") {
         uri = /** @type {T} */
-        parse5(serialize(uri, options), options);
+        parse6(serialize(uri, options), options);
       }
       return uri;
     }
@@ -50813,8 +50813,8 @@ var require_fast_uri = __commonJS({
     function resolveComponent(base, relative4, options, skipNormalization) {
       const target = {};
       if (!skipNormalization) {
-        base = parse5(serialize(base, options), options);
-        relative4 = parse5(serialize(relative4, options), options);
+        base = parse6(serialize(base, options), options);
+        relative4 = parse6(serialize(relative4, options), options);
       }
       options = options || {};
       if (!options.tolerant && relative4.scheme) {
@@ -51058,7 +51058,7 @@ var require_fast_uri = __commonJS({
       }
       return { parsed, malformedAuthorityOrPort };
     }
-    function parse5(uri, opts) {
+    function parse6(uri, opts) {
       return parseWithStatus(uri, opts).parsed;
     }
     function normalizeString(uri, opts) {
@@ -51087,7 +51087,7 @@ var require_fast_uri = __commonJS({
       resolveComponent,
       equal,
       serialize,
-      parse: parse5
+      parse: parse6
     };
     module2.exports = fastUri;
     module2.exports.default = fastUri;
@@ -53766,7 +53766,7 @@ var require_formats = __commonJS({
     }
     exports2.fullFormats = {
       // date: http://tools.ietf.org/html/rfc3339#section-5.6
-      date: fmtDef(date3, compareDate2),
+      date: fmtDef(date4, compareDate2),
       // date-time: http://tools.ietf.org/html/rfc3339#section-5.6
       time: fmtDef(getTime2(true), compareTime2),
       "date-time": fmtDef(getDateTime(true), compareDateTime),
@@ -53832,7 +53832,7 @@ var require_formats = __commonJS({
     }
     var DATE = /^(\d\d\d\d)-(\d\d)-(\d\d)$/;
     var DAYS = [0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-    function date3(str2) {
+    function date4(str2) {
       const matches = DATE.exec(str2);
       if (!matches)
         return false;
@@ -53901,7 +53901,7 @@ var require_formats = __commonJS({
       const time3 = getTime2(strictTimeZone);
       return function date_time(str2) {
         const dateTime = str2.split(DATE_TIME_SEPARATOR);
-        return dateTime.length === 2 && date3(dateTime[0]) && time3(dateTime[1]);
+        return dateTime.length === 2 && date4(dateTime[0]) && time3(dateTime[1]);
       };
     }
     function compareDateTime(dt1, dt2) {
@@ -60088,8 +60088,8 @@ var require_shebang_command = __commonJS({
   "node_modules/shebang-command/index.js"(exports2, module2) {
     "use strict";
     var shebangRegex = require_shebang_regex();
-    module2.exports = (string3 = "") => {
-      const match2 = string3.match(shebangRegex);
+    module2.exports = (string4 = "") => {
+      const match2 = string4.match(shebangRegex);
       if (!match2) {
         return null;
       }
@@ -60164,7 +60164,7 @@ var require_parse3 = __commonJS({
       }
       return parsed;
     }
-    function parse5(command, args, options) {
+    function parse6(command, args, options) {
       if (args && !Array.isArray(args)) {
         options = args;
         args = null;
@@ -60183,7 +60183,7 @@ var require_parse3 = __commonJS({
       };
       return options.shell ? parsed : parseNonShell(parsed);
     }
-    module2.exports = parse5;
+    module2.exports = parse6;
   }
 });
 
@@ -60242,16 +60242,16 @@ var require_cross_spawn = __commonJS({
   "node_modules/cross-spawn/index.js"(exports2, module2) {
     "use strict";
     var cp3 = require("child_process");
-    var parse5 = require_parse3();
+    var parse6 = require_parse3();
     var enoent = require_enoent();
     function spawn5(command, args, options) {
-      const parsed = parse5(command, args, options);
+      const parsed = parse6(command, args, options);
       const spawned = cp3.spawn(parsed.command, parsed.args, parsed.options);
       enoent.hookChildProcess(spawned, parsed);
       return spawned;
     }
     function spawnSync(command, args, options) {
-      const parsed = parse5(command, args, options);
+      const parsed = parse6(command, args, options);
       const result = cp3.spawnSync(parsed.command, parsed.args, parsed.options);
       result.error = result.error || enoent.verifyENOENTSync(result.status, parsed);
       return result;
@@ -60259,8 +60259,112 @@ var require_cross_spawn = __commonJS({
     module2.exports = spawn5;
     module2.exports.spawn = spawn5;
     module2.exports.sync = spawnSync;
-    module2.exports._parse = parse5;
+    module2.exports._parse = parse6;
     module2.exports._enoent = enoent;
+  }
+});
+
+// node_modules/content-type/index.js
+var require_content_type = __commonJS({
+  "node_modules/content-type/index.js"(exports2) {
+    "use strict";
+    var PARAM_REGEXP = /; *([!#$%&'*+.^_`|~0-9A-Za-z-]+) *= *("(?:[\u000b\u0020\u0021\u0023-\u005b\u005d-\u007e\u0080-\u00ff]|\\[\u000b\u0020-\u00ff])*"|[!#$%&'*+.^_`|~0-9A-Za-z-]+) */g;
+    var TEXT_REGEXP = /^[\u000b\u0020-\u007e\u0080-\u00ff]+$/;
+    var TOKEN_REGEXP = /^[!#$%&'*+.^_`|~0-9A-Za-z-]+$/;
+    var QESC_REGEXP = /\\([\u000b\u0020-\u00ff])/g;
+    var QUOTE_REGEXP = /([\\"])/g;
+    var TYPE_REGEXP = /^[!#$%&'*+.^_`|~0-9A-Za-z-]+\/[!#$%&'*+.^_`|~0-9A-Za-z-]+$/;
+    exports2.format = format;
+    exports2.parse = parse6;
+    function format(obj) {
+      if (!obj || typeof obj !== "object") {
+        throw new TypeError("argument obj is required");
+      }
+      var parameters = obj.parameters;
+      var type = obj.type;
+      if (!type || !TYPE_REGEXP.test(type)) {
+        throw new TypeError("invalid type");
+      }
+      var string4 = type;
+      if (parameters && typeof parameters === "object") {
+        var param;
+        var params = Object.keys(parameters).sort();
+        for (var i2 = 0; i2 < params.length; i2++) {
+          param = params[i2];
+          if (!TOKEN_REGEXP.test(param)) {
+            throw new TypeError("invalid parameter name");
+          }
+          string4 += "; " + param + "=" + qstring(parameters[param]);
+        }
+      }
+      return string4;
+    }
+    function parse6(string4) {
+      if (!string4) {
+        throw new TypeError("argument string is required");
+      }
+      var header = typeof string4 === "object" ? getcontenttype(string4) : string4;
+      if (typeof header !== "string") {
+        throw new TypeError("argument string is required to be a string");
+      }
+      var index = header.indexOf(";");
+      var type = index !== -1 ? header.slice(0, index).trim() : header.trim();
+      if (!TYPE_REGEXP.test(type)) {
+        throw new TypeError("invalid media type");
+      }
+      var obj = new ContentType(type.toLowerCase());
+      if (index !== -1) {
+        var key;
+        var match2;
+        var value;
+        PARAM_REGEXP.lastIndex = index;
+        while (match2 = PARAM_REGEXP.exec(header)) {
+          if (match2.index !== index) {
+            throw new TypeError("invalid parameter format");
+          }
+          index += match2[0].length;
+          key = match2[1].toLowerCase();
+          value = match2[2];
+          if (value.charCodeAt(0) === 34) {
+            value = value.slice(1, -1);
+            if (value.indexOf("\\") !== -1) {
+              value = value.replace(QESC_REGEXP, "$1");
+            }
+          }
+          obj.parameters[key] = value;
+        }
+        if (index !== header.length) {
+          throw new TypeError("invalid parameter format");
+        }
+      }
+      return obj;
+    }
+    function getcontenttype(obj) {
+      var header;
+      if (typeof obj.getHeader === "function") {
+        header = obj.getHeader("content-type");
+      } else if (typeof obj.headers === "object") {
+        header = obj.headers && obj.headers["content-type"];
+      }
+      if (typeof header !== "string") {
+        throw new TypeError("content-type header is missing from object");
+      }
+      return header;
+    }
+    function qstring(val) {
+      var str2 = String(val);
+      if (TOKEN_REGEXP.test(str2)) {
+        return str2;
+      }
+      if (str2.length > 0 && !TEXT_REGEXP.test(str2)) {
+        throw new TypeError("invalid parameter value");
+      }
+      return '"' + str2.replace(QUOTE_REGEXP, "\\$1") + '"';
+    }
+    function ContentType(type) {
+      this.parameters = /* @__PURE__ */ Object.create(null);
+      this.type = type;
+    }
   }
 });
 
@@ -62321,11 +62425,11 @@ var AxiosURLSearchParams_default = AxiosURLSearchParams;
 function encode3(val) {
   return encodeURIComponent(val).replace(/%3A/gi, ":").replace(/%24/g, "$").replace(/%2C/gi, ",").replace(/%20/g, "+");
 }
-function buildURL(url2, params, options) {
+function buildURL(url3, params, options) {
   if (!params) {
-    return url2;
+    return url3;
   }
-  url2 = url2 || "";
+  url3 = url3 || "";
   const _options = utils_default.isFunction(options) ? {
     serialize: options
   } : options;
@@ -62338,13 +62442,13 @@ function buildURL(url2, params, options) {
     serializedParams = utils_default.isURLSearchParams(params) ? params.toString() : new AxiosURLSearchParams_default(params, _options).toString(_encode2);
   }
   if (serializedParams) {
-    const hashmarkIndex = url2.indexOf("#");
+    const hashmarkIndex = url3.indexOf("#");
     if (hashmarkIndex !== -1) {
-      url2 = url2.slice(0, hashmarkIndex);
+      url3 = url3.slice(0, hashmarkIndex);
     }
-    url2 += (url2.indexOf("?") === -1 ? "?" : "&") + serializedParams;
+    url3 += (url3.indexOf("?") === -1 ? "?" : "&") + serializedParams;
   }
-  return url2;
+  return url3;
 }
 
 // node_modules/axios/lib/core/InterceptorManager.js
@@ -62585,8 +62689,8 @@ var defaults2 = {
   adapter: ["xhr", "http", "fetch"],
   transformRequest: [
     function transformRequest(data, headers) {
-      const contentType = headers.getContentType() || "";
-      const hasJSONContentType = contentType.indexOf("application/json") > -1;
+      const contentType2 = headers.getContentType() || "";
+      const hasJSONContentType = contentType2.indexOf("application/json") > -1;
       const isObjectPayload = utils_default.isObject(data);
       if (isObjectPayload && utils_default.isHTMLForm(data)) {
         data = new FormData(data);
@@ -62608,10 +62712,10 @@ var defaults2 = {
       let isFileList2;
       if (isObjectPayload) {
         const formSerializer = own(this, "formSerializer");
-        if (contentType.indexOf("application/x-www-form-urlencoded") > -1) {
+        if (contentType2.indexOf("application/x-www-form-urlencoded") > -1) {
           return toURLEncodedForm(data, formSerializer).toString();
         }
-        if ((isFileList2 = utils_default.isFileList(data)) || contentType.indexOf("multipart/form-data") > -1) {
+        if ((isFileList2 = utils_default.isFileList(data)) || contentType2.indexOf("multipart/form-data") > -1) {
           const env3 = own(this, "env");
           const _FormData = env3 && env3.FormData;
           return toFormData_default(
@@ -62736,11 +62840,11 @@ function settle(resolve5, reject, response) {
 }
 
 // node_modules/axios/lib/helpers/isAbsoluteURL.js
-function isAbsoluteURL2(url2) {
-  if (typeof url2 !== "string") {
+function isAbsoluteURL2(url3) {
+  if (typeof url3 !== "string") {
     return false;
   }
-  return /^([a-z][a-z\d+\-.]*:)?\/\//i.test(url2);
+  return /^([a-z][a-z\d+\-.]*:)?\/\//i.test(url3);
 }
 
 // node_modules/axios/lib/helpers/combineURLs.js
@@ -62758,15 +62862,15 @@ function combineURLs(baseURL, relativeURL) {
 // node_modules/axios/lib/core/buildFullPath.js
 var malformedHttpProtocol = /^https?:(?!\/\/)/i;
 var httpProtocolControlCharacters = /[\t\n\r]/g;
-function stripLeadingC0ControlOrSpace(url2) {
+function stripLeadingC0ControlOrSpace(url3) {
   let i2 = 0;
-  while (i2 < url2.length && url2.charCodeAt(i2) <= 32) {
+  while (i2 < url3.length && url3.charCodeAt(i2) <= 32) {
     i2++;
   }
-  return url2.slice(i2);
+  return url3.slice(i2);
 }
-function normalizeURLForProtocolCheck(url2) {
-  return stripLeadingC0ControlOrSpace(url2).replace(httpProtocolControlCharacters, "");
+function normalizeURLForProtocolCheck(url3) {
+  return stripLeadingC0ControlOrSpace(url3).replace(httpProtocolControlCharacters, "");
 }
 function redactFragment(fragment) {
   if (!fragment) {
@@ -62776,8 +62880,8 @@ function redactFragment(fragment) {
     return `${separator}${parameterName}${REDACTED}`;
   });
 }
-function redactSensitiveURLParts(url2) {
-  const redactedURL = url2.replace(/^(https?:\/{0,2})[^/?#]*@/i, `$1${REDACTED}@`);
+function redactSensitiveURLParts(url3) {
+  const redactedURL = url3.replace(/^(https?:\/{0,2})[^/?#]*@/i, `$1${REDACTED}@`);
   const fragmentIndex = redactedURL.indexOf("#");
   const urlWithoutFragment = fragmentIndex === -1 ? redactedURL : redactedURL.slice(0, fragmentIndex);
   const redactedURLWithoutFragment = urlWithoutFragment.replace(
@@ -62789,9 +62893,9 @@ function redactSensitiveURLParts(url2) {
   }
   return `${redactedURLWithoutFragment}#${redactFragment(redactedURL.slice(fragmentIndex + 1))}`;
 }
-function assertValidHttpProtocolURL(url2, config2) {
-  if (typeof url2 === "string") {
-    const normalizedURL = normalizeURLForProtocolCheck(url2);
+function assertValidHttpProtocolURL(url3, config2) {
+  if (typeof url3 === "string") {
+    const normalizedURL = normalizeURLForProtocolCheck(url3);
     if (malformedHttpProtocol.test(normalizedURL)) {
       throw new AxiosError_default(
         `Invalid URL ${JSON.stringify(redactSensitiveURLParts(normalizedURL))}: missing "//" after protocol`,
@@ -62827,8 +62931,8 @@ function parseUrl(urlString) {
     return null;
   }
 }
-function getProxyForUrl(url2) {
-  var parsedUrl = (typeof url2 === "string" ? parseUrl(url2) : url2) || {};
+function getProxyForUrl(url3) {
+  var parsedUrl = (typeof url3 === "string" ? parseUrl(url3) : url3) || {};
   var proto = parsedUrl.protocol;
   var hostname = parsedUrl.host;
   var port = parsedUrl.port;
@@ -62892,8 +62996,8 @@ var import_zlib = __toESM(require("zlib"), 1);
 var VERSION2 = "1.19.0";
 
 // node_modules/axios/lib/helpers/parseProtocol.js
-function parseProtocol(url2) {
-  const match2 = /^([-+\w]{1,25}):(?:\/\/)?/.exec(url2);
+function parseProtocol(url3) {
+  const match2 = /^([-+\w]{1,25}):(?:\/\/)?/.exec(url3);
   return match2 && match2[1] || "";
 }
 
@@ -63668,13 +63772,13 @@ var estimatePercentDecodedBase64Bytes = (body) => {
   }
   return base64Bytes(significant);
 };
-var estimateDataURLBytes = (url2, estimateBase64) => {
-  if (!url2 || typeof url2 !== "string") return 0;
-  if (!url2.startsWith("data:")) return 0;
-  const comma = url2.indexOf(",");
+var estimateDataURLBytes = (url3, estimateBase64) => {
+  if (!url3 || typeof url3 !== "string") return 0;
+  if (!url3.startsWith("data:")) return 0;
+  const comma = url3.indexOf(",");
   if (comma < 0) return 0;
-  const meta2 = url2.slice(5, comma);
-  const body = url2.slice(comma + 1);
+  const meta2 = url3.slice(5, comma);
+  const body = url3.slice(comma + 1);
   const isBase64 = /;base64/i.test(meta2);
   if (isBase64) {
     return estimateBase64(body);
@@ -63703,15 +63807,15 @@ var estimateDataURLBytes = (url2, estimateBase64) => {
   }
   return bytes;
 };
-function estimateDataURLDecodedBytes(url2) {
-  const fragmentIndex = typeof url2 === "string" ? url2.indexOf("#") : -1;
+function estimateDataURLDecodedBytes(url3) {
+  const fragmentIndex = typeof url3 === "string" ? url3.indexOf("#") : -1;
   return estimateDataURLBytes(
-    fragmentIndex === -1 ? url2 : url2.slice(0, fragmentIndex),
+    fragmentIndex === -1 ? url3 : url3.slice(0, fragmentIndex),
     estimatePercentDecodedBase64Bytes
   );
 }
-function estimateDataURLBufferAllocation(url2) {
-  return estimateDataURLBytes(url2, estimateBase64BufferAllocation);
+function estimateDataURLBufferAllocation(url3) {
+  return estimateDataURLBytes(url3, estimateBase64BufferAllocation);
 }
 
 // node_modules/axios/lib/adapters/http.js
@@ -64253,19 +64357,19 @@ var http_default = isHttpAdapterSupported && function httpAdapter(config2) {
         )
       );
     }
-    let auth = void 0;
+    let auth2 = void 0;
     const configAuth = own2("auth");
     if (configAuth) {
       const username = utils_default.getSafeProp(configAuth, "username") || "";
       const password = utils_default.getSafeProp(configAuth, "password") || "";
-      auth = username + ":" + password;
+      auth2 = username + ":" + password;
     }
-    if (!auth && (parsed.username || parsed.password)) {
+    if (!auth2 && (parsed.username || parsed.password)) {
       const urlUsername = decodeURIComponentSafe(parsed.username);
       const urlPassword = decodeURIComponentSafe(parsed.password);
-      auth = urlUsername + ":" + urlPassword;
+      auth2 = urlUsername + ":" + urlPassword;
     }
-    auth && headers.delete("authorization");
+    auth2 && headers.delete("authorization");
     let path13;
     try {
       path13 = buildURL(
@@ -64291,7 +64395,7 @@ var http_default = isHttpAdapterSupported && function httpAdapter(config2) {
       method,
       headers: toByteStringHeaderObject(headers),
       agents: { http: httpAgent, https: httpsAgent },
-      auth,
+      auth: auth2,
       protocol,
       family,
       beforeRedirect: dispatchBeforeRedirect,
@@ -64361,9 +64465,9 @@ var http_default = isHttpAdapterSupported && function httpAdapter(config2) {
         if (configBeforeRedirect) {
           options.beforeRedirects.config = configBeforeRedirect;
         }
-        if (auth) {
+        if (auth2) {
           const requestOrigin = parsed.origin;
-          const authToRestore = auth;
+          const authToRestore = auth2;
           options.beforeRedirects.auth = function beforeRedirectAuth(redirectOptions) {
             try {
               if (new URL(redirectOptions.href).origin === requestOrigin) {
@@ -64677,9 +64781,9 @@ var http_default = isHttpAdapterSupported && function httpAdapter(config2) {
 };
 
 // node_modules/axios/lib/helpers/isURLSameOrigin.js
-var isURLSameOrigin_default = platform_default.hasStandardBrowserEnv ? /* @__PURE__ */ ((origin2, isMSIE) => (url2) => {
-  url2 = new URL(url2, platform_default.origin);
-  return origin2.protocol === url2.protocol && origin2.host === url2.host && (isMSIE || origin2.port === url2.port);
+var isURLSameOrigin_default = platform_default.hasStandardBrowserEnv ? /* @__PURE__ */ ((origin2, isMSIE) => (url3) => {
+  url3 = new URL(url3, platform_default.origin);
+  return origin2.protocol === url3.protocol && origin2.host === url3.host && (isMSIE || origin2.port === url3.port);
 })(
   new URL(platform_default.origin),
   platform_default.navigator && /(msie|trident)/i.test(platform_default.navigator.userAgent)
@@ -64883,19 +64987,19 @@ function resolveConfig(config2) {
   const xsrfHeaderName = own2("xsrfHeaderName");
   const xsrfCookieName = own2("xsrfCookieName");
   let headers = own2("headers");
-  const auth = own2("auth");
+  const auth2 = own2("auth");
   const baseURL = own2("baseURL");
   const allowAbsoluteUrls = own2("allowAbsoluteUrls");
-  const url2 = own2("url");
+  const url3 = own2("url");
   newConfig.headers = headers = AxiosHeaders_default.from(headers);
   newConfig.url = buildURL(
-    buildFullPath(baseURL, url2, allowAbsoluteUrls, newConfig),
+    buildFullPath(baseURL, url3, allowAbsoluteUrls, newConfig),
     own2("params"),
     own2("paramsSerializer")
   );
-  if (auth) {
-    const username = utils_default.getSafeProp(auth, "username") || "";
-    const password = utils_default.getSafeProp(auth, "password") || "";
+  if (auth2) {
+    const username = utils_default.getSafeProp(auth2, "username") || "";
+    const password = utils_default.getSafeProp(auth2, "password") || "";
     try {
       headers.set(
         "Authorization",
@@ -65228,9 +65332,9 @@ var test = (fn, ...args) => {
     return false;
   }
 };
-var maybeWithAuthCredentials = (url2) => {
-  const protocolIndex = url2.indexOf("://");
-  let urlToCheck = url2;
+var maybeWithAuthCredentials = (url3) => {
+  const protocolIndex = url3.indexOf("://");
+  let urlToCheck = url3;
   if (protocolIndex !== -1) {
     urlToCheck = urlToCheck.slice(protocolIndex + 3);
   }
@@ -65323,7 +65427,7 @@ var factory = (env3) => {
   };
   return async (config2) => {
     let {
-      url: url2,
+      url: url3,
       method,
       data,
       signal,
@@ -65360,22 +65464,22 @@ var factory = (env3) => {
       request
     );
     try {
-      let auth = void 0;
+      let auth2 = void 0;
       const configAuth = own2("auth");
       if (configAuth) {
         const username = utils_default.getSafeProp(configAuth, "username") || "";
         const password = utils_default.getSafeProp(configAuth, "password") || "";
-        auth = {
+        auth2 = {
           username,
           password
         };
       }
-      if (maybeWithAuthCredentials(url2)) {
-        const parsedURL = new URL(url2, platform_default.origin);
-        if (!auth && (parsedURL.username || parsedURL.password)) {
+      if (maybeWithAuthCredentials(url3)) {
+        const parsedURL = new URL(url3, platform_default.origin);
+        if (!auth2 && (parsedURL.username || parsedURL.password)) {
           const urlUsername = decodeURIComponentSafe2(parsedURL.username);
           const urlPassword = decodeURIComponentSafe2(parsedURL.password);
-          auth = {
+          auth2 = {
             username: urlUsername,
             password: urlPassword
           };
@@ -65383,18 +65487,18 @@ var factory = (env3) => {
         if (parsedURL.username || parsedURL.password) {
           parsedURL.username = "";
           parsedURL.password = "";
-          url2 = parsedURL.href;
+          url3 = parsedURL.href;
         }
       }
-      if (auth) {
+      if (auth2) {
         headers.delete("authorization");
         headers.set(
           "Authorization",
-          "Basic " + btoa(encodeUTF83((auth.username || "") + ":" + (auth.password || "")))
+          "Basic " + btoa(encodeUTF83((auth2.username || "") + ":" + (auth2.password || "")))
         );
       }
-      if (hasMaxContentLength && typeof url2 === "string" && url2.startsWith("data:")) {
-        const estimated = estimateDataURLDecodedBytes(url2);
+      if (hasMaxContentLength && typeof url3 === "string" && url3.startsWith("data:")) {
+        const estimated = estimateDataURLDecodedBytes(url3);
         if (estimated > maxContentLength) {
           throw new AxiosError_default(
             "maxContentLength size of " + maxContentLength + " exceeded",
@@ -65428,7 +65532,7 @@ var factory = (env3) => {
       if (supportsRequestStream && method !== "get" && method !== "head" && (onUploadProgress || mustEnforceStreamBody)) {
         requestContentLength = requestContentLength == null ? await resolveBodyLength(headers, data) : requestContentLength;
         if (requestContentLength !== 0 || mustEnforceStreamBody) {
-          let _request = new Request2(url2, {
+          let _request = new Request2(url3, {
             method: "POST",
             body: data,
             duplex: "half"
@@ -65460,8 +65564,8 @@ var factory = (env3) => {
       }
       const isCredentialsSupported = isRequestSupported && "credentials" in Request2.prototype;
       if (utils_default.isFormData(data)) {
-        const contentType = headers.getContentType();
-        if (contentType && /^multipart\/form-data/i.test(contentType) && !/boundary=/i.test(contentType)) {
+        const contentType2 = headers.getContentType();
+        if (contentType2 && /^multipart\/form-data/i.test(contentType2) && !/boundary=/i.test(contentType2)) {
           headers.delete("content-type");
         }
       }
@@ -65475,8 +65579,8 @@ var factory = (env3) => {
         duplex: "half",
         credentials: isCredentialsSupported ? withCredentials : void 0
       };
-      request = isRequestSupported && new Request2(url2, resolvedOptions);
-      let response = await (isRequestSupported ? _fetch(request, fetchOptions) : _fetch(url2, resolvedOptions));
+      request = isRequestSupported && new Request2(url3, resolvedOptions);
+      let response = await (isRequestSupported ? _fetch(request, fetchOptions) : _fetch(url3, resolvedOptions));
       const responseHeaders = AxiosHeaders_default.from(response.headers);
       if (hasMaxContentLength) {
         const declaredLength = utils_default.toFiniteNumber(responseHeaders.getContentLength());
@@ -65991,11 +66095,11 @@ var Axios = class {
   }
 };
 utils_default.forEach(["delete", "get", "head", "options"], function forEachMethodNoData(method) {
-  Axios.prototype[method] = function(url2, config2) {
+  Axios.prototype[method] = function(url3, config2) {
     return this.request(
       mergeConfig(config2 || {}, {
         method,
-        url: url2,
+        url: url3,
         data: config2 && utils_default.hasOwnProp(config2, "data") ? config2.data : void 0
       })
     );
@@ -66003,14 +66107,14 @@ utils_default.forEach(["delete", "get", "head", "options"], function forEachMeth
 });
 utils_default.forEach(["post", "put", "patch", "query"], function forEachMethodWithData(method) {
   function generateHTTPMethod(isForm) {
-    return function httpMethod(url2, data, config2) {
+    return function httpMethod(url3, data, config2) {
       return this.request(
         mergeConfig(config2 || {}, {
           method,
           headers: isForm ? {
             "Content-Type": "multipart/form-data"
           } : {},
-          url: url2,
+          url: url3,
           data
         })
       );
@@ -66702,7 +66806,7 @@ function post(endpoint, body, requestConfig, timeout, responseType) {
   return __async(this, null, function* () {
     const { proxies, apiBaseURL } = requestConfig;
     const requestTimeout = endpoint === "research" ? timeout : timeout != null ? timeout : 60;
-    const url2 = `${apiBaseURL || BASE_URL}/${endpoint}`;
+    const url3 = `${apiBaseURL || BASE_URL}/${endpoint}`;
     const headers = buildHeaders2(requestConfig);
     const config2 = { headers };
     if (requestTimeout !== void 0) {
@@ -66720,13 +66824,13 @@ function post(endpoint, body, requestConfig, timeout, responseType) {
     if (responseType) {
       config2.responseType = responseType;
     }
-    return axios_default.post(url2, body, config2);
+    return axios_default.post(url3, body, config2);
   });
 }
 function get(endpoint, requestConfig, timeout) {
   return __async(this, null, function* () {
     const { proxies, apiBaseURL } = requestConfig;
-    const url2 = `${apiBaseURL || BASE_URL}/${endpoint}`;
+    const url3 = `${apiBaseURL || BASE_URL}/${endpoint}`;
     const headers = buildHeaders2(requestConfig);
     const requestTimeout = endpoint.includes("research") ? timeout : timeout != null ? timeout : 60;
     const timeoutInMillis = requestTimeout ? requestTimeout * 1e3 : void 0;
@@ -66739,7 +66843,7 @@ function get(endpoint, requestConfig, timeout) {
         config2.httpsAgent = new import_https_proxy_agent2.HttpsProxyAgent(proxies.https);
       }
     }
-    return axios_default.get(url2, config2);
+    return axios_default.get(url3, config2);
   });
 }
 function getTotalTokensFromString(str2, encodingName = DEFAULT_MODEL_ENCODING) {
@@ -67061,7 +67165,7 @@ function _extract(requestConfig) {
 }
 function _crawl(requestConfig) {
   return function crawl(_0) {
-    return __async(this, arguments, function* (url2, options = {}) {
+    return __async(this, arguments, function* (url3, options = {}) {
       const _a12 = options, {
         maxDepth,
         maxBreadth,
@@ -67109,7 +67213,7 @@ function _crawl(requestConfig) {
         const response = yield post(
           "crawl",
           __spreadValues({
-            url: url2,
+            url: url3,
             max_depth: maxDepth,
             max_breadth: maxBreadth,
             limit: limit3,
@@ -67161,7 +67265,7 @@ function _crawl(requestConfig) {
 }
 function _map(requestConfig) {
   return function map(_0) {
-    return __async(this, arguments, function* (url2, options = {}) {
+    return __async(this, arguments, function* (url3, options = {}) {
       const _a12 = options, {
         maxDepth,
         maxBreadth,
@@ -67199,7 +67303,7 @@ function _map(requestConfig) {
         const response = yield post(
           "map",
           __spreadValues({
-            url: url2,
+            url: url3,
             max_depth: maxDepth,
             max_breadth: maxBreadth,
             limit: limit3,
@@ -67490,7 +67594,7 @@ async function executeURL(urls, apiKey, query, signal) {
   if (!Array.isArray(urls) || urls.length === 0) {
     return { message: "Extraction error: at least one URL is required." };
   }
-  const normalizedUrls = urls.map((url2) => typeof url2 === "string" ? url2.trim() : "").filter(Boolean);
+  const normalizedUrls = urls.map((url3) => typeof url3 === "string" ? url3.trim() : "").filter(Boolean);
   if (normalizedUrls.length === 0) {
     return { message: "Extraction error: at least one valid URL is required." };
   }
@@ -67520,11 +67624,11 @@ ${result.rawContent}
   }
 }
 
-// src/tools/mcp.ts
+// src/tools/mcpTools.ts
 var mcpSchemas = [
   {
     type: "function",
-    name: "mcp",
+    name: "mcp_find",
     description: "Discover connected MCP servers or inspect tools available on a specific server. Omit 'serverName' to list all connected servers. Provide 'serverName' to inspect the available tools and parameter schemas for that server.",
     parameters: {
       type: "object",
@@ -67536,8 +67640,72 @@ var mcpSchemas = [
       },
       required: []
     }
+  },
+  // Not adding the mcp tool schemas to our ToolSchema to reduce input tokens
+  // Instead the agent will dynamically find and call mcp tools
+  {
+    type: "function",
+    name: "mcp_call",
+    description: "Execute any discovered MCP tool by specifying its server, tool name, and argument object.",
+    parameters: {
+      type: "object",
+      properties: {
+        serverName: {
+          type: "string",
+          description: "The name of the target MCP server."
+        },
+        toolName: {
+          type: "string",
+          description: "The name of the MCP tool to execute (e.g., 'add', 'read_query')."
+        },
+        toolArgs: {
+          type: "object",
+          description: "The key-value arguments matching the tool's signature discovered earlier."
+        }
+      },
+      required: ["serverName", "toolName", "toolArgs"]
+    }
   }
 ];
+async function executeMCPFind(serverName, mcpManager) {
+  if (!serverName) {
+    const connectedServers = mcpManager.getConnectedServers();
+    if (connectedServers.length === 0) {
+      return { message: "No MCP servers are currently connected." };
+    }
+    const serverSummaries = connectedServers.map((name) => {
+      const tools2 = mcpManager.getServerTools(name);
+      const toolSigs = tools2.length > 0 ? tools2.map((t2) => `- **${t2.signature}**: ${t2.description || "No description"}`).join("\n  ") : "No active tools";
+      return `**${name}**:
+  ${toolSigs}`;
+    });
+    return {
+      message: `Connected MCP Servers and available tools:
+
+${serverSummaries.join("\n\n")}
+
+Use 'mcp_find' again and provide a specific 'serverName' to get the detailed parameter schemas for these tools.`
+    };
+  }
+  const tools = mcpManager.getServerTools(serverName);
+  if (tools.length === 0) {
+    return { message: `No active tools found for server: '${serverName}'. It may be disconnected, not configured, or all tools are disabled.` };
+  }
+  const detailedTools = tools.map((t2) => {
+    const descBlock = t2.description ? `  Description: ${t2.description}
+` : "";
+    return t2.details.replace("\n", `
+${descBlock}`);
+  }).join("\n\n");
+  return {
+    message: `Detailed tool schemas for '${serverName}':
+
+${detailedTools}`
+  };
+}
+async function executeMCPCall(serverName, toolName2, toolArgs, mcpManager) {
+  return await mcpManager.callTool(serverName, toolName2, toolArgs);
+}
 
 // src/tools/artifact.ts
 var artifactSchema = [
@@ -67604,9 +67772,13 @@ function createToolRegistry(deps) {
         data: args.artifactID
       };
     },
-    mcp: async (args) => {
+    mcp_find: async (args) => {
       const manager = deps.getMCPManager();
-      return await manager.handleMetaTool(args.serverName);
+      return await executeMCPFind(args.serverName, manager);
+    },
+    mcp_call: async (args) => {
+      const manager = deps.getMCPManager();
+      return await executeMCPCall(args.serverName, args.toolName, args.toolArgs, manager);
     }
   };
 }
@@ -67887,13 +68059,13 @@ function __classPrivateFieldGet2(receiver, state, kind, f3) {
 
 // node_modules/openai/internal/utils/uuid.mjs
 var uuid42 = function() {
-  const { crypto: crypto4 } = globalThis;
-  if (crypto4?.randomUUID) {
-    uuid42 = crypto4.randomUUID.bind(crypto4);
-    return crypto4.randomUUID();
+  const { crypto: crypto5 } = globalThis;
+  if (crypto5?.randomUUID) {
+    uuid42 = crypto5.randomUUID.bind(crypto5);
+    return crypto5.randomUUID();
   }
   const u8 = new Uint8Array(1);
-  const randomByte = crypto4 ? () => crypto4.getRandomValues(u8)[0] : () => Math.random() * 255 & 255;
+  const randomByte = crypto5 ? () => crypto5.getRandomValues(u8)[0] : () => Math.random() * 255 & 255;
   return "10000000-1000-4000-8000-100000000000".replace(/[018]/g, (c) => (+c ^ randomByte() & 15 >> +c / 4).toString(16));
 };
 
@@ -68064,8 +68236,8 @@ var SubjectTokenProviderError = class extends OpenAIError {
 
 // node_modules/openai/internal/utils/values.mjs
 var startsWithSchemeRegexp2 = /^[a-z][a-z0-9+.-]*:/i;
-var isAbsoluteURL3 = (url2) => {
-  return startsWithSchemeRegexp2.test(url2);
+var isAbsoluteURL3 = (url3) => {
+  return startsWithSchemeRegexp2.test(url3);
 };
 var isArray3 = (val) => (isArray3 = Array.isArray, isArray3(val));
 var isReadonlyArray2 = isArray3;
@@ -68350,20 +68522,20 @@ var encode4 = (str2, _defaultEncoder, charset, _kind, format) => {
   if (str2.length === 0) {
     return str2;
   }
-  let string3 = str2;
+  let string4 = str2;
   if (typeof str2 === "symbol") {
-    string3 = Symbol.prototype.toString.call(str2);
+    string4 = Symbol.prototype.toString.call(str2);
   } else if (typeof str2 !== "string") {
-    string3 = String(str2);
+    string4 = String(str2);
   }
   if (charset === "iso-8859-1") {
-    return escape(string3).replace(/%u[0-9a-f]{4}/gi, function($0) {
+    return escape(string4).replace(/%u[0-9a-f]{4}/gi, function($0) {
       return "%26%23" + parseInt($0.slice(2), 16) + "%3B";
     });
   }
   let out = "";
-  for (let j = 0; j < string3.length; j += limit2) {
-    const segment = string3.length >= limit2 ? string3.slice(j, j + limit2) : string3;
+  for (let j = 0; j < string4.length; j += limit2) {
+    const segment = string4.length >= limit2 ? string4.slice(j, j + limit2) : string4;
     const arr = [];
     for (let i2 = 0; i2 < segment.length; ++i2) {
       let c = segment.charCodeAt(i2);
@@ -68448,8 +68620,8 @@ var defaults3 = {
   formatter: default_formatter2,
   /** @deprecated */
   indices: false,
-  serializeDate(date3) {
-    return (toISOString2 ?? (toISOString2 = Function.prototype.call.bind(Date.prototype.toISOString)))(date3);
+  serializeDate(date4) {
+    return (toISOString2 ?? (toISOString2 = Function.prototype.call.bind(Date.prototype.toISOString)))(date4);
   },
   skipNulls: false,
   strictNullHandling: false
@@ -69148,8 +69320,8 @@ async function defaultParseResponse2(client, props) {
     if (props.options.__binaryResponse) {
       return response;
     }
-    const contentType = response.headers.get("content-type");
-    const mediaType = contentType?.split(";")[0]?.trim();
+    const contentType2 = response.headers.get("content-type");
+    const mediaType = contentType2?.split(";")[0]?.trim();
     const isJSON = mediaType?.includes("application/json") || mediaType?.endsWith("+json");
     if (isJSON) {
       const contentLength = response.headers.get("content-length");
@@ -77172,16 +77344,16 @@ var OpenAI = class {
   }
   buildURL(path13, query, defaultBaseURL) {
     const baseURL = !__classPrivateFieldGet2(this, _OpenAI_instances, "m", _OpenAI_baseURLOverridden).call(this) && defaultBaseURL || this.baseURL;
-    const url2 = isAbsoluteURL3(path13) ? new URL(path13) : new URL(baseURL + (baseURL.endsWith("/") && path13.startsWith("/") ? path13.slice(1) : path13));
+    const url3 = isAbsoluteURL3(path13) ? new URL(path13) : new URL(baseURL + (baseURL.endsWith("/") && path13.startsWith("/") ? path13.slice(1) : path13));
     const defaultQuery = this.defaultQuery();
-    const pathQuery = Object.fromEntries(url2.searchParams);
+    const pathQuery = Object.fromEntries(url3.searchParams);
     if (!isEmptyObj2(defaultQuery) || !isEmptyObj2(pathQuery)) {
       query = { ...pathQuery, ...defaultQuery, ...query };
     }
     if (typeof query === "object" && query && !Array.isArray(query)) {
-      url2.search = this.stringifyQuery(query);
+      url3.search = this.stringifyQuery(query);
     }
-    return url2.toString();
+    return url3.toString();
   }
   /**
    * Used as a callback for mutating the given `FinalRequestOptions` object.
@@ -77198,7 +77370,7 @@ var OpenAI = class {
    * This is useful for cases where you want to add certain headers based off of
    * the request properties, e.g. `method` or `url`.
    */
-  async prepareRequest(request, { url: url2, options }) {
+  async prepareRequest(request, { url: url3, options }) {
   }
   get(path13, opts) {
     return this.methodRequest("get", path13, opts);
@@ -77230,17 +77402,17 @@ var OpenAI = class {
       retriesRemaining = maxRetries;
     }
     await this.prepareOptions(options);
-    const { req, url: url2, timeout } = await this.buildRequest(options, {
+    const { req, url: url3, timeout } = await this.buildRequest(options, {
       retryCount: maxRetries - retriesRemaining
     });
-    await this.prepareRequest(req, { url: url2, options });
+    await this.prepareRequest(req, { url: url3, options });
     const requestLogID = "log_" + (Math.random() * (1 << 24) | 0).toString(16).padStart(6, "0");
     const retryLogStr = retryOfRequestLogID === void 0 ? "" : `, retryOf: ${retryOfRequestLogID}`;
     const startTime = Date.now();
     loggerFor2(this).debug(`[${requestLogID}] sending request`, formatRequestDetails2({
       retryOfRequestLogID,
       method: options.method,
-      url: url2,
+      url: url3,
       options,
       headers: req.headers
     }));
@@ -77249,7 +77421,7 @@ var OpenAI = class {
     }
     const security = options.__security ?? { bearerAuth: true };
     const controller = new AbortController();
-    const response = await this.fetchWithAuth(url2, req, timeout, controller, security).catch(castToError2);
+    const response = await this.fetchWithAuth(url3, req, timeout, controller, security).catch(castToError2);
     const headersTime = Date.now();
     if (response instanceof globalThis.Error) {
       const retryMessage = `retrying, ${retriesRemaining} attempts remaining`;
@@ -77261,7 +77433,7 @@ var OpenAI = class {
         loggerFor2(this).info(`[${requestLogID}] connection ${isTimeout ? "timed out" : "failed"} - ${retryMessage}`);
         loggerFor2(this).debug(`[${requestLogID}] connection ${isTimeout ? "timed out" : "failed"} (${retryMessage})`, formatRequestDetails2({
           retryOfRequestLogID,
-          url: url2,
+          url: url3,
           durationMs: headersTime - startTime,
           message: response.message
         }));
@@ -77270,7 +77442,7 @@ var OpenAI = class {
       loggerFor2(this).info(`[${requestLogID}] connection ${isTimeout ? "timed out" : "failed"} - error; no more retries left`);
       loggerFor2(this).debug(`[${requestLogID}] connection ${isTimeout ? "timed out" : "failed"} (error; no more retries left)`, formatRequestDetails2({
         retryOfRequestLogID,
-        url: url2,
+        url: url3,
         durationMs: headersTime - startTime,
         message: response.message
       }));
@@ -77283,7 +77455,7 @@ var OpenAI = class {
       throw new APIConnectionError2({ cause: response });
     }
     const specialHeaders = [...response.headers.entries()].filter(([name]) => name === "x-request-id").map(([name, value]) => ", " + name + ": " + JSON.stringify(value)).join("");
-    const responseInfo = `[${requestLogID}${retryLogStr}${specialHeaders}] ${req.method} ${url2} ${response.ok ? "succeeded" : "failed"} with status ${response.status} in ${headersTime - startTime}ms`;
+    const responseInfo = `[${requestLogID}${retryLogStr}${specialHeaders}] ${req.method} ${url3} ${response.ok ? "succeeded" : "failed"} with status ${response.status} in ${headersTime - startTime}ms`;
     if (!response.ok) {
       if (response.status === 401 && this._workloadIdentityAuth && security.bearerAuth && !options.__metadata?.["hasStreamingBody"] && !options.__metadata?.["workloadIdentityTokenRefreshed"]) {
         await CancelReadableStream2(response.body);
@@ -77343,7 +77515,7 @@ var OpenAI = class {
     const request = this.makeRequest(options, null, void 0);
     return new PagePromise2(this, request, Page3);
   }
-  async fetchWithAuth(url2, init, timeout, controller, schemes = {
+  async fetchWithAuth(url3, init, timeout, controller, schemes = {
     bearerAuth: true,
     adminAPIKeyAuth: true
   }) {
@@ -77355,10 +77527,10 @@ var OpenAI = class {
         headers.set("Authorization", `Bearer ${token}`);
       }
     }
-    const response = await this.fetchWithTimeout(url2, init, timeout, controller);
+    const response = await this.fetchWithTimeout(url3, init, timeout, controller);
     return response;
   }
-  async fetchWithTimeout(url2, init, ms, controller) {
+  async fetchWithTimeout(url3, init, ms, controller) {
     const { signal, method, ...options } = init || {};
     const abort = this._makeAbort(controller);
     if (signal)
@@ -77375,7 +77547,7 @@ var OpenAI = class {
       fetchOptions.method = method.toUpperCase();
     }
     try {
-      return await this.fetch.call(void 0, url2, fetchOptions);
+      return await this.fetch.call(void 0, url3, fetchOptions);
     } finally {
       clearTimeout(timeout);
     }
@@ -77432,7 +77604,7 @@ var OpenAI = class {
   async buildRequest(inputOptions, { retryCount = 0 } = {}) {
     const options = { ...inputOptions };
     const { method, path: path13, query, defaultBaseURL } = options;
-    const url2 = this.buildURL(path13, query, defaultBaseURL);
+    const url3 = this.buildURL(path13, query, defaultBaseURL);
     if ("timeout" in options)
       validatePositiveInteger2("timeout", options.timeout);
     options.timeout = options.timeout ?? this.timeout;
@@ -77453,7 +77625,7 @@ var OpenAI = class {
       ...this.fetchOptions ?? {},
       ...options.fetchOptions ?? {}
     };
-    return { req, url: url2, timeout: options.timeout };
+    return { req, url: url3, timeout: options.timeout };
   }
   async buildHeaders({ options, method, bodyHeaders, retryCount }) {
     let idempotencyHeaders = {};
@@ -88976,9 +89148,9 @@ var ApiClient = class {
     urlParts.protocol = urlParts.protocol == "http:" ? "ws" : "wss";
     return urlParts.toString();
   }
-  setBaseUrl(url2) {
+  setBaseUrl(url3) {
     if (this.clientOptions.httpOptions) {
-      this.clientOptions.httpOptions.baseUrl = url2;
+      this.clientOptions.httpOptions.baseUrl = url3;
     } else {
       throw new Error("HTTP options are not correctly set.");
     }
@@ -88991,8 +89163,8 @@ var ApiClient = class {
     if (path13 !== "") {
       urlElement.push(path13);
     }
-    const url2 = new URL(`${urlElement.join("/")}`);
-    return url2;
+    const url3 = new URL(`${urlElement.join("/")}`);
+    return url3;
   }
   shouldPrependVertexProjectPath(request, httpOptions) {
     if (httpOptions.baseUrl && httpOptions.baseUrlResourceScope === ResourceScope.COLLECTION) {
@@ -89018,10 +89190,10 @@ var ApiClient = class {
       patchedHttpOptions = this.patchHttpOptions(this.clientOptions.httpOptions, request.httpOptions);
     }
     const prependProjectLocation = this.shouldPrependVertexProjectPath(request, patchedHttpOptions);
-    const url2 = this.constructUrl(request.path, patchedHttpOptions, prependProjectLocation);
+    const url3 = this.constructUrl(request.path, patchedHttpOptions, prependProjectLocation);
     if (request.queryParams) {
       for (const [key, value] of Object.entries(request.queryParams)) {
-        url2.searchParams.append(key, String(value));
+        url3.searchParams.append(key, String(value));
       }
     }
     let requestInit = {};
@@ -89032,8 +89204,8 @@ var ApiClient = class {
     } else {
       requestInit.body = request.body;
     }
-    requestInit = await this.includeExtraHttpOptionsToRequestInit(requestInit, patchedHttpOptions, url2.toString(), request.abortSignal);
-    return this.unaryApiCall(url2, requestInit, request.httpMethod);
+    requestInit = await this.includeExtraHttpOptionsToRequestInit(requestInit, patchedHttpOptions, url3.toString(), request.abortSignal);
+    return this.unaryApiCall(url3, requestInit, request.httpMethod);
   }
   patchHttpOptions(baseHttpOptions, requestHttpOptions) {
     const patchedHttpOptions = JSON.parse(JSON.stringify(baseHttpOptions));
@@ -89052,16 +89224,16 @@ var ApiClient = class {
       patchedHttpOptions = this.patchHttpOptions(this.clientOptions.httpOptions, request.httpOptions);
     }
     const prependProjectLocation = this.shouldPrependVertexProjectPath(request, patchedHttpOptions);
-    const url2 = this.constructUrl(request.path, patchedHttpOptions, prependProjectLocation);
-    if (!url2.searchParams.has("alt") || url2.searchParams.get("alt") !== "sse") {
-      url2.searchParams.set("alt", "sse");
+    const url3 = this.constructUrl(request.path, patchedHttpOptions, prependProjectLocation);
+    if (!url3.searchParams.has("alt") || url3.searchParams.get("alt") !== "sse") {
+      url3.searchParams.set("alt", "sse");
     }
     let requestInit = {};
     requestInit.body = request.body;
-    requestInit = await this.includeExtraHttpOptionsToRequestInit(requestInit, patchedHttpOptions, url2.toString(), request.abortSignal);
-    return this.streamApiCall(url2, requestInit, request.httpMethod);
+    requestInit = await this.includeExtraHttpOptionsToRequestInit(requestInit, patchedHttpOptions, url3.toString(), request.abortSignal);
+    return this.streamApiCall(url3, requestInit, request.httpMethod);
   }
-  async includeExtraHttpOptionsToRequestInit(requestInit, httpOptions, url2, abortSignal) {
+  async includeExtraHttpOptionsToRequestInit(requestInit, httpOptions, url3, abortSignal) {
     if (httpOptions && httpOptions.timeout || abortSignal) {
       const abortController = new AbortController();
       const signal = abortController.signal;
@@ -89095,11 +89267,11 @@ var ApiClient = class {
     if (httpOptions && httpOptions.extraBody !== null) {
       includeExtraBodyToRequestInit(requestInit, httpOptions.extraBody);
     }
-    requestInit.headers = await this.getHeadersInternal(httpOptions, url2);
+    requestInit.headers = await this.getHeadersInternal(httpOptions, url3);
     return requestInit;
   }
-  async unaryApiCall(url2, requestInit, httpMethod) {
-    return this.apiCall(url2.toString(), Object.assign(Object.assign({}, requestInit), { method: httpMethod })).then(async (response) => {
+  async unaryApiCall(url3, requestInit, httpMethod) {
+    return this.apiCall(url3.toString(), Object.assign(Object.assign({}, requestInit), { method: httpMethod })).then(async (response) => {
       await throwErrorIfNotOK(response);
       return new HttpResponse(response);
     }).catch((e2) => {
@@ -89110,8 +89282,8 @@ var ApiClient = class {
       }
     });
   }
-  async streamApiCall(url2, requestInit, httpMethod) {
-    return this.apiCall(url2.toString(), Object.assign(Object.assign({}, requestInit), { method: httpMethod })).then(async (response) => {
+  async streamApiCall(url3, requestInit, httpMethod) {
+    return this.apiCall(url3.toString(), Object.assign(Object.assign({}, requestInit), { method: httpMethod })).then(async (response) => {
       await throwErrorIfNotOK(response);
       return this.processStreamResponse(response);
     }).catch((e2) => {
@@ -89203,14 +89375,14 @@ var ApiClient = class {
       }
     });
   }
-  async apiCall(url2, requestInit) {
+  async apiCall(url3, requestInit) {
     var _a12;
     if (!this.clientOptions.httpOptions || !this.clientOptions.httpOptions.retryOptions) {
-      return fetch(url2, requestInit);
+      return fetch(url3, requestInit);
     }
     const retryOptions = this.clientOptions.httpOptions.retryOptions;
     const runFetch = async () => {
-      const response = await fetch(url2, requestInit);
+      const response = await fetch(url3, requestInit);
       if (response.ok) {
         return response;
       }
@@ -89232,7 +89404,7 @@ var ApiClient = class {
     headers[CONTENT_TYPE_HEADER] = "application/json";
     return headers;
   }
-  async getHeadersInternal(httpOptions, url2) {
+  async getHeadersInternal(httpOptions, url3) {
     const headers = new Headers();
     if (httpOptions && httpOptions.headers) {
       for (const [key, value] of Object.entries(httpOptions.headers)) {
@@ -89242,7 +89414,7 @@ var ApiClient = class {
     if ((httpOptions === null || httpOptions === void 0 ? void 0 : httpOptions.timeout) && httpOptions.timeout > 0) {
       headers.append(SERVER_TIMEOUT_HEADER, String(Math.ceil(httpOptions.timeout / 1e3)));
     }
-    await this.clientOptions.auth.addAuthHeaders(headers, url2);
+    await this.clientOptions.auth.addAuthHeaders(headers, url3);
     return headers;
   }
   getFileName(file) {
@@ -89574,9 +89746,9 @@ async function handleWebSocketMessage$1(apiClient, onmessage, event) {
   onmessage(serverMessage);
 }
 var LiveMusic = class {
-  constructor(apiClient, auth, webSocketFactory) {
+  constructor(apiClient, auth2, webSocketFactory) {
     this.apiClient = apiClient;
-    this.auth = auth;
+    this.auth = auth2;
     this.webSocketFactory = webSocketFactory;
   }
   /**
@@ -89619,7 +89791,7 @@ var LiveMusic = class {
     const apiVersion = this.apiClient.getApiVersion();
     const headers = mapToHeaders$1(this.apiClient.getDefaultHeaders());
     const apiKey = this.apiClient.getApiKey();
-    const url2 = `${websocketBaseUrl}/ws/google.ai.generativelanguage.${apiVersion}.GenerativeService.BidiGenerateMusic?key=${apiKey}`;
+    const url3 = `${websocketBaseUrl}/ws/google.ai.generativelanguage.${apiVersion}.GenerativeService.BidiGenerateMusic?key=${apiKey}`;
     let onopenResolve = () => {
     };
     const onopenPromise = new Promise((resolve5) => {
@@ -89640,7 +89812,7 @@ var LiveMusic = class {
       onclose: (_b2 = callbacks === null || callbacks === void 0 ? void 0 : callbacks.onclose) !== null && _b2 !== void 0 ? _b2 : function(e2) {
       }
     };
-    const conn = this.webSocketFactory.create(url2, headersToMap$1(headers), websocketCallbacks);
+    const conn = this.webSocketFactory.create(url3, headersToMap$1(headers), websocketCallbacks);
     conn.connect();
     await onopenPromise;
     const model = tModel(this.apiClient, params.model);
@@ -89775,9 +89947,9 @@ async function handleWebSocketMessage(apiClient, onmessage, event) {
   onmessage(serverMessage);
 }
 var Live = class {
-  constructor(apiClient, auth, webSocketFactory) {
+  constructor(apiClient, auth2, webSocketFactory) {
     this.apiClient = apiClient;
-    this.auth = auth;
+    this.auth = auth2;
     this.webSocketFactory = webSocketFactory;
     this.music = new LiveMusic(this.apiClient, this.auth, this.webSocketFactory);
   }
@@ -89830,7 +90002,7 @@ var Live = class {
     }
     const websocketBaseUrl = this.apiClient.getWebsocketBaseUrl();
     const apiVersion = this.apiClient.getApiVersion();
-    let url2;
+    let url3;
     const clientHeaders = this.apiClient.getHeaders();
     if (params.config && params.config.tools && hasMcpToolUsage(params.config.tools)) {
       setMcpUsageHeader(clientHeaders);
@@ -89842,10 +90014,10 @@ var Live = class {
       const apiKey = this.apiClient.getApiKey();
       const hasStandardAuth = !!project && !!location || !!apiKey;
       if (this.apiClient.getCustomBaseUrl() && !hasStandardAuth) {
-        url2 = websocketBaseUrl;
+        url3 = websocketBaseUrl;
       } else {
-        url2 = `${websocketBaseUrl}/ws/google.cloud.aiplatform.${apiVersion}.LlmBidiService/BidiGenerateContent`;
-        await this.auth.addAuthHeaders(headers, url2);
+        url3 = `${websocketBaseUrl}/ws/google.cloud.aiplatform.${apiVersion}.LlmBidiService/BidiGenerateContent`;
+        await this.auth.addAuthHeaders(headers, url3);
       }
     } else {
       const apiKey = this.apiClient.getApiKey();
@@ -89859,7 +90031,7 @@ var Live = class {
         method = "BidiGenerateContentConstrained";
         keyName = "access_token";
       }
-      url2 = `${websocketBaseUrl}/ws/google.ai.generativelanguage.${apiVersion}.GenerativeService.${method}?${keyName}=${apiKey}`;
+      url3 = `${websocketBaseUrl}/ws/google.ai.generativelanguage.${apiVersion}.GenerativeService.${method}?${keyName}=${apiKey}`;
     }
     let onopenResolve = () => {
     };
@@ -89883,7 +90055,7 @@ var Live = class {
       onclose: (_b2 = callbacks === null || callbacks === void 0 ? void 0 : callbacks.onclose) !== null && _b2 !== void 0 ? _b2 : function(e2) {
       }
     };
-    const conn = this.webSocketFactory.create(url2, headersToMap(headers), websocketCallbacks);
+    const conn = this.webSocketFactory.create(url3, headersToMap(headers), websocketCallbacks);
     conn.connect();
     await onopenPromise;
     let transformedModel = tModel(this.apiClient, params.model);
@@ -92775,13 +92947,13 @@ var FileSearchStores = class extends BaseModule {
   }
 };
 var uuid4Internal = function() {
-  const { crypto: crypto4 } = globalThis;
-  if (crypto4 === null || crypto4 === void 0 ? void 0 : crypto4.randomUUID) {
-    uuid4Internal = crypto4.randomUUID.bind(crypto4);
-    return crypto4.randomUUID();
+  const { crypto: crypto5 } = globalThis;
+  if (crypto5 === null || crypto5 === void 0 ? void 0 : crypto5.randomUUID) {
+    uuid4Internal = crypto5.randomUUID.bind(crypto5);
+    return crypto5.randomUUID();
   }
   const u8 = new Uint8Array(1);
-  const randomByte = crypto4 ? () => crypto4.getRandomValues(u8)[0] : () => Math.random() * 255 & 255;
+  const randomByte = crypto5 ? () => crypto5.getRandomValues(u8)[0] : () => Math.random() * 255 & 255;
   return "10000000-1000-4000-8000-100000000000".replace(/[018]/g, (c) => (+c ^ randomByte() & 15 >> +c / 4).toString(16));
 };
 var uuid43 = () => uuid4Internal();
@@ -92904,8 +93076,8 @@ var RateLimitError3 = class extends APIError3 {
 var InternalServerError3 = class extends APIError3 {
 };
 var startsWithSchemeRegexp3 = /^[a-z][a-z0-9+.-]*:/i;
-var isAbsoluteURL4 = (url2) => {
-  return startsWithSchemeRegexp3.test(url2);
+var isAbsoluteURL4 = (url3) => {
+  return startsWithSchemeRegexp3.test(url3);
 };
 var isArrayInternal = (val) => (isArrayInternal = Array.isArray, isArrayInternal(val));
 var isArray4 = isArrayInternal;
@@ -93950,8 +94122,8 @@ async function defaultParseResponse3(client, props) {
     if (props.options.__binaryResponse) {
       return response;
     }
-    const contentType = response.headers.get("content-type");
-    const mediaType = (_a12 = contentType === null || contentType === void 0 ? void 0 : contentType.split(";")[0]) === null || _a12 === void 0 ? void 0 : _a12.trim();
+    const contentType2 = response.headers.get("content-type");
+    const mediaType = (_a12 = contentType2 === null || contentType2 === void 0 ? void 0 : contentType2.split(";")[0]) === null || _a12 === void 0 ? void 0 : _a12.trim();
     const isJSON = (mediaType === null || mediaType === void 0 ? void 0 : mediaType.includes("application/json")) || (mediaType === null || mediaType === void 0 ? void 0 : mediaType.endsWith("+json"));
     if (isJSON) {
       const contentLength = response.headers.get("content-length");
@@ -94195,16 +94367,16 @@ var BaseGeminiNextGenAPIClient = class _BaseGeminiNextGenAPIClient {
   }
   buildURL(path13, query, defaultBaseURL) {
     const baseURL = !this.baseURLOverridden() && defaultBaseURL || this.baseURL;
-    const url2 = isAbsoluteURL4(path13) ? new URL(path13) : new URL(baseURL + (baseURL.endsWith("/") && path13.startsWith("/") ? path13.slice(1) : path13));
+    const url3 = isAbsoluteURL4(path13) ? new URL(path13) : new URL(baseURL + (baseURL.endsWith("/") && path13.startsWith("/") ? path13.slice(1) : path13));
     const defaultQuery = this.defaultQuery();
-    const pathQuery = Object.fromEntries(url2.searchParams);
+    const pathQuery = Object.fromEntries(url3.searchParams);
     if (!isEmptyObj3(defaultQuery) || !isEmptyObj3(pathQuery)) {
       query = Object.assign(Object.assign(Object.assign({}, pathQuery), defaultQuery), query);
     }
     if (typeof query === "object" && query && !Array.isArray(query)) {
-      url2.search = this.stringifyQuery(query);
+      url3.search = this.stringifyQuery(query);
     }
-    return url2.toString();
+    return url3.toString();
   }
   /**
      * Used as a callback for mutating the given `FinalRequestOptions` object.
@@ -94222,7 +94394,7 @@ var BaseGeminiNextGenAPIClient = class _BaseGeminiNextGenAPIClient {
    * This is useful for cases where you want to add certain headers based off of
    * the request properties, e.g. `method` or `url`.
    */
-  async prepareRequest(request, { url: url2, options }) {
+  async prepareRequest(request, { url: url3, options }) {
   }
   get(path13, opts) {
     return this.methodRequest("get", path13, opts);
@@ -94255,17 +94427,17 @@ var BaseGeminiNextGenAPIClient = class _BaseGeminiNextGenAPIClient {
       retriesRemaining = maxRetries;
     }
     await this.prepareOptions(options);
-    const { req, url: url2, timeout } = await this.buildRequest(options, {
+    const { req, url: url3, timeout } = await this.buildRequest(options, {
       retryCount: maxRetries - retriesRemaining
     });
-    await this.prepareRequest(req, { url: url2, options });
+    await this.prepareRequest(req, { url: url3, options });
     const requestLogID = "log_" + (Math.random() * (1 << 24) | 0).toString(16).padStart(6, "0");
     const retryLogStr = retryOfRequestLogID === void 0 ? "" : `, retryOf: ${retryOfRequestLogID}`;
     const startTime = Date.now();
     loggerFor3(this).debug(`[${requestLogID}] sending request`, formatRequestDetails3({
       retryOfRequestLogID,
       method: options.method,
-      url: url2,
+      url: url3,
       options,
       headers: req.headers
     }));
@@ -94273,7 +94445,7 @@ var BaseGeminiNextGenAPIClient = class _BaseGeminiNextGenAPIClient {
       throw new APIUserAbortError3();
     }
     const controller = new AbortController();
-    const response = await this.fetchWithTimeout(url2, req, timeout, controller).catch(castToError3);
+    const response = await this.fetchWithTimeout(url3, req, timeout, controller).catch(castToError3);
     const headersTime = Date.now();
     if (response instanceof globalThis.Error) {
       const retryMessage = `retrying, ${retriesRemaining} attempts remaining`;
@@ -94285,7 +94457,7 @@ var BaseGeminiNextGenAPIClient = class _BaseGeminiNextGenAPIClient {
         loggerFor3(this).info(`[${requestLogID}] connection ${isTimeout ? "timed out" : "failed"} - ${retryMessage}`);
         loggerFor3(this).debug(`[${requestLogID}] connection ${isTimeout ? "timed out" : "failed"} (${retryMessage})`, formatRequestDetails3({
           retryOfRequestLogID,
-          url: url2,
+          url: url3,
           durationMs: headersTime - startTime,
           message: response.message
         }));
@@ -94294,7 +94466,7 @@ var BaseGeminiNextGenAPIClient = class _BaseGeminiNextGenAPIClient {
       loggerFor3(this).info(`[${requestLogID}] connection ${isTimeout ? "timed out" : "failed"} - error; no more retries left`);
       loggerFor3(this).debug(`[${requestLogID}] connection ${isTimeout ? "timed out" : "failed"} (error; no more retries left)`, formatRequestDetails3({
         retryOfRequestLogID,
-        url: url2,
+        url: url3,
         durationMs: headersTime - startTime,
         message: response.message
       }));
@@ -94303,7 +94475,7 @@ var BaseGeminiNextGenAPIClient = class _BaseGeminiNextGenAPIClient {
       }
       throw new APIConnectionError3({ cause: response });
     }
-    const responseInfo = `[${requestLogID}${retryLogStr}] ${req.method} ${url2} ${response.ok ? "succeeded" : "failed"} with status ${response.status} in ${headersTime - startTime}ms`;
+    const responseInfo = `[${requestLogID}${retryLogStr}] ${req.method} ${url3} ${response.ok ? "succeeded" : "failed"} with status ${response.status} in ${headersTime - startTime}ms`;
     if (!response.ok) {
       const shouldRetry = await this.shouldRetry(response);
       if (retriesRemaining && shouldRetry) {
@@ -94345,7 +94517,7 @@ var BaseGeminiNextGenAPIClient = class _BaseGeminiNextGenAPIClient {
     }));
     return { response, options, controller, requestLogID, retryOfRequestLogID, startTime };
   }
-  async fetchWithTimeout(url2, init, ms, controller) {
+  async fetchWithTimeout(url3, init, ms, controller) {
     const _b2 = init || {}, { signal, method } = _b2, options = __rest(_b2, ["signal", "method"]);
     const abort = this._makeAbort(controller);
     if (signal)
@@ -94357,7 +94529,7 @@ var BaseGeminiNextGenAPIClient = class _BaseGeminiNextGenAPIClient {
       fetchOptions.method = method.toUpperCase();
     }
     try {
-      return await this.fetch.call(void 0, url2, fetchOptions);
+      return await this.fetch.call(void 0, url3, fetchOptions);
     } finally {
       clearTimeout(timeout);
     }
@@ -94416,14 +94588,14 @@ var BaseGeminiNextGenAPIClient = class _BaseGeminiNextGenAPIClient {
     var _b2, _c2, _d2;
     const options = Object.assign({}, inputOptions);
     const { method, path: path13, query, defaultBaseURL } = options;
-    const url2 = this.buildURL(path13, query, defaultBaseURL);
+    const url3 = this.buildURL(path13, query, defaultBaseURL);
     if ("timeout" in options)
       validatePositiveInteger3("timeout", options.timeout);
     options.timeout = (_b2 = options.timeout) !== null && _b2 !== void 0 ? _b2 : this.timeout;
     const { bodyHeaders, body } = this.buildBody({ options });
     const reqHeaders = await this.buildHeaders({ options: inputOptions, method, bodyHeaders, retryCount });
     const req = Object.assign(Object.assign(Object.assign(Object.assign(Object.assign({ method, headers: reqHeaders }, options.signal && { signal: options.signal }), globalThis.ReadableStream && body instanceof globalThis.ReadableStream && { duplex: "half" }), body && { body }), (_c2 = this.fetchOptions) !== null && _c2 !== void 0 ? _c2 : {}), (_d2 = options.fetchOptions) !== null && _d2 !== void 0 ? _d2 : {});
-    return { req, url: url2, timeout: options.timeout };
+    return { req, url: url3, timeout: options.timeout };
   }
   async buildHeaders({ options, method, bodyHeaders, retryCount }) {
     let idempotencyHeaders = {};
@@ -94513,7 +94685,7 @@ var NodeAuth = class {
     const vertexAuthOptions = buildGoogleAuthOptions(opts.googleAuthOptions);
     this.googleAuth = new import_google_auth_library.GoogleAuth(vertexAuthOptions);
   }
-  async addAuthHeaders(headers, url2) {
+  async addAuthHeaders(headers, url3) {
     if (this.apiKey !== void 0) {
       if (this.apiKey.startsWith("auth_tokens/")) {
         throw new Error("Ephemeral tokens are only supported by the live API.");
@@ -94521,7 +94693,7 @@ var NodeAuth = class {
       this.addKeyHeader(headers);
       return;
     }
-    return this.addGoogleAuthHeaders(headers, url2);
+    return this.addGoogleAuthHeaders(headers, url3);
   }
   addKeyHeader(headers) {
     if (headers.get(GOOGLE_API_KEY_HEADER) !== null) {
@@ -94532,11 +94704,11 @@ var NodeAuth = class {
     }
     headers.append(GOOGLE_API_KEY_HEADER, this.apiKey);
   }
-  async addGoogleAuthHeaders(headers, url2) {
+  async addGoogleAuthHeaders(headers, url3) {
     if (this.googleAuth === void 0) {
       throw new Error("Trying to set google-auth headers but googleAuth is unset");
     }
-    const authHeaders = await this.googleAuth.getRequestHeaders(url2);
+    const authHeaders = await this.googleAuth.getRequestHeaders(url3);
     for (const [key, value] of authHeaders) {
       if (headers.get(key) !== null) {
         continue;
@@ -94616,13 +94788,13 @@ async function downloadFile(params, apiClient) {
   }
 }
 var NodeWebSocketFactory = class {
-  create(url2, headers, callbacks) {
-    return new NodeWebSocket(url2, headers, callbacks);
+  create(url3, headers, callbacks) {
+    return new NodeWebSocket(url3, headers, callbacks);
   }
 };
 var NodeWebSocket = class {
-  constructor(url2, headers, callbacks) {
-    this.url = url2;
+  constructor(url3, headers, callbacks) {
+    this.url = url3;
     this.headers = headers;
     this.callbacks = callbacks;
   }
@@ -96427,12 +96599,12 @@ var GoogleGenAI = class {
     }
     this.apiVersion = options.apiVersion;
     this.httpOptions = options.httpOptions;
-    const auth = new NodeAuth({
+    const auth2 = new NodeAuth({
       apiKey: this.apiKey,
       googleAuthOptions: options.googleAuthOptions
     });
     this.apiClient = new ApiClient({
-      auth,
+      auth: auth2,
       project: this.project,
       location: this.location,
       apiVersion: this.apiVersion,
@@ -96444,7 +96616,7 @@ var GoogleGenAI = class {
       downloader: new NodeDownloader()
     });
     this.models = new Models4(this.apiClient);
-    this.live = new Live(this.apiClient, auth, new NodeWebSocketFactory());
+    this.live = new Live(this.apiClient, auth2, new NodeWebSocketFactory());
     this.batches = new Batches4(this.apiClient);
     this.chats = new Chats(this.models, this.apiClient);
     this.caches = new Caches(this.apiClient);
@@ -99196,14 +99368,14 @@ __export(bn_exports, {
 });
 
 // node_modules/apache-arrow/util/bigint.mjs
-function bigIntToNumber(number3) {
-  if (typeof number3 === "bigint" && (number3 < Number.MIN_SAFE_INTEGER || number3 > Number.MAX_SAFE_INTEGER)) {
-    throw new TypeError(`${number3} is not safe to convert to a number.`);
+function bigIntToNumber(number4) {
+  if (typeof number4 === "bigint" && (number4 < Number.MIN_SAFE_INTEGER || number4 > Number.MAX_SAFE_INTEGER)) {
+    throw new TypeError(`${number4} is not safe to convert to a number.`);
   }
-  return Number(number3);
+  return Number(number4);
 }
-function divideBigInts(number3, divisor) {
-  return bigIntToNumber(number3 / divisor) + bigIntToNumber(number3 % divisor) / bigIntToNumber(divisor);
+function divideBigInts(number4, divisor) {
+  return bigIntToNumber(number4 / divisor) + bigIntToNumber(number4 % divisor) / bigIntToNumber(divisor);
 }
 
 // node_modules/apache-arrow/util/bn.mjs
@@ -99256,26 +99428,26 @@ function bigNumToNumber(bn, scale) {
   const { buffer, byteOffset, byteLength, "signed": signed } = bn;
   const words = new BigUint64Array(buffer, byteOffset, byteLength / 8);
   const negative = signed && words.at(-1) & BigInt(1) << BigInt(63);
-  let number3 = BigInt(0);
+  let number4 = BigInt(0);
   let i2 = 0;
   if (negative) {
     for (const word of words) {
-      number3 |= (word ^ TWO_TO_THE_64_MINUS_1) * (BigInt(1) << BigInt(64 * i2++));
+      number4 |= (word ^ TWO_TO_THE_64_MINUS_1) * (BigInt(1) << BigInt(64 * i2++));
     }
-    number3 *= BigInt(-1);
-    number3 -= BigInt(1);
+    number4 *= BigInt(-1);
+    number4 -= BigInt(1);
   } else {
     for (const word of words) {
-      number3 |= word * (BigInt(1) << BigInt(64 * i2++));
+      number4 |= word * (BigInt(1) << BigInt(64 * i2++));
     }
   }
   if (typeof scale === "number") {
     const denominator = BigInt(Math.pow(10, scale));
-    const quotient = number3 / denominator;
-    const remainder = number3 % denominator;
+    const quotient = number4 / denominator;
+    const remainder = number4 % denominator;
     return bigIntToNumber(quotient) + bigIntToNumber(remainder) / bigIntToNumber(denominator);
   }
-  return bigIntToNumber(number3);
+  return bigIntToNumber(number4);
 }
 function bigNumToString(a) {
   if (a.byteLength === 8) {
@@ -111497,17 +111669,6 @@ var ToolManager = class {
             result = { message: `Error executing ${toolName2}: ${message}` };
             this.emitter.fire({ type: uiType, status: "error", toolID, error: message });
           }
-        } else if (this.deps.mcpManager.hasTool(toolName2)) {
-          try {
-            result = await this.deps.mcpManager.callTool(toolName2, toolArgs);
-            this.emitter.fire({ type: "updateTool", status: "success", toolId: toolID });
-          } catch (e2) {
-            isError = true;
-            hasErrors = true;
-            const message = e2 instanceof Error ? e2.message : String(e2);
-            result = { message: `MCP Tool Error [${toolName2}]: ${message}` };
-            this.emitter.fire({ type: "updateTool", status: "error", toolId: toolID, error: message });
-          }
         } else {
           isError = true;
           hasErrors = true;
@@ -111716,7 +111877,7 @@ var ChatApp = class {
               this.contextManager.estimateCategorizedTokens();
             }
             const pruneMode = this.context.globalState.get("pruneMode") ?? "run";
-            const pruneTurnInterval = this.context.globalState.get("pruneTurnInterval") ?? 1;
+            const pruneTurnInterval = this.context.globalState.get("pruneTurnInterval") ?? 3;
             const pruneRunInterval = this.context.globalState.get("pruneRunInterval") ?? 1;
             this.post({
               type: "restorePruneSettings",
@@ -112008,13 +112169,12 @@ function formatError(e2) {
 // src/mcp.ts
 var vscode13 = __toESM(require("vscode"));
 var fs9 = __toESM(require("fs"));
+var import_shell_quote2 = __toESM(require_shell_quote());
 var MCPViewProvider = class {
   constructor(context, mcpManager) {
     this.context = context;
     this.mcpManager = mcpManager;
-    this.mcpManager.onDidUpdateStatus(async () => {
-      await this.broadcastState();
-    });
+    this.mcpManager.onDidUpdateStatus((event) => this.post(event));
   }
   context;
   mcpManager;
@@ -112029,16 +112189,33 @@ var MCPViewProvider = class {
     webviewView.webview.onDidReceiveMessage(async (data) => {
       switch (data.type) {
         case "mcpViewReady": {
-          await this.broadcastState();
+          this.post({
+            type: "restoreState",
+            states: this.mcpManager.getAllServerStates()
+          });
+          this.post({
+            type: "updateHeaderStats",
+            ...this.mcpManager.getHeaderStats()
+          });
+          await this.mcpManager.restoreServerState();
           break;
         }
         case "addServer": {
           try {
+            const config2 = data.config;
+            if (config2.command) {
+              const tokens = (0, import_shell_quote2.parse)(config2.command).filter(
+                (token2) => typeof token2 === "string"
+              );
+              if (tokens.length > 0) {
+                config2.command = tokens[0];
+                config2.args = tokens.slice(1);
+              }
+            }
             await this.mcpManager.addServer(data.name, data.config);
             if (data.autoConnect) {
               await this.mcpManager.connect(data.name);
             }
-            await this.broadcastState();
           } catch (e2) {
             vscode13.window.showErrorMessage(`Failed to add MCP server: ${e2.message || String(e2)}`);
           }
@@ -112051,7 +112228,6 @@ var MCPViewProvider = class {
             } else {
               await this.mcpManager.disconnect(data.name);
             }
-            await this.broadcastState();
           } catch (e2) {
             vscode13.window.showErrorMessage(`Connection error: ${e2.message || String(e2)}`);
           }
@@ -112060,7 +112236,6 @@ var MCPViewProvider = class {
         case "toggleTool": {
           try {
             await this.mcpManager.toggleTool(data.serverName, data.toolName, data.enabled);
-            await this.broadcastState();
           } catch (e2) {
             vscode13.window.showErrorMessage(`Error toggling tool: ${e2.message || String(e2)}`);
           }
@@ -112068,19 +112243,13 @@ var MCPViewProvider = class {
         }
         case "removeServer": {
           await this.mcpManager.removeServer(data.name);
-          await this.broadcastState();
           break;
         }
       }
     });
   }
-  async broadcastState() {
-    if (!this.view) return;
-    const states = await this.mcpManager.getServerStates();
-    this.view.webview.postMessage({
-      type: "syncState",
-      servers: states
-    });
+  post(message) {
+    this.view?.webview.postMessage(message);
   }
   getHTML() {
     const htmlPath = vscode13.Uri.joinPath(this.context.extensionUri, "dist", "mcp.html");
@@ -112105,6 +112274,9 @@ var vscode14 = __toESM(require("vscode"));
 
 // node_modules/zod/v4/core/core.js
 var _a10;
+var NEVER = /* @__PURE__ */ Object.freeze({
+  status: "aborted"
+});
 // @__NO_SIDE_EFFECTS__
 function $constructor(name, initializer3, params) {
   function init(inst, def) {
@@ -113070,6 +113242,7 @@ var string = (params) => {
   const regex = params ? `[\\s\\S]{${params?.minimum ?? 0},${params?.maximum ?? ""}}` : `[\\s\\S]*`;
   return new RegExp(`^${regex}$`);
 };
+var bigint = /^-?\d+n?$/;
 var integer = /^-?\d+$/;
 var number = /^-?\d+(?:\.\d+)?$/;
 var boolean = /^(?:true|false)$/i;
@@ -113692,10 +113865,10 @@ var $ZodURL = /* @__PURE__ */ $constructor("$ZodURL", (inst, def) => {
           return;
         }
       }
-      const url2 = new URL(trimmed);
+      const url3 = new URL(trimmed);
       if (def.hostname) {
         def.hostname.lastIndex = 0;
-        if (!def.hostname.test(url2.hostname)) {
+        if (!def.hostname.test(url3.hostname)) {
           payload.issues.push({
             code: "invalid_format",
             format: "url",
@@ -113709,7 +113882,7 @@ var $ZodURL = /* @__PURE__ */ $constructor("$ZodURL", (inst, def) => {
       }
       if (def.protocol) {
         def.protocol.lastIndex = 0;
-        if (!def.protocol.test(url2.protocol.endsWith(":") ? url2.protocol.slice(0, -1) : url2.protocol)) {
+        if (!def.protocol.test(url3.protocol.endsWith(":") ? url3.protocol.slice(0, -1) : url3.protocol)) {
           payload.issues.push({
             code: "invalid_format",
             format: "url",
@@ -113722,7 +113895,7 @@ var $ZodURL = /* @__PURE__ */ $constructor("$ZodURL", (inst, def) => {
         }
       }
       if (def.normalize) {
-        payload.value = url2.href;
+        payload.value = url3.href;
       } else {
         payload.value = trimmed;
       }
@@ -113977,6 +114150,26 @@ var $ZodBoolean = /* @__PURE__ */ $constructor("$ZodBoolean", (inst, def) => {
     return payload;
   };
 });
+var $ZodBigInt = /* @__PURE__ */ $constructor("$ZodBigInt", (inst, def) => {
+  $ZodType.init(inst, def);
+  inst._zod.pattern = bigint;
+  inst._zod.parse = (payload, _ctx) => {
+    if (def.coerce)
+      try {
+        payload.value = BigInt(payload.value);
+      } catch (_) {
+      }
+    if (typeof payload.value === "bigint")
+      return payload;
+    payload.issues.push({
+      expected: "bigint",
+      code: "invalid_type",
+      input: payload.value,
+      inst
+    });
+    return payload;
+  };
+});
 var $ZodNull = /* @__PURE__ */ $constructor("$ZodNull", (inst, def) => {
   $ZodType.init(inst, def);
   inst._zod.pattern = _null;
@@ -113994,6 +114187,10 @@ var $ZodNull = /* @__PURE__ */ $constructor("$ZodNull", (inst, def) => {
     return payload;
   };
 });
+var $ZodAny = /* @__PURE__ */ $constructor("$ZodAny", (inst, def) => {
+  $ZodType.init(inst, def);
+  inst._zod.parse = (payload) => payload;
+});
 var $ZodUnknown = /* @__PURE__ */ $constructor("$ZodUnknown", (inst, def) => {
   $ZodType.init(inst, def);
   inst._zod.parse = (payload) => payload;
@@ -114005,6 +114202,30 @@ var $ZodNever = /* @__PURE__ */ $constructor("$ZodNever", (inst, def) => {
       expected: "never",
       code: "invalid_type",
       input: payload.value,
+      inst
+    });
+    return payload;
+  };
+});
+var $ZodDate = /* @__PURE__ */ $constructor("$ZodDate", (inst, def) => {
+  $ZodType.init(inst, def);
+  inst._zod.parse = (payload, _ctx) => {
+    if (def.coerce) {
+      try {
+        payload.value = new Date(payload.value);
+      } catch (_err) {
+      }
+    }
+    const input = payload.value;
+    const isDate2 = input instanceof Date;
+    const isValidDate = isDate2 && !Number.isNaN(input.getTime());
+    if (isValidDate)
+      return payload;
+    payload.issues.push({
+      expected: "date",
+      code: "invalid_type",
+      input,
+      ...isDate2 ? { received: "Invalid Date" } : {},
       inst
     });
     return payload;
@@ -115160,6 +115381,14 @@ function _string(Class2, params) {
   });
 }
 // @__NO_SIDE_EFFECTS__
+function _coercedString(Class2, params) {
+  return new Class2({
+    type: "string",
+    coerce: true,
+    ...normalizeParams(params)
+  });
+}
+// @__NO_SIDE_EFFECTS__
 function _email(Class2, params) {
   return new Class2({
     type: "string",
@@ -115431,6 +115660,15 @@ function _number(Class2, params) {
   });
 }
 // @__NO_SIDE_EFFECTS__
+function _coercedNumber(Class2, params) {
+  return new Class2({
+    type: "number",
+    coerce: true,
+    checks: [],
+    ...normalizeParams(params)
+  });
+}
+// @__NO_SIDE_EFFECTS__
 function _int(Class2, params) {
   return new Class2({
     type: "number",
@@ -115448,10 +115686,32 @@ function _boolean(Class2, params) {
   });
 }
 // @__NO_SIDE_EFFECTS__
+function _coercedBoolean(Class2, params) {
+  return new Class2({
+    type: "boolean",
+    coerce: true,
+    ...normalizeParams(params)
+  });
+}
+// @__NO_SIDE_EFFECTS__
+function _coercedBigint(Class2, params) {
+  return new Class2({
+    type: "bigint",
+    coerce: true,
+    ...normalizeParams(params)
+  });
+}
+// @__NO_SIDE_EFFECTS__
 function _null2(Class2, params) {
   return new Class2({
     type: "null",
     ...normalizeParams(params)
+  });
+}
+// @__NO_SIDE_EFFECTS__
+function _any(Class2) {
+  return new Class2({
+    type: "any"
   });
 }
 // @__NO_SIDE_EFFECTS__
@@ -115464,6 +115724,14 @@ function _unknown(Class2) {
 function _never(Class2, params) {
   return new Class2({
     type: "never",
+    ...normalizeParams(params)
+  });
+}
+// @__NO_SIDE_EFFECTS__
+function _coercedDate(Class2, params) {
+  return new Class2({
+    type: "date",
+    coerce: true,
     ...normalizeParams(params)
   });
 }
@@ -116115,6 +116383,11 @@ var numberProcessor = (schema, ctx, _json, _params) => {
 var booleanProcessor = (_schema, _ctx, json, _params) => {
   json.type = "boolean";
 };
+var bigintProcessor = (_schema, ctx, _json, _params) => {
+  if (ctx.unrepresentable === "throw") {
+    throw new Error("BigInt cannot be represented in JSON Schema");
+  }
+};
 var nullProcessor = (_schema, ctx, json, _params) => {
   if (ctx.target === "openapi-3.0") {
     json.type = "string";
@@ -116127,7 +116400,14 @@ var nullProcessor = (_schema, ctx, json, _params) => {
 var neverProcessor = (_schema, _ctx, json, _params) => {
   json.not = {};
 };
+var anyProcessor = (_schema, _ctx, _json, _params) => {
+};
 var unknownProcessor = (_schema, _ctx, _json, _params) => {
+};
+var dateProcessor = (_schema, ctx, _json, _params) => {
+  if (ctx.unrepresentable === "throw") {
+    throw new Error("Date cannot be represented in JSON Schema");
+  }
 };
 var enumProcessor = (schema, _ctx, json, _params) => {
   const def = schema._zod.def;
@@ -116515,7 +116795,7 @@ var ZodRealError = /* @__PURE__ */ $constructor("ZodError", initializer2, {
 });
 
 // node_modules/zod/v4/classic/parse.js
-var parse4 = /* @__PURE__ */ _parse(ZodRealError);
+var parse5 = /* @__PURE__ */ _parse(ZodRealError);
 var parseAsync2 = /* @__PURE__ */ _parseAsync(ZodRealError);
 var safeParse3 = /* @__PURE__ */ _safeParse(ZodRealError);
 var safeParseAsync2 = /* @__PURE__ */ _safeParseAsync(ZodRealError);
@@ -116578,7 +116858,7 @@ var ZodType = /* @__PURE__ */ $constructor("ZodType", (inst, def) => {
   inst.def = def;
   inst.type = def.type;
   Object.defineProperty(inst, "_def", { value: def });
-  inst.parse = (data, params) => parse4(inst, data, params, { callee: inst.parse });
+  inst.parse = (data, params) => parse5(inst, data, params, { callee: inst.parse });
   inst.safeParse = (data, params) => safeParse3(inst, data, params);
   inst.parseAsync = async (data, params) => parseAsync2(inst, data, params, { callee: inst.parseAsync });
   inst.safeParseAsync = async (data, params) => safeParseAsync2(inst, data, params);
@@ -116805,6 +117085,9 @@ var ZodURL = /* @__PURE__ */ $constructor("ZodURL", (inst, def) => {
   $ZodURL.init(inst, def);
   ZodStringFormat.init(inst, def);
 });
+function url2(params) {
+  return _url(ZodURL, params);
+}
 var ZodEmoji = /* @__PURE__ */ $constructor("ZodEmoji", (inst, def) => {
   $ZodEmoji.init(inst, def);
   ZodStringFormat.init(inst, def);
@@ -116941,6 +117224,28 @@ var ZodBoolean = /* @__PURE__ */ $constructor("ZodBoolean", (inst, def) => {
 function boolean2(params) {
   return _boolean(ZodBoolean, params);
 }
+var ZodBigInt = /* @__PURE__ */ $constructor("ZodBigInt", (inst, def) => {
+  $ZodBigInt.init(inst, def);
+  ZodType.init(inst, def);
+  inst._zod.processJSONSchema = (ctx, json, params) => bigintProcessor(inst, ctx, json, params);
+  inst.gte = (value, params) => inst.check(_gte(value, params));
+  inst.min = (value, params) => inst.check(_gte(value, params));
+  inst.gt = (value, params) => inst.check(_gt(value, params));
+  inst.gte = (value, params) => inst.check(_gte(value, params));
+  inst.min = (value, params) => inst.check(_gte(value, params));
+  inst.lt = (value, params) => inst.check(_lt(value, params));
+  inst.lte = (value, params) => inst.check(_lte(value, params));
+  inst.max = (value, params) => inst.check(_lte(value, params));
+  inst.positive = (params) => inst.check(_gt(BigInt(0), params));
+  inst.negative = (params) => inst.check(_lt(BigInt(0), params));
+  inst.nonpositive = (params) => inst.check(_lte(BigInt(0), params));
+  inst.nonnegative = (params) => inst.check(_gte(BigInt(0), params));
+  inst.multipleOf = (value, params) => inst.check(_multipleOf(value, params));
+  const bag = inst._zod.bag;
+  inst.minValue = bag.minimum ?? null;
+  inst.maxValue = bag.maximum ?? null;
+  inst.format = bag.format ?? null;
+});
 var ZodNull = /* @__PURE__ */ $constructor("ZodNull", (inst, def) => {
   $ZodNull.init(inst, def);
   ZodType.init(inst, def);
@@ -116948,6 +117253,14 @@ var ZodNull = /* @__PURE__ */ $constructor("ZodNull", (inst, def) => {
 });
 function _null3(params) {
   return _null2(ZodNull, params);
+}
+var ZodAny = /* @__PURE__ */ $constructor("ZodAny", (inst, def) => {
+  $ZodAny.init(inst, def);
+  ZodType.init(inst, def);
+  inst._zod.processJSONSchema = (ctx, json, params) => anyProcessor(inst, ctx, json, params);
+});
+function any() {
+  return _any(ZodAny);
 }
 var ZodUnknown = /* @__PURE__ */ $constructor("ZodUnknown", (inst, def) => {
   $ZodUnknown.init(inst, def);
@@ -116965,6 +117278,16 @@ var ZodNever = /* @__PURE__ */ $constructor("ZodNever", (inst, def) => {
 function never2(params) {
   return _never(ZodNever, params);
 }
+var ZodDate = /* @__PURE__ */ $constructor("ZodDate", (inst, def) => {
+  $ZodDate.init(inst, def);
+  ZodType.init(inst, def);
+  inst._zod.processJSONSchema = (ctx, json, params) => dateProcessor(inst, ctx, json, params);
+  inst.min = (value, params) => inst.check(_gte(value, params));
+  inst.max = (value, params) => inst.check(_lte(value, params));
+  const c = inst._zod.bag;
+  inst.minDate = c.minimum ? new Date(c.minimum) : null;
+  inst.maxDate = c.maximum ? new Date(c.maximum) : null;
+});
 var ZodArray = /* @__PURE__ */ $constructor("ZodArray", (inst, def) => {
   $ZodArray.init(inst, def);
   ZodType.init(inst, def);
@@ -117368,6 +117691,49 @@ function preprocess(fn, schema) {
     in: transform(fn),
     out: schema
   });
+}
+
+// node_modules/zod/v4/classic/compat.js
+var ZodIssueCode = {
+  invalid_type: "invalid_type",
+  too_big: "too_big",
+  too_small: "too_small",
+  invalid_format: "invalid_format",
+  not_multiple_of: "not_multiple_of",
+  unrecognized_keys: "unrecognized_keys",
+  invalid_union: "invalid_union",
+  invalid_key: "invalid_key",
+  invalid_element: "invalid_element",
+  invalid_value: "invalid_value",
+  custom: "custom"
+};
+var ZodFirstPartyTypeKind;
+/* @__PURE__ */ (function(ZodFirstPartyTypeKind2) {
+})(ZodFirstPartyTypeKind || (ZodFirstPartyTypeKind = {}));
+
+// node_modules/zod/v4/classic/coerce.js
+var coerce_exports = {};
+__export(coerce_exports, {
+  bigint: () => bigint2,
+  boolean: () => boolean3,
+  date: () => date3,
+  number: () => number3,
+  string: () => string3
+});
+function string3(params) {
+  return _coercedString(ZodString, params);
+}
+function number3(params) {
+  return _coercedNumber(ZodNumber, params);
+}
+function boolean3(params) {
+  return _coercedBoolean(ZodBoolean, params);
+}
+function bigint2(params) {
+  return _coercedBigint(ZodBigInt, params);
+}
+function date3(params) {
+  return _coercedDate(ZodDate, params);
 }
 
 // node_modules/zod/v4/classic/external.js
@@ -117774,6 +118140,7 @@ var InitializedNotificationSchema = NotificationSchema.extend({
   method: literal("notifications/initialized"),
   params: NotificationsParamsSchema.optional()
 });
+var isInitializedNotification = (value) => InitializedNotificationSchema.safeParse(value).success;
 var PingRequestSchema = RequestSchema.extend({
   method: literal("ping"),
   params: BaseRequestParamsSchema.optional()
@@ -120856,265 +121223,1745 @@ var StdioClientTransport = class {
   }
 };
 
+// node_modules/@modelcontextprotocol/sdk/dist/esm/shared/mediaType.js
+var import_content_type = __toESM(require_content_type(), 1);
+function mediaTypeEssence(header) {
+  if (!header) {
+    return void 0;
+  }
+  try {
+    return import_content_type.default.parse(header).type;
+  } catch {
+    const essence = (header.split(";", 1)[0] ?? "").trim().toLowerCase();
+    if (essence === "" || header.slice(essence.length).includes(",")) {
+      return void 0;
+    }
+    return essence;
+  }
+}
+
+// node_modules/@modelcontextprotocol/sdk/dist/esm/shared/transport.js
+function normalizeHeaders(headers) {
+  if (!headers)
+    return {};
+  if (headers instanceof Headers) {
+    return Object.fromEntries(headers.entries());
+  }
+  if (Array.isArray(headers)) {
+    return Object.fromEntries(headers);
+  }
+  return { ...headers };
+}
+function createFetchWithInit(baseFetch = fetch, baseInit) {
+  if (!baseInit) {
+    return baseFetch;
+  }
+  return async (url3, init) => {
+    const mergedInit = {
+      ...baseInit,
+      ...init,
+      // Headers need special handling - merge instead of replace
+      headers: init?.headers ? { ...normalizeHeaders(baseInit.headers), ...normalizeHeaders(init.headers) } : baseInit.headers
+    };
+    return baseFetch(url3, mergedInit);
+  };
+}
+
+// node_modules/pkce-challenge/dist/index.node.js
+var crypto4;
+crypto4 = globalThis.crypto?.webcrypto ?? // Node.js [18-16] REPL
+globalThis.crypto ?? // Node.js >18
+import("node:crypto").then((m2) => m2.webcrypto);
+async function getRandomValues(size) {
+  return (await crypto4).getRandomValues(new Uint8Array(size));
+}
+async function random(size) {
+  const mask = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._~";
+  const evenDistCutoff = Math.pow(2, 8) - Math.pow(2, 8) % mask.length;
+  let result = "";
+  while (result.length < size) {
+    const randomBytes = await getRandomValues(size - result.length);
+    for (const randomByte of randomBytes) {
+      if (randomByte < evenDistCutoff) {
+        result += mask[randomByte % mask.length];
+      }
+    }
+  }
+  return result;
+}
+async function generateVerifier(length) {
+  return await random(length);
+}
+async function generateChallenge(code_verifier) {
+  const buffer = await (await crypto4).subtle.digest("SHA-256", new TextEncoder().encode(code_verifier));
+  return btoa(String.fromCharCode(...new Uint8Array(buffer))).replace(/\//g, "_").replace(/\+/g, "-").replace(/=/g, "");
+}
+async function pkceChallenge(length) {
+  if (!length)
+    length = 43;
+  if (length < 43 || length > 128) {
+    throw `Expected a length between 43 and 128. Received ${length}.`;
+  }
+  const verifier = await generateVerifier(length);
+  const challenge = await generateChallenge(verifier);
+  return {
+    code_verifier: verifier,
+    code_challenge: challenge
+  };
+}
+
+// node_modules/@modelcontextprotocol/sdk/dist/esm/shared/auth.js
+var SafeUrlSchema = url2().superRefine((val, ctx) => {
+  if (!URL.canParse(val)) {
+    ctx.addIssue({
+      code: ZodIssueCode.custom,
+      message: "URL must be parseable",
+      fatal: true
+    });
+    return NEVER;
+  }
+}).refine((url3) => {
+  const u = new URL(url3);
+  return u.protocol !== "javascript:" && u.protocol !== "data:" && u.protocol !== "vbscript:";
+}, { message: "URL cannot use javascript:, data:, or vbscript: scheme" });
+var OAuthProtectedResourceMetadataSchema = looseObject({
+  resource: string2().url(),
+  authorization_servers: array(SafeUrlSchema).optional(),
+  jwks_uri: string2().url().optional(),
+  scopes_supported: array(string2()).optional(),
+  bearer_methods_supported: array(string2()).optional(),
+  resource_signing_alg_values_supported: array(string2()).optional(),
+  resource_name: string2().optional(),
+  resource_documentation: string2().optional(),
+  resource_policy_uri: string2().url().optional(),
+  resource_tos_uri: string2().url().optional(),
+  tls_client_certificate_bound_access_tokens: boolean2().optional(),
+  authorization_details_types_supported: array(string2()).optional(),
+  dpop_signing_alg_values_supported: array(string2()).optional(),
+  dpop_bound_access_tokens_required: boolean2().optional()
+});
+var OAuthMetadataSchema = looseObject({
+  issuer: string2(),
+  authorization_endpoint: SafeUrlSchema,
+  token_endpoint: SafeUrlSchema,
+  registration_endpoint: SafeUrlSchema.optional(),
+  scopes_supported: array(string2()).optional(),
+  response_types_supported: array(string2()),
+  response_modes_supported: array(string2()).optional(),
+  grant_types_supported: array(string2()).optional(),
+  token_endpoint_auth_methods_supported: array(string2()).optional(),
+  token_endpoint_auth_signing_alg_values_supported: array(string2()).optional(),
+  service_documentation: SafeUrlSchema.optional(),
+  revocation_endpoint: SafeUrlSchema.optional(),
+  revocation_endpoint_auth_methods_supported: array(string2()).optional(),
+  revocation_endpoint_auth_signing_alg_values_supported: array(string2()).optional(),
+  introspection_endpoint: string2().optional(),
+  introspection_endpoint_auth_methods_supported: array(string2()).optional(),
+  introspection_endpoint_auth_signing_alg_values_supported: array(string2()).optional(),
+  code_challenge_methods_supported: array(string2()).optional(),
+  client_id_metadata_document_supported: boolean2().optional()
+});
+var OpenIdProviderMetadataSchema = looseObject({
+  issuer: string2(),
+  authorization_endpoint: SafeUrlSchema,
+  token_endpoint: SafeUrlSchema,
+  userinfo_endpoint: SafeUrlSchema.optional(),
+  jwks_uri: SafeUrlSchema,
+  registration_endpoint: SafeUrlSchema.optional(),
+  scopes_supported: array(string2()).optional(),
+  response_types_supported: array(string2()),
+  response_modes_supported: array(string2()).optional(),
+  grant_types_supported: array(string2()).optional(),
+  acr_values_supported: array(string2()).optional(),
+  subject_types_supported: array(string2()),
+  id_token_signing_alg_values_supported: array(string2()),
+  id_token_encryption_alg_values_supported: array(string2()).optional(),
+  id_token_encryption_enc_values_supported: array(string2()).optional(),
+  userinfo_signing_alg_values_supported: array(string2()).optional(),
+  userinfo_encryption_alg_values_supported: array(string2()).optional(),
+  userinfo_encryption_enc_values_supported: array(string2()).optional(),
+  request_object_signing_alg_values_supported: array(string2()).optional(),
+  request_object_encryption_alg_values_supported: array(string2()).optional(),
+  request_object_encryption_enc_values_supported: array(string2()).optional(),
+  token_endpoint_auth_methods_supported: array(string2()).optional(),
+  token_endpoint_auth_signing_alg_values_supported: array(string2()).optional(),
+  display_values_supported: array(string2()).optional(),
+  claim_types_supported: array(string2()).optional(),
+  claims_supported: array(string2()).optional(),
+  service_documentation: string2().optional(),
+  claims_locales_supported: array(string2()).optional(),
+  ui_locales_supported: array(string2()).optional(),
+  claims_parameter_supported: boolean2().optional(),
+  request_parameter_supported: boolean2().optional(),
+  request_uri_parameter_supported: boolean2().optional(),
+  require_request_uri_registration: boolean2().optional(),
+  op_policy_uri: SafeUrlSchema.optional(),
+  op_tos_uri: SafeUrlSchema.optional(),
+  client_id_metadata_document_supported: boolean2().optional()
+});
+var OpenIdProviderDiscoveryMetadataSchema = object2({
+  ...OpenIdProviderMetadataSchema.shape,
+  ...OAuthMetadataSchema.pick({
+    code_challenge_methods_supported: true
+  }).shape
+});
+var OAuthTokensSchema = object2({
+  access_token: string2(),
+  id_token: string2().optional(),
+  // Optional for OAuth 2.1, but necessary in OpenID Connect
+  token_type: string2(),
+  expires_in: coerce_exports.number().optional(),
+  scope: string2().optional(),
+  refresh_token: string2().optional()
+}).strip();
+var OAuthErrorResponseSchema = object2({
+  error: string2(),
+  error_description: string2().optional(),
+  error_uri: string2().optional()
+});
+var OptionalSafeUrlSchema = SafeUrlSchema.optional().or(literal("").transform(() => void 0));
+var OAuthClientMetadataSchema = object2({
+  redirect_uris: array(SafeUrlSchema),
+  token_endpoint_auth_method: string2().optional(),
+  grant_types: array(string2()).optional(),
+  response_types: array(string2()).optional(),
+  client_name: string2().optional(),
+  client_uri: SafeUrlSchema.optional(),
+  logo_uri: OptionalSafeUrlSchema,
+  scope: string2().optional(),
+  contacts: array(string2()).optional(),
+  tos_uri: OptionalSafeUrlSchema,
+  policy_uri: string2().optional(),
+  jwks_uri: SafeUrlSchema.optional(),
+  jwks: any().optional(),
+  software_id: string2().optional(),
+  software_version: string2().optional(),
+  software_statement: string2().optional()
+}).strip();
+var OAuthClientInformationSchema = object2({
+  client_id: string2(),
+  client_secret: string2().optional(),
+  client_id_issued_at: number2().optional(),
+  client_secret_expires_at: number2().optional()
+}).strip();
+var OAuthClientInformationFullSchema = OAuthClientMetadataSchema.merge(OAuthClientInformationSchema);
+var OAuthClientRegistrationErrorSchema = object2({
+  error: string2(),
+  error_description: string2().optional()
+}).strip();
+var OAuthTokenRevocationRequestSchema = object2({
+  token: string2(),
+  token_type_hint: string2().optional()
+}).strip();
+
+// node_modules/@modelcontextprotocol/sdk/dist/esm/shared/auth-utils.js
+function resourceUrlFromServerUrl(url3) {
+  const resourceURL = typeof url3 === "string" ? new URL(url3) : new URL(url3.href);
+  resourceURL.hash = "";
+  return resourceURL;
+}
+function checkResourceAllowed({ requestedResource, configuredResource }) {
+  const requested = typeof requestedResource === "string" ? new URL(requestedResource) : new URL(requestedResource.href);
+  const configured = typeof configuredResource === "string" ? new URL(configuredResource) : new URL(configuredResource.href);
+  if (requested.origin !== configured.origin) {
+    return false;
+  }
+  if (requested.pathname.length < configured.pathname.length) {
+    return false;
+  }
+  const requestedPath = requested.pathname.endsWith("/") ? requested.pathname : requested.pathname + "/";
+  const configuredPath = configured.pathname.endsWith("/") ? configured.pathname : configured.pathname + "/";
+  return requestedPath.startsWith(configuredPath);
+}
+
+// node_modules/@modelcontextprotocol/sdk/dist/esm/server/auth/errors.js
+var OAuthError2 = class extends Error {
+  constructor(message, errorUri) {
+    super(message);
+    this.errorUri = errorUri;
+    this.name = this.constructor.name;
+  }
+  /**
+   * Converts the error to a standard OAuth error response object
+   */
+  toResponseObject() {
+    const response = {
+      error: this.errorCode,
+      error_description: this.message
+    };
+    if (this.errorUri) {
+      response.error_uri = this.errorUri;
+    }
+    return response;
+  }
+  get errorCode() {
+    return this.constructor.errorCode;
+  }
+};
+var InvalidRequestError = class extends OAuthError2 {
+};
+InvalidRequestError.errorCode = "invalid_request";
+var InvalidClientError = class extends OAuthError2 {
+};
+InvalidClientError.errorCode = "invalid_client";
+var InvalidGrantError = class extends OAuthError2 {
+};
+InvalidGrantError.errorCode = "invalid_grant";
+var UnauthorizedClientError = class extends OAuthError2 {
+};
+UnauthorizedClientError.errorCode = "unauthorized_client";
+var UnsupportedGrantTypeError = class extends OAuthError2 {
+};
+UnsupportedGrantTypeError.errorCode = "unsupported_grant_type";
+var InvalidScopeError = class extends OAuthError2 {
+};
+InvalidScopeError.errorCode = "invalid_scope";
+var AccessDeniedError = class extends OAuthError2 {
+};
+AccessDeniedError.errorCode = "access_denied";
+var ServerError = class extends OAuthError2 {
+};
+ServerError.errorCode = "server_error";
+var TemporarilyUnavailableError = class extends OAuthError2 {
+};
+TemporarilyUnavailableError.errorCode = "temporarily_unavailable";
+var UnsupportedResponseTypeError = class extends OAuthError2 {
+};
+UnsupportedResponseTypeError.errorCode = "unsupported_response_type";
+var UnsupportedTokenTypeError = class extends OAuthError2 {
+};
+UnsupportedTokenTypeError.errorCode = "unsupported_token_type";
+var InvalidTokenError = class extends OAuthError2 {
+};
+InvalidTokenError.errorCode = "invalid_token";
+var MethodNotAllowedError = class extends OAuthError2 {
+};
+MethodNotAllowedError.errorCode = "method_not_allowed";
+var TooManyRequestsError = class extends OAuthError2 {
+};
+TooManyRequestsError.errorCode = "too_many_requests";
+var InvalidClientMetadataError = class extends OAuthError2 {
+};
+InvalidClientMetadataError.errorCode = "invalid_client_metadata";
+var InsufficientScopeError = class extends OAuthError2 {
+};
+InsufficientScopeError.errorCode = "insufficient_scope";
+var InvalidTargetError = class extends OAuthError2 {
+};
+InvalidTargetError.errorCode = "invalid_target";
+var OAUTH_ERRORS = {
+  [InvalidRequestError.errorCode]: InvalidRequestError,
+  [InvalidClientError.errorCode]: InvalidClientError,
+  [InvalidGrantError.errorCode]: InvalidGrantError,
+  [UnauthorizedClientError.errorCode]: UnauthorizedClientError,
+  [UnsupportedGrantTypeError.errorCode]: UnsupportedGrantTypeError,
+  [InvalidScopeError.errorCode]: InvalidScopeError,
+  [AccessDeniedError.errorCode]: AccessDeniedError,
+  [ServerError.errorCode]: ServerError,
+  [TemporarilyUnavailableError.errorCode]: TemporarilyUnavailableError,
+  [UnsupportedResponseTypeError.errorCode]: UnsupportedResponseTypeError,
+  [UnsupportedTokenTypeError.errorCode]: UnsupportedTokenTypeError,
+  [InvalidTokenError.errorCode]: InvalidTokenError,
+  [MethodNotAllowedError.errorCode]: MethodNotAllowedError,
+  [TooManyRequestsError.errorCode]: TooManyRequestsError,
+  [InvalidClientMetadataError.errorCode]: InvalidClientMetadataError,
+  [InsufficientScopeError.errorCode]: InsufficientScopeError,
+  [InvalidTargetError.errorCode]: InvalidTargetError
+};
+
+// node_modules/@modelcontextprotocol/sdk/dist/esm/client/auth.js
+var UnauthorizedError = class extends Error {
+  constructor(message) {
+    super(message ?? "Unauthorized");
+  }
+};
+function isClientAuthMethod(method) {
+  return ["client_secret_basic", "client_secret_post", "none"].includes(method);
+}
+var AUTHORIZATION_CODE_RESPONSE_TYPE = "code";
+var AUTHORIZATION_CODE_CHALLENGE_METHOD = "S256";
+function selectClientAuthMethod(clientInformation, supportedMethods) {
+  const hasClientSecret = clientInformation.client_secret !== void 0;
+  if ("token_endpoint_auth_method" in clientInformation && clientInformation.token_endpoint_auth_method && isClientAuthMethod(clientInformation.token_endpoint_auth_method) && (supportedMethods.length === 0 || supportedMethods.includes(clientInformation.token_endpoint_auth_method))) {
+    return clientInformation.token_endpoint_auth_method;
+  }
+  if (supportedMethods.length === 0) {
+    return hasClientSecret ? "client_secret_basic" : "none";
+  }
+  if (hasClientSecret && supportedMethods.includes("client_secret_basic")) {
+    return "client_secret_basic";
+  }
+  if (hasClientSecret && supportedMethods.includes("client_secret_post")) {
+    return "client_secret_post";
+  }
+  if (supportedMethods.includes("none")) {
+    return "none";
+  }
+  return hasClientSecret ? "client_secret_post" : "none";
+}
+function applyClientAuthentication(method, clientInformation, headers, params) {
+  const { client_id, client_secret } = clientInformation;
+  switch (method) {
+    case "client_secret_basic":
+      applyBasicAuth(client_id, client_secret, headers);
+      return;
+    case "client_secret_post":
+      applyPostAuth(client_id, client_secret, params);
+      return;
+    case "none":
+      applyPublicAuth(client_id, params);
+      return;
+    default:
+      throw new Error(`Unsupported client authentication method: ${method}`);
+  }
+}
+function applyBasicAuth(clientId, clientSecret, headers) {
+  if (!clientSecret) {
+    throw new Error("client_secret_basic authentication requires a client_secret");
+  }
+  const credentials = btoa(`${clientId}:${clientSecret}`);
+  headers.set("Authorization", `Basic ${credentials}`);
+}
+function applyPostAuth(clientId, clientSecret, params) {
+  params.set("client_id", clientId);
+  if (clientSecret) {
+    params.set("client_secret", clientSecret);
+  }
+}
+function applyPublicAuth(clientId, params) {
+  params.set("client_id", clientId);
+}
+async function parseErrorResponse(input) {
+  const statusCode = input instanceof Response ? input.status : void 0;
+  const body = input instanceof Response ? await input.text() : input;
+  try {
+    const result = OAuthErrorResponseSchema.parse(JSON.parse(body));
+    const { error: error2, error_description, error_uri } = result;
+    const errorClass = OAUTH_ERRORS[error2] || ServerError;
+    return new errorClass(error_description || "", error_uri);
+  } catch (error2) {
+    const errorMessage = `${statusCode ? `HTTP ${statusCode}: ` : ""}Invalid OAuth error response: ${error2}. Raw body: ${body}`;
+    return new ServerError(errorMessage);
+  }
+}
+async function auth(provider, options) {
+  try {
+    return await authInternal(provider, options);
+  } catch (error2) {
+    if (error2 instanceof InvalidClientError || error2 instanceof UnauthorizedClientError) {
+      await provider.invalidateCredentials?.("all");
+      return await authInternal(provider, options);
+    } else if (error2 instanceof InvalidGrantError) {
+      await provider.invalidateCredentials?.("tokens");
+      return await authInternal(provider, options);
+    }
+    throw error2;
+  }
+}
+async function authInternal(provider, { serverUrl, authorizationCode, scope, resourceMetadataUrl, fetchFn }) {
+  const cachedState = await provider.discoveryState?.();
+  let resourceMetadata;
+  let authorizationServerUrl;
+  let metadata;
+  let effectiveResourceMetadataUrl = resourceMetadataUrl;
+  if (!effectiveResourceMetadataUrl && cachedState?.resourceMetadataUrl) {
+    effectiveResourceMetadataUrl = new URL(cachedState.resourceMetadataUrl);
+  }
+  if (cachedState?.authorizationServerUrl) {
+    authorizationServerUrl = cachedState.authorizationServerUrl;
+    resourceMetadata = cachedState.resourceMetadata;
+    metadata = cachedState.authorizationServerMetadata ?? await discoverAuthorizationServerMetadata(authorizationServerUrl, { fetchFn });
+    if (!resourceMetadata) {
+      try {
+        resourceMetadata = await discoverOAuthProtectedResourceMetadata(serverUrl, { resourceMetadataUrl: effectiveResourceMetadataUrl }, fetchFn);
+      } catch {
+      }
+    }
+    if (metadata !== cachedState.authorizationServerMetadata || resourceMetadata !== cachedState.resourceMetadata) {
+      await provider.saveDiscoveryState?.({
+        authorizationServerUrl: String(authorizationServerUrl),
+        resourceMetadataUrl: effectiveResourceMetadataUrl?.toString(),
+        resourceMetadata,
+        authorizationServerMetadata: metadata
+      });
+    }
+  } else {
+    const serverInfo = await discoverOAuthServerInfo(serverUrl, { resourceMetadataUrl: effectiveResourceMetadataUrl, fetchFn });
+    authorizationServerUrl = serverInfo.authorizationServerUrl;
+    metadata = serverInfo.authorizationServerMetadata;
+    resourceMetadata = serverInfo.resourceMetadata;
+    await provider.saveDiscoveryState?.({
+      authorizationServerUrl: String(authorizationServerUrl),
+      resourceMetadataUrl: effectiveResourceMetadataUrl?.toString(),
+      resourceMetadata,
+      authorizationServerMetadata: metadata
+    });
+  }
+  const resource = await selectResourceURL(serverUrl, provider, resourceMetadata);
+  const resolvedScope = scope || resourceMetadata?.scopes_supported?.join(" ") || provider.clientMetadata.scope;
+  let clientInformation = await Promise.resolve(provider.clientInformation());
+  if (!clientInformation) {
+    if (authorizationCode !== void 0) {
+      throw new Error("Existing OAuth client information is required when exchanging an authorization code");
+    }
+    const supportsUrlBasedClientId = metadata?.client_id_metadata_document_supported === true;
+    const clientMetadataUrl = provider.clientMetadataUrl;
+    if (clientMetadataUrl && !isHttpsUrl(clientMetadataUrl)) {
+      throw new InvalidClientMetadataError(`clientMetadataUrl must be a valid HTTPS URL with a non-root pathname, got: ${clientMetadataUrl}`);
+    }
+    const shouldUseUrlBasedClientId = supportsUrlBasedClientId && clientMetadataUrl;
+    if (shouldUseUrlBasedClientId) {
+      clientInformation = {
+        client_id: clientMetadataUrl
+      };
+      await provider.saveClientInformation?.(clientInformation);
+    } else {
+      if (!provider.saveClientInformation) {
+        throw new Error("OAuth client information must be saveable for dynamic registration");
+      }
+      const fullInformation = await registerClient(authorizationServerUrl, {
+        metadata,
+        clientMetadata: provider.clientMetadata,
+        scope: resolvedScope,
+        fetchFn
+      });
+      await provider.saveClientInformation(fullInformation);
+      clientInformation = fullInformation;
+    }
+  }
+  const nonInteractiveFlow = !provider.redirectUrl;
+  if (authorizationCode !== void 0 || nonInteractiveFlow) {
+    const tokens2 = await fetchToken(provider, authorizationServerUrl, {
+      metadata,
+      resource,
+      authorizationCode,
+      fetchFn
+    });
+    await provider.saveTokens(tokens2);
+    return "AUTHORIZED";
+  }
+  const tokens = await provider.tokens();
+  if (tokens?.refresh_token) {
+    try {
+      const newTokens = await refreshAuthorization(authorizationServerUrl, {
+        metadata,
+        clientInformation,
+        refreshToken: tokens.refresh_token,
+        resource,
+        addClientAuthentication: provider.addClientAuthentication,
+        fetchFn
+      });
+      await provider.saveTokens(newTokens);
+      return "AUTHORIZED";
+    } catch (error2) {
+      if (!(error2 instanceof OAuthError2) || error2 instanceof ServerError) {
+      } else {
+        throw error2;
+      }
+    }
+  }
+  const state = provider.state ? await provider.state() : void 0;
+  const { authorizationUrl, codeVerifier } = await startAuthorization(authorizationServerUrl, {
+    metadata,
+    clientInformation,
+    state,
+    redirectUrl: provider.redirectUrl,
+    scope: resolvedScope,
+    resource
+  });
+  await provider.saveCodeVerifier(codeVerifier);
+  await provider.redirectToAuthorization(authorizationUrl);
+  return "REDIRECT";
+}
+function isHttpsUrl(value) {
+  if (!value)
+    return false;
+  try {
+    const url3 = new URL(value);
+    return url3.protocol === "https:" && url3.pathname !== "/";
+  } catch {
+    return false;
+  }
+}
+async function selectResourceURL(serverUrl, provider, resourceMetadata) {
+  const defaultResource = resourceUrlFromServerUrl(serverUrl);
+  if (provider.validateResourceURL) {
+    return await provider.validateResourceURL(defaultResource, resourceMetadata?.resource);
+  }
+  if (!resourceMetadata) {
+    return void 0;
+  }
+  if (!checkResourceAllowed({ requestedResource: defaultResource, configuredResource: resourceMetadata.resource })) {
+    throw new Error(`Protected resource ${resourceMetadata.resource} does not match expected ${defaultResource} (or origin)`);
+  }
+  return new URL(resourceMetadata.resource);
+}
+function extractWWWAuthenticateParams(res) {
+  const authenticateHeader = res.headers.get("WWW-Authenticate");
+  if (!authenticateHeader) {
+    return {};
+  }
+  const [type, scheme] = authenticateHeader.split(" ");
+  if (type.toLowerCase() !== "bearer" || !scheme) {
+    return {};
+  }
+  const resourceMetadataMatch = extractFieldFromWwwAuth(res, "resource_metadata") || void 0;
+  let resourceMetadataUrl;
+  if (resourceMetadataMatch) {
+    try {
+      resourceMetadataUrl = new URL(resourceMetadataMatch);
+    } catch {
+    }
+  }
+  const scope = extractFieldFromWwwAuth(res, "scope") || void 0;
+  const error2 = extractFieldFromWwwAuth(res, "error") || void 0;
+  return {
+    resourceMetadataUrl,
+    scope,
+    error: error2
+  };
+}
+function extractFieldFromWwwAuth(response, fieldName) {
+  const wwwAuthHeader = response.headers.get("WWW-Authenticate");
+  if (!wwwAuthHeader) {
+    return null;
+  }
+  const pattern = new RegExp(`${fieldName}=(?:"([^"]+)"|([^\\s,]+))`);
+  const match2 = wwwAuthHeader.match(pattern);
+  if (match2) {
+    return match2[1] || match2[2];
+  }
+  return null;
+}
+async function discoverOAuthProtectedResourceMetadata(serverUrl, opts, fetchFn = fetch) {
+  const response = await discoverMetadataWithFallback(serverUrl, "oauth-protected-resource", fetchFn, {
+    protocolVersion: opts?.protocolVersion,
+    metadataUrl: opts?.resourceMetadataUrl
+  });
+  if (!response || response.status === 404) {
+    await response?.body?.cancel();
+    throw new Error(`Resource server does not implement OAuth 2.0 Protected Resource Metadata.`);
+  }
+  if (!response.ok) {
+    await response.body?.cancel();
+    throw new Error(`HTTP ${response.status} trying to load well-known OAuth protected resource metadata.`);
+  }
+  return OAuthProtectedResourceMetadataSchema.parse(await response.json());
+}
+async function fetchWithCorsRetry(url3, headers, fetchFn = fetch) {
+  try {
+    return await fetchFn(url3, { headers });
+  } catch (error2) {
+    if (error2 instanceof TypeError) {
+      if (headers) {
+        return fetchWithCorsRetry(url3, void 0, fetchFn);
+      } else {
+        return void 0;
+      }
+    }
+    throw error2;
+  }
+}
+function buildWellKnownPath(wellKnownPrefix, pathname = "", options = {}) {
+  if (pathname.endsWith("/")) {
+    pathname = pathname.slice(0, -1);
+  }
+  return options.prependPathname ? `${pathname}/.well-known/${wellKnownPrefix}` : `/.well-known/${wellKnownPrefix}${pathname}`;
+}
+async function tryMetadataDiscovery(url3, protocolVersion, fetchFn = fetch) {
+  const headers = {
+    "MCP-Protocol-Version": protocolVersion
+  };
+  return await fetchWithCorsRetry(url3, headers, fetchFn);
+}
+function shouldAttemptFallback(response, pathname) {
+  return !response || response.status >= 400 && response.status < 500 && pathname !== "/";
+}
+async function discoverMetadataWithFallback(serverUrl, wellKnownType, fetchFn, opts) {
+  const issuer = new URL(serverUrl);
+  const protocolVersion = opts?.protocolVersion ?? LATEST_PROTOCOL_VERSION;
+  let url3;
+  if (opts?.metadataUrl) {
+    url3 = new URL(opts.metadataUrl);
+  } else {
+    const wellKnownPath = buildWellKnownPath(wellKnownType, issuer.pathname);
+    url3 = new URL(wellKnownPath, opts?.metadataServerUrl ?? issuer);
+    url3.search = issuer.search;
+  }
+  let response = await tryMetadataDiscovery(url3, protocolVersion, fetchFn);
+  if (!opts?.metadataUrl && shouldAttemptFallback(response, issuer.pathname)) {
+    const rootUrl = new URL(`/.well-known/${wellKnownType}`, issuer);
+    response = await tryMetadataDiscovery(rootUrl, protocolVersion, fetchFn);
+  }
+  return response;
+}
+function buildDiscoveryUrls(authorizationServerUrl) {
+  const url3 = typeof authorizationServerUrl === "string" ? new URL(authorizationServerUrl) : authorizationServerUrl;
+  const hasPath = url3.pathname !== "/";
+  const urlsToTry = [];
+  if (!hasPath) {
+    urlsToTry.push({
+      url: new URL("/.well-known/oauth-authorization-server", url3.origin),
+      type: "oauth"
+    });
+    urlsToTry.push({
+      url: new URL(`/.well-known/openid-configuration`, url3.origin),
+      type: "oidc"
+    });
+    return urlsToTry;
+  }
+  let pathname = url3.pathname;
+  if (pathname.endsWith("/")) {
+    pathname = pathname.slice(0, -1);
+  }
+  urlsToTry.push({
+    url: new URL(`/.well-known/oauth-authorization-server${pathname}`, url3.origin),
+    type: "oauth"
+  });
+  urlsToTry.push({
+    url: new URL(`/.well-known/openid-configuration${pathname}`, url3.origin),
+    type: "oidc"
+  });
+  urlsToTry.push({
+    url: new URL(`${pathname}/.well-known/openid-configuration`, url3.origin),
+    type: "oidc"
+  });
+  return urlsToTry;
+}
+async function discoverAuthorizationServerMetadata(authorizationServerUrl, { fetchFn = fetch, protocolVersion = LATEST_PROTOCOL_VERSION } = {}) {
+  const headers = {
+    "MCP-Protocol-Version": protocolVersion,
+    Accept: "application/json"
+  };
+  const urlsToTry = buildDiscoveryUrls(authorizationServerUrl);
+  for (const { url: endpointUrl, type } of urlsToTry) {
+    const response = await fetchWithCorsRetry(endpointUrl, headers, fetchFn);
+    if (!response) {
+      continue;
+    }
+    if (!response.ok) {
+      await response.body?.cancel();
+      if (response.status >= 400 && response.status < 500) {
+        continue;
+      }
+      throw new Error(`HTTP ${response.status} trying to load ${type === "oauth" ? "OAuth" : "OpenID provider"} metadata from ${endpointUrl}`);
+    }
+    if (type === "oauth") {
+      return OAuthMetadataSchema.parse(await response.json());
+    } else {
+      return OpenIdProviderDiscoveryMetadataSchema.parse(await response.json());
+    }
+  }
+  return void 0;
+}
+async function discoverOAuthServerInfo(serverUrl, opts) {
+  let resourceMetadata;
+  let authorizationServerUrl;
+  try {
+    resourceMetadata = await discoverOAuthProtectedResourceMetadata(serverUrl, { resourceMetadataUrl: opts?.resourceMetadataUrl }, opts?.fetchFn);
+    if (resourceMetadata.authorization_servers && resourceMetadata.authorization_servers.length > 0) {
+      authorizationServerUrl = resourceMetadata.authorization_servers[0];
+    }
+  } catch {
+  }
+  if (!authorizationServerUrl) {
+    authorizationServerUrl = String(new URL("/", serverUrl));
+  }
+  const authorizationServerMetadata = await discoverAuthorizationServerMetadata(authorizationServerUrl, { fetchFn: opts?.fetchFn });
+  return {
+    authorizationServerUrl,
+    authorizationServerMetadata,
+    resourceMetadata
+  };
+}
+async function startAuthorization(authorizationServerUrl, { metadata, clientInformation, redirectUrl, scope, state, resource }) {
+  let authorizationUrl;
+  if (metadata) {
+    authorizationUrl = new URL(metadata.authorization_endpoint);
+    if (!metadata.response_types_supported.includes(AUTHORIZATION_CODE_RESPONSE_TYPE)) {
+      throw new Error(`Incompatible auth server: does not support response type ${AUTHORIZATION_CODE_RESPONSE_TYPE}`);
+    }
+    if (metadata.code_challenge_methods_supported && !metadata.code_challenge_methods_supported.includes(AUTHORIZATION_CODE_CHALLENGE_METHOD)) {
+      throw new Error(`Incompatible auth server: does not support code challenge method ${AUTHORIZATION_CODE_CHALLENGE_METHOD}`);
+    }
+  } else {
+    authorizationUrl = new URL("/authorize", authorizationServerUrl);
+  }
+  const challenge = await pkceChallenge();
+  const codeVerifier = challenge.code_verifier;
+  const codeChallenge = challenge.code_challenge;
+  authorizationUrl.searchParams.set("response_type", AUTHORIZATION_CODE_RESPONSE_TYPE);
+  authorizationUrl.searchParams.set("client_id", clientInformation.client_id);
+  authorizationUrl.searchParams.set("code_challenge", codeChallenge);
+  authorizationUrl.searchParams.set("code_challenge_method", AUTHORIZATION_CODE_CHALLENGE_METHOD);
+  authorizationUrl.searchParams.set("redirect_uri", String(redirectUrl));
+  if (state) {
+    authorizationUrl.searchParams.set("state", state);
+  }
+  if (scope) {
+    authorizationUrl.searchParams.set("scope", scope);
+  }
+  if (scope?.includes("offline_access")) {
+    authorizationUrl.searchParams.append("prompt", "consent");
+  }
+  if (resource) {
+    authorizationUrl.searchParams.set("resource", resource.href);
+  }
+  return { authorizationUrl, codeVerifier };
+}
+function prepareAuthorizationCodeRequest(authorizationCode, codeVerifier, redirectUri) {
+  return new URLSearchParams({
+    grant_type: "authorization_code",
+    code: authorizationCode,
+    code_verifier: codeVerifier,
+    redirect_uri: String(redirectUri)
+  });
+}
+async function executeTokenRequest(authorizationServerUrl, { metadata, tokenRequestParams, clientInformation, addClientAuthentication, resource, fetchFn }) {
+  const tokenUrl = metadata?.token_endpoint ? new URL(metadata.token_endpoint) : new URL("/token", authorizationServerUrl);
+  const headers = new Headers({
+    "Content-Type": "application/x-www-form-urlencoded",
+    Accept: "application/json"
+  });
+  if (resource) {
+    tokenRequestParams.set("resource", resource.href);
+  }
+  if (addClientAuthentication) {
+    await addClientAuthentication(headers, tokenRequestParams, tokenUrl, metadata);
+  } else if (clientInformation) {
+    const supportedMethods = metadata?.token_endpoint_auth_methods_supported ?? [];
+    const authMethod = selectClientAuthMethod(clientInformation, supportedMethods);
+    applyClientAuthentication(authMethod, clientInformation, headers, tokenRequestParams);
+  }
+  const response = await (fetchFn ?? fetch)(tokenUrl, {
+    method: "POST",
+    headers,
+    body: tokenRequestParams
+  });
+  if (!response.ok) {
+    throw await parseErrorResponse(response);
+  }
+  return OAuthTokensSchema.parse(await response.json());
+}
+async function refreshAuthorization(authorizationServerUrl, { metadata, clientInformation, refreshToken, resource, addClientAuthentication, fetchFn }) {
+  const tokenRequestParams = new URLSearchParams({
+    grant_type: "refresh_token",
+    refresh_token: refreshToken
+  });
+  const tokens = await executeTokenRequest(authorizationServerUrl, {
+    metadata,
+    tokenRequestParams,
+    clientInformation,
+    addClientAuthentication,
+    resource,
+    fetchFn
+  });
+  return { refresh_token: refreshToken, ...tokens };
+}
+async function fetchToken(provider, authorizationServerUrl, { metadata, resource, authorizationCode, fetchFn } = {}) {
+  const scope = provider.clientMetadata.scope;
+  let tokenRequestParams;
+  if (provider.prepareTokenRequest) {
+    tokenRequestParams = await provider.prepareTokenRequest(scope);
+  }
+  if (!tokenRequestParams) {
+    if (!authorizationCode) {
+      throw new Error("Either provider.prepareTokenRequest() or authorizationCode is required");
+    }
+    if (!provider.redirectUrl) {
+      throw new Error("redirectUrl is required for authorization_code flow");
+    }
+    const codeVerifier = await provider.codeVerifier();
+    tokenRequestParams = prepareAuthorizationCodeRequest(authorizationCode, codeVerifier, provider.redirectUrl);
+  }
+  const clientInformation = await provider.clientInformation();
+  return executeTokenRequest(authorizationServerUrl, {
+    metadata,
+    tokenRequestParams,
+    clientInformation: clientInformation ?? void 0,
+    addClientAuthentication: provider.addClientAuthentication,
+    resource,
+    fetchFn
+  });
+}
+async function registerClient(authorizationServerUrl, { metadata, clientMetadata, scope, fetchFn }) {
+  let registrationUrl;
+  if (metadata) {
+    if (!metadata.registration_endpoint) {
+      throw new Error("Incompatible auth server: does not support dynamic client registration");
+    }
+    registrationUrl = new URL(metadata.registration_endpoint);
+  } else {
+    registrationUrl = new URL("/register", authorizationServerUrl);
+  }
+  const response = await (fetchFn ?? fetch)(registrationUrl, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      ...clientMetadata,
+      ...scope !== void 0 ? { scope } : {}
+    })
+  });
+  if (!response.ok) {
+    throw await parseErrorResponse(response);
+  }
+  return OAuthClientInformationFullSchema.parse(await response.json());
+}
+
+// node_modules/eventsource-parser/dist/index.js
+var ParseError = class extends Error {
+  constructor(message, options) {
+    super(message), this.name = "ParseError", this.type = options.type, this.field = options.field, this.value = options.value, this.line = options.line;
+  }
+};
+var LF2 = 10;
+var CR2 = 13;
+var SPACE2 = 32;
+function noop6(_arg) {
+}
+function createParser(config2) {
+  if (typeof config2 == "function")
+    throw new TypeError(
+      "`config` must be an object, got a function instead. Did you mean `createParser({onEvent: fn})`?"
+    );
+  const { onEvent: onEvent2 = noop6, onError = noop6, onRetry = noop6, onComment, maxBufferSize } = config2, pendingFragments = [];
+  let pendingFragmentsLength = 0, isFirstChunk = true, id, data = "", dataLines = 0, eventType, terminated = false;
+  function feed(chunk) {
+    if (terminated)
+      throw new Error(
+        "Cannot feed parser: it was terminated after exceeding the configured max buffer size. Call `reset()` to resume parsing."
+      );
+    if (isFirstChunk && (isFirstChunk = false, chunk.charCodeAt(0) === 239 && chunk.charCodeAt(1) === 187 && chunk.charCodeAt(2) === 191 && (chunk = chunk.slice(3))), pendingFragments.length === 0) {
+      const trailing2 = processLines(chunk);
+      trailing2 !== "" && (pendingFragments.push(trailing2), pendingFragmentsLength = trailing2.length), checkBufferSize();
+      return;
+    }
+    if (chunk.indexOf(`
+`) === -1 && chunk.indexOf("\r") === -1) {
+      pendingFragments.push(chunk), pendingFragmentsLength += chunk.length, checkBufferSize();
+      return;
+    }
+    pendingFragments.push(chunk);
+    const input = pendingFragments.join("");
+    pendingFragments.length = 0, pendingFragmentsLength = 0;
+    const trailing = processLines(input);
+    trailing !== "" && (pendingFragments.push(trailing), pendingFragmentsLength = trailing.length), checkBufferSize();
+  }
+  function checkBufferSize() {
+    maxBufferSize !== void 0 && (pendingFragmentsLength + data.length <= maxBufferSize || (terminated = true, pendingFragments.length = 0, pendingFragmentsLength = 0, id = void 0, data = "", dataLines = 0, eventType = void 0, onError(
+      new ParseError(`Buffered data exceeded max buffer size of ${maxBufferSize} characters`, {
+        type: "max-buffer-size-exceeded"
+      })
+    )));
+  }
+  function processLines(chunk) {
+    let searchIndex = 0;
+    if (chunk.indexOf("\r") === -1) {
+      let lfIndex = chunk.indexOf(`
+`, searchIndex);
+      for (; lfIndex !== -1; ) {
+        if (searchIndex === lfIndex) {
+          dataLines > 0 && onEvent2({ id, event: eventType, data }), id = void 0, data = "", dataLines = 0, eventType = void 0, searchIndex = lfIndex + 1, lfIndex = chunk.indexOf(`
+`, searchIndex);
+          continue;
+        }
+        const firstCharCode = chunk.charCodeAt(searchIndex);
+        if (isDataPrefix(chunk, searchIndex, firstCharCode)) {
+          const valueStart = chunk.charCodeAt(searchIndex + 5) === SPACE2 ? searchIndex + 6 : searchIndex + 5, value = chunk.slice(valueStart, lfIndex);
+          if (dataLines === 0 && chunk.charCodeAt(lfIndex + 1) === LF2) {
+            onEvent2({ id, event: eventType, data: value }), id = void 0, data = "", eventType = void 0, searchIndex = lfIndex + 2, lfIndex = chunk.indexOf(`
+`, searchIndex);
+            continue;
+          }
+          data = dataLines === 0 ? value : `${data}
+${value}`, dataLines++;
+        } else isEventPrefix(chunk, searchIndex, firstCharCode) ? eventType = chunk.slice(
+          chunk.charCodeAt(searchIndex + 6) === SPACE2 ? searchIndex + 7 : searchIndex + 6,
+          lfIndex
+        ) || void 0 : parseLine(chunk, searchIndex, lfIndex);
+        searchIndex = lfIndex + 1, lfIndex = chunk.indexOf(`
+`, searchIndex);
+      }
+      return chunk.slice(searchIndex);
+    }
+    for (; searchIndex < chunk.length; ) {
+      const crIndex = chunk.indexOf("\r", searchIndex), lfIndex = chunk.indexOf(`
+`, searchIndex);
+      let lineEnd = -1;
+      if (crIndex !== -1 && lfIndex !== -1 ? lineEnd = crIndex < lfIndex ? crIndex : lfIndex : crIndex !== -1 ? crIndex === chunk.length - 1 ? lineEnd = -1 : lineEnd = crIndex : lfIndex !== -1 && (lineEnd = lfIndex), lineEnd === -1)
+        break;
+      parseLine(chunk, searchIndex, lineEnd), searchIndex = lineEnd + 1, chunk.charCodeAt(searchIndex - 1) === CR2 && chunk.charCodeAt(searchIndex) === LF2 && searchIndex++;
+    }
+    return chunk.slice(searchIndex);
+  }
+  function parseLine(chunk, start, end) {
+    if (start === end) {
+      dispatchEvent();
+      return;
+    }
+    const firstCharCode = chunk.charCodeAt(start);
+    if (isDataPrefix(chunk, start, firstCharCode)) {
+      const valueStart = chunk.charCodeAt(start + 5) === SPACE2 ? start + 6 : start + 5, value2 = chunk.slice(valueStart, end);
+      data = dataLines === 0 ? value2 : `${data}
+${value2}`, dataLines++;
+      return;
+    }
+    if (isEventPrefix(chunk, start, firstCharCode)) {
+      eventType = chunk.slice(chunk.charCodeAt(start + 6) === SPACE2 ? start + 7 : start + 6, end) || void 0;
+      return;
+    }
+    if (firstCharCode === 105 && chunk.charCodeAt(start + 1) === 100 && chunk.charCodeAt(start + 2) === 58) {
+      const value2 = chunk.slice(chunk.charCodeAt(start + 3) === SPACE2 ? start + 4 : start + 3, end);
+      value2.includes("\0") || (id = value2);
+      return;
+    }
+    if (firstCharCode === 58) {
+      if (onComment) {
+        const line2 = chunk.slice(start, end);
+        onComment(line2.slice(chunk.charCodeAt(start + 1) === SPACE2 ? 2 : 1));
+      }
+      return;
+    }
+    const line = chunk.slice(start, end), fieldSeparatorIndex = line.indexOf(":");
+    if (fieldSeparatorIndex === -1) {
+      processField(line, "", line);
+      return;
+    }
+    const field = line.slice(0, fieldSeparatorIndex), offset = line.charCodeAt(fieldSeparatorIndex + 1) === SPACE2 ? 2 : 1, value = line.slice(fieldSeparatorIndex + offset);
+    processField(field, value, line);
+  }
+  function processField(field, value, line) {
+    switch (field) {
+      case "event":
+        eventType = value || void 0;
+        break;
+      case "data":
+        data = dataLines === 0 ? value : `${data}
+${value}`, dataLines++;
+        break;
+      case "id":
+        value.includes("\0") || (id = value);
+        break;
+      case "retry":
+        /^\d+$/.test(value) ? onRetry(parseInt(value, 10)) : onError(
+          new ParseError(`Invalid \`retry\` value: "${value}"`, {
+            type: "invalid-retry",
+            value,
+            line
+          })
+        );
+        break;
+      default:
+        onError(
+          new ParseError(
+            `Unknown field "${field.length > 20 ? `${field.slice(0, 20)}\u2026` : field}"`,
+            { type: "unknown-field", field, value, line }
+          )
+        );
+        break;
+    }
+  }
+  function dispatchEvent() {
+    dataLines > 0 && onEvent2({
+      id,
+      event: eventType,
+      data
+    }), id = void 0, data = "", dataLines = 0, eventType = void 0;
+  }
+  function reset(options = {}) {
+    if (options.consume && pendingFragments.length > 0) {
+      const incompleteLine = pendingFragments.join("");
+      parseLine(incompleteLine, 0, incompleteLine.length);
+    }
+    isFirstChunk = true, id = void 0, data = "", dataLines = 0, eventType = void 0, pendingFragments.length = 0, pendingFragmentsLength = 0, terminated = false;
+  }
+  return { feed, reset };
+}
+function isDataPrefix(chunk, i2, firstCharCode) {
+  return firstCharCode === 100 && chunk.charCodeAt(i2 + 1) === 97 && chunk.charCodeAt(i2 + 2) === 116 && chunk.charCodeAt(i2 + 3) === 97 && chunk.charCodeAt(i2 + 4) === 58;
+}
+function isEventPrefix(chunk, i2, firstCharCode) {
+  return firstCharCode === 101 && chunk.charCodeAt(i2 + 1) === 118 && chunk.charCodeAt(i2 + 2) === 101 && chunk.charCodeAt(i2 + 3) === 110 && chunk.charCodeAt(i2 + 4) === 116 && chunk.charCodeAt(i2 + 5) === 58;
+}
+
+// node_modules/eventsource-parser/dist/stream.js
+var EventSourceParserStream = class extends TransformStream {
+  constructor({ onError, onRetry, onComment, maxBufferSize } = {}) {
+    let parser;
+    super({
+      start(controller) {
+        parser = createParser({
+          onEvent: (event) => {
+            controller.enqueue(event);
+          },
+          onError(error2) {
+            typeof onError == "function" && onError(error2), (onError === "terminate" || error2.type === "max-buffer-size-exceeded") && controller.error(error2);
+          },
+          onRetry,
+          onComment,
+          maxBufferSize
+        });
+      },
+      transform(chunk) {
+        parser.feed(chunk);
+      }
+    });
+  }
+};
+
+// node_modules/@modelcontextprotocol/sdk/dist/esm/client/streamableHttp.js
+var DEFAULT_STREAMABLE_HTTP_RECONNECTION_OPTIONS = {
+  initialReconnectionDelay: 1e3,
+  maxReconnectionDelay: 3e4,
+  reconnectionDelayGrowFactor: 1.5,
+  maxRetries: 2
+};
+var StreamableHTTPError = class extends Error {
+  constructor(code, message) {
+    super(`Streamable HTTP error: ${message}`);
+    this.code = code;
+  }
+};
+var StreamableHTTPClientTransport = class {
+  constructor(url3, opts) {
+    this._hasCompletedAuthFlow = false;
+    this._url = url3;
+    this._resourceMetadataUrl = void 0;
+    this._scope = void 0;
+    this._requestInit = opts?.requestInit;
+    this._authProvider = opts?.authProvider;
+    this._fetch = opts?.fetch;
+    this._fetchWithInit = createFetchWithInit(opts?.fetch, opts?.requestInit);
+    this._sessionId = opts?.sessionId;
+    this._reconnectionOptions = opts?.reconnectionOptions ?? DEFAULT_STREAMABLE_HTTP_RECONNECTION_OPTIONS;
+  }
+  async _authThenStart() {
+    if (!this._authProvider) {
+      throw new UnauthorizedError("No auth provider");
+    }
+    let result;
+    try {
+      result = await auth(this._authProvider, {
+        serverUrl: this._url,
+        resourceMetadataUrl: this._resourceMetadataUrl,
+        scope: this._scope,
+        fetchFn: this._fetchWithInit
+      });
+    } catch (error2) {
+      this.onerror?.(error2);
+      throw error2;
+    }
+    if (result !== "AUTHORIZED") {
+      throw new UnauthorizedError();
+    }
+    return await this._startOrAuthSse({ resumptionToken: void 0 });
+  }
+  async _commonHeaders() {
+    const headers = {};
+    if (this._authProvider) {
+      const tokens = await this._authProvider.tokens();
+      if (tokens) {
+        headers["Authorization"] = `Bearer ${tokens.access_token}`;
+      }
+    }
+    if (this._sessionId) {
+      headers["mcp-session-id"] = this._sessionId;
+    }
+    if (this._protocolVersion) {
+      headers["mcp-protocol-version"] = this._protocolVersion;
+    }
+    const extraHeaders = normalizeHeaders(this._requestInit?.headers);
+    return new Headers({
+      ...headers,
+      ...extraHeaders
+    });
+  }
+  async _startOrAuthSse(options) {
+    const { resumptionToken } = options;
+    try {
+      const headers = await this._commonHeaders();
+      headers.set("Accept", "text/event-stream");
+      if (resumptionToken) {
+        headers.set("last-event-id", resumptionToken);
+      }
+      const response = await (this._fetch ?? fetch)(this._url, {
+        method: "GET",
+        headers,
+        signal: this._abortController?.signal
+      });
+      if (!response.ok) {
+        await response.body?.cancel();
+        if (response.status === 401 && this._authProvider) {
+          return await this._authThenStart();
+        }
+        if (response.status === 405) {
+          return;
+        }
+        throw new StreamableHTTPError(response.status, `Failed to open SSE stream: ${response.statusText}`);
+      }
+      this._handleSseStream(response.body, options, true);
+    } catch (error2) {
+      this.onerror?.(error2);
+      throw error2;
+    }
+  }
+  /**
+   * Calculates the next reconnection delay using  backoff algorithm
+   *
+   * @param attempt Current reconnection attempt count for the specific stream
+   * @returns Time to wait in milliseconds before next reconnection attempt
+   */
+  _getNextReconnectionDelay(attempt) {
+    if (this._serverRetryMs !== void 0) {
+      return this._serverRetryMs;
+    }
+    const initialDelay = this._reconnectionOptions.initialReconnectionDelay;
+    const growFactor = this._reconnectionOptions.reconnectionDelayGrowFactor;
+    const maxDelay = this._reconnectionOptions.maxReconnectionDelay;
+    return Math.min(initialDelay * Math.pow(growFactor, attempt), maxDelay);
+  }
+  /**
+   * Schedule a reconnection attempt using server-provided retry interval or backoff
+   *
+   * @param lastEventId The ID of the last received event for resumability
+   * @param attemptCount Current reconnection attempt count for this specific stream
+   */
+  _scheduleReconnection(options, attemptCount = 0) {
+    const maxRetries = this._reconnectionOptions.maxRetries;
+    if (attemptCount >= maxRetries) {
+      this.onerror?.(new Error(`Maximum reconnection attempts (${maxRetries}) exceeded.`));
+      return;
+    }
+    const delay = this._getNextReconnectionDelay(attemptCount);
+    this._reconnectionTimeout = setTimeout(() => {
+      this._startOrAuthSse(options).catch((error2) => {
+        this.onerror?.(new Error(`Failed to reconnect SSE stream: ${error2 instanceof Error ? error2.message : String(error2)}`));
+        this._scheduleReconnection(options, attemptCount + 1);
+      });
+    }, delay);
+  }
+  _handleSseStream(stream4, options, isReconnectable) {
+    if (!stream4) {
+      return;
+    }
+    const { onresumptiontoken, replayMessageId } = options;
+    let lastEventId;
+    let hasPrimingEvent = false;
+    let receivedResponse = false;
+    const processStream = async () => {
+      try {
+        const reader = stream4.pipeThrough(new TextDecoderStream()).pipeThrough(new EventSourceParserStream({
+          onRetry: (retryMs) => {
+            this._serverRetryMs = retryMs;
+          }
+        })).getReader();
+        while (true) {
+          const { value: event, done } = await reader.read();
+          if (done) {
+            break;
+          }
+          if (event.id) {
+            lastEventId = event.id;
+            hasPrimingEvent = true;
+            onresumptiontoken?.(event.id);
+          }
+          if (!event.data) {
+            continue;
+          }
+          if (!event.event || event.event === "message") {
+            try {
+              const message = JSONRPCMessageSchema.parse(JSON.parse(event.data));
+              if (isJSONRPCResultResponse(message)) {
+                receivedResponse = true;
+                if (replayMessageId !== void 0) {
+                  message.id = replayMessageId;
+                }
+              }
+              this.onmessage?.(message);
+            } catch (error2) {
+              this.onerror?.(error2);
+            }
+          }
+        }
+        const canResume = isReconnectable || hasPrimingEvent;
+        const needsReconnect = canResume && !receivedResponse;
+        if (needsReconnect && this._abortController && !this._abortController.signal.aborted) {
+          this._scheduleReconnection({
+            resumptionToken: lastEventId,
+            onresumptiontoken,
+            replayMessageId
+          }, 0);
+        }
+      } catch (error2) {
+        this.onerror?.(new Error(`SSE stream disconnected: ${error2}`));
+        const canResume = isReconnectable || hasPrimingEvent;
+        const needsReconnect = canResume && !receivedResponse;
+        if (needsReconnect && this._abortController && !this._abortController.signal.aborted) {
+          try {
+            this._scheduleReconnection({
+              resumptionToken: lastEventId,
+              onresumptiontoken,
+              replayMessageId
+            }, 0);
+          } catch (error3) {
+            this.onerror?.(new Error(`Failed to reconnect: ${error3 instanceof Error ? error3.message : String(error3)}`));
+          }
+        }
+      }
+    };
+    processStream();
+  }
+  async start() {
+    if (this._abortController) {
+      throw new Error("StreamableHTTPClientTransport already started! If using Client class, note that connect() calls start() automatically.");
+    }
+    this._abortController = new AbortController();
+  }
+  /**
+   * Call this method after the user has finished authorizing via their user agent and is redirected back to the MCP client application. This will exchange the authorization code for an access token, enabling the next connection attempt to successfully auth.
+   */
+  async finishAuth(authorizationCode) {
+    if (!this._authProvider) {
+      throw new UnauthorizedError("No auth provider");
+    }
+    const result = await auth(this._authProvider, {
+      serverUrl: this._url,
+      authorizationCode,
+      resourceMetadataUrl: this._resourceMetadataUrl,
+      scope: this._scope,
+      fetchFn: this._fetchWithInit
+    });
+    if (result !== "AUTHORIZED") {
+      throw new UnauthorizedError("Failed to authorize");
+    }
+  }
+  async close() {
+    if (this._reconnectionTimeout) {
+      clearTimeout(this._reconnectionTimeout);
+      this._reconnectionTimeout = void 0;
+    }
+    this._abortController?.abort();
+    this.onclose?.();
+  }
+  async send(message, options) {
+    try {
+      const { resumptionToken, onresumptiontoken } = options || {};
+      if (resumptionToken) {
+        this._startOrAuthSse({ resumptionToken, replayMessageId: isJSONRPCRequest(message) ? message.id : void 0 }).catch((err) => this.onerror?.(err));
+        return;
+      }
+      const headers = await this._commonHeaders();
+      headers.set("content-type", "application/json");
+      headers.set("accept", "application/json, text/event-stream");
+      const init = {
+        ...this._requestInit,
+        method: "POST",
+        headers,
+        body: JSON.stringify(message),
+        signal: this._abortController?.signal
+      };
+      const response = await (this._fetch ?? fetch)(this._url, init);
+      const sessionId = response.headers.get("mcp-session-id");
+      if (sessionId) {
+        this._sessionId = sessionId;
+      }
+      if (!response.ok) {
+        const text = await response.text().catch(() => null);
+        if (response.status === 401 && this._authProvider) {
+          if (this._hasCompletedAuthFlow) {
+            throw new StreamableHTTPError(401, "Server returned 401 after successful authentication");
+          }
+          const { resourceMetadataUrl, scope } = extractWWWAuthenticateParams(response);
+          this._resourceMetadataUrl = resourceMetadataUrl;
+          this._scope = scope;
+          const result = await auth(this._authProvider, {
+            serverUrl: this._url,
+            resourceMetadataUrl: this._resourceMetadataUrl,
+            scope: this._scope,
+            fetchFn: this._fetchWithInit
+          });
+          if (result !== "AUTHORIZED") {
+            throw new UnauthorizedError();
+          }
+          this._hasCompletedAuthFlow = true;
+          return this.send(message);
+        }
+        if (response.status === 403 && this._authProvider) {
+          const { resourceMetadataUrl, scope, error: error2 } = extractWWWAuthenticateParams(response);
+          if (error2 === "insufficient_scope") {
+            const wwwAuthHeader = response.headers.get("WWW-Authenticate");
+            if (this._lastUpscopingHeader === wwwAuthHeader) {
+              throw new StreamableHTTPError(403, "Server returned 403 after trying upscoping");
+            }
+            if (scope) {
+              this._scope = scope;
+            }
+            if (resourceMetadataUrl) {
+              this._resourceMetadataUrl = resourceMetadataUrl;
+            }
+            this._lastUpscopingHeader = wwwAuthHeader ?? void 0;
+            const result = await auth(this._authProvider, {
+              serverUrl: this._url,
+              resourceMetadataUrl: this._resourceMetadataUrl,
+              scope: this._scope,
+              fetchFn: this._fetch
+            });
+            if (result !== "AUTHORIZED") {
+              throw new UnauthorizedError();
+            }
+            return this.send(message);
+          }
+        }
+        throw new StreamableHTTPError(response.status, `Error POSTing to endpoint: ${text}`);
+      }
+      this._hasCompletedAuthFlow = false;
+      this._lastUpscopingHeader = void 0;
+      if (response.status === 202) {
+        await response.body?.cancel();
+        if (isInitializedNotification(message)) {
+          this._startOrAuthSse({ resumptionToken: void 0 }).catch((err) => this.onerror?.(err));
+        }
+        return;
+      }
+      const messages = Array.isArray(message) ? message : [message];
+      const hasRequests = messages.filter((msg) => "method" in msg && "id" in msg && msg.id !== void 0).length > 0;
+      const contentType2 = response.headers.get("content-type");
+      const responseMediaType = mediaTypeEssence(contentType2);
+      if (hasRequests) {
+        if (responseMediaType === "text/event-stream") {
+          this._handleSseStream(response.body, { onresumptiontoken }, false);
+        } else if (responseMediaType === "application/json") {
+          const data = await response.json();
+          const responseMessages = Array.isArray(data) ? data.map((msg) => JSONRPCMessageSchema.parse(msg)) : [JSONRPCMessageSchema.parse(data)];
+          for (const msg of responseMessages) {
+            this.onmessage?.(msg);
+          }
+        } else {
+          await response.body?.cancel();
+          throw new StreamableHTTPError(-1, `Unexpected content type: ${contentType2}`);
+        }
+      } else {
+        await response.body?.cancel();
+      }
+    } catch (error2) {
+      this.onerror?.(error2);
+      throw error2;
+    }
+  }
+  get sessionId() {
+    return this._sessionId;
+  }
+  /**
+   * Terminates the current session by sending a DELETE request to the server.
+   *
+   * Clients that no longer need a particular session
+   * (e.g., because the user is leaving the client application) SHOULD send an
+   * HTTP DELETE to the MCP endpoint with the Mcp-Session-Id header to explicitly
+   * terminate the session.
+   *
+   * The server MAY respond with HTTP 405 Method Not Allowed, indicating that
+   * the server does not allow clients to terminate sessions.
+   */
+  async terminateSession() {
+    if (!this._sessionId) {
+      return;
+    }
+    try {
+      const headers = await this._commonHeaders();
+      const init = {
+        ...this._requestInit,
+        method: "DELETE",
+        headers,
+        signal: this._abortController?.signal
+      };
+      const response = await (this._fetch ?? fetch)(this._url, init);
+      await response.body?.cancel();
+      if (!response.ok && response.status !== 405) {
+        throw new StreamableHTTPError(response.status, `Failed to terminate session: ${response.statusText}`);
+      }
+      this._sessionId = void 0;
+    } catch (error2) {
+      this.onerror?.(error2);
+      throw error2;
+    }
+  }
+  setProtocolVersion(version2) {
+    this._protocolVersion = version2;
+  }
+  get protocolVersion() {
+    return this._protocolVersion;
+  }
+  /**
+   * Resume an SSE stream from a previous event ID.
+   * Opens a GET SSE connection with Last-Event-ID header to replay missed events.
+   *
+   * @param lastEventId The event ID to resume from
+   * @param options Optional callback to receive new resumption tokens
+   */
+  async resumeStream(lastEventId, options) {
+    await this._startOrAuthSse({
+      resumptionToken: lastEventId,
+      onresumptiontoken: options?.onresumptiontoken
+    });
+  }
+};
+
 // src/managers/mcpManager.ts
 var MCPManager = class {
   constructor(context) {
     this.context = context;
-  }
-  context;
-  clients = /* @__PURE__ */ new Map();
-  transports = /* @__PURE__ */ new Map();
-  toolToClientMap = /* @__PURE__ */ new Map();
-  emitter = new vscode14.EventEmitter();
-  onDidUpdateStatus = this.emitter.event;
-  async getServerStates() {
-    const configs = this.getSavedServers();
-    const states = [];
-    const allDisabled = this.context.globalState.get("disabledMCPTools") || {};
-    for (const [name, config2] of Object.entries(configs)) {
-      const client = this.clients.get(name);
-      let tools = [];
-      let error2 = void 0;
-      if (client) {
-        try {
-          const response = await client.listTools();
-          const serverDisabled = new Set(allDisabled[name] || []);
-          tools = response.tools.map((t2) => ({
-            name: t2.name,
-            description: t2.description || "",
-            enabled: !serverDisabled.has(t2.name)
-          }));
-          for (const tool of response.tools) {
-            this.toolToClientMap.set(tool.name, { serverName: name, client });
-          }
-        } catch (e2) {
-          error2 = e2?.message || "Failed to retrieve tools";
-        }
-      }
-      states.push({
+    const savedStates = this.context.globalState.get("MCP_Servers", {});
+    for (const [name, state] of Object.entries(savedStates)) {
+      this.serverStates.set(name, {
         name,
-        config: config2,
-        status: client ? "connected" : "disconnected",
-        error: error2,
-        tools
+        status: state.status,
+        config: state.config,
+        disabledTools: new Set(state.disabledTools || [])
       });
     }
-    return states;
   }
-  async handleMetaTool(args) {
-    if (!args?.serverName) {
-      return this.listConnectedServers();
+  context;
+  serverStates = /* @__PURE__ */ new Map();
+  serverTools = /* @__PURE__ */ new Map();
+  clients = /* @__PURE__ */ new Map();
+  emitter = new vscode14.EventEmitter();
+  onDidUpdateStatus = this.emitter.event;
+  getAllServerStates() {
+    const result = {};
+    for (const [name, state] of this.serverStates.entries()) {
+      result[name] = state;
     }
-    return this.listServerTools(args.serverName);
+    return result;
   }
-  async listConnectedServers() {
-    const connectedNames = Array.from(this.clients.keys());
-    if (connectedNames.length === 0) {
-      return {
-        message: "No MCP servers are currently connected. Enable or configure servers in the MCP settings.",
-        data: { connectedServers: [] }
-      };
-    }
-    const serverSummaries = [];
-    for (const name of connectedNames) {
-      const client = this.clients.get(name);
-      if (!client) continue;
-      try {
-        const response = await client.listTools();
-        const allDisabled = this.context.globalState.get("disabledMCPTools") || {};
-        const serverDisabled = new Set(allDisabled[name] || []);
-        const enabledTools = response.tools.filter((t2) => !serverDisabled.has(t2.name)).map((t2) => t2.name);
-        serverSummaries.push({
-          name,
-          toolCount: enabledTools.length,
-          tools: enabledTools
-        });
-      } catch (e2) {
-        serverSummaries.push({
-          name,
-          toolCount: 0,
-          tools: []
-        });
+  getHeaderStats() {
+    const serversTotal = this.serverStates.size;
+    let serversActive = 0;
+    for (const state of this.serverStates.values()) {
+      if (state.status === "connected") {
+        serversActive++;
       }
     }
-    const formatted = serverSummaries.map(
-      (s2) => `\u2022 Server '${s2.name}': ${s2.toolCount} active tool(s) [${s2.tools.join(", ") || "none"}]`
-    ).join("\n");
-    const message = `Connected MCP Servers (${serverSummaries.length}):
-${formatted}
-
-To see detailed schemas and instructions for a server's tools, call mcp({ serverName: "<name>" }).`;
-    return {
-      message,
-      data: { servers: serverSummaries }
-    };
-  }
-  async listServerTools(serverName) {
-    const client = this.clients.get(serverName);
-    if (!client) {
-      const connected = Array.from(this.clients.keys()).join(", ") || "none";
-      return {
-        message: `MCP server '${serverName}' is not connected. Currently connected servers: [${connected}].`,
-        data: { error: "SERVER_NOT_CONNECTED", requestedServer: serverName }
-      };
-    }
-    try {
-      const response = await client.listTools();
-      const allDisabled = this.context.globalState.get("disabledMCPTools") || {};
-      const serverDisabled = new Set(allDisabled[serverName] || []);
-      const activeTools = response.tools.filter((t2) => !serverDisabled.has(t2.name));
-      if (activeTools.length === 0) {
-        return {
-          message: `Server '${serverName}' is connected, but has 0 active tools (or all tools are disabled in settings).`,
-          data: { tools: [] }
-        };
-      }
-      for (const tool of activeTools) {
-        this.toolToClientMap.set(tool.name, { serverName, client });
-      }
-      const toolDetails = activeTools.map((t2) => {
-        const schemaStr = JSON.stringify(t2.inputSchema || {}, null, 2);
-        return `### Tool: ${t2.name}
-Description: ${t2.description || "No description"}
-Parameters Schema:
-\`\`\`json
-${schemaStr}
-\`\`\``;
-      }).join("\n\n");
-      const message = `Available tools on '${serverName}':
-
-${toolDetails}
-
-You can now call any of these tools directly.`;
-      return {
-        message,
-        data: {
-          server: serverName,
-          tools: activeTools.map((t2) => ({
-            name: t2.name,
-            description: t2.description,
-            inputSchema: t2.inputSchema
-          }))
+    let toolsTotal = 0;
+    let toolsActive = 0;
+    for (const [serverName, toolMap] of this.serverTools.entries()) {
+      const state = this.serverStates.get(serverName);
+      if (state && state.status === "connected") {
+        for (const tool of toolMap.values()) {
+          toolsTotal++;
+          if (!tool.disabled) {
+            toolsActive++;
+          }
         }
+      }
+    }
+    return { serversActive, serversTotal, toolsActive, toolsTotal };
+  }
+  emitHeaderStats() {
+    const stats = this.getHeaderStats();
+    this.emitter.fire({
+      type: "updateHeaderStats",
+      ...stats
+    });
+  }
+  async saveServerState() {
+    const stateObj = {};
+    for (const [name, state] of this.serverStates.entries()) {
+      stateObj[name] = {
+        status: state.status,
+        config: state.config,
+        disabledTools: Array.from(state.disabledTools || [])
       };
-    } catch (e2) {
-      return {
-        message: `Failed to retrieve tools for MCP server '${serverName}': ${e2.message || String(e2)}`,
-        data: { error: e2.message }
-      };
     }
+    await this.context.globalState.update("MCP_Servers", stateObj);
   }
-  getSavedServers() {
-    return this.context.globalState.get("mcpServers") || {};
+  updateServerState(serverName, status) {
+    if (!this.serverStates.has(serverName)) return;
+    this.serverStates.get(serverName).status = status;
+    this.emitter.fire({
+      type: "updateServerState",
+      serverName,
+      status
+    });
+    this.emitHeaderStats();
   }
-  async addServer(name, config2) {
-    const servers = this.getSavedServers();
-    servers[name] = config2;
-    await this.context.globalState.update("mcpServers", servers);
+  async restoreServerState() {
+    const connectionTasks = Array.from(this.serverStates.entries()).filter(([_, state]) => state.status === "connected" || state.status === "connecting").map(async ([serverName]) => {
+      await this.connect(serverName);
+    });
+    await Promise.all(connectionTasks);
   }
-  async removeServer(name) {
-    const servers = this.getSavedServers();
-    delete servers[name];
-    await this.context.globalState.update("mcpServers", servers);
-    const allDisabled = this.context.globalState.get("disabledMCPTools") || {};
-    if (allDisabled[name]) {
-      delete allDisabled[name];
-      await this.context.globalState.update("disabledMCPTools", allDisabled);
-    }
-    await this.disconnect(name);
+  async addServer(serverName, config2) {
+    this.serverStates.set(serverName, { name: serverName, status: "disconnected", config: config2 });
+    await this.saveServerState();
+    this.emitter.fire({
+      type: "addServer",
+      serverName,
+      config: config2,
+      status: "disconnected"
+    });
+    this.emitHeaderStats();
   }
-  async toggleTool(serverName, toolName2, enabled) {
-    const allDisabled = this.context.globalState.get("disabledMCPTools") || {};
-    const serverDisabled = new Set(allDisabled[serverName] || []);
-    if (enabled) {
-      serverDisabled.delete(toolName2);
-    } else {
-      serverDisabled.add(toolName2);
-    }
-    allDisabled[serverName] = Array.from(serverDisabled);
-    await this.context.globalState.update("disabledMCPTools", allDisabled);
-  }
-  async connect(name) {
-    if (this.clients.has(name)) return;
-    const servers = this.getSavedServers();
-    const config2 = servers[name];
-    if (!config2) {
-      vscode14.window.showErrorMessage(`MCP server ${name} not found in config!`);
+  async removeServer(serverName) {
+    if (!this.serverStates.has(serverName)) {
+      console.warn(`Attempted to remove unknown server: ${serverName}.`);
       return;
     }
-    const mergedEnv = config2.env ? { ...process.env, ...config2.env } : process.env;
-    const transport = new StdioClientTransport({
-      command: config2.command,
-      args: config2.args,
-      env: mergedEnv,
-      cwd: config2.cwd,
-      maxBufferSize: config2.maxBufferSize
-    });
-    const client = new Client({ name: "agent-client", version: "1.0.0" }, {
-      capabilities: {}
-    });
-    await client.connect(transport);
-    this.transports.set(name, transport);
-    this.clients.set(name, client);
+    await this.disconnect(serverName, false);
+    this.serverStates.delete(serverName);
+    await this.saveServerState();
+    this.emitter.fire({ type: "removeMCPServer", name: serverName });
+    this.emitHeaderStats();
   }
-  async disconnect(name) {
-    const transport = this.transports.get(name);
-    if (transport) {
-      await transport.close();
-      this.transports.delete(name);
+  getConnectedServers() {
+    const connectedServers = Array.from(this.clients.keys());
+    return connectedServers;
+  }
+  async connect(serverName) {
+    if (!this.serverStates.has(serverName)) {
+      vscode14.window.showErrorMessage(`Cannot connect to unconfigured server: ${serverName}!`);
+      return;
     }
-    this.clients.delete(name);
-    for (const [toolName2, entry] of this.toolToClientMap.entries()) {
-      if (entry.serverName === name) {
-        this.toolToClientMap.delete(toolName2);
+    const serverState = this.serverStates.get(serverName);
+    if (this.clients.has(serverName)) {
+      console.warn(`Already connected or connecting to ${serverName} server.`);
+      return;
+    }
+    this.updateServerState(serverName, "connecting");
+    try {
+      const config2 = serverState.config;
+      const mergedEnv = config2?.env ? { ...process.env, ...config2.env } : process.env;
+      let transport;
+      if (config2.command) {
+        transport = new StdioClientTransport({
+          command: config2.command,
+          args: config2.args,
+          env: mergedEnv,
+          cwd: config2.cwd
+        });
+      } else if (config2.url) {
+        transport = new StreamableHTTPClientTransport(new URL(config2.url));
+      } else {
+        throw new Error("Invalid MCP server configuration.");
+      }
+      const client = new Client({ name: "vscodeagent-client", version: "1.0.0" }, { capabilities: {} });
+      await client.connect(transport);
+      this.clients.set(serverName, client);
+      await this.loadTools(serverName);
+      this.updateServerState(serverName, "connected");
+      await this.saveServerState();
+    } catch (e2) {
+      console.error(`Error connecting to ${serverName}`, e2);
+      this.updateServerState(serverName, "error");
+    }
+  }
+  async disconnect(serverName, saveState = true) {
+    if (!this.clients.has(serverName)) {
+      console.warn(`Attempted to disconnect unknown server: ${serverName}.`);
+      return;
+    }
+    const client = this.clients.get(serverName);
+    if (client) {
+      try {
+        await client.close();
+      } catch (error2) {
+        console.error(`Error closing MCP client for ${serverName}:`, error2);
+      } finally {
+        this.clients.delete(serverName);
       }
     }
+    this.serverTools.delete(serverName);
+    this.updateServerState(serverName, "disconnected");
+    if (saveState) await this.saveServerState();
   }
-  isToolEnabled(serverName, toolName2) {
-    const allDisabled = this.context.globalState.get("disabledMCPTools") || {};
-    const serverDisabled = new Set(allDisabled[serverName] || []);
-    return !serverDisabled.has(toolName2);
-  }
-  hasTool(toolName2) {
-    const entry = this.toolToClientMap.get(toolName2);
-    if (!entry) return false;
-    return this.isToolEnabled(entry.serverName, toolName2);
-  }
-  // public async getConnectedTools(): Promise<ToolSchema[]> {
-  //     const mcpSchemas: ToolSchema[] = [];
-  //     const allDisabled = this.context.globalState.get<Record<string, string[]>>('disabledMCPTools') || {};
-  //     for (const [serverName, client] of this.clients.entries()) {
-  //         const response = await client.listTools();
-  //         const serverDisabled = new Set(allDisabled[serverName] || []);
-  //         for (const tool of response.tools) {
-  //             this.toolToClientMap.set(tool.name, { serverName, client });
-  //             // Only register tool with LLM if enabled
-  //             if (!serverDisabled.has(tool.name)) {
-  //                 mcpSchemas.push({
-  //                     type: 'function',
-  //                     name: tool.name,
-  //                     description: tool.description || '',
-  //                     parameters: tool.inputSchema as any
-  //                 });
-  //             }
-  //         }
-  //     }
-  //     return mcpSchemas;
-  // }
-  async callTool(toolName2, args) {
-    const entry = this.toolToClientMap.get(toolName2);
-    if (!entry || !this.isToolEnabled(entry.serverName, toolName2)) {
-      throw new Error(`MCP tool '${toolName2}' is disabled or its server is disconnected.`);
+  async loadTools(serverName) {
+    const client = this.clients.get(serverName);
+    if (!client) return;
+    try {
+      const response = await client.listTools();
+      const toolMap = /* @__PURE__ */ new Map();
+      const disabledTools = this.serverStates.get(serverName).disabledTools;
+      for (const t2 of response.tools) {
+        toolMap.set(t2.name, {
+          name: t2.name,
+          description: t2.description,
+          signature: this.formatToolSignature(t2),
+          details: this.formatToolDetails(t2),
+          disabled: disabledTools?.has(t2.name)
+        });
+      }
+      this.serverTools.set(serverName, toolMap);
+      this.emitter.fire({ type: "updateServerTools", serverName, tools: Array.from(toolMap.values()) });
+    } catch (e2) {
+      console.warn(`Error loading tools from server: ${serverName}`, e2);
     }
-    const { client } = entry;
-    const result = await client.callTool({
-      name: toolName2,
-      arguments: args
+  }
+  formatToolSignature(tool) {
+    const schema = tool.inputSchema || {};
+    const props = schema.properties || {};
+    const requiredSet = new Set(schema.required || []);
+    const paramList = Object.entries(props).map(([propName, propDef]) => {
+      const typeStr = propDef.type || "any";
+      const optionalFlag = requiredSet.has(propName) ? "" : "?";
+      return `${propName}${optionalFlag}: ${typeStr}`;
     });
+    const sig = `${tool.name}(${paramList.join(", ")})`;
+    return sig;
+  }
+  formatToolDetails(tool) {
+    const schema = tool.inputSchema || {};
+    const props = schema.properties || {};
+    const requiredSet = new Set(schema.required || []);
+    const paramEntries = Object.entries(props).map(([name, propDef]) => {
+      const isReq = requiredSet.has(name) ? "required" : "optional";
+      const typeStr = propDef.type || "any";
+      const descStr = propDef.description ? ` - ${propDef.description}` : "";
+      const enumStr = propDef.enum ? ` [allowed: ${propDef.enum.join(", ")}]` : "";
+      return `    - \`${name}\` (${typeStr}, ${isReq}${enumStr})${descStr}`;
+    });
+    const paramBlock = paramEntries.length > 0 ? `  Parameters:
+${paramEntries.join("\n")}` : `  Parameters: None`;
+    return `### Tool: \`${tool.name}\`
+${paramBlock}`;
+  }
+  getServerTools(serverName) {
+    const toolMap = this.serverTools.get(serverName);
+    if (!toolMap) return [];
+    return Array.from(toolMap.values()).filter((tool) => !tool.disabled);
+  }
+  async toggleTool(serverName, toolName2, enabled) {
+    const state = this.serverStates.get(serverName);
+    if (!state) return;
+    if (enabled) state.disabledTools?.delete(toolName2);
+    else state.disabledTools?.add(toolName2);
+    const toolMap = this.serverTools.get(serverName);
+    if (toolMap && toolMap.has(toolName2)) {
+      toolMap.get(toolName2).disabled = !enabled;
+    }
+    await this.saveServerState();
+    this.emitHeaderStats();
+  }
+  async callTool(serverName, toolName2, args) {
+    const client = this.clients.get(serverName);
+    if (!client) throw new Error(`Error: Server '${serverName}' is not configured or not connected.`);
+    const toolMap = this.serverTools.get(serverName);
+    const tool = toolMap?.get(toolName2);
+    if (!tool) throw new Error(`Error: Tool '${toolName2}' not found on server '${serverName}'.`);
+    if (tool.disabled) throw new Error(`Error: Tool '${toolName2}' is disabled by the user.`);
+    let parsedArgs = args;
+    if (typeof args === "string") {
+      try {
+        parsedArgs = JSON.parse(args);
+      } catch {
+        throw new Error(`Error parsing argument. Arguments must be a valid JSON object!`);
+      }
+    }
     let message = "";
-    if ("content" in result && Array.isArray(result.content)) {
-      if (result.isError) throw new Error("MCP tool returned an execution error.");
-      message = result.content.map((block) => {
+    const response = await client.callTool({ name: toolName2, arguments: parsedArgs });
+    if ("content" in response && Array.isArray(response.content)) {
+      if (response.isError) throw new Error("MCP tool returned an execution error.");
+      message = response.content.map((block) => {
         switch (block.type) {
           case "text":
             return block.text;
@@ -121133,12 +122980,12 @@ ${block.resource.text}`;
             return `[Unsupported tool output type]`;
         }
       }).join("\n");
-    } else if ("toolResult" in result) {
-      message = typeof result.toolResult === "string" ? result.toolResult : JSON.stringify(result.toolResult, null, 2);
+    } else if ("toolResult" in response) {
+      message = typeof response.toolResult === "string" ? response.toolResult : JSON.stringify(response.toolResult, null, 2);
     } else {
       message = "Tool executed successfully, but returned an unrecognized format.";
     }
-    return { message, data: result };
+    return { message };
   }
 };
 
@@ -121196,6 +123043,13 @@ formdata-polyfill/esm.min.js:
 
 node-domexception/index.js:
   (*! node-domexception. MIT License. Jimmy Wärting <https://jimmy.warting.se/opensource> *)
+
+content-type/index.js:
+  (*!
+   * content-type
+   * Copyright(c) 2015 Douglas Christopher Wilson
+   * MIT Licensed
+   *)
 
 @google/genai/dist/node/index.mjs:
 @google/genai/dist/node/index.mjs:

@@ -1,5 +1,5 @@
 import { WebviewApi } from "../../Webview";
-import { IndexStatusMessage } from "../../../indexing/indexer";
+import type { IndexStatusMessage } from "../../../indexing/indexer";
 import { CustomDropdown } from "./customDropdown";
 
 export class ChatHeader {

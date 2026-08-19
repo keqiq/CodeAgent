@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import { MCPManager } from './managers/mcpManager';
+import { parse } from 'shell-quote';
 
 export class MCPViewProvider implements vscode.WebviewViewProvider {
     private view?: vscode.WebviewView;
@@ -9,9 +10,7 @@ export class MCPViewProvider implements vscode.WebviewViewProvider {
         private readonly context: vscode.ExtensionContext,
         private readonly mcpManager: MCPManager
     ) {
-        this.mcpManager.onDidUpdateStatus(async () => {
-            await this.broadcastState();
-        });
+        this.mcpManager.onDidUpdateStatus(event => this.post(event));
     }
 
     public async resolveWebviewView(
@@ -29,17 +28,40 @@ export class MCPViewProvider implements vscode.WebviewViewProvider {
         webviewView.webview.onDidReceiveMessage(async (data) => {
             switch (data.type) {
                 case 'mcpViewReady': {
-                    await this.broadcastState();
+
+                    this.post({
+                        type: 'restoreState',
+                        states: this.mcpManager.getAllServerStates()
+                    });
+
+                    this.post({
+                        type: 'updateHeaderStats',
+                        ...this.mcpManager.getHeaderStats()
+                    });
+
+                    await this.mcpManager.restoreServerState();
                     break;
                 }
 
                 case 'addServer': {
                     try {
+                        const config = data.config;
+
+                        // Parse full command line string into command + args array
+                        if (config.command) {
+                            const tokens = parse(config.command).filter(
+                                (token): token is string => typeof token === 'string'
+                            );
+                            if (tokens.length > 0) {
+                                config.command = tokens[0];
+                                config.args = tokens.slice(1);
+                            }
+                        }
+
                         await this.mcpManager.addServer(data.name, data.config);
                         if (data.autoConnect) {
                             await this.mcpManager.connect(data.name);
                         }
-                        await this.broadcastState();
                     } catch (e: any) {
                         vscode.window.showErrorMessage(`Failed to add MCP server: ${e.message || String(e)}`);
                     }
@@ -53,7 +75,6 @@ export class MCPViewProvider implements vscode.WebviewViewProvider {
                         } else {
                             await this.mcpManager.disconnect(data.name);
                         }
-                        await this.broadcastState();
                     } catch (e: any) {
                         vscode.window.showErrorMessage(`Connection error: ${e.message || String(e)}`);
                     }
@@ -63,7 +84,6 @@ export class MCPViewProvider implements vscode.WebviewViewProvider {
                 case 'toggleTool': {
                     try {
                         await this.mcpManager.toggleTool(data.serverName, data.toolName, data.enabled);
-                        await this.broadcastState();
                     } catch (e: any) {
                         vscode.window.showErrorMessage(`Error toggling tool: ${e.message || String(e)}`);
                     }
@@ -72,21 +92,13 @@ export class MCPViewProvider implements vscode.WebviewViewProvider {
 
                 case 'removeServer': {
                     await this.mcpManager.removeServer(data.name);
-                    await this.broadcastState();
                     break;
                 }
             }
         });
     }
 
-    private async broadcastState(): Promise<void> {
-        if (!this.view) return;
-        const states = await this.mcpManager.getServerStates();
-        this.view.webview.postMessage({
-            type: 'syncState',
-            servers: states
-        });
-    }
+    private post(message: any) { this.view?.webview.postMessage(message); }
 
     private getHTML(): string {
         const htmlPath = vscode.Uri.joinPath(this.context.extensionUri, 'dist', 'mcp.html');

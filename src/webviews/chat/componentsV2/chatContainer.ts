@@ -1,5 +1,5 @@
 import { WebviewApi } from "../../Webview";
-import { ChatItem } from "../../../managers/contextManager";
+import type { ChatItem } from "../../../managers/contextManager";
 import { ExecuteContainer } from "./containers/execute";
 import { ThoughtContainer } from "./containers/thought";
 import { ToolsContainer } from "./containers/tools";
