@@ -28,7 +28,7 @@
         },
         "unsafeFullAutonomous": {
             "type": "boolean",
-            "description": "If true, the agent is allowed to run any arbitrary commands without user input.",
+            "description": "If true, the agent is allowed to run any arbitrary command without user input.",
             "default": false
         }
     },

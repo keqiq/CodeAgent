@@ -78009,6 +78009,16 @@ var OpenAICompatibleProvider = class _OpenAICompatibleProvider extends ChatProvi
     for await (const event of stream4) {
       if (abortSignal?.aborted) throw new Error("AbortError");
       const delta = event.choices[0]?.delta;
+      if (event.usage) {
+        const usage = event.usage;
+        const reasoningTokens = usage.completion_tokens_details?.reasoning_tokens || 0;
+        tokenUsage = {
+          totalTokens: usage.total_tokens,
+          inputTokens: usage.prompt_tokens,
+          outputTokens: usage.completion_tokens - reasoningTokens,
+          thoughtTokens: reasoningTokens
+        };
+      }
       if (!delta) continue;
       if (delta.content) {
         fullText += delta.content;
@@ -78034,16 +78044,6 @@ var OpenAICompatibleProvider = class _OpenAICompatibleProvider extends ChatProvi
           if (toolCall.function?.name) existing.name = toolCall.function.name;
           if (toolCall.function?.arguments) existing.arguments += toolCall.function.arguments;
         }
-      }
-      if (event.usage) {
-        const usage = event.usage;
-        const reasoningTokens = usage.completion_tokens_details?.reasoning_tokens || 0;
-        tokenUsage = {
-          totalTokens: usage.total_tokens,
-          inputTokens: usage.prompt_tokens,
-          outputTokens: usage.completion_tokens - reasoningTokens,
-          thoughtTokens: reasoningTokens
-        };
       }
     }
     if (currentCalls.size > 0 || fullText.length > 0) {
@@ -96849,23 +96849,91 @@ var KimiChatProvider = class extends OpenAICompatibleProvider {
   }
 };
 
+// src/apis/ollamaUtils.ts
+var EMBEDDING_ARCHITECTURES = /* @__PURE__ */ new Set([
+  "bert",
+  "nomic-bert",
+  "xlm-roberta",
+  "bge",
+  "clip",
+  "t5-encoder"
+]);
+async function inspectOllamaModel(baseUrl, modelId) {
+  try {
+    const res = await fetch(`${baseUrl}/api/show`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: modelId })
+    });
+    if (!res.ok) {
+      const isEmbedByName = /embed|bge|minilm|e5-|arctic/i.test(modelId);
+      return {
+        isEmbedding: isEmbedByName,
+        isTextGeneration: !isEmbedByName
+      };
+    }
+    const data = await res.json();
+    const arch = (data.model_info?.["general.architecture"] || data.details?.family || "").toLowerCase();
+    const hasTemplate = Boolean(data.template && data.template.trim().length > 0);
+    const nameSuggestsEmbed = /embed|bge|minilm|e5-|arctic/i.test(modelId);
+    const isEmbedding = EMBEDDING_ARCHITECTURES.has(arch) || nameSuggestsEmbed || !hasTemplate && arch.includes("bert");
+    const isTextGeneration = !isEmbedding;
+    let contextWindow;
+    if (data.model_info) {
+      for (const key of Object.keys(data.model_info)) {
+        if (key.endsWith(".context_length")) {
+          const val = data.model_info[key];
+          if (typeof val === "number") {
+            contextWindow = val;
+            break;
+          }
+        }
+      }
+    }
+    if (!contextWindow && data.parameters) {
+      const match2 = data.parameters.match(/num_ctx\s+(\d+)/);
+      if (match2) contextWindow = parseInt(match2[1], 10);
+    }
+    return {
+      isEmbedding,
+      isTextGeneration,
+      contextWindow: contextWindow || (isTextGeneration ? 4096 : void 0),
+      family: arch
+    };
+  } catch {
+    const isEmbedByName = /embed|bge|minilm|e5-|arctic/i.test(modelId);
+    return {
+      isEmbedding: isEmbedByName,
+      isTextGeneration: !isEmbedByName
+    };
+  }
+}
+
 // src/apis/chat/ollama.ts
-var OllamaChatProvider = class extends OpenAICompatibleProvider {
+var OllamaChatProvider = class _OllamaChatProvider extends OpenAICompatibleProvider {
+  static ollamaBaseUrl = "http://127.0.0.1:11434";
   featuredModels = [];
   constructor(apiKey, webSearchMode) {
-    super(apiKey, "http://127.0.0.1:11434/v1", webSearchMode);
+    super(apiKey, `${_OllamaChatProvider.ollamaBaseUrl}/v1`, webSearchMode);
   }
   async getModelInfos() {
     try {
       const response = await this.client.models.list();
       const infos = [];
-      for (const m2 of response.data) {
-        const id = m2.id;
+      const inspectedModels = await Promise.all(
+        response.data.map(async (m2) => ({
+          id: m2.id,
+          meta: await inspectOllamaModel(_OllamaChatProvider.ollamaBaseUrl, m2.id)
+        }))
+      );
+      for (const { id, meta: meta2 } of inspectedModels) {
+        if (!meta2.isTextGeneration) continue;
         infos.push({
           id,
           reason: false,
           efforts: [],
-          defaultEffort: null
+          defaultEffort: null,
+          ...meta2.contextWindow && { contextWindow: meta2.contextWindow }
         });
       }
       this.featuredModels = infos.map((info) => info.id);
@@ -97000,9 +97068,30 @@ var OpenAIEmbedProvider = class extends OpenAICompatibleEmbedProvider {
 };
 
 // src/apis/embed/ollama.ts
-var ollamaEmbedProvider = class extends OpenAICompatibleEmbedProvider {
+var ollamaEmbedProvider = class _ollamaEmbedProvider extends OpenAICompatibleEmbedProvider {
+  static ollamaBaseUrl = "http://127.0.0.1:11434";
   constructor(apiKey) {
-    super(apiKey, "http://127.0.0.1:11434/v1");
+    super(apiKey, `${_ollamaEmbedProvider.ollamaBaseUrl}/v1`);
+  }
+  async getModels() {
+    try {
+      const response = await this.client.models.list();
+      const allModelIds = response.data.map((m2) => m2.id);
+      const inspectedModels = await Promise.all(
+        allModelIds.map(async (id) => ({
+          id,
+          meta: await inspectOllamaModel(_ollamaEmbedProvider.ollamaBaseUrl, id)
+        }))
+      );
+      const embeddingModels = inspectedModels.filter(({ meta: meta2 }) => meta2.isEmbedding).map(({ id }) => id);
+      if (embeddingModels.length > 0) {
+        return embeddingModels;
+      }
+      return allModelIds;
+    } catch (e2) {
+      console.error("Failed to fetch Ollama embed models.", e2);
+      return [];
+    }
   }
 };
 

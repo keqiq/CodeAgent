@@ -380,6 +380,18 @@ export abstract class OpenAICompatibleProvider extends ChatProvider {
             const delta = event.choices[0]?.delta;
             // console.log(delta);
 
+            if (event.usage) {
+                const usage = event.usage;
+                const reasoningTokens = usage.completion_tokens_details?.reasoning_tokens || 0;
+
+                tokenUsage = {
+                    totalTokens: usage.total_tokens,
+                    inputTokens: usage.prompt_tokens,
+                    outputTokens: usage.completion_tokens - reasoningTokens,
+                    thoughtTokens: reasoningTokens
+                };
+            }
+
             if (!delta) continue;
 
             if (delta.content) {
@@ -411,19 +423,6 @@ export abstract class OpenAICompatibleProvider extends ChatProvider {
                     if (toolCall.function?.name) existing.name = toolCall.function.name;
                     if (toolCall.function?.arguments) existing.arguments += toolCall.function.arguments;
                 }
-            }
-
-            if (event.usage) {
-                const usage = event.usage;
-                const reasoningTokens = usage.completion_tokens_details?.reasoning_tokens || 0;
-
-                tokenUsage = {
-                    totalTokens: usage.total_tokens,
-                    inputTokens: usage.prompt_tokens,
-                    outputTokens: usage.completion_tokens - reasoningTokens,
-                    thoughtTokens: reasoningTokens
-
-                };
             }
         }
 
