@@ -152,6 +152,7 @@ export class GeminiChatProvider extends ChatProvider {
                         name: event.step.name,
                         arguments: ''
                     });
+                    if (event.step.name) yield { type: 'tool', content: event.step.name };
                 }
 
                 // Untested, google wants 20 CAD minimum credit deposit to use this
@@ -183,6 +184,7 @@ export class GeminiChatProvider extends ChatProvider {
                     if (currentCalls.has(event.index)) {
                         currentCalls.get(event.index).arguments += event.delta.arguments;
                     }
+                    if (event.delta.arguments) yield { type: 'tool', content: event.delta.arguments };
                 }
                 
                 else if (event.delta.type === 'text') {

@@ -2,7 +2,7 @@ import { ChatItem, ChatResponse, TokenUsage } from "../../managers/contextManage
 import { requiredSchemas, ToolResult } from "../../tools/toolIndex";
 
 export interface StreamYield {
-    type: 'text' | 'thought' | 'server_action';
+    type: 'text' | 'thought' | 'server_action' | 'tool';
     content: string;
     actionId?: string;
     actionName?: string;

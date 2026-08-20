@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { getEncoding } from 'js-tiktoken';
+import { getEncoding, Tiktoken } from 'js-tiktoken';
 import { ChatFactory } from '../apis/chat/chatFactory';
 import { PRUNE_TOOLS } from '../tools/toolIndex';
 
@@ -97,14 +97,14 @@ export class ContextManager {
     private pruneMode: string = 'run';
     private pruneTurnInterval: number = 2;
     private pruneRunInterval: number = 1;
-
-
+    
     private runTokenUsage: TokenUsage = {
         totalTokens: 0,
         inputTokens: 0,
         outputTokens: 0,
         thoughtTokens: 0
     };
+    private tokenEncoder: Tiktoken = getEncoding('o200k_base');
 
     private storageUri: vscode.Uri | undefined;
     private artifactsUri: vscode.Uri | undefined;
@@ -456,7 +456,6 @@ export class ContextManager {
     // This updates the pie chart in the context window menu, it is an estimate for the token usage for different categories of messages
     // Whereas updateTokenUsage is an accurate provider issued token usage counter for input and output tokens
     public estimateCategorizedTokens(): void {
-        const encoder = getEncoding('o200k_base');
 
         const usage: TokenCategoryUsage = {
             userTokens: 0,
@@ -469,9 +468,9 @@ export class ContextManager {
 
         const baseOverhead = 4;
 
-        usage.systemTokens += encoder.encode(ChatFactory.getSystemPrompt(this.currentProvider!)).length + baseOverhead;
+        usage.systemTokens += this.tokenEncoder.encode(ChatFactory.getSystemPrompt(this.currentProvider!)).length + baseOverhead;
 
-        usage.systemTokens += encoder.encode(JSON.stringify(ChatFactory.getToolSchemas(this.currentProvider!))).length + baseOverhead;
+        usage.systemTokens += this.tokenEncoder.encode(JSON.stringify(ChatFactory.getToolSchemas(this.currentProvider!))).length + baseOverhead;
 
         // Token usage for full context
         const currentContext = this.getLLMContext(true);
@@ -483,7 +482,7 @@ export class ContextManager {
                     textToEncode = item.content;
                     if (item.thought) textToEncode += item.thought;
 
-                    const messageTokens = encoder.encode(textToEncode).length + baseOverhead;
+                    const messageTokens = this.tokenEncoder.encode(textToEncode).length + baseOverhead;
 
                     if (item.role === 'user') usage.userTokens += messageTokens;
                     else if (item.role === 'assistant') usage.assistantTokens += messageTokens;
@@ -491,12 +490,12 @@ export class ContextManager {
 
                 case 'function_call':
                     textToEncode = item.name + JSON.stringify(item.arguments);
-                    usage.toolCallTokens += encoder.encode(textToEncode).length + baseOverhead;
+                    usage.toolCallTokens += this.tokenEncoder.encode(textToEncode).length + baseOverhead;
                     break;
 
                 case 'function_result':
                     textToEncode = item.name + item.result;
-                    usage.toolResultTokens += encoder.encode(textToEncode).length + baseOverhead;
+                    usage.toolResultTokens += this.tokenEncoder.encode(textToEncode).length + baseOverhead;
                     break;
 
                 case 'run_summary':

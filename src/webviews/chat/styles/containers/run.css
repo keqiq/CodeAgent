@@ -104,6 +104,30 @@
     border-top-color: transparent;
 }
 
+.run-tab.streaming {
+    border-color: var(--vscode-focusBorder);
+    animation: livePulse 1.8s infinite ease-in-out;
+}
+
+@keyframes livePulse {
+    0%, 100% { opacity: 0.8; }
+    50% { opacity: 1; }
+}
+
+.run-tab.speed-tab {
+    font-family: var(--vscode-editor-font-family);
+    color: var(--vscode-charts-green, #89d185);
+    background-color: color-mix(in srgb, var(--vscode-charts-green, #89d185) 8%, var(--vscode-sideBar-background));
+    border-color: color-mix(in srgb, var(--vscode-charts-green, #89d185) 25%, transparent);
+    border-top-color: transparent;
+    cursor: help;
+}
+
+.run-tab.speed-tab svg {
+    color: var(--vscode-charts-green, #89d185);
+    opacity: 0.9;
+}
+
 /* State Accents for Footer Line */
 .footer-normal {
     border-top-color: color-mix(in srgb, var(--vscode-widget-border) 40%, transparent);

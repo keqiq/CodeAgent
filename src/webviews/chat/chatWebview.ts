@@ -55,7 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 chatInput.updateChatProvider(msg.provider);
                 chatSettings.setProvider(msg);
                 break;
-            
+
             case 'setChatModelsLoading':
                 chatInput.setChatModelsLoading();
                 break;
@@ -67,7 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
             case 'updateChatModel':
                 chatInput.updateChatModel(msg.model);
                 break;
-            
+
             case 'updateChatModelInfo':
                 chatInput.updateChatModelInfo(msg);
                 contextWindow.updateContextWindow(msg.contextWindow);
@@ -86,19 +86,19 @@ document.addEventListener('DOMContentLoaded', () => {
             case 'startRun':
                 chatContainer.startRun(msg.provider, msg.model);
                 break;
-                
+
             case 'receiveMessage':
                 chatContainer.addMessage({ type: 'message', role: 'assistant', content: msg.text, style: msg.style });
                 break;
-            
+
             case 'streamChunk':
                 chatContainer.updateMessage(msg.chunk);
                 break;
-                
+
             case 'streamThought':
                 chatContainer.updateThought(msg.chunk);
                 break;
-            
+
             case 'streamEnd':
                 chatContainer.endMessage();
                 break;
@@ -124,6 +124,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             case 'updatePatchStatus':
                 chatContainer.updatePatch(msg.status);
+                break;
+
+            case 'streamSpeed':
+                chatContainer.updateSpeed(msg.speed);
                 break;
 
             case 'updateTokenUsage':
@@ -152,10 +156,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // --- INDEXING & HEADER ---
 
-            case 'restoreIndexSettings': 
+            case 'restoreIndexSettings':
                 chatHeader.restoreSettings(msg);
                 break;
-                
+
             case 'updateEmbedProvider':
                 chatHeader.updateEmbedProviders(msg.provider);
                 break;
@@ -185,7 +189,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 chatSettings.toggleClearChatBtn(false);
                 contextWindow.clearTokenUsage();
                 break;
-            
+
             default:
                 console.warn(`[Webview Router] Unknown message type: ${msg.type}`);
                 break;

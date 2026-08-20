@@ -166,6 +166,8 @@ export class ClaudeChatProvider extends ChatProvider {
                         name: event.content_block.name,
                         arguments: ''
                     });
+
+                    if (event.content_block.name) yield { type: 'tool', content: event.content_block.name };   
                 }
 
                 // Purely for web search atm
@@ -217,6 +219,7 @@ export class ClaudeChatProvider extends ChatProvider {
                     if (currentCalls.has(event.index) && !currentCalls.get(event.index).server) {
                         currentCalls.get(event.index).arguments += event.delta.partial_json;
                     }
+                    if (event.delta.partial_json) yield { type: 'tool', content: event.delta.partial_json };
                 }
 
                 // This is for messages

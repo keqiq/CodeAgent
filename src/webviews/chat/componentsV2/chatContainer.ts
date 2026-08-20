@@ -97,6 +97,10 @@ export class ChatContainer {
         if (this.runContainer) this.runContainer.update(usage);
     }
 
+    public updateSpeed(speed: string): void {
+        if (this.runContainer) this.runContainer.setSpeed(speed, true);
+    }
+
     public endRun(status: 'ok' | 'aborted' | 'error', message?: string): void {
         this.endThought();
         this.endMessage();

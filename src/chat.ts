@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
+import { getEncoding, Tiktoken } from 'js-tiktoken';
 import { ChatFactory } from './apis/chat/chatFactory';
 import { ChatProvider, WebSearchMode } from './apis/chat/chatProvider';
 import { EmbedFactory } from './apis/embed/embedFactory';
@@ -108,14 +109,32 @@ export class ChatApp implements vscode.WebviewViewProvider {
                 );
                 let streamResult = await streamGenerator.next();
 
+                let streamStartTime: number | null = null;
+                let turnGeneratedTokens = 0;
+                let lastSpeedPostTime = 0;
+
                 // Wait for the stream to finish, then run all tools called if any
                 while (!streamResult.done) {
                     if (streamResult.value) {
                         const content = streamResult.value.content;
 
-                        if (streamResult.value.type === 'text') this.post({ type: 'streamChunk', chunk: content });
-                        else if (streamResult.value.type === 'thought') this.post({ type: 'streamThought', chunk: content });
+                        if (streamResult.value.type === 'text' || streamResult.value.type === 'thought' || streamResult.value.type === 'tool') {
+                            const now = Date.now();
+                            if (streamStartTime === null) streamStartTime = now;
 
+                            if (streamResult.value.type === 'text') this.post({ type: 'streamChunk', chunk: content });
+                            else if (streamResult.value.type === 'thought') this.post({ type: 'streamThought', chunk: content });
+
+                            // Get live token generation speed
+                            turnGeneratedTokens += countChunkTokens(content);
+                            const elapsedSeconds =  (now - streamStartTime) / 1000;
+
+                            if (elapsedSeconds > 0.1) {
+                                lastSpeedPostTime = now;
+                                const tokenPerSecond = (turnGeneratedTokens / elapsedSeconds).toFixed(1);
+                                this.post({ type: 'streamSpeed', speed: tokenPerSecond });
+                            }
+                        }
                         // We update the frontend with server tools immediately
                         // Other parameters might show up later upon completion but it could take a while
                         // Currently only web search
@@ -615,4 +634,13 @@ function formatError(e: unknown): string {
     }
 
     return String(e);
+}
+
+let tiktokenEncoder: Tiktoken = getEncoding('o200k_base');
+function countChunkTokens(text: string): number {
+    try {
+        return tiktokenEncoder.encode(text).length;
+    } catch {
+        return Math.max(1, Math.round(text.length / 3.8));
+    }
 }

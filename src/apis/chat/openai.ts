@@ -187,6 +187,8 @@ export class OpenAIChatProvider extends ChatProvider {
                         name: item.name,
                         arguments: ''
                     });
+
+                    if (item.name) yield { type: 'tool', content: item.name };
                 }
 
                 else if (item && item.type === 'web_search_call') {
@@ -211,6 +213,8 @@ export class OpenAIChatProvider extends ChatProvider {
                 if (currentCalls.has(event.item_id)) {
                     currentCalls.get(event.item_id).arguments += event.delta;
                 }
+                if (event.delta) yield { type: 'tool', content: event.delta };
+                
             }
             
             // TODO: This is causing weird empty query sometimes fix this
@@ -418,10 +422,15 @@ export abstract class OpenAICompatibleProvider extends ChatProvider {
                         });
                     }
 
+                    if (toolCall.function?.name) yield { type: 'tool', content: toolCall.function.name };
+
                     const existing = currentCalls.get(index);
                     if (toolCall.id) existing.id = toolCall.id;
                     if (toolCall.function?.name) existing.name = toolCall.function.name;
-                    if (toolCall.function?.arguments) existing.arguments += toolCall.function.arguments;
+                    if (toolCall.function?.arguments) {
+                        existing.arguments += toolCall.function.arguments;
+                        yield { type: 'tool', content: toolCall.function.arguments };
+                    }
                 }
             }
         }

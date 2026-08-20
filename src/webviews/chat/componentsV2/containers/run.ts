@@ -9,6 +9,7 @@ export class RunContainer {
     private tabsContainer: HTMLElement;
     private modelTab: HTMLElement;
     private tokenTab: HTMLElement;
+    private speedTab: HTMLElement;
     private statusTab: HTMLElement;
 
     constructor(private masterContainer: HTMLElement, provider?: string, modelName?: string) {
@@ -28,7 +29,7 @@ export class RunContainer {
         this.tabsContainer = document.createElement('div');
         this.tabsContainer.classList.add('run-tabs');
 
-        // Model & Provider Tab
+        // Model & Provider tab
         this.modelTab = document.createElement('div');
         this.modelTab.classList.add('run-tab', 'model-tab');
         
@@ -41,7 +42,7 @@ export class RunContainer {
             this.modelTab.style.display = 'none';
         }
 
-        // Token Tab
+        // Token tab reporting token usage from provider
         this.tokenTab = document.createElement('div');
         this.tokenTab.classList.add('run-tab', 'token-tab');
         this.tokenTab.innerHTML = `
@@ -52,13 +53,25 @@ export class RunContainer {
         `;
         this.tokenTab.style.display = 'none';
 
-        // Status Tab
+        // Speed tab calculated token/s counter
+        this.speedTab = document.createElement('div');
+        this.speedTab.classList.add('run-tab', 'speed-tab');
+        this.speedTab.innerHTML = `
+            <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor">
+                <path d="M11.251.068a.5.5 0 0 1 .42.58L10.026 6H14a.5.5 0 0 1 .372.832l-9 10a.5.5 0 0 1-.844-.504L6.173 10H2a.5.5 0 0 1-.372-.832l9-10a.5.5 0 0 1 .623-.099z"/>
+            </svg>
+            <span class="tab-text speed-text">0 t/s</span>
+        `;
+        this.speedTab.style.display = 'none';
+
+        // Status tab
         this.statusTab = document.createElement('div');
         this.statusTab.classList.add('run-tab', 'status-tab');
         this.statusTab.style.display = 'none';
 
         this.tabsContainer.appendChild(this.modelTab);
         this.tabsContainer.appendChild(this.tokenTab);
+        this.tabsContainer.appendChild(this.speedTab);
         this.tabsContainer.appendChild(this.statusTab);
 
         this.activeRunFooter.appendChild(this.tabsContainer);
@@ -67,37 +80,45 @@ export class RunContainer {
 
         this.masterContainer.appendChild(this.activeRunContainer);
     }
-
+    
     private getProviderIcon(provider?: string): string {
         if (!provider) return PROVIDER_ICONS.default;
         const key = provider.toLowerCase();
         return PROVIDER_ICONS[key] || PROVIDER_ICONS.default;
     }
-
+    
     public setModel(modelName: string, provider?: string): void {
         const textSpan = this.modelTab.querySelector('.model-name-text');
         const iconSpan = this.modelTab.querySelector('.provider-icon');
-
+        
         if (textSpan) textSpan.textContent = modelName;
         if (iconSpan && provider) iconSpan.innerHTML = this.getProviderIcon(provider);
-
+        
         this.modelTab.style.display = 'inline-flex';
     }
 
+    public setSpeed(speed: string, isStreaming: boolean = false): void {
+        this.speedTab.classList.add('streaming');
+        this.speedTab.style.display = 'inline-flex';
+        const speedSpan = this.speedTab.querySelector('.speed-text');
+        if (speedSpan) speedSpan.textContent = `${speed} t/s`;
+    }
+    
     public update(usage: TokenUsage): void {
-        if (!this.tokenTab || !usage) return;
+        if (!usage) return;
 
+        this.speedTab.classList.remove('streaming');
+
+        // Total tokens reported by provider
         this.tokenTab.style.display = 'inline-flex';
-
         const total = usage.totalTokens || 0;
-        const formattedTotal = total >= 10000
-            ? `${(total / 1000).toFixed(1)}k`
+        const formattedTotal = total >= 10000 
+            ? `${(total / 1000).toFixed(1)}k` 
             : total.toLocaleString();
 
-        const textSpan = this.tokenTab.querySelector('.token-total-text');
-        if (textSpan) textSpan.textContent = `${formattedTotal} Tokens`;
-
-        this.tokenTab.title = `Input: ${(usage.inputTokens || 0).toLocaleString()}\nOutput: ${(usage.outputTokens || 0).toLocaleString()}\nThought: ${(usage.thoughtTokens || 0).toLocaleString()}`;
+        const tokenSpan = this.tokenTab.querySelector('.token-total-text');
+        if (tokenSpan) tokenSpan.textContent = `${formattedTotal} Tokens`;
+        this.tokenTab.title = `Input: ${(usage.inputTokens || 0).toLocaleString()}\nOutput: ${(usage.outputTokens || 0).toLocaleString()}\nThought: ${(usage.thoughtTokens || 0).toLocaleString()}`;    
     }
 
     public end(status: 'ok' | 'aborted' | 'error', message?: string): void {
