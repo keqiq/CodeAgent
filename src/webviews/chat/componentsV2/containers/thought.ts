@@ -1,5 +1,4 @@
-import hljs from "highlight.js";
-import { marked } from "marked";
+import { parseMarkdown } from "../../../markdownRenderer";
 
 const THOUGHT_PHRASES = [
     'Pondering...',
@@ -55,7 +54,7 @@ export class ThoughtContainer {
             if (this.activeThoughtRawText) this.activeThoughtRawText += '\n\n';
         }
         this.activeThoughtRawText += chunk;
-        this.activeThoughtContent!.innerHTML = this.parseMarkdown(this.activeThoughtRawText);
+        this.activeThoughtContent!.innerHTML = parseMarkdown(this.activeThoughtRawText);
     }
 
     public end(): void {
@@ -65,11 +64,6 @@ export class ThoughtContainer {
         const duration = ((this.thoughtTotalTime) / 1000).toFixed(1);
         const summary = this.activeThoughtDetails.querySelector('summary');
         if (summary) summary.innerHTML = `<span>Thought for ${duration} seconds</span>`;
-
-        // Highlight code blocks
-        this.activeThoughtDetails.querySelectorAll('pre code').forEach((block) => {
-            hljs.highlightElement(block as HTMLElement);
-        });
     }
 
     public pauseThoughtTimer(): void {
@@ -96,10 +90,4 @@ export class ThoughtContainer {
         return THOUGHT_PHRASES[Math.floor(Math.random() * THOUGHT_PHRASES.length)];
     }
 
-    private parseMarkdown(text: string): string {
-        return marked.parse(text, { 
-            gfm: true, 
-            breaks: false 
-        }) as string;
-    }
 }

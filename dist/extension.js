@@ -96868,6 +96868,8 @@ var EMBEDDING_ARCHITECTURES = /* @__PURE__ */ new Set([
   "clip",
   "t5-encoder"
 ]);
+var REASONING_NAME_REGEX = /r1|qwq|reason|think|qwen3|gpt-oss/i;
+var REASONING_TEMPLATE_REGEX = /<think>|<\|begin_of_thought\|>|\.Think|\.IsThinkSet/;
 async function inspectOllamaModel(baseUrl, modelId) {
   try {
     const res = await fetch(`${baseUrl}/api/show`, {
@@ -96875,19 +96877,37 @@ async function inspectOllamaModel(baseUrl, modelId) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name: modelId })
     });
+    const isEmbedByName = /embed|bge|minilm|e5-|arctic/i.test(modelId);
     if (!res.ok) {
-      const isEmbedByName = /embed|bge|minilm|e5-|arctic/i.test(modelId);
+      const isReasoning2 = REASONING_NAME_REGEX.test(modelId);
       return {
         isEmbedding: isEmbedByName,
-        isTextGeneration: !isEmbedByName
+        isTextGeneration: !isEmbedByName,
+        isReasoning: isReasoning2,
+        efforts: isReasoning2 ? ["none", "low", "medium", "high", "max"] : [],
+        defaultEffort: isReasoning2 ? "medium" : null
       };
     }
     const data = await res.json();
     const arch = (data.model_info?.["general.architecture"] || data.details?.family || "").toLowerCase();
-    const hasTemplate = Boolean(data.template && data.template.trim().length > 0);
-    const nameSuggestsEmbed = /embed|bge|minilm|e5-|arctic/i.test(modelId);
-    const isEmbedding = EMBEDDING_ARCHITECTURES.has(arch) || nameSuggestsEmbed || !hasTemplate && arch.includes("bert");
+    const template = data.template || "";
+    const hasTemplate = Boolean(template.trim().length > 0);
+    const isEmbedding = EMBEDDING_ARCHITECTURES.has(arch) || isEmbedByName || !hasTemplate && arch.includes("bert");
     const isTextGeneration = !isEmbedding;
+    const hasThinkingCapability = Array.isArray(data.capabilities) && data.capabilities.includes("thinking");
+    const hasThinkingTemplate = REASONING_TEMPLATE_REGEX.test(template);
+    const isReasoning = isTextGeneration && (hasThinkingCapability || hasThinkingTemplate || REASONING_NAME_REGEX.test(modelId));
+    let efforts = [];
+    let defaultEffort = null;
+    if (isReasoning) {
+      if (modelId.toLowerCase().includes("gpt-oss")) {
+        efforts = ["low", "medium", "high"];
+        defaultEffort = "medium";
+      } else {
+        efforts = ["none", "low", "medium", "high", "max"];
+        defaultEffort = "medium";
+      }
+    }
     let contextWindow;
     if (data.model_info) {
       for (const key of Object.keys(data.model_info)) {
@@ -96907,14 +96927,21 @@ async function inspectOllamaModel(baseUrl, modelId) {
     return {
       isEmbedding,
       isTextGeneration,
+      isReasoning,
+      efforts,
+      defaultEffort,
       contextWindow: contextWindow || (isTextGeneration ? 4096 : void 0),
       family: arch
     };
   } catch {
     const isEmbedByName = /embed|bge|minilm|e5-|arctic/i.test(modelId);
+    const isReasoning = REASONING_NAME_REGEX.test(modelId);
     return {
       isEmbedding: isEmbedByName,
-      isTextGeneration: !isEmbedByName
+      isTextGeneration: !isEmbedByName,
+      isReasoning,
+      efforts: isReasoning ? ["none", "low", "medium", "high", "max"] : [],
+      defaultEffort: isReasoning ? "medium" : null
     };
   }
 }
@@ -96940,9 +96967,9 @@ var OllamaChatProvider = class _OllamaChatProvider extends OpenAICompatibleProvi
         if (!meta2.isTextGeneration) continue;
         infos.push({
           id,
-          reason: false,
-          efforts: [],
-          defaultEffort: null,
+          reason: meta2.isReasoning,
+          efforts: meta2.efforts,
+          defaultEffort: meta2.defaultEffort,
           ...meta2.contextWindow && { contextWindow: meta2.contextWindow }
         });
       }
@@ -96951,6 +96978,131 @@ var OllamaChatProvider = class _OllamaChatProvider extends OpenAICompatibleProvi
     } catch (error2) {
       console.error("Failed to fetch local models. Is Ollama running?", error2);
       return [];
+    }
+  }
+  async *fetchStream(model, effort, history, previousTurnID, useCache, abortSignal) {
+    let fullText = "";
+    let fullThought = "";
+    const currentCalls = /* @__PURE__ */ new Map();
+    let tokenUsage = void 0;
+    const tagParser = new ThinkTagStreamParser();
+    const formattedMessages = this.formatMessages(history);
+    const stream4 = await this.client.chat.completions.create({
+      model,
+      messages: formattedMessages,
+      tools: this.tools,
+      stream: true,
+      stream_options: { include_usage: true },
+      ...effort && effort !== "none" && { reasoning_effort: effort }
+    }, { signal: abortSignal });
+    for await (const event of stream4) {
+      if (abortSignal?.aborted) throw new Error("AbortError");
+      const delta = event.choices[0]?.delta;
+      if (event.usage) {
+        const usage = event.usage;
+        const reasoningTokens = usage.completion_tokens_details?.reasoning_tokens || 0;
+        tokenUsage = {
+          totalTokens: usage.total_tokens,
+          inputTokens: usage.prompt_tokens,
+          outputTokens: usage.completion_tokens - reasoningTokens,
+          thoughtTokens: reasoningTokens
+        };
+      }
+      if (!delta) continue;
+      const reasoningDelta = delta.reasoning_content || delta.reasoning || delta.thinking;
+      if (reasoningDelta) {
+        fullThought += reasoningDelta;
+        yield { type: "thought", content: reasoningDelta };
+      }
+      if (delta.content) {
+        for (const yieldItem of tagParser.processDelta(delta.content)) {
+          if (yieldItem.type === "thought") {
+            fullThought += yieldItem.content;
+          } else if (yieldItem.type === "text") {
+            fullText += yieldItem.content;
+          }
+          yield yieldItem;
+        }
+      }
+      if (delta.tool_calls) {
+        for (const toolCall of delta.tool_calls) {
+          const index = toolCall.index;
+          if (!currentCalls.has(index)) {
+            currentCalls.set(index, {
+              id: toolCall.id || "",
+              name: toolCall.function?.name || "",
+              arguments: ""
+            });
+          }
+          if (toolCall.function?.name) yield { type: "tool", content: toolCall.function.name };
+          const existing = currentCalls.get(index);
+          if (toolCall.id) existing.id = toolCall.id;
+          if (toolCall.function?.name) existing.name = toolCall.function.name;
+          if (toolCall.function?.arguments) {
+            existing.arguments += toolCall.function.arguments;
+            yield { type: "tool", content: toolCall.function.arguments };
+          }
+        }
+      }
+    }
+    for (const yieldItem of tagParser.flush()) {
+      if (yieldItem.type === "thought") fullThought += yieldItem.content;
+      else if (yieldItem.type === "text") fullText += yieldItem.content;
+      yield yieldItem;
+    }
+    if (currentCalls.size > 0 || fullText.length > 0) {
+      return ChatProvider.formatResponse(fullText, currentCalls, tokenUsage);
+    }
+    return { items: [], tokenUsage };
+  }
+};
+var ThinkTagStreamParser = class {
+  inThink = false;
+  buffer = "";
+  *processDelta(chunk) {
+    this.buffer += chunk;
+    while (this.buffer.length > 0) {
+      if (!this.inThink) {
+        const thinkStart = this.buffer.indexOf("<think>");
+        if (thinkStart === -1) {
+          const partialMatch = this.buffer.match(/<t?(h?(i?(n?(k)?)?)?)?$/);
+          const safeLength = partialMatch ? partialMatch.index : this.buffer.length;
+          if (safeLength > 0) {
+            const text = this.buffer.slice(0, safeLength);
+            this.buffer = this.buffer.slice(safeLength);
+            yield { type: "text", content: text };
+          }
+          break;
+        }
+        if (thinkStart > 0) {
+          yield { type: "text", content: this.buffer.slice(0, thinkStart) };
+        }
+        this.buffer = this.buffer.slice(thinkStart + "<think>".length);
+        this.inThink = true;
+      } else {
+        const thinkEnd = this.buffer.indexOf("</think>");
+        if (thinkEnd === -1) {
+          const partialMatch = this.buffer.match(/<\/t?(h?(i?(n?(k)?)?)?)?$/);
+          const safeLength = partialMatch ? partialMatch.index : this.buffer.length;
+          if (safeLength > 0) {
+            const thought = this.buffer.slice(0, safeLength);
+            this.buffer = this.buffer.slice(safeLength);
+            yield { type: "thought", content: thought };
+          }
+          break;
+        }
+        if (thinkEnd > 0) {
+          yield { type: "thought", content: this.buffer.slice(0, thinkEnd) };
+        }
+        this.buffer = this.buffer.slice(thinkEnd + "</think>".length);
+        this.inThink = false;
+      }
+    }
+  }
+  *flush() {
+    if (this.buffer.length > 0) {
+      yield { type: this.inThink ? "thought" : "text", content: this.buffer };
+      this.buffer = "";
     }
   }
 };
