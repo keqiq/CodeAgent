@@ -237,6 +237,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
                         const turnLimit = this.context.globalState.get<number>('turnLimit') ?? 0;
                         const enabledWebSearch = this.context.globalState.get<boolean>('webSearchEnabled') ?? false;
                         const webSearchMode = this.context.globalState.get<string>('webSearchMode') ?? 'tavily';
+                        const ollamaChatPort = this.context.globalState.get<number>('ollamaChatPort') ?? 11434;
 
                         this.post({
                             type: 'restoreChatSettings',
@@ -244,18 +245,21 @@ export class ChatApp implements vscode.WebviewViewProvider {
                             stateful: serverStateManagement,
                             turnLimit: turnLimit,
                             webSearch: enabledWebSearch,
-                            searchMode: webSearchMode
+                            searchMode: webSearchMode,
+                            ollamaPort: ollamaChatPort
                         });
 
                         const retrievalCount = this.context.globalState.get<number>('retrievalCount') ?? 10;
                         const debounceTime = this.context.globalState.get<number>('debounceTime') ?? 10;
                         const enabledIndex = this.context.globalState.get<boolean>('enableIndex') ?? true;
+                        const ollamaEmbedPort = this.context.globalState.get<number>('ollamaEmbedPort') ?? 11434;
 
                         this.post({
                             type: 'restoreIndexSettings',
                             retrievalCount: retrievalCount,
                             debounceTime: debounceTime,
-                            enabled: enabledIndex
+                            enabled: enabledIndex,
+                            ollamaPort: ollamaEmbedPort
                         });
 
                         this.post({ type: 'initChatProviders', providers: ChatFactory.getAvailableProviders() });
@@ -310,6 +314,13 @@ export class ChatApp implements vscode.WebviewViewProvider {
                     } catch (e) {
                         vscode.window.showErrorMessage(`Failed to restore state ${e}`);
                     }
+                    break;
+                }
+
+                case 'saveOllamaChatPort': {
+                    await this.apiManager.saveChatAPIKey('ollama', data.port);
+                    await this.apiManager.getChatModels('ollama');
+
                     break;
                 }
 
@@ -425,6 +436,12 @@ export class ChatApp implements vscode.WebviewViewProvider {
                     await this.worktreeManager.cleanup();
 
                     this.post({ type: 'clearChatContainer' });
+                    break;
+                }
+
+                case 'saveOllamaEmbedPort': {
+                    await this.apiManager.saveEmbedAPIKey('ollama', data.port);
+                    await this.apiManager.getEmbedModels('ollama');
                     break;
                 }
 

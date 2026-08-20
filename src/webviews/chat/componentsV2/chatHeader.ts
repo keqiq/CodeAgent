@@ -15,6 +15,7 @@ export class ChatHeader {
     private modelDropdown: CustomDropdown;
     private currentEmbedProvider: string = '';
     private currentEmbedModel: string = '';
+    private currentOllamaPort: number = 11434;
 
     private indexSettingsContainer: HTMLElement;
     private indexSettingsDropdown: HTMLElement;
@@ -138,26 +139,50 @@ export class ChatHeader {
             }
         });
 
-        // EmbedAPIKey saving
+        // Embed API Key / Ollama Port button click
         this.keyBtn.addEventListener('click', () => {
             if (this.keyBtn.classList.contains('disabled')) return;
             const isHidden = this.keyContainer.classList.toggle('hidden');
-            if (!isHidden) this.keyInput.focus();
+            
+            if (!isHidden) {
+                if (this.currentEmbedProvider.toLowerCase() === 'ollama') {
+                    this.keyInput.type = 'number';
+                    this.keyInput.placeholder = 'e.g. 11434';
+                    this.keyInput.value = this.currentOllamaPort.toString();
+                } else {
+                    this.keyInput.type = 'password';
+                    this.keyInput.inputMode = 'text';
+                    this.keyInput.placeholder = `Enter ${this.currentEmbedProvider} Embedding API Key...`;
+                    this.keyInput.value = '';
+                }
+                this.keyInput.focus();
+            }
         });
 
+        // Embed API Key / Ollama Port Save
         this.keySaveBtn.addEventListener('click', () => {
-            const key = this.keyInput.value.trim();
-            if (key && this.currentEmbedProvider) {
+            const val = this.keyInput.value.trim();
+            if (val && this.currentEmbedProvider) {
                 // Reset menu key state
                 this.indexSettingsDropdown.classList.add('hidden');
                 this.keyContainer.classList.add('hidden');
                 this.keyInput.value = '';
 
-                this.vscodeAPI.postMessage({ 
-                    type: 'saveEmbedAPIKey', 
-                    provider: this.currentEmbedProvider, 
-                    key: key 
-                });
+                if (this.currentEmbedProvider.toLowerCase() === 'ollama') {
+                    const port = parseInt(val, 10) || 11434;
+                    this.currentOllamaPort = port;
+                    this.keyBtn.innerHTML = `Set Ollama Port (${this.currentOllamaPort})`;
+                    this.vscodeAPI.postMessage({ 
+                        type: 'saveOllamaEmbedPort', 
+                        port: port 
+                    });
+                } else {
+                    this.vscodeAPI.postMessage({ 
+                        type: 'saveEmbedAPIKey', 
+                        provider: this.currentEmbedProvider, 
+                        key: val 
+                    });
+                }
             }
         });
 
@@ -191,7 +216,12 @@ export class ChatHeader {
         this.clearIndexConfirmBtn.classList.add('hidden');
     }
 
-    public restoreSettings(msg: { retrievalCount?: number, debounceTime?: number, enabled?: boolean }): void {
+    public restoreSettings(msg: { 
+        retrievalCount?: number, 
+        debounceTime?: number, 
+        enabled?: boolean,
+        ollamaPort?: number 
+    }): void {
         if (msg.retrievalCount !== undefined) {
             this.vectorCountInput.value = msg.retrievalCount.toString();
         }
@@ -202,6 +232,10 @@ export class ChatHeader {
 
         if (msg.enabled !== undefined) {
             this.setGlobalIndexState(msg.enabled);
+        }
+
+        if (msg.ollamaPort !== undefined) {
+            this.currentOllamaPort = msg.ollamaPort;
         }
     }
 
@@ -268,15 +302,14 @@ export class ChatHeader {
         if (!provider || provider === this.currentEmbedProvider) return;
         this.providerDropdown.selectValue(provider, false);
         this.currentEmbedProvider = provider;
-
+        this.keyBtn.classList.remove('disabled');
+        
         if (provider.toLowerCase() === 'ollama') {
-            this.keyBtn.classList.add('disabled');
-            this.keyBtn.innerHTML = `No Key Required (Local)`;
-            this.keyContainer.classList.add('hidden');
+            this.keyBtn.innerHTML = `Set Ollama Embedding Port (${this.currentOllamaPort})`;
         } else {
-            this.keyBtn.classList.remove('disabled');
             this.keyBtn.innerHTML = `Set ${provider} Embedding API Key`;
         }
+
         this.setEmbedModelsLoading(provider);
         this.vscodeAPI.postMessage({ type: 'fetchEmbedModels', provider: provider });
     }

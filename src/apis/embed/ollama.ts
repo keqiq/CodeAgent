@@ -2,10 +2,12 @@ import { inspectOllamaModel } from "../ollamaUtils";
 import { OpenAICompatibleEmbedProvider } from "./openai";
 
 export class ollamaEmbedProvider extends OpenAICompatibleEmbedProvider {
-    private static ollamaBaseUrl = 'http://127.0.0.1:11434';
+    private ollamaUrl: string;
 
     constructor(apiKey: string) {
-        super(apiKey, `${ollamaEmbedProvider.ollamaBaseUrl}/v1`);
+        const url = `http://127.0.0.1:${apiKey}`;
+        super('ollama', `${url}/v1`);
+        this.ollamaUrl = url;
     }
 
     override async getModels(): Promise<string[]> {
@@ -16,7 +18,7 @@ export class ollamaEmbedProvider extends OpenAICompatibleEmbedProvider {
             const inspectedModels = await Promise.all(
                 allModelIds.map(async (id) => ({
                     id,
-                    meta: await inspectOllamaModel(ollamaEmbedProvider.ollamaBaseUrl, id)
+                    meta: await inspectOllamaModel(this.ollamaUrl, id)
                 }))
             );
 

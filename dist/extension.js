@@ -96947,11 +96947,13 @@ async function inspectOllamaModel(baseUrl, modelId) {
 }
 
 // src/apis/chat/ollama.ts
-var OllamaChatProvider = class _OllamaChatProvider extends OpenAICompatibleProvider {
-  static ollamaBaseUrl = "http://127.0.0.1:11434";
+var OllamaChatProvider = class extends OpenAICompatibleProvider {
+  ollamaUrl;
   featuredModels = [];
   constructor(apiKey, webSearchMode) {
-    super(apiKey, `${_OllamaChatProvider.ollamaBaseUrl}/v1`, webSearchMode);
+    const url3 = `http://127.0.0.1:${apiKey}`;
+    super("ollama", `${url3}/v1`, webSearchMode);
+    this.ollamaUrl = url3;
   }
   async getModelInfos() {
     try {
@@ -96960,7 +96962,7 @@ var OllamaChatProvider = class _OllamaChatProvider extends OpenAICompatibleProvi
       const inspectedModels = await Promise.all(
         response.data.map(async (m2) => ({
           id: m2.id,
-          meta: await inspectOllamaModel(_OllamaChatProvider.ollamaBaseUrl, m2.id)
+          meta: await inspectOllamaModel(this.ollamaUrl, m2.id)
         }))
       );
       for (const { id, meta: meta2 } of inspectedModels) {
@@ -97230,10 +97232,12 @@ var OpenAIEmbedProvider = class extends OpenAICompatibleEmbedProvider {
 };
 
 // src/apis/embed/ollama.ts
-var ollamaEmbedProvider = class _ollamaEmbedProvider extends OpenAICompatibleEmbedProvider {
-  static ollamaBaseUrl = "http://127.0.0.1:11434";
+var ollamaEmbedProvider = class extends OpenAICompatibleEmbedProvider {
+  ollamaUrl;
   constructor(apiKey) {
-    super(apiKey, `${_ollamaEmbedProvider.ollamaBaseUrl}/v1`);
+    const url3 = `http://127.0.0.1:${apiKey}`;
+    super("ollama", `${url3}/v1`);
+    this.ollamaUrl = url3;
   }
   async getModels() {
     try {
@@ -97242,7 +97246,7 @@ var ollamaEmbedProvider = class _ollamaEmbedProvider extends OpenAICompatibleEmb
       const inspectedModels = await Promise.all(
         allModelIds.map(async (id) => ({
           id,
-          meta: await inspectOllamaModel(_ollamaEmbedProvider.ollamaBaseUrl, id)
+          meta: await inspectOllamaModel(this.ollamaUrl, id)
         }))
       );
       const embeddingModels = inspectedModels.filter(({ meta: meta2 }) => meta2.isEmbedding).map(({ id }) => id);
@@ -111680,7 +111684,10 @@ var APIManager = class {
   emitter = new vscode10.EventEmitter();
   onDidUpdateStatus = this.emitter.event;
   async getChatAPIKey(provider) {
-    if (provider.toLowerCase() === "ollama") return "local-no-key-required";
+    if (provider.toLowerCase() === "ollama") {
+      const port = this.context.globalState.get("ollamaChatPort") ?? 11434;
+      return String(port);
+    }
     const chatSecretKey = `${provider.toUpperCase()}_CHAT_API_KEY`;
     let chatAPIKey = await this.context.secrets.get(chatSecretKey);
     if (!chatAPIKey) {
@@ -111694,7 +111701,10 @@ var APIManager = class {
     return chatAPIKey;
   }
   async getEmbedAPIKey(provider) {
-    if (provider.toLowerCase() === "ollama") return "local-no-key-required";
+    if (provider.toLowerCase() === "ollama") {
+      const port = this.context.globalState.get("ollamaEmbedPort") ?? 11434;
+      return String(port);
+    }
     const embedSecretKey = `${provider.toUpperCase()}_EMBED_API_KEY`;
     let embedAPIKey = await this.context.secrets.get(embedSecretKey);
     if (!embedAPIKey) {
@@ -111785,10 +111795,20 @@ var APIManager = class {
     this.emitter.fire({ type: "updateEmbedModel", model });
   }
   async saveChatAPIKey(provider, key) {
+    if (provider.toLowerCase() === "ollama") {
+      const port = parseInt(key, 10) || 11434;
+      await this.context.globalState.update("ollamaChatPort", port);
+      return;
+    }
     const secretKey = `${provider.toUpperCase()}_CHAT_API_KEY`;
     await this.context.secrets.store(secretKey, key);
   }
   async saveEmbedAPIKey(provider, key) {
+    if (provider.toLowerCase() === "ollama") {
+      const port = parseInt(key, 10) || 11434;
+      await this.context.globalState.update("ollamaEmbedPort", port);
+      return;
+    }
     const secretKey = `${provider.toUpperCase()}_EMBED_API_KEY`;
     await this.context.secrets.store(secretKey, key);
   }
@@ -112110,22 +112130,26 @@ var ChatApp = class {
             const turnLimit = this.context.globalState.get("turnLimit") ?? 0;
             const enabledWebSearch = this.context.globalState.get("webSearchEnabled") ?? false;
             const webSearchMode = this.context.globalState.get("webSearchMode") ?? "tavily";
+            const ollamaChatPort = this.context.globalState.get("ollamaChatPort") ?? 11434;
             this.post({
               type: "restoreChatSettings",
               showAll: showAllChatModels,
               stateful: serverStateManagement,
               turnLimit,
               webSearch: enabledWebSearch,
-              searchMode: webSearchMode
+              searchMode: webSearchMode,
+              ollamaPort: ollamaChatPort
             });
             const retrievalCount = this.context.globalState.get("retrievalCount") ?? 10;
             const debounceTime = this.context.globalState.get("debounceTime") ?? 10;
             const enabledIndex = this.context.globalState.get("enableIndex") ?? true;
+            const ollamaEmbedPort = this.context.globalState.get("ollamaEmbedPort") ?? 11434;
             this.post({
               type: "restoreIndexSettings",
               retrievalCount,
               debounceTime,
-              enabled: enabledIndex
+              enabled: enabledIndex,
+              ollamaPort: ollamaEmbedPort
             });
             this.post({ type: "initChatProviders", providers: ChatFactory.getAvailableProviders() });
             this.post({ type: "initEmbedProviders", providers: EmbedFactory.getAvailableProviders() });
@@ -112168,6 +112192,11 @@ var ChatApp = class {
           } catch (e2) {
             vscode12.window.showErrorMessage(`Failed to restore state ${e2}`);
           }
+          break;
+        }
+        case "saveOllamaChatPort": {
+          await this.apiManager.saveChatAPIKey("ollama", data.port);
+          await this.apiManager.getChatModels("ollama");
           break;
         }
         // Called after selecting chat provider from dropdown
@@ -112265,6 +112294,11 @@ var ChatApp = class {
           await this.contextManager.clear();
           await this.worktreeManager.cleanup();
           this.post({ type: "clearChatContainer" });
+          break;
+        }
+        case "saveOllamaEmbedPort": {
+          await this.apiManager.saveEmbedAPIKey("ollama", data.port);
+          await this.apiManager.getEmbedModels("ollama");
           break;
         }
         // Called when selecting a new provider in embedding provider dropdown

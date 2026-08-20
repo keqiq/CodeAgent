@@ -3,6 +3,7 @@ import { WebviewApi } from "../../Webview";
 export class ChatSettings {
     
     public currentProvider: string = '';
+    private currentOllamaPort: number = 11434;
 
     private container: HTMLElement;
     private toggleBtn: HTMLButtonElement;
@@ -118,22 +119,39 @@ export class ChatSettings {
             this.vscodeAPI.postMessage({ type: 'setStateManagement', stateful: isActive });
         });
 
-        // Toggle chat API key input
+        // Toggle chat API key / Ollama Port input
         this.keyBtn.addEventListener('click', () => {
             if (this.keyBtn.classList.contains('disabled')) return;
             const isHidden = this.keyContainer.classList.toggle('hidden');
-            if (!isHidden) this.keyInput.focus();
+            
+            if (!isHidden) {
+                if (this.currentProvider.toLowerCase() === 'ollama') {
+                    this.keyInput.type = 'number';
+                    this.keyInput.placeholder = 'e.g. 11434';
+                    this.keyInput.value = this.currentOllamaPort.toString();
+                } else {
+                    this.keyInput.type = 'password';
+                    this.keyInput.placeholder = `Enter ${this.currentProvider} API Key...`;
+                    this.keyInput.value = '';
+                }
+                this.keyInput.focus();
+            }
         });
 
         this.keySaveBtn.addEventListener('click', () => {
-            const key = this.keyInput.value.trim();
-            if (key && this.currentProvider) {
-                // Reset menu key state
+            const val = this.keyInput.value.trim();
+            if (val && this.currentProvider) {
                 this.dropdown.classList.add('hidden');
                 this.keyContainer.classList.add('hidden');
                 this.keyInput.value = '';
 
-                this.vscodeAPI.postMessage({ type: 'saveChatAPIKey', provider: this.currentProvider, key: key });
+                if (this.currentProvider.toLowerCase() === 'ollama') {
+                    const port = parseInt(val, 10) || 11434;
+                    this.currentOllamaPort = port;
+                    this.vscodeAPI.postMessage({ type: 'saveOllamaChatPort', port: port });
+                } else {
+                    this.vscodeAPI.postMessage({ type: 'saveChatAPIKey', provider: this.currentProvider, key: val });
+                }
             }
         });
 
@@ -225,16 +243,12 @@ export class ChatSettings {
 
         this.currentProvider = msg.provider;
         
+        this.keyBtn.classList.remove('hidden', 'disabled');
         if (msg.provider.toLowerCase() === 'ollama') {
-            this.keyBtn.classList.add('hidden');
-            this.keyBtn.innerHTML = `No Key Required (Local)`;
-            this.keyContainer.classList.add('hidden');
-        }
-        else {
-            this.keyBtn.classList.remove('hidden', 'disabled');
+            this.keyBtn.innerHTML = `Set Ollama Chat Port (${this.currentOllamaPort})`;
+        } else {
             this.keyBtn.innerHTML = `Set ${msg.provider} API Key`;
         }
-
         if (!msg.stateful) {
             this.toggleStateful.classList.remove('active');
             this.toggleStateful.classList.add('disabled');
@@ -266,7 +280,8 @@ export class ChatSettings {
         stateful?: boolean, 
         turnLimit?: number
         webSearch?: boolean,
-        searchMode?: 'tavily' | 'server'
+        searchMode?: 'tavily' | 'server',
+        ollamaPort?: number
     }): void {
         if (msg.showAll !== undefined) {
             if (msg.showAll) this.toggleAllModels.classList.add('active');
@@ -296,6 +311,10 @@ export class ChatSettings {
                 this.tavilyKeyContainer.classList.add('hidden');
             }
             this.updateWebSearchModeUI();
+        }
+
+        if (msg.ollamaPort !== undefined) {
+            this.currentOllamaPort = msg.ollamaPort;
         }
     }
 

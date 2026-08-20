@@ -12,8 +12,10 @@ export class APIManager {
     constructor(private context: vscode.ExtensionContext) {};
     
     public async getChatAPIKey(provider: string): Promise<string> {
-        if (provider.toLowerCase() === 'ollama') return 'local-no-key-required';
-
+        if (provider.toLowerCase() === 'ollama') {
+            const port = this.context.globalState.get<number | string>('ollamaChatPort') ?? 11434;
+            return String(port);
+        }
         const chatSecretKey = `${provider.toUpperCase()}_CHAT_API_KEY`;
         let chatAPIKey = await this.context.secrets.get(chatSecretKey);
 
@@ -32,7 +34,10 @@ export class APIManager {
     }
 
     public async getEmbedAPIKey(provider: string): Promise<string> {
-        if (provider.toLowerCase() === 'ollama') return 'local-no-key-required';
+        if (provider.toLowerCase() === 'ollama') {
+            const port = this.context.globalState.get<number | string>('ollamaEmbedPort') ?? 11434;
+            return String(port);
+        }
 
         const embedSecretKey = `${provider.toUpperCase()}_EMBED_API_KEY`;
         let embedAPIKey = await this.context.secrets.get(embedSecretKey);
@@ -150,11 +155,22 @@ export class APIManager {
     }
 
     public async saveChatAPIKey(provider: string, key: string): Promise<void> {
+        if (provider.toLowerCase() === 'ollama') {
+             const port = parseInt(key, 10) || 11434;
+            await this.context.globalState.update('ollamaChatPort', port);
+            return;
+        }
         const secretKey = `${provider.toUpperCase()}_CHAT_API_KEY`;
         await this.context.secrets.store(secretKey, key);
     }
 
     public async saveEmbedAPIKey(provider: string, key: string): Promise<void> {
+        if (provider.toLowerCase() === 'ollama') {
+            const port = parseInt(key, 10) || 11434;
+            await this.context.globalState.update('ollamaEmbedPort', port);
+            return;
+        }
+
         const secretKey = `${provider.toUpperCase()}_EMBED_API_KEY`;
         await this.context.secrets.store(secretKey, key);
     }

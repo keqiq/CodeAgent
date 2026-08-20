@@ -244,3 +244,9 @@
     animation: spin 1s linear infinite;
     flex-shrink: 0;
 }
+
+#embedKeyInput::-webkit-outer-spin-button,
+#embedKeyInput::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}

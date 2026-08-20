@@ -4,11 +4,13 @@ import { ChatProvider, ModelInfo, StreamYield, WebSearchMode } from "./chatProvi
 import { OpenAICompatibleProvider } from "./openai";
 
 export class OllamaChatProvider extends OpenAICompatibleProvider {
-    private static ollamaBaseUrl = 'http://127.0.0.1:11434';
+    private ollamaUrl: string;
     protected featuredModels: string[] = [];
 
     constructor(apiKey: string, webSearchMode: WebSearchMode) {
-        super(apiKey, `${OllamaChatProvider.ollamaBaseUrl}/v1`, webSearchMode);
+        const url = `http://127.0.0.1:${apiKey}`;
+        super('ollama', `${url}/v1`, webSearchMode);
+        this.ollamaUrl = url;
     }
 
     protected async getModelInfos(): Promise<ModelInfo[]> {
@@ -19,7 +21,7 @@ export class OllamaChatProvider extends OpenAICompatibleProvider {
             const inspectedModels = await Promise.all(
                 response.data.map(async (m) => ({
                     id: m.id,
-                    meta: await inspectOllamaModel(OllamaChatProvider.ollamaBaseUrl, m.id)
+                    meta: await inspectOllamaModel(this.ollamaUrl, m.id)
                 }))
             );
 
