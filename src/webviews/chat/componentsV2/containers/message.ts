@@ -1,12 +1,39 @@
-import hljs from "highlight.js";
-import { marked } from "marked";
+import { parseMarkdown } from "../../../markdownRenderer";
 import type { ChatItem } from "../../../../managers/contextManager";
 
 export class MessageContainer {
     private activeStreamDiv: HTMLElement | null = null;
     private activeStreamRawText: string = "";
 
-    constructor(private container: HTMLElement) {}
+    constructor(private container: HTMLElement) {
+        this.initListeners();
+    }
+
+    private initListeners(): void {
+        // Event for code block copy buttons
+        this.container.addEventListener('click', async (e: MouseEvent) => {
+            const target = e.target as HTMLElement;
+            const copyBtn = target.closest('.copy-code-btn') as HTMLButtonElement | null;
+            if (!copyBtn) return;
+
+            e.stopPropagation();
+            const rawCode = decodeURIComponent(copyBtn.getAttribute('data-code') || '');
+
+            try {
+                await navigator.clipboard.writeText(rawCode);
+                const textSpan = copyBtn.querySelector('span');
+                if (textSpan) textSpan.textContent = 'Copied!';
+                copyBtn.classList.add('copied');
+
+                setTimeout(() => {
+                    if (textSpan) textSpan.textContent = 'Copy';
+                    copyBtn.classList.remove('copied');
+                }, 1800);
+            } catch (err) {
+                console.error('Failed to copy code to clipboard:', err);
+            }
+        });
+    }
 
     // For agent responses streaming
     public streamUpdate(chunk: string): void {
@@ -17,23 +44,11 @@ export class MessageContainer {
             this.container.appendChild(this.activeStreamDiv);
         }
         this.activeStreamRawText += chunk;
-        this.activeStreamDiv.innerHTML = MessageContainer.parseMarkdown(this.activeStreamRawText);
+        this.activeStreamDiv.innerHTML = parseMarkdown(this.activeStreamRawText);
     }
 
     public end(): void {
         if (!this.activeStreamDiv) return;
-
-        // Highlight code blocks
-        this.activeStreamDiv.querySelectorAll('pre code').forEach((block) =>  {
-            hljs.highlightElement(block as HTMLElement);
-        });
-    }
-
-    private static parseMarkdown(text: string): string {
-        return marked.parse(text, { 
-            gfm: true, 
-            breaks: false 
-        }) as string;
     }
 
     public add(msg: Extract<ChatItem, { type: 'message' }> & { style?: string }): void {
@@ -56,10 +71,7 @@ export class MessageContainer {
 
         // Agent messages, need markdown parsing and code highlight
         if (role === 'assistant') {
-            msgDiv.innerHTML = MessageContainer.parseMarkdown(text);
-            msgDiv.querySelectorAll('pre code').forEach((block) => {
-                hljs.highlightElement(block as HTMLElement);
-            });
+            msgDiv.innerHTML = parseMarkdown(text);
             this.container.appendChild(msgDiv);
         }
 

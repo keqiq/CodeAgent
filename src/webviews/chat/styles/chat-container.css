@@ -85,7 +85,7 @@
 
 /* --- Universal Status Highlights (Messages, Tools, Patches) --- */
 .status-highlight {
-    padding: 2px 8px;
+    padding: 2px 8px 3px;
     border-radius: 4px;
     font-weight: bold;
     font-size: 10px;
