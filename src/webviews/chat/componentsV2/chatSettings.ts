@@ -74,15 +74,32 @@ export class ChatSettings {
         // Toggle settings menu
         this.toggleBtn.addEventListener('click', (e: MouseEvent) => {
             e.stopPropagation();
-            this.dropdown.classList.toggle('hidden');
-            this.keyContainer.classList.add('hidden');
+            const willOpen = this.dropdown.classList.contains('hidden');
+
+            // Notify all other menus to close
+            document.dispatchEvent(new CustomEvent('closeAllMenus', { detail: { source: this } }));
+
+            if (willOpen) {
+                this.dropdown.classList.remove('hidden');
+                this.keyContainer.classList.add('hidden');
+                this.tavilyKeyContainer.classList.add('hidden');
+            } else {
+                this.close();
+            }
+        });
+
+        // Close when another menu opens
+        document.addEventListener('closeAllMenus', (e: Event) => {
+            const customEvent = e as CustomEvent;
+            if (customEvent.detail?.source !== this) {
+                this.close();
+            }
         });
 
         // Close menu when clicking off
         document.addEventListener('click', (e: MouseEvent) => {
             if (e.target instanceof Node && !this.container.contains(e.target)) {
-                this.dropdown.classList.add('hidden');
-                this.clearChatConfirmBtn.classList.add('hidden');
+                this.close();
             }
         });
 
@@ -195,6 +212,13 @@ export class ChatSettings {
         });
     }
 
+    public close(): void {
+        this.dropdown.classList.add('hidden');
+        this.keyContainer.classList.add('hidden');
+        this.tavilyKeyContainer.classList.add('hidden');
+        this.clearChatConfirmBtn.classList.add('hidden');
+    }
+
     // When setting a new provider we need to update state management capabilities
     public setProvider(msg: { provider: string, stateful: boolean, serverSearch?: boolean }): void {
         if (!msg.provider) return;
@@ -299,11 +323,8 @@ export class ChatSettings {
 
     public setDisabled(disabled: boolean): void {
         this.toggleBtn.disabled = disabled;
-
         if (disabled) {
-            this.dropdown.classList.add('hidden');
-            this.keyContainer.classList.add('hidden');
-            this.clearChatConfirmBtn.classList.add('hidden');
+            this.close();
         }
     }
 

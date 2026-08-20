@@ -75,15 +75,30 @@ export class ChatHeader {
         // Toggle settings menu
         this.indexSettingsBtn.addEventListener('click', (e: MouseEvent) => {
             e.stopPropagation();
-            this.indexSettingsDropdown.classList.toggle('hidden');
+            const willOpen = this.indexSettingsDropdown.classList.contains('hidden');
+
+            // Notify all other menus to close
+            document.dispatchEvent(new CustomEvent('closeAllMenus', { detail: { source: this } }));
+
+            if (willOpen) {
+                this.indexSettingsDropdown.classList.remove('hidden');
+            } else {
+                this.close();
+            }
+        });
+
+        // Close when another menu opens
+        document.addEventListener('closeAllMenus', (e: Event) => {
+            const customEvent = e as CustomEvent;
+            if (customEvent.detail?.source !== this) {
+                this.close();
+            }
         });
 
         // Close settings menu when clicking off
         document.addEventListener('click', (e: MouseEvent) => {
             if (e.target instanceof Node && !this.indexSettingsContainer.contains(e.target)) {
-                this.keyContainer.classList.add('hidden');
-                this.indexSettingsDropdown.classList.add('hidden');
-                this.clearIndexConfirmBtn.classList.add('hidden');
+                this.close();
             }
         });
 
@@ -168,6 +183,12 @@ export class ChatHeader {
             
             this.vscodeAPI.postMessage({ type: 'deleteIndex' });
         });
+    }
+
+    public close(): void {
+        this.indexSettingsDropdown.classList.add('hidden');
+        this.keyContainer.classList.add('hidden');
+        this.clearIndexConfirmBtn.classList.add('hidden');
     }
 
     public restoreSettings(msg: { retrievalCount?: number, debounceTime?: number, enabled?: boolean }): void {

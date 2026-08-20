@@ -62,12 +62,30 @@ export class ContextWindow {
 
         this.contextToggleBtn.addEventListener('click', (e) => {
             e.stopPropagation();
-            this.contextDropdown.classList.toggle('hidden');
+            const willOpen = this.contextDropdown.classList.contains('hidden');
+
+            // Notify all other menus to close
+            document.dispatchEvent(new CustomEvent('closeAllMenus', { detail: { source: this } }));
+
+            if (willOpen) {
+                this.contextDropdown.classList.remove('hidden');
+            } else {
+                this.close();
+            }
         });
 
+        // Close when another menu opens
+        document.addEventListener('closeAllMenus', (e: Event) => {
+            const customEvent = e as CustomEvent;
+            if (customEvent.detail?.source !== this) {
+                this.close();
+            }
+        });
+
+        // Close when clicking off
         document.addEventListener('click', (e) => {
             if (!this.contextContainer.contains(e.target as Node)) {
-                this.contextDropdown.classList.add('hidden');
+                this.close();
             }
         });
 
@@ -113,6 +131,10 @@ export class ContextWindow {
             if (isNaN(val) || val < 1) val = 1;
             this.setIntervalValue(val);
         });
+    }
+
+    public close(): void {
+        this.contextDropdown.classList.add('hidden');
     }
 
     private adjustInterval(delta: number) {

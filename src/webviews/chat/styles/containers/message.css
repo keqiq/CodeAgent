@@ -16,7 +16,7 @@
     border-bottom-right-radius: 2px;
     display: flex;
     flex-direction: column;
-    padding-bottom: 5px;
+    padding: 5px 10px;
     font-weight: 600;
 }
 

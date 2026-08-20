@@ -446,7 +446,6 @@ export class ChatApp implements vscode.WebviewViewProvider {
                     await this.apiManager.saveEmbedModel(data.provider, data.model);
                     break;
                 }
-
                 case 'saveEmbedAPIKey': {
                     await this.apiManager.saveEmbedAPIKey(data.provider, data.key);
                     await this.apiManager.getEmbedModels(data.provider);
