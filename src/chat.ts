@@ -158,13 +158,14 @@ export class ChatApp implements vscode.WebviewViewProvider {
                 // update turn counter for tool pruning, do not prune until error is resolved
                 await this.contextManager.updateTurnBoundary(previousTurnHadError);
                 previousTurnHadError = false;
-
+                
                 const finalResponse = streamResult.value as ChatResponse;
-
+                
                 if (finalResponse?.tokenUsage) {
                     this.contextManager.recordTokenUsage(finalResponse.tokenUsage);
                     this.contextManager.updateTokenUsage();
                 }
+                this.contextManager.estimateCategorizedTokens();
 
                 const currentTurnID = finalResponse?.turnID;
                 this.contextManager.setTurnID(currentTurnID);

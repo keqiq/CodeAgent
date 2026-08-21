@@ -167,19 +167,6 @@ export class ToolManager {
                         this.emitter.fire({ type: uiType, status: 'error', toolID: toolID, error: message });
                     }
                 }
-                // MCP tool
-                // else if (this.deps.mcpManager.hasTool(toolName)) {
-                //     try {
-                //         result = await this.deps.mcpManager.callTool(toolName, toolArgs);
-                //         this.emitter.fire({ type: 'updateTool', status: 'success', toolId: toolID });
-                //     } catch (e) {
-                //         isError = true;
-                //         hasErrors = true;
-                //         const message = e instanceof Error ? e.message : String(e);
-                //         result = { message: `MCP Tool Error [${toolName}]: ${message}` };
-                //         this.emitter.fire({ type: 'updateTool', status: 'error', toolId: toolID, error: message });
-                //     }
-                // }
                 // Tool not found in registry or connected MCP servers
                 else {
                     isError = true;

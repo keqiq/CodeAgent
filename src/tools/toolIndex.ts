@@ -57,7 +57,14 @@ export type ToolDeps = {
 };
 
 // Tools with potentionally large output that could use pruning
-export const PRUNE_TOOLS = new Set(['read', 'glob', 'grep', 'find', 'refs', 'run', 'web', 'url']);
+export const PRUNE_OUTPUT = new Set(['read', 'glob', 'grep', 'find', 'refs', 'run', 'web', 'url']);
+
+// Likewise, tools with potentially large input arguments that could use pruning
+// But we must keep the expected json schema so target only the content of each parameter
+export const PRUNE_INPUT : Record<string, string[]> = {
+    write: ['content'],
+    edit: ['oldText', 'newText'],
+};
 
 export function createToolRegistry(deps: ToolDeps): Record<string, (args: any, toolID: string) => Promise<ToolResult>> {
     return {

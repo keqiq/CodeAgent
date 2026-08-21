@@ -67734,7 +67734,11 @@ var requiredSchemas = [
   ...artifactSchema,
   ...mcpSchemas
 ];
-var PRUNE_TOOLS = /* @__PURE__ */ new Set(["read", "glob", "grep", "find", "refs", "run", "web", "url"]);
+var PRUNE_OUTPUT = /* @__PURE__ */ new Set(["read", "glob", "grep", "find", "refs", "run", "web", "url"]);
+var PRUNE_INPUT = {
+  write: ["content"],
+  edit: ["oldText", "newText"]
+};
 function createToolRegistry(deps) {
   return {
     glob: async (args) => await executeGlob(args.pattern, deps.getCwd(), deps.getSignal()),
@@ -110989,6 +110993,7 @@ var ContextManager = class {
   isInitialized = false;
   // Full history for frontend
   history = [];
+  activeToolCalls = /* @__PURE__ */ new Map();
   activeToolResults = [];
   turnsSinceLastPrune = 0;
   runsSinceLastPrune = 0;
@@ -111005,6 +111010,7 @@ var ContextManager = class {
   pruneMode = "run";
   pruneTurnInterval = 2;
   pruneRunInterval = 1;
+  PRUNE_CHAR_THRESHOLD = 1250;
   runTokenUsage = {
     totalTokens: 0,
     inputTokens: 0,
@@ -111147,13 +111153,22 @@ var ContextManager = class {
     });
   }
   addFunctionCall(id, name, args) {
-    this.history.push({
+    const parsedArgs = typeof args === "string" ? (() => {
+      try {
+        return JSON.parse(args);
+      } catch {
+        return args;
+      }
+    })() : args;
+    const item = {
       type: "function_call",
       id,
       name,
-      arguments: args,
+      arguments: parsedArgs,
       ...this.currentTurnID && { turnID: this.currentTurnID }
-    });
+    };
+    this.history.push(item);
+    this.activeToolCalls.set(id, item);
   }
   addFunctionResult(id, name, result, error2, data) {
     const item = {
@@ -111185,7 +111200,7 @@ var ContextManager = class {
     this.summarizedHistory = [];
     this.summarizeIndex = 0;
     this.currentPrompt = { type: "message", role: "user", content: "" };
-    ;
+    this.activeToolCalls.clear();
     this.activeToolResults = [];
     this.currentTurnToolResults = [];
     this.currentTurnID = void 0;
@@ -111202,13 +111217,13 @@ var ContextManager = class {
     this.turnsSinceLastPrune++;
     if (previousTurnHadError) return;
     if (this.pruneMode === "turn" && this.turnsSinceLastPrune >= this.pruneTurnInterval) {
-      await this.pruneToolResults();
+      await this.pruneActiveTools();
     }
   }
   async updateRunBoundary() {
     this.runsSinceLastPrune++;
     if (this.pruneMode === "run" && this.runsSinceLastPrune >= this.pruneRunInterval) {
-      await this.pruneToolResults();
+      await this.pruneActiveTools();
     }
   }
   async readArtifact(artifactID) {
@@ -111217,30 +111232,98 @@ var ContextManager = class {
     const data = await vscode8.workspace.fs.readFile(fileUri);
     return new TextDecoder().decode(data);
   }
-  // Save tool results to disk, return id
-  async saveArtifact(item) {
+  // // Save tool results to disk, return id
+  // public async saveArtifact(item: FunctionResultItem): Promise<string> {
+  //     if (!this.artifactsUri) return 'artifact_storage_disabled';
+  //     const artifactID = `artifact_${item.name}_${item.id}_${Date.now()}.txt`;
+  //     const fileUri = vscode.Uri.joinPath(this.artifactsUri, artifactID);
+  //     const data = new TextEncoder().encode(item.result);
+  //     await vscode.workspace.fs.writeFile(fileUri, data);
+  //     return artifactID;
+  // }
+  // public async pruneToolResults(): Promise<void> {    
+  //     if (this.activeToolResults.length === 0) return;
+  //     for (const item of this.activeToolResults) {
+  //         // For calls to fetch artifacts, we should point to the original artifact
+  //         const isRecall = item.name === 'recall';
+  //         const shouldPrune = isRecall || PRUNE_OUTPUT.has(item.name) || item.result.length > 300 || item.error;
+  //         if (!shouldPrune) continue;
+  //         let artifactID: string;
+  //         if (isRecall) artifactID = item.data?.artifactID || 'unknown_artifact';
+  //         else artifactID = await this.saveArtifact(item);
+  //         if (item.error) {
+  //             item.result = `[Tool '${item.name}' failed. Full error stored in artifact: ${artifactID}]`;
+  //         } else {
+  //             item.result = `[Tool '${item.name}' executed successfully. Full output stored in artifact: ${artifactID}]`;
+  //         }
+  //     }
+  //     this.activeToolResults = [];
+  //     this.turnsSinceLastPrune = 0;
+  //     this.runsSinceLastPrune = 0;
+  // }
+  async saveArtifactContent(name, id, content) {
     if (!this.artifactsUri) return "artifact_storage_disabled";
-    const artifactID = `artifact_${item.name}_${item.id}_${Date.now()}.txt`;
+    const artifactID = `artifact_${name}_${id}_${Date.now()}.txt`;
     const fileUri = vscode8.Uri.joinPath(this.artifactsUri, artifactID);
-    const data = new TextEncoder().encode(item.result);
+    const data = new TextEncoder().encode(content);
     await vscode8.workspace.fs.writeFile(fileUri, data);
     return artifactID;
   }
-  async pruneToolResults() {
-    if (this.activeToolResults.length === 0) return;
-    for (const item of this.activeToolResults) {
-      const isRecall = item.name === "recall";
-      const shouldPrune = isRecall || PRUNE_TOOLS.has(item.name) || item.result.length > 300 || item.error;
-      if (!shouldPrune) continue;
+  async pruneActiveTools() {
+    if (this.activeToolResults.length === 0) {
+      this.activeToolCalls.clear();
+      return;
+    }
+    for (const resultItem of this.activeToolResults) {
+      const callItem = this.activeToolCalls.get(resultItem.id);
+      const isRecall = resultItem.name === "recall";
+      const shouldPruneOutput = isRecall || PRUNE_OUTPUT.has(resultItem.name) || resultItem.result.length > this.PRUNE_CHAR_THRESHOLD || resultItem.error;
+      const inputFields = PRUNE_INPUT[resultItem.name] || [];
+      let shouldPruneInput = false;
+      if (callItem && typeof callItem.arguments === "object" && callItem.arguments !== null) {
+        for (const field of inputFields) {
+          if (typeof callItem?.arguments[field] === "string" && callItem.arguments[field].length > this.PRUNE_CHAR_THRESHOLD) {
+            shouldPruneInput = true;
+            break;
+          }
+        }
+      }
+      if (!shouldPruneInput && !shouldPruneOutput) continue;
       let artifactID;
-      if (isRecall) artifactID = item.data?.artifactID || "unknown_artifact";
-      else artifactID = await this.saveArtifact(item);
-      if (item.error) {
-        item.result = `[Tool '${item.name}' failed. Full error stored in artifact: ${artifactID}]`;
+      if (isRecall) {
+        artifactID = resultItem.data?.artifactID || "unknown_artifact";
       } else {
-        item.result = `[Tool '${item.name}' executed successfully. Full output stored in artifact: ${artifactID}]`;
+        let artifactText = `=== TOOL: ${resultItem.name} (Call ID: ${resultItem.id}) ===
+
+`;
+        if (callItem) {
+          artifactText += `--- INPUT ARGUMENTS ---
+${JSON.stringify(callItem.arguments, null, 2)}
+
+`;
+        }
+        artifactText += `--- OUTPUT RESULT ---
+${resultItem.result}
+`;
+        artifactID = await this.saveArtifactContent(resultItem.name, resultItem.id, artifactText);
+      }
+      if (callItem && typeof callItem.arguments === "object" && callItem.arguments !== null) {
+        for (const field of inputFields) {
+          const val = callItem.arguments[field];
+          if (typeof val === "string" && val.length > this.PRUNE_CHAR_THRESHOLD) {
+            callItem.arguments[field] = `[${field} pruned (${val.length} chars). Stored in artifact: ${artifactID}]`;
+          }
+        }
+      }
+      if (shouldPruneOutput) {
+        if (resultItem.error) {
+          resultItem.result = `[Tool '${resultItem.name}' failed. Full output/error stored in artifact: ${artifactID}]`;
+        } else {
+          resultItem.result = `[Tool '${resultItem.name}' executed successfully. Full output stored in artifact: ${artifactID}]`;
+        }
       }
     }
+    this.activeToolCalls.clear();
     this.activeToolResults = [];
     this.turnsSinceLastPrune = 0;
     this.runsSinceLastPrune = 0;
@@ -112081,6 +112164,7 @@ var ChatApp = class {
           this.contextManager.recordTokenUsage(finalResponse.tokenUsage);
           this.contextManager.updateTokenUsage();
         }
+        this.contextManager.estimateCategorizedTokens();
         const currentTurnID = finalResponse?.turnID;
         this.contextManager.setTurnID(currentTurnID);
         const functionCalls = this.contextManager.processResponseItems(finalResponse.items);

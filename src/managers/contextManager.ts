@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { getEncoding, Tiktoken } from 'js-tiktoken';
 import { ChatFactory } from '../apis/chat/chatFactory';
-import { PRUNE_TOOLS } from '../tools/toolIndex';
+import { PRUNE_OUTPUT, PRUNE_INPUT } from '../tools/toolIndex';
 
 export interface MessageItem {
     type: 'message';
@@ -77,6 +77,7 @@ export class ContextManager {
     // Full history for frontend
     private history: ChatItem[] = [];
 
+    private activeToolCalls: Map<string, FunctionCallItem> = new Map();
     private activeToolResults: FunctionResultItem[] = [];
     private turnsSinceLastPrune: number = 0;
     private runsSinceLastPrune: number = 0;
@@ -97,6 +98,7 @@ export class ContextManager {
     private pruneMode: string = 'run';
     private pruneTurnInterval: number = 2;
     private pruneRunInterval: number = 1;
+    private readonly PRUNE_CHAR_THRESHOLD = 1_250;
     
     private runTokenUsage: TokenUsage = {
         totalTokens: 0,
@@ -289,13 +291,18 @@ export class ContextManager {
     }
 
     public addFunctionCall(id: string, name: string, args: any): void {
-        this.history.push({
+        const parsedArgs = typeof args === 'string' ? (() => { try { return JSON.parse(args); } catch { return args; } })() : args;
+
+        const item: FunctionCallItem = {
             type: 'function_call',
             id,
             name,
-            arguments: args,
+            arguments: parsedArgs,
             ...(this.currentTurnID && { turnID: this.currentTurnID })
-        });
+        };
+
+        this.history.push(item);
+        this.activeToolCalls.set(id, item);
     }
 
     public addFunctionResult(id: string, name: string, result: string, error: boolean, data?: any): void {
@@ -329,7 +336,8 @@ export class ContextManager {
         this.history = [];
         this.summarizedHistory = [];
         this.summarizeIndex = 0;
-        this.currentPrompt = { type: 'message', role: 'user', content: '' };;
+        this.currentPrompt = { type: 'message', role: 'user', content: '' };
+        this.activeToolCalls.clear();
         this.activeToolResults = [];
         this.currentTurnToolResults = [];
         this.currentTurnID = undefined;
@@ -350,7 +358,7 @@ export class ContextManager {
         if (previousTurnHadError) return;
 
         if (this.pruneMode === 'turn' && this.turnsSinceLastPrune >= this.pruneTurnInterval) {
-            await this.pruneToolResults();
+            await this.pruneActiveTools();
         }
     }
 
@@ -358,7 +366,7 @@ export class ContextManager {
         this.runsSinceLastPrune++;
 
         if (this.pruneMode === 'run' && this.runsSinceLastPrune >= this.pruneRunInterval) {
-            await this.pruneToolResults();
+            await this.pruneActiveTools();
         }
     }
 
@@ -371,42 +379,135 @@ export class ContextManager {
         return new TextDecoder().decode(data);
     }
 
-    // Save tool results to disk, return id
-    public async saveArtifact(item: FunctionResultItem): Promise<string> {
+    // // Save tool results to disk, return id
+    // public async saveArtifact(item: FunctionResultItem): Promise<string> {
+    //     if (!this.artifactsUri) return 'artifact_storage_disabled';
+
+    //     const artifactID = `artifact_${item.name}_${item.id}_${Date.now()}.txt`;
+    //     const fileUri = vscode.Uri.joinPath(this.artifactsUri, artifactID);
+
+    //     const data = new TextEncoder().encode(item.result);
+    //     await vscode.workspace.fs.writeFile(fileUri, data);
+
+    //     return artifactID;
+    // }
+
+    // public async pruneToolResults(): Promise<void> {    
+    //     if (this.activeToolResults.length === 0) return;
+
+    //     for (const item of this.activeToolResults) {
+
+    //         // For calls to fetch artifacts, we should point to the original artifact
+    //         const isRecall = item.name === 'recall';
+
+    //         const shouldPrune = isRecall || PRUNE_OUTPUT.has(item.name) || item.result.length > 300 || item.error;
+
+    //         if (!shouldPrune) continue;
+
+    //         let artifactID: string;
+    //         if (isRecall) artifactID = item.data?.artifactID || 'unknown_artifact';
+    //         else artifactID = await this.saveArtifact(item);
+
+    //         if (item.error) {
+    //             item.result = `[Tool '${item.name}' failed. Full error stored in artifact: ${artifactID}]`;
+    //         } else {
+    //             item.result = `[Tool '${item.name}' executed successfully. Full output stored in artifact: ${artifactID}]`;
+    //         }
+    //     }
+
+    //     this.activeToolResults = [];
+    //     this.turnsSinceLastPrune = 0;
+    //     this.runsSinceLastPrune = 0;
+    // }
+
+    public async saveArtifactContent(name: string, id: string, content: string): Promise<string> {
         if (!this.artifactsUri) return 'artifact_storage_disabled';
 
-        const artifactID = `artifact_${item.name}_${item.id}_${Date.now()}.txt`;
+        const artifactID = `artifact_${name}_${id}_${Date.now()}.txt`;
         const fileUri = vscode.Uri.joinPath(this.artifactsUri, artifactID);
 
-        const data = new TextEncoder().encode(item.result);
+        const data = new TextEncoder().encode(content);
         await vscode.workspace.fs.writeFile(fileUri, data);
 
         return artifactID;
     }
 
-    public async pruneToolResults(): Promise<void> {
-        if (this.activeToolResults.length === 0) return;
+    public async pruneActiveTools(): Promise<void> {
+        if (this.activeToolResults.length === 0) {
+            this.activeToolCalls.clear();
+            return;
+        }
 
-        for (const item of this.activeToolResults) {
+        // I am assuming that providers assign unique ids to each tool!
+        // Maybe i should make a separate field for this purpose
+        for (const resultItem of this.activeToolResults) {
+            const callItem = this.activeToolCalls.get(resultItem.id);
+            const isRecall = resultItem.name === 'recall';
 
-            // For calls to fetch artifacts, we should point to the original artifact
-            const isRecall = item.name === 'recall';
+            // Check if result output needs pruning
+            const shouldPruneOutput = 
+                isRecall ||
+                PRUNE_OUTPUT.has(resultItem.name) ||
+                resultItem.result.length > this.PRUNE_CHAR_THRESHOLD ||
+                resultItem.error;
 
-            const shouldPrune = isRecall || PRUNE_TOOLS.has(item.name) || item.result.length > 300 || item.error;
+            // Check if call input needs pruning
+            const inputFields = PRUNE_INPUT[resultItem.name] || [];
+            let shouldPruneInput = false;
 
-            if (!shouldPrune) continue;
+            if (callItem && typeof callItem.arguments === 'object' && callItem.arguments !== null) {
+                for (const field of inputFields) {
+                    if (typeof callItem?.arguments[field] === 'string' && callItem.arguments[field].length > this.PRUNE_CHAR_THRESHOLD) {
+                        shouldPruneInput = true;
+                        break;
+                    }
+                }
+            }
+
+            // Do not prune if neither function call or function result meet pruning criteria
+            if (!shouldPruneInput && !shouldPruneOutput) continue;
 
             let artifactID: string;
-            if (isRecall) artifactID = item.data?.artifactID || 'unknown_artifact';
-            else artifactID = await this.saveArtifact(item);
 
-            if (item.error) {
-                item.result = `[Tool '${item.name}' failed. Full error stored in artifact: ${artifactID}]`;
+            // If pruning a recall tool, point back to original artifact
+            if (isRecall) {
+                artifactID = resultItem.data?.artifactID || 'unknown_artifact';
+
+            // Save tool result and tool call parameters to artifact
             } else {
-                item.result = `[Tool '${item.name}' executed successfully. Full output stored in artifact: ${artifactID}]`;
+                let artifactText = `=== TOOL: ${resultItem.name} (Call ID: ${resultItem.id}) ===\n\n`;
+
+                if (callItem) {
+                    artifactText += `--- INPUT ARGUMENTS ---\n${JSON.stringify(callItem.arguments, null, 2)}\n\n`;
+                }
+
+                artifactText += `--- OUTPUT RESULT ---\n${resultItem.result}\n`;
+
+                artifactID = await this.saveArtifactContent(resultItem.name, resultItem.id, artifactText);
+            }
+
+            // Prune input fields on the call item
+            if (callItem && typeof callItem.arguments === 'object' && callItem.arguments !== null) {
+                for (const field of inputFields) {
+                    const val = callItem.arguments[field];
+                    if (typeof val === 'string' && val.length > this.PRUNE_CHAR_THRESHOLD) {
+                        callItem.arguments[field] = `[${field} pruned (${val.length} chars). Stored in artifact: ${artifactID}]`;
+                    }
+                }
+            }
+
+            // Prune output text on result item
+            if (shouldPruneOutput) {
+                if (resultItem.error) {
+                    resultItem.result = `[Tool '${resultItem.name}' failed. Full output/error stored in artifact: ${artifactID}]`;
+                } else {
+                    resultItem.result = `[Tool '${resultItem.name}' executed successfully. Full output stored in artifact: ${artifactID}]`;
+                }
             }
         }
 
+        // Reset tracking
+        this.activeToolCalls.clear();
         this.activeToolResults = [];
         this.turnsSinceLastPrune = 0;
         this.runsSinceLastPrune = 0;
