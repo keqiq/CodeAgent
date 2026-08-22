@@ -28,6 +28,8 @@ export abstract class ChatProvider {
                       Tools like 'glob' and 'grep' should be used as a fallback if semantic search fails to return relevant results.
                       Find the relevant code, read it, and edit it to add features and fix issues.`;
 
+    public static compactionPrompt: string = `placeholder`;
+
     public static stateManagementSupport: boolean = false;
     public static serverWebSearchSupport: boolean = false;
     public static baseTools: any[] = [...requiredSchemas];
@@ -111,4 +113,11 @@ export abstract class ChatProvider {
 
         return { items, tokenUsage, ...(turnID && {turnID}) };
     }
+
+    abstract summarizeContext(
+        model: string,
+        history: ChatItem[],
+        previousTurnID: string | undefined,
+        abortSignal?: AbortSignal
+    ): Promise<string>;
 }

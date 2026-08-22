@@ -115,18 +115,24 @@ export class ChatInput {
                 // Reset prompt
                 this.promptInput.value = '';
                 this.promptInput.style.height = '20px';
-                this.setStopState();
+                this.setDisabled(true);
             }
         });
 
-this.approveBtn.addEventListener('click', () => this.resolveCommandApproval(true, false));
-        this.saveApproveBtn.addEventListener('click', () => this.resolveCommandApproval(true, true));
-        this.denyBtn.addEventListener('click', () => this.resolveCommandApproval(false, false));
+        this.approveBtn.addEventListener('click', () => this.resolveCommandApproval(true, false));
+            this.saveApproveBtn.addEventListener('click', () => this.resolveCommandApproval(true, true));
+            this.denyBtn.addEventListener('click', () => this.resolveCommandApproval(false, false));
+        }
+
+    
+    public setDisabled(disabled: boolean) {
+        if (disabled) this.setStopState();
+        else this.setSendState();
     }
 
     // If we have sent a prompt and is waiting for the model to finish generating
     // Change the action button into a stop button that interupts the response
-    public setStopState(): void {
+    private setStopState(): void {
         this.isGenerating = true;
         this.actionBtn.innerHTML = this.stopIcon;
         this.actionBtn.disabled = false;
@@ -141,7 +147,7 @@ this.approveBtn.addEventListener('click', () => this.resolveCommandApproval(true
 
     // Default state where there is no ongoing response
     // Change the action button into a send button
-    public setSendState(): void {
+    private setSendState(): void {
         this.isGenerating = false;
         this.actionBtn.innerHTML = this.sendIcon;
         this.actionBtn.disabled = this.promptInput.value.trim() === '';

@@ -18,7 +18,7 @@ declare const console: any;
 export class ChatApp implements vscode.WebviewViewProvider {
 
     private view?: vscode.WebviewView;
-    
+
     private apiManager: APIManager;
     private contextManager: ContextManager;
     private commandManager: CommandManager;
@@ -59,7 +59,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
     }
 
     private async runAgentTurn(provider: string, model: string, effort: string, userMessage: string,): Promise<void> {
-        
+
         this.post({ type: 'startRun', provider: provider, model: model });
 
         await this.worktreeManager.setup();
@@ -127,7 +127,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
 
                             // Get live token generation speed
                             turnGeneratedTokens += countChunkTokens(content);
-                            const elapsedSeconds =  (now - streamStartTime) / 1000;
+                            const elapsedSeconds = (now - streamStartTime) / 1000;
 
                             if (elapsedSeconds > 0.1) {
                                 lastSpeedPostTime = now;
@@ -158,9 +158,9 @@ export class ChatApp implements vscode.WebviewViewProvider {
                 // update turn counter for tool pruning, do not prune until error is resolved
                 await this.contextManager.updateTurnBoundary(previousTurnHadError);
                 previousTurnHadError = false;
-                
+
                 const finalResponse = streamResult.value as ChatResponse;
-                
+
                 if (finalResponse?.tokenUsage) {
                     this.contextManager.recordTokenUsage(finalResponse.tokenUsage);
                     this.contextManager.updateTokenUsage();
@@ -174,7 +174,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
                 const summary = await this.toolManager.executeTools(functionCalls, this.aborter.signal);
                 previousTurnHadError = summary.hasErrors;
                 keepGoing = summary.shouldContinue;
-  
+
             }
 
             this.toolManager.finalizeRun();
@@ -210,7 +210,9 @@ export class ChatApp implements vscode.WebviewViewProvider {
 
             this.contextManager.estimateCategorizedTokens();
 
-            this.post({ type: 'agentRunComplete', status: runStatus, text: statusMessage });
+            this.post({ type: 'endRun', status: runStatus, text: statusMessage });
+
+            this.post({ type: 'toggleChatControls', disabled: false });
         }
     }
 
@@ -301,15 +303,15 @@ export class ChatApp implements vscode.WebviewViewProvider {
                         }
 
                         await this.worktreeManager.displayPatch();
-                        
+
                         const agentMode = this.context.workspaceState.get<string>('agentMode') ?? 'manual';
                         this.post({ type: 'restoreAgentMode', mode: agentMode });
 
                         await this.commandManager.loadConfig();
                         const currentConfig = this.commandManager.getConfig();
-                        this.post({ 
-                            type: 'updateUnsafeFlag', 
-                            isUnsafe: currentConfig?.unsafeFullAutonomous ?? false 
+                        this.post({
+                            type: 'updateUnsafeFlag',
+                            isUnsafe: currentConfig?.unsafeFullAutonomous ?? false
                         });
 
                     } catch (e) {
@@ -419,8 +421,28 @@ export class ChatApp implements vscode.WebviewViewProvider {
                     break;
                 }
 
+                case 'condenseHistory': {
+                    try {
+                        const chatProvider = this.context.globalState.get<string>('chatProvider') || '';
+                        const chatModel = this.context.globalState.get<string>(`${chatProvider}_chatModel`);
+                        if (!chatProvider || !chatModel) throw new Error('Unconfigured model!');
+
+                        const chatAPIKey = await this.apiManager.getChatAPIKey(chatProvider);
+                        this.aborter = new AbortController();
+                        this.post({ type: 'toggleChatControls', disabled: true });
+                        await this.contextManager.condenseContext(chatProvider, chatModel, chatAPIKey, this.aborter.signal);
+
+                    } catch (e) {
+                        vscode.window.showErrorMessage(`Failed to condense history: ${e}`);
+                    } finally {
+                        this.post({ type: 'toggleChatControls', disabled: false });
+                    }
+                    break;
+                }
+
                 case 'askAgent': {
                     if (!data.value) { return; }
+                    this.post({ type: 'toggleChatControls', disabled: true });
                     this.runAgentTurn(data.provider, data.model, data.effort, data.value);
                     break;
                 }
@@ -515,7 +537,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
 
                 // Take the changes from worktree and apply to main workspace
                 case 'applyChanges': {
-    
+
                     try {
                         await this.worktreeManager.applyPatch();
 

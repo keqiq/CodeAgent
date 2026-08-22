@@ -83,6 +83,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 break;
 
             // --- CHAT STREAMING & TOOLS & PATCH & TOKEN ---
+            case 'toggleChatControls':
+                chatInput.setDisabled(msg.disabled);
+                chatSettings.setDisabled(msg.disabled);
+                contextWindow.setDisabled(msg.disabled);
+                break;
+
             case 'startRun':
                 chatContainer.startRun(msg.provider, msg.model);
                 break;
@@ -111,8 +117,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 chatContainer.endTools(msg);
                 break;
 
-            case 'agentRunComplete':
-                chatInput.setSendState();
+            case 'endRun':
                 chatContainer.endRun(msg.status, msg.text);
                 chatContainer.cancelActiveUI();
                 chatSettings.toggleClearChatBtn(true);
@@ -138,6 +143,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 contextWindow.updateTokenUsage(msg.usage);
                 break;
 
+            case 'createCheckpoint':
+                chatContainer.addCheckpoint(msg);
+                break;
+
             case 'updateExecute':
                 chatContainer.updateExecute(msg);
                 break;
@@ -152,6 +161,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
             case 'updateUnsafeFlag':
                 agentMode.setUnsafe(msg.isUnsafe);
+                break;
+
+            case 'clearChatContainer':
+                chatContainer.clearChatUI();
+                chatSettings.toggleClearChatBtn(false);
+                contextWindow.clearTokenUsage();
                 break;
 
             // --- INDEXING & HEADER ---
@@ -182,12 +197,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             case 'requestEmbedAPIKey':
                 chatHeader.requestEmbedAPIKey(msg.provider);
-                break;
-
-            case 'clearChatContainer':
-                chatContainer.clearChatUI();
-                chatSettings.toggleClearChatBtn(false);
-                contextWindow.clearTokenUsage();
                 break;
 
             default:

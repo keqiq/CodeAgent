@@ -67,6 +67,8 @@ export class ChatContainer {
                     
                     else if (m.role === 'assistant') this.addMessage(m);
                 }
+
+                else if (m.type === 'checkpoint') this.addCheckpoint(m);
                 
                 else if (m.type === 'run_summary') {
                     if (this.runContainer) {
@@ -129,6 +131,21 @@ export class ChatContainer {
     public endMessage(): void {
         if (this.messageContainer) this.messageContainer.end();
         this.messageContainer = null;
+    }
+
+    public addCheckpoint(msg: {summary: string, provider: string, model: string}): void {
+        this.startRun(msg.provider, msg.model);
+        this.removeTypingIndicator();
+
+        if (this.runContainer) this.runContainer.setSummary();
+
+        this.addMessage({
+            type: 'message',
+            role: 'assistant',
+            content: msg.summary
+        });
+
+        this.endRun('ok');
     }
 
     // -----------------------------------------------------------------------------

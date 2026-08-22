@@ -272,4 +272,34 @@ export class ClaudeChatProvider extends ChatProvider {
     async abortStream(): Promise<void> {
         return;
     }
+
+    async summarizeContext(
+        model: string, 
+        history: ChatItem[], 
+        previousTurnID: string | undefined, 
+        abortSignal?: AbortSignal
+    ): Promise<string> {
+
+        const messages: Anthropic.MessageParam[] = [
+            ...this.formatMessages(history),
+            { role: 'user', content: ClaudeChatProvider.compactionPrompt }
+        ];
+
+        const response = await this.client.messages.create({
+            model: model as any,
+            system: ClaudeChatProvider.systemPrompt,
+            messages: messages,
+            max_tokens: 4096,
+            thinking: { type: 'adaptive' }
+        }, { signal: abortSignal });
+
+        let summary = '';
+        for (const block of response.content) {
+            if (block.type === 'text') {
+                summary += block.text;
+            }
+        }
+
+        return summary.trim();
+    }
 }

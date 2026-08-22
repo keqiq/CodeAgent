@@ -67795,6 +67795,7 @@ var ChatProvider = class _ChatProvider {
                       Proactively use your semantic search tool 'find' tool to search the workspace.
                       Tools like 'glob' and 'grep' should be used as a fallback if semantic search fails to return relevant results.
                       Find the relevant code, read it, and edit it to add features and fix issues.`;
+  static compactionPrompt = `placeholder`;
   static stateManagementSupport = false;
   static serverWebSearchSupport = false;
   static baseTools = [...requiredSchemas];
@@ -68042,6 +68043,26 @@ var ClaudeChatProvider = class _ClaudeChatProvider extends ChatProvider {
   }
   async abortStream() {
     return;
+  }
+  async summarizeContext(model, history, previousTurnID, abortSignal) {
+    const messages = [
+      ...this.formatMessages(history),
+      { role: "user", content: _ClaudeChatProvider.compactionPrompt }
+    ];
+    const response = await this.client.messages.create({
+      model,
+      system: _ClaudeChatProvider.systemPrompt,
+      messages,
+      max_tokens: 4096,
+      thinking: { type: "adaptive" }
+    }, { signal: abortSignal });
+    let summary = "";
+    for (const block of response.content) {
+      if (block.type === "text") {
+        summary += block.text;
+      }
+    }
+    return summary.trim();
   }
 };
 
@@ -77924,6 +77945,19 @@ var OpenAIChatProvider = class _OpenAIChatProvider extends ChatProvider {
   async abortStream() {
     return;
   }
+  async summarizeContext(model, history, previousTurnID, abortSignal) {
+    const formatted = [
+      ...this.formatMessages(history, true),
+      { role: "user", content: _OpenAIChatProvider.compactionPrompt }
+    ];
+    const response = await this.client.responses.create({
+      model,
+      input: formatted,
+      stream: false,
+      ...previousTurnID && { previous_response_id: previousTurnID }
+    }, { signal: abortSignal });
+    return (response.output_text || "").trim();
+  }
 };
 var OpenAICompatibleProvider = class _OpenAICompatibleProvider extends ChatProvider {
   client;
@@ -78065,6 +78099,18 @@ var OpenAICompatibleProvider = class _OpenAICompatibleProvider extends ChatProvi
   }
   async abortStream() {
     return;
+  }
+  async summarizeContext(model, history, previousTurnID, abortSignal) {
+    const formatted = [
+      ...this.formatMessages(history),
+      { role: "user", content: _OpenAICompatibleProvider.compactionPrompt }
+    ];
+    const response = await this.client.chat.completions.create({
+      model,
+      messages: formatted,
+      stream: false
+    }, { signal: abortSignal });
+    return (response.choices[0]?.message?.content || "").trim();
   }
 };
 
@@ -96833,6 +96879,22 @@ var GeminiChatProvider = class _GeminiChatProvider extends ChatProvider {
   async abortStream() {
     if (this.activeInteractionId) await this.client.interactions.cancel(this.activeInteractionId);
   }
+  async summarizeContext(model, history, previousTurnID, abortSignal) {
+    const formatted = this.formatMessages(history);
+    formatted.push({
+      type: "user_input",
+      content: [{ type: "text", text: _GeminiChatProvider.compactionPrompt }]
+    });
+    const response = await this.client.interactions.create({
+      model,
+      input: formatted,
+      system_instruction: _GeminiChatProvider.systemPrompt,
+      stream: false,
+      store: false,
+      ...previousTurnID && { previous_interaction_id: previousTurnID }
+    }, { signal: abortSignal });
+    return (response.output_text || "").trim();
+  }
 };
 
 // src/apis/chat/kimi.ts
@@ -111232,35 +111294,6 @@ var ContextManager = class {
     const data = await vscode8.workspace.fs.readFile(fileUri);
     return new TextDecoder().decode(data);
   }
-  // // Save tool results to disk, return id
-  // public async saveArtifact(item: FunctionResultItem): Promise<string> {
-  //     if (!this.artifactsUri) return 'artifact_storage_disabled';
-  //     const artifactID = `artifact_${item.name}_${item.id}_${Date.now()}.txt`;
-  //     const fileUri = vscode.Uri.joinPath(this.artifactsUri, artifactID);
-  //     const data = new TextEncoder().encode(item.result);
-  //     await vscode.workspace.fs.writeFile(fileUri, data);
-  //     return artifactID;
-  // }
-  // public async pruneToolResults(): Promise<void> {    
-  //     if (this.activeToolResults.length === 0) return;
-  //     for (const item of this.activeToolResults) {
-  //         // For calls to fetch artifacts, we should point to the original artifact
-  //         const isRecall = item.name === 'recall';
-  //         const shouldPrune = isRecall || PRUNE_OUTPUT.has(item.name) || item.result.length > 300 || item.error;
-  //         if (!shouldPrune) continue;
-  //         let artifactID: string;
-  //         if (isRecall) artifactID = item.data?.artifactID || 'unknown_artifact';
-  //         else artifactID = await this.saveArtifact(item);
-  //         if (item.error) {
-  //             item.result = `[Tool '${item.name}' failed. Full error stored in artifact: ${artifactID}]`;
-  //         } else {
-  //             item.result = `[Tool '${item.name}' executed successfully. Full output stored in artifact: ${artifactID}]`;
-  //         }
-  //     }
-  //     this.activeToolResults = [];
-  //     this.turnsSinceLastPrune = 0;
-  //     this.runsSinceLastPrune = 0;
-  // }
   async saveArtifactContent(name, id, content) {
     if (!this.artifactsUri) return "artifact_storage_disabled";
     const artifactID = `artifact_${name}_${id}_${Date.now()}.txt`;
@@ -111396,6 +111429,49 @@ ${resultItem.result}
     }
     usage.totalTokens = usage.userTokens + usage.assistantTokens + usage.systemTokens + usage.toolCallTokens + usage.toolResultTokens;
     this.emitter.fire({ type: "updateContextWindowUsage", usage });
+  }
+  async condenseContext(provider, model, key, abortSignal, keepRecentCount = 2) {
+    const targetIndex = keepRecentCount > 0 ? Math.max(this.summarizeIndex, this.history.length - keepRecentCount) : this.history.length;
+    const itemsToSummarize = [
+      ...this.summarizedHistory,
+      ...this.history.slice(this.summarizeIndex, targetIndex)
+    ];
+    const providerInstance = ChatFactory.create(provider, key, "none");
+    const summaryText = await providerInstance.summarizeContext(
+      model,
+      itemsToSummarize,
+      this.currentTurnID,
+      abortSignal
+    );
+    if (abortSignal.aborted) throw new Error("Condensing aborted");
+    this.summarizedHistory = [
+      {
+        type: "message",
+        role: "user",
+        content: `[Previous Conversation Summary]
+${summaryText.trim()}
+
+Please continue fulfilling the request using this context.`,
+        isHidden: true
+      },
+      {
+        type: "message",
+        role: "assistant",
+        content: "Understood. I have incorporated the conversation summary and will continue with the active tasks.",
+        isHidden: true
+      }
+    ];
+    this.history.push({
+      type: "checkpoint",
+      summary: summaryText,
+      provider,
+      model
+    });
+    this.summarizeIndex = targetIndex;
+    this.currentTurnID = void 0;
+    await this.save();
+    this.emitter.fire({ type: "createCheckpoint", summary: summaryText, provider, model });
+    this.estimateCategorizedTokens();
   }
 };
 
@@ -112193,7 +112269,8 @@ var ChatApp = class {
       await this.contextManager.updateRunBoundary();
       await this.contextManager.save();
       this.contextManager.estimateCategorizedTokens();
-      this.post({ type: "agentRunComplete", status: runStatus, text: statusMessage });
+      this.post({ type: "endRun", status: runStatus, text: statusMessage });
+      this.post({ type: "toggleChatControls", disabled: false });
     }
   }
   // ----------------------------- WEBVIEW ROUTING ----------------------------------- //
@@ -112362,10 +112439,27 @@ var ChatApp = class {
           else if (data.run) await this.context.globalState.update("pruneRunInterval", data.run);
           break;
         }
+        case "condenseHistory": {
+          try {
+            const chatProvider = this.context.globalState.get("chatProvider") || "";
+            const chatModel = this.context.globalState.get(`${chatProvider}_chatModel`);
+            if (!chatProvider || !chatModel) throw new Error("Unconfigured model!");
+            const chatAPIKey = await this.apiManager.getChatAPIKey(chatProvider);
+            this.aborter = new AbortController();
+            this.post({ type: "toggleChatControls", disabled: true });
+            await this.contextManager.condenseContext(chatProvider, chatModel, chatAPIKey, this.aborter.signal);
+          } catch (e2) {
+            vscode12.window.showErrorMessage(`Failed to condense history: ${e2}`);
+          } finally {
+            this.post({ type: "toggleChatControls", disabled: false });
+          }
+          break;
+        }
         case "askAgent": {
           if (!data.value) {
             return;
           }
+          this.post({ type: "toggleChatControls", disabled: true });
           this.runAgentTurn(data.provider, data.model, data.effort, data.value);
           break;
         }

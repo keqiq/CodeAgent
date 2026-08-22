@@ -41,7 +41,14 @@ export interface RunSummaryItem {
     turnID?: string;
 }
 
-export type ChatItem = MessageItem | FunctionCallItem | FunctionResultItem | RunSummaryItem
+export interface CheckpointItem {
+    type: 'checkpoint';
+    summary: string;
+    provider: string;
+    model: string;
+}
+
+export type ChatItem = MessageItem | FunctionCallItem | FunctionResultItem | RunSummaryItem | CheckpointItem
 
 export interface ChatResponse {
     items: ChatItem[];
@@ -379,47 +386,6 @@ export class ContextManager {
         return new TextDecoder().decode(data);
     }
 
-    // // Save tool results to disk, return id
-    // public async saveArtifact(item: FunctionResultItem): Promise<string> {
-    //     if (!this.artifactsUri) return 'artifact_storage_disabled';
-
-    //     const artifactID = `artifact_${item.name}_${item.id}_${Date.now()}.txt`;
-    //     const fileUri = vscode.Uri.joinPath(this.artifactsUri, artifactID);
-
-    //     const data = new TextEncoder().encode(item.result);
-    //     await vscode.workspace.fs.writeFile(fileUri, data);
-
-    //     return artifactID;
-    // }
-
-    // public async pruneToolResults(): Promise<void> {    
-    //     if (this.activeToolResults.length === 0) return;
-
-    //     for (const item of this.activeToolResults) {
-
-    //         // For calls to fetch artifacts, we should point to the original artifact
-    //         const isRecall = item.name === 'recall';
-
-    //         const shouldPrune = isRecall || PRUNE_OUTPUT.has(item.name) || item.result.length > 300 || item.error;
-
-    //         if (!shouldPrune) continue;
-
-    //         let artifactID: string;
-    //         if (isRecall) artifactID = item.data?.artifactID || 'unknown_artifact';
-    //         else artifactID = await this.saveArtifact(item);
-
-    //         if (item.error) {
-    //             item.result = `[Tool '${item.name}' failed. Full error stored in artifact: ${artifactID}]`;
-    //         } else {
-    //             item.result = `[Tool '${item.name}' executed successfully. Full output stored in artifact: ${artifactID}]`;
-    //         }
-    //     }
-
-    //     this.activeToolResults = [];
-    //     this.turnsSinceLastPrune = 0;
-    //     this.runsSinceLastPrune = 0;
-    // }
-
     public async saveArtifactContent(name: string, id: string, content: string): Promise<string> {
         if (!this.artifactsUri) return 'artifact_storage_disabled';
 
@@ -595,7 +561,7 @@ export class ContextManager {
                     break;
 
                 case 'function_result':
-                    textToEncode = item.name + item.result;
+                    textToEncode = item.name + item.result; 
                     usage.toolResultTokens += this.tokenEncoder.encode(textToEncode).length + baseOverhead;
                     break;
 
@@ -607,5 +573,68 @@ export class ContextManager {
         usage.totalTokens = usage.userTokens + usage.assistantTokens + usage.systemTokens + usage.toolCallTokens + usage.toolResultTokens;
 
         this.emitter.fire({ type: 'updateContextWindowUsage', usage: usage });
+    }
+
+    public async condenseContext(provider: string, model: string, key: string, abortSignal: AbortSignal, keepRecentCount: number = 2): Promise<void> {
+
+        const targetIndex = keepRecentCount > 0 ?
+            Math.max(this.summarizeIndex, this.history.length - keepRecentCount) :
+            this.history.length;
+
+        const itemsToSummarize: ChatItem[] = [
+            ...this.summarizedHistory,
+            ...this.history.slice(this.summarizeIndex, targetIndex)
+        ];
+
+        const providerInstance = ChatFactory.create(provider, key, 'none');
+
+        const summaryText = await providerInstance.summarizeContext(
+            model,
+            itemsToSummarize,
+            this.currentTurnID,
+            abortSignal
+        );
+
+        if (abortSignal.aborted) throw new Error('Condensing aborted');
+
+        // [ Active LLM Context ] fron getLLMContext
+        // ├── 1. Summarized History (Structured summary + acknowledgement pair)
+        // ├── 2. Verbatim Recent Turns (Pre-compaction buffer, e.g. last 1–2 turns)
+        // └── 3. New Turns After Summary (Subsequent prompts, tool calls, and results)
+        this.summarizedHistory = [
+            {
+                type: 'message',
+                role: 'user',
+                content: `[Previous Conversation Summary]\n${summaryText.trim()}\n\nPlease continue fulfilling the request using this context.`,
+                isHidden: true
+            },
+            {
+                type: 'message',
+                role: 'assistant',
+                content: 'Understood. I have incorporated the conversation summary and will continue with the active tasks.',
+                isHidden: true
+            }
+        ];
+
+
+        // Show the summary in the frontend,
+        // This will restore it on reload, 
+        // Checkpoints are filtered out before reaching the provider as it's already included in summarizedHistory
+        this.history.push({
+            type: 'checkpoint',
+            summary: summaryText,
+            provider: provider,
+            model: model
+        });
+
+        this.summarizeIndex = targetIndex;
+
+        this.currentTurnID = undefined;
+
+        await this.save();
+
+        this.emitter.fire({ type: 'createCheckpoint', summary: summaryText, provider: provider, model: model });
+        this.estimateCategorizedTokens();
+
     }
 }

@@ -223,4 +223,29 @@ export class GeminiChatProvider extends ChatProvider {
     async abortStream(): Promise<void> {
         if (this.activeInteractionId) await this.client.interactions.cancel(this.activeInteractionId);
     }
+
+    async summarizeContext(
+        model: string, 
+        history: ChatItem[], 
+        previousTurnID: string, 
+        abortSignal?: AbortSignal
+    ): Promise<string> {
+
+        const formatted = this.formatMessages(history);
+        formatted.push({
+            type: 'user_input',
+            content: [{ type: 'text', text: GeminiChatProvider.compactionPrompt }]
+        });
+
+        const response = await this.client.interactions.create({
+            model: model,
+            input: formatted,
+            system_instruction: GeminiChatProvider.systemPrompt,
+            stream: false,
+            store: false,
+            ...(previousTurnID && { previous_interaction_id: previousTurnID })
+        }, { signal: abortSignal });
+
+        return (response.output_text || '').trim();
+    }
 }

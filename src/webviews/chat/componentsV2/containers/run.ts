@@ -11,6 +11,7 @@ export class RunContainer {
     private tokenTab: HTMLElement;
     private speedTab: HTMLElement;
     private statusTab: HTMLElement;
+    private summaryTab: HTMLElement | null = null;
 
     constructor(private masterContainer: HTMLElement, provider?: string, modelName?: string) {
         // All responses, tool calls, shell commands are contained inside the run container
@@ -146,5 +147,21 @@ export class RunContainer {
         } else {
             this.statusTab.style.display = 'none';
         }
+    }
+
+    public setSummary(): void {
+        if (!this.summaryTab) {
+            this.summaryTab = document.createElement('div');
+            this.summaryTab.classList.add('run-tab', 'summary-tab');
+            this.summaryTab.innerHTML = `
+                <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor">
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5L14 4.5zm-3 0A1.5 1.5 0 0 1 9.5 3V1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V4.5h-2zM4 6.5a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7a.5.5 0 0 1-.5-.5zm0 3a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7a.5.5 0 0 1-.5-.5zm0 3a.5.5 0 0 1 .5-.5h4a.5.5 0 0 1 0 1h-4a.5.5 0 0 1-.5-.5z"/>
+                </svg>
+                <span class="tab-text">Summary</span>
+            `;
+            
+            this.tabsContainer.appendChild(this.summaryTab);
+        }
+        this.summaryTab.style.display = 'inline-flex';
     }
 }

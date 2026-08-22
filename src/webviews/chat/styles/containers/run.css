@@ -23,7 +23,7 @@
 
 /* Tab Strip Wrapper */
 .run-tabs {
-    display: inline-flex;
+    display: flex;
     align-items: center;
     gap: 4px;
     margin-top: -1px; /* Overlaps divider slightly for an integrated tab feel */
@@ -157,4 +157,20 @@
 
 .run-tab.model-tab .provider-icon svg {
     color: var(--vscode-textLink-foreground);
+}
+
+.run-tab.summary-tab {
+    margin-left: auto; /* Anchors the tab to the far right */
+    display: inline-flex;
+    font-family: var(--vscode-editor-font-family);
+    color: var(--vscode-charts-purple, #b180d7);
+    background-color: color-mix(in srgb, var(--vscode-charts-purple, #b180d7) 8%, var(--vscode-sideBar-background));
+    border-color: color-mix(in srgb, var(--vscode-charts-purple, #b180d7) 25%, transparent);
+    border-top-color: transparent;
+    letter-spacing: 0.2px;
+}
+
+.run-tab.summary-tab svg {
+    color: var(--vscode-charts-purple, #b180d7);
+    opacity: 0.9;
 }

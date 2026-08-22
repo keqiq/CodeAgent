@@ -250,6 +250,28 @@ export class OpenAIChatProvider extends ChatProvider {
     async abortStream(): Promise<void> {
         return;
     }
+
+    async summarizeContext(
+        model: string, 
+        history: ChatItem[],
+        previousTurnID: string | undefined, 
+        abortSignal?: AbortSignal
+    ): Promise<string> {
+
+        const formatted = [
+            ...this.formatMessages(history, true),
+            { role: 'user', content: OpenAIChatProvider.compactionPrompt }
+        ];
+
+        const response = await this.client.responses.create({
+            model: model,
+            input: formatted,
+            stream: false,
+            ...(previousTurnID && { previous_response_id: previousTurnID })
+        }, { signal: abortSignal });
+
+        return (response.output_text || '').trim();
+    }
 }
 
 // For other providers using OpenAI SDK
@@ -444,5 +466,25 @@ export abstract class OpenAICompatibleProvider extends ChatProvider {
 
     async abortStream(): Promise<void> {
         return;
+    }
+
+    async summarizeContext(
+        model: string, 
+        history: ChatItem[],
+        previousTurnID: string | undefined,
+        abortSignal?: AbortSignal
+    ): Promise<string> {
+        const formatted = [
+            ...this.formatMessages(history),
+            { role: 'user', content: OpenAICompatibleProvider.compactionPrompt }
+        ];
+
+        const response = await this.client.chat.completions.create({
+            model: model,
+            messages: formatted,
+            stream: false
+        }, { signal: abortSignal });
+
+        return (response.choices[0]?.message?.content || '').trim();
     }
 }

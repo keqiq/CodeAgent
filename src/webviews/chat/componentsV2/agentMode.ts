@@ -32,6 +32,11 @@ export class AgentMode {
         });
     }
 
+    public setDisabled(disabled: boolean): void {
+        this.modeToggleBtn.disabled = disabled;
+        this.agentConfigBtn.disabled = disabled;
+    }
+
     public setAgentMode(mode: 'auto' | 'manual'): void {
         this.isAutoMode = mode === 'auto';
         this.updateModeUI();

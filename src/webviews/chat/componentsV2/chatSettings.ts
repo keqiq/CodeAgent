@@ -230,6 +230,12 @@ export class ChatSettings {
         });
     }
 
+
+    public setDisabled(disabled: boolean): void {
+        this.toggleBtn.disabled = disabled;
+        if (disabled) this.close();
+    }
+
     public close(): void {
         this.dropdown.classList.add('hidden');
         this.keyContainer.classList.add('hidden');
@@ -337,13 +343,6 @@ export class ChatSettings {
         else {
             this.clearChatBtn.classList.add('disabled');
             this.clearChatConfirmBtn.classList.add('hidden');
-        }
-    }
-
-    public setDisabled(disabled: boolean): void {
-        this.toggleBtn.disabled = disabled;
-        if (disabled) {
-            this.close();
         }
     }
 

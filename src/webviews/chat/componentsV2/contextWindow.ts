@@ -3,7 +3,7 @@ import type { TokenCategoryUsage, TokenUsage } from "../../../managers/contextMa
 
 export class ContextWindow {
     private contextContainer: HTMLElement;
-    private contextToggleBtn: HTMLElement;
+    private contextToggleBtn: HTMLButtonElement;
     private contextFillBar: HTMLElement;
     private contextTextLabel: HTMLElement;
     private contextDropdown: HTMLElement;
@@ -32,9 +32,11 @@ export class ContextWindow {
     private turnInterval: number = 1;
     private runInterval: number = 1;
 
+    private condenseHistory: HTMLElement;
+
     constructor(private vscodeAPI: WebviewApi) {
         this.contextContainer = document.getElementById('contextWindowContainer') as HTMLElement;
-        this.contextToggleBtn = document.getElementById('contextWindowToggleBtn') as HTMLElement;
+        this.contextToggleBtn = document.getElementById('contextWindowToggleBtn') as HTMLButtonElement;
         this.contextFillBar = document.getElementById('contextBarFill') as HTMLElement;
         this.contextTextLabel = document.getElementById('contextBarText') as HTMLElement;
         this.contextDropdown = document.getElementById('contextWindowDropdown') as HTMLElement;
@@ -54,6 +56,8 @@ export class ContextWindow {
         this.pruneIntervalInput = document.getElementById('pruneIntervalInput') as HTMLInputElement;
         this.pruneIntervalMinus = document.getElementById('pruneIntervalMinus') as HTMLElement;
         this.pruneIntervalPlus = document.getElementById('pruneIntervalPlus') as HTMLElement;
+
+        this.condenseHistory = document.getElementById('menuCondenseHistoryBtn') as HTMLElement;
 
         this.initListeners();
     }
@@ -131,6 +135,15 @@ export class ContextWindow {
             if (isNaN(val) || val < 1) val = 1;
             this.setIntervalValue(val);
         });
+
+        this.condenseHistory.addEventListener('click', () => {
+            this.vscodeAPI.postMessage({ type: 'condenseHistory' });
+        });
+    }
+
+    public setDisabled(disabled: boolean): void {
+        this.contextToggleBtn.disabled = disabled;
+        if (disabled) this.close();
     }
 
     public close(): void {
