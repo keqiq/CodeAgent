@@ -90,7 +90,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 break;
 
             case 'startRun':
-                chatContainer.startRun(msg.provider, msg.model);
+                chatContainer.startRun(msg);
                 break;
 
             case 'receiveMessage':

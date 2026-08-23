@@ -220,7 +220,7 @@ export class GeminiChatProvider extends ChatProvider {
         return { items: [], tokenUsage: tokenUsage };
     }
 
-    async abortStream(): Promise<void> {
+    async abortGeneration(): Promise<void> {
         if (this.activeInteractionId) await this.client.interactions.cancel(this.activeInteractionId);
     }
 
@@ -229,23 +229,42 @@ export class GeminiChatProvider extends ChatProvider {
         history: ChatItem[], 
         previousTurnID: string, 
         abortSignal?: AbortSignal
-    ): Promise<string> {
-
-        const formatted = this.formatMessages(history);
-        formatted.push({
-            type: 'user_input',
-            content: [{ type: 'text', text: GeminiChatProvider.compactionPrompt }]
-        });
+    ): Promise<ChatResponse> {
 
         const response = await this.client.interactions.create({
             model: model,
-            input: formatted,
+            input: this.formatMessages(history),
             system_instruction: GeminiChatProvider.systemPrompt,
             stream: false,
-            store: false,
+            store: previousTurnID !== undefined,
+            tools: GeminiChatProvider.compactionTools,
             ...(previousTurnID && { previous_interaction_id: previousTurnID })
         }, { signal: abortSignal });
 
-        return (response.output_text || '').trim();
+        let fullText = response.output_text || '';
+        const currentCalls = new Map<any, any>();
+
+        if (response.steps && Array.isArray(response.steps)) {
+            for (let i = 0; i < response.steps.length; i++) {
+                const step = response.steps[i];
+                if (step.type === 'function_call') {
+                    currentCalls.set(step.id || i, {
+                        id: step.id,
+                        name: step.name,
+                        arguments: step.arguments
+                    });
+                }
+            }
+        }
+
+        const usage = response.usage;
+        const tokenUsage: TokenUsage = {
+            totalTokens: usage?.total_tokens,
+            inputTokens: usage?.total_input_tokens,
+            outputTokens: usage?.total_output_tokens,
+            thoughtTokens: usage?.total_thought_tokens
+        };
+
+        return ChatProvider.formatResponse(fullText, currentCalls, tokenUsage, response.id);
     }
 }

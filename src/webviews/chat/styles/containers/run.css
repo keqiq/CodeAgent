@@ -110,7 +110,7 @@
 }
 
 @keyframes livePulse {
-    0%, 100% { opacity: 0.8; }
+    0%, 100% { opacity: 0.7; }
     50% { opacity: 1; }
 }
 
@@ -159,7 +159,7 @@
     color: var(--vscode-textLink-foreground);
 }
 
-.run-tab.summary-tab {
+.run-tab.checkpoint-tab {
     margin-left: auto; /* Anchors the tab to the far right */
     display: inline-flex;
     font-family: var(--vscode-editor-font-family);
@@ -170,7 +170,7 @@
     letter-spacing: 0.2px;
 }
 
-.run-tab.summary-tab svg {
+.run-tab.checkpoint-tab svg {
     color: var(--vscode-charts-purple, #b180d7);
     opacity: 0.9;
 }

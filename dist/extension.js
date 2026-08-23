@@ -67734,6 +67734,9 @@ var requiredSchemas = [
   ...artifactSchema,
   ...mcpSchemas
 ];
+var compactionSchemas = [
+  ...artifactSchema
+];
 var PRUNE_OUTPUT = /* @__PURE__ */ new Set(["read", "glob", "grep", "find", "refs", "run", "web", "url"]);
 var PRUNE_INPUT = {
   write: ["content"],
@@ -67795,10 +67798,24 @@ var ChatProvider = class _ChatProvider {
                       Proactively use your semantic search tool 'find' tool to search the workspace.
                       Tools like 'glob' and 'grep' should be used as a fallback if semantic search fails to return relevant results.
                       Find the relevant code, read it, and edit it to add features and fix issues.`;
-  static compactionPrompt = `placeholder`;
+  static compactionPrompt = `You are performing conversation history compaction.
+                        Review the conversation history above. Notice that past large tool results were pruned into artifacts.
+
+                        Instructions:
+                        1. If you need specific missing details (e.g. key code diffs, compiler errors, or configurations) to write an accurate summary, call the 'recall' tool with the artifactID.
+                        2. When you have all necessary context, your FINAL response MUST be a comprehensive text summary (with NO tool calls).
+
+                        Summary Structure:
+                        - **Primary Goal & Requirements**: What the user requested.
+                        - **Key Actions & File Changes**: Exact file paths inspected, created, or modified.
+                        - **Errors & Discoveries**: Issues encountered and how they were resolved.
+                        - **Active State & Next Steps**: What remains pending or what the agent should do next.
+
+                        Provide only the summary as your final response once all needed artifacts are inspected.`;
   static stateManagementSupport = false;
   static serverWebSearchSupport = false;
   static baseTools = [...requiredSchemas];
+  static compactionTools = [...compactionSchemas];
   tools = [];
   getTools() {
     return this.tools;
@@ -67852,6 +67869,7 @@ var ClaudeChatProvider = class _ClaudeChatProvider extends ChatProvider {
   static stateManagementSupport = true;
   static serverWebSearchSupport = true;
   static baseTools = _ClaudeChatProvider.parseTool(requiredSchemas);
+  static compactionTools = _ClaudeChatProvider.parseTool(compactionSchemas);
   client;
   // private static claudeTools: Anthropic.Tool[] = ClaudeChatProvider.parseTool(allToolSchemas);
   featuredModels = [
@@ -68041,28 +68059,39 @@ var ClaudeChatProvider = class _ClaudeChatProvider extends ChatProvider {
     }
     return { items: [], tokenUsage };
   }
-  async abortStream() {
+  async abortGeneration() {
     return;
   }
   async summarizeContext(model, history, previousTurnID, abortSignal) {
-    const messages = [
-      ...this.formatMessages(history),
-      { role: "user", content: _ClaudeChatProvider.compactionPrompt }
-    ];
     const response = await this.client.messages.create({
       model,
       system: _ClaudeChatProvider.systemPrompt,
-      messages,
-      max_tokens: 4096,
+      messages: this.formatMessages(history),
+      max_tokens: 8192,
+      tools: _ClaudeChatProvider.compactionTools,
       thinking: { type: "adaptive" }
     }, { signal: abortSignal });
-    let summary = "";
-    for (const block of response.content) {
+    let fullText = "";
+    const currentCalls = /* @__PURE__ */ new Map();
+    for (let i2 = 0; i2 < response.content.length; i2++) {
+      const block = response.content[i2];
       if (block.type === "text") {
-        summary += block.text;
+        fullText += block.text;
+      } else if (block.type === "tool_use") {
+        currentCalls.set(i2, {
+          id: block.id,
+          name: block.name,
+          arguments: block.input
+        });
       }
     }
-    return summary.trim();
+    const tokenUsage = {
+      totalTokens: (response.usage?.input_tokens || 0) + (response.usage?.output_tokens || 0),
+      inputTokens: response.usage?.input_tokens || 0,
+      outputTokens: response.usage?.output_tokens || 0,
+      thoughtTokens: response.usage?.output_tokens_details?.thinking_tokens || 0
+    };
+    return ChatProvider.formatResponse(fullText, currentCalls, tokenUsage);
   }
 };
 
@@ -77942,26 +77971,44 @@ var OpenAIChatProvider = class _OpenAIChatProvider extends ChatProvider {
     }
     return { items: [], tokenUsage };
   }
-  async abortStream() {
+  async abortGeneration() {
     return;
   }
   async summarizeContext(model, history, previousTurnID, abortSignal) {
-    const formatted = [
-      ...this.formatMessages(history, true),
-      { role: "user", content: _OpenAIChatProvider.compactionPrompt }
-    ];
     const response = await this.client.responses.create({
       model,
-      input: formatted,
+      input: this.formatMessages(history, previousTurnID === void 0),
       stream: false,
+      tools: _OpenAIChatProvider.compactionTools,
       ...previousTurnID && { previous_response_id: previousTurnID }
     }, { signal: abortSignal });
-    return (response.output_text || "").trim();
+    let fullText = response.output_text || "";
+    const currentCalls = /* @__PURE__ */ new Map();
+    if (response.output && Array.isArray(response.output)) {
+      for (const item of response.output) {
+        if (item.type === "function_call") {
+          currentCalls.set(item.id, {
+            id: item.call_id,
+            name: item.name,
+            arguments: item.arguments
+          });
+        }
+      }
+    }
+    const usage = response.usage;
+    const tokenUsage = {
+      totalTokens: usage?.total_tokens,
+      inputTokens: usage?.input_tokens,
+      outputTokens: usage ? usage.output_tokens - (usage.output_tokens_details?.reasoning_tokens || 0) : void 0,
+      thoughtTokens: usage?.output_tokens_details?.reasoning_tokens || 0
+    };
+    return ChatProvider.formatResponse(fullText, currentCalls, tokenUsage, response.id);
   }
 };
 var OpenAICompatibleProvider = class _OpenAICompatibleProvider extends ChatProvider {
   client;
   static baseTools = _OpenAICompatibleProvider.parseTools(requiredSchemas);
+  static compactionTools = _OpenAICompatibleProvider.parseTools(compactionSchemas);
   constructor(apiKey, baseURL, webSearchMode) {
     super();
     this.client = new OpenAI({
@@ -78097,7 +78144,7 @@ var OpenAICompatibleProvider = class _OpenAICompatibleProvider extends ChatProvi
     }
     return { items: [], tokenUsage };
   }
-  async abortStream() {
+  async abortGeneration() {
     return;
   }
   async summarizeContext(model, history, previousTurnID, abortSignal) {
@@ -78107,10 +78154,34 @@ var OpenAICompatibleProvider = class _OpenAICompatibleProvider extends ChatProvi
     ];
     const response = await this.client.chat.completions.create({
       model,
-      messages: formatted,
+      messages: this.formatMessages(history),
+      tools: _OpenAICompatibleProvider.compactionTools,
       stream: false
     }, { signal: abortSignal });
-    return (response.choices[0]?.message?.content || "").trim();
+    const choice = response.choices[0];
+    const fullText = choice?.message?.content || "";
+    const reasoningContent = choice?.message?.reasoning_content;
+    const currentCalls = /* @__PURE__ */ new Map();
+    if (choice?.message?.tool_calls) {
+      for (let i2 = 0; i2 < choice.message.tool_calls.length; i2++) {
+        const toolCall = choice.message.tool_calls[i2];
+        if (toolCall.type === "function") {
+          currentCalls.set(i2, {
+            id: toolCall.id,
+            name: toolCall.function.name,
+            arguments: toolCall.function.arguments
+          });
+        }
+      }
+    }
+    const usage = response.usage;
+    const tokenUsage = {
+      totalTokens: usage?.total_tokens,
+      inputTokens: usage?.prompt_tokens,
+      outputTokens: usage ? usage.completion_tokens - (usage.completion_tokens_details?.reasoning_tokens || 0) : void 0,
+      thoughtTokens: usage?.completion_tokens_details?.reasoning_tokens || 0
+    };
+    return ChatProvider.formatResponse(fullText, currentCalls, tokenUsage, void 0, reasoningContent);
   }
 };
 
@@ -96876,24 +96947,41 @@ var GeminiChatProvider = class _GeminiChatProvider extends ChatProvider {
     }
     return { items: [], tokenUsage };
   }
-  async abortStream() {
+  async abortGeneration() {
     if (this.activeInteractionId) await this.client.interactions.cancel(this.activeInteractionId);
   }
   async summarizeContext(model, history, previousTurnID, abortSignal) {
-    const formatted = this.formatMessages(history);
-    formatted.push({
-      type: "user_input",
-      content: [{ type: "text", text: _GeminiChatProvider.compactionPrompt }]
-    });
     const response = await this.client.interactions.create({
       model,
-      input: formatted,
+      input: this.formatMessages(history),
       system_instruction: _GeminiChatProvider.systemPrompt,
       stream: false,
-      store: false,
+      store: previousTurnID !== void 0,
+      tools: _GeminiChatProvider.compactionTools,
       ...previousTurnID && { previous_interaction_id: previousTurnID }
     }, { signal: abortSignal });
-    return (response.output_text || "").trim();
+    let fullText = response.output_text || "";
+    const currentCalls = /* @__PURE__ */ new Map();
+    if (response.steps && Array.isArray(response.steps)) {
+      for (let i2 = 0; i2 < response.steps.length; i2++) {
+        const step = response.steps[i2];
+        if (step.type === "function_call") {
+          currentCalls.set(step.id || i2, {
+            id: step.id,
+            name: step.name,
+            arguments: step.arguments
+          });
+        }
+      }
+    }
+    const usage = response.usage;
+    const tokenUsage = {
+      totalTokens: usage?.total_tokens,
+      inputTokens: usage?.total_input_tokens,
+      outputTokens: usage?.total_output_tokens,
+      thoughtTokens: usage?.total_thought_tokens
+    };
+    return ChatProvider.formatResponse(fullText, currentCalls, tokenUsage, response.id);
   }
 };
 
@@ -97199,6 +97287,10 @@ var ChatFactory = class {
   static getSystemPrompt(providerName) {
     const ProviderClass = this.providers[providerName];
     return ProviderClass.systemPrompt;
+  }
+  static getCompactionPrompt(providerName) {
+    const ProviderClass = this.providers[providerName];
+    return ProviderClass.compactionPrompt;
   }
   static getToolSchemas(providerName) {
     const ProviderClass = this.providers[providerName];
@@ -111393,6 +111485,7 @@ ${resultItem.result}
   // This updates the pie chart in the context window menu, it is an estimate for the token usage for different categories of messages
   // Whereas updateTokenUsage is an accurate provider issued token usage counter for input and output tokens
   estimateCategorizedTokens() {
+    if (!this.currentProvider) return;
     const usage = {
       userTokens: 0,
       assistantTokens: 0,
@@ -111430,20 +111523,18 @@ ${resultItem.result}
     usage.totalTokens = usage.userTokens + usage.assistantTokens + usage.systemTokens + usage.toolCallTokens + usage.toolResultTokens;
     this.emitter.fire({ type: "updateContextWindowUsage", usage });
   }
-  async condenseContext(provider, model, key, abortSignal, keepRecentCount = 2) {
+  async compactContext(compactionStartIndex, keepRecentCount = 0) {
+    let summaryText = "";
+    for (let i2 = this.history.length - 1; i2 >= compactionStartIndex; i2--) {
+      const item = this.history[i2];
+      if (item.type === "message" && item.role === "assistant" && item.content) {
+        summaryText = item.content;
+        break;
+      }
+    }
+    if (!summaryText.trim()) throw new Error("No final summary message found from compaction.");
+    this.compactionCleanup(compactionStartIndex);
     const targetIndex = keepRecentCount > 0 ? Math.max(this.summarizeIndex, this.history.length - keepRecentCount) : this.history.length;
-    const itemsToSummarize = [
-      ...this.summarizedHistory,
-      ...this.history.slice(this.summarizeIndex, targetIndex)
-    ];
-    const providerInstance = ChatFactory.create(provider, key, "none");
-    const summaryText = await providerInstance.summarizeContext(
-      model,
-      itemsToSummarize,
-      this.currentTurnID,
-      abortSignal
-    );
-    if (abortSignal.aborted) throw new Error("Condensing aborted");
     this.summarizedHistory = [
       {
         type: "message",
@@ -111463,15 +111554,22 @@ Please continue fulfilling the request using this context.`,
     ];
     this.history.push({
       type: "checkpoint",
-      summary: summaryText,
-      provider,
-      model
+      content: summaryText
     });
     this.summarizeIndex = targetIndex;
     this.currentTurnID = void 0;
-    await this.save();
-    this.emitter.fire({ type: "createCheckpoint", summary: summaryText, provider, model });
-    this.estimateCategorizedTokens();
+    this.currentTurnToolResults = [];
+    this.emitter.fire({ type: "createCheckpoint", content: summaryText });
+  }
+  // Remove compaction scratchpad items (prompt, recall calls, recall results, assistant messages)
+  // Clear tool references from compaction
+  async compactionCleanup(compactionStartIndex) {
+    this.history.splice(compactionStartIndex);
+    this.activeToolCalls.clear();
+    this.activeToolResults = [];
+    this.currentTurnToolResults = [];
+    this.turnsSinceLastPrune = 0;
+    this.runsSinceLastPrune = 0;
   }
 };
 
@@ -112169,19 +112267,19 @@ var ChatApp = class {
   indexer;
   aborter = null;
   async runAgentTurn(provider, model, effort, userMessage) {
-    this.post({ type: "startRun", provider, model });
     await this.worktreeManager.setup();
     this.aborter = new AbortController();
-    let runStatus = "ok";
-    let statusMessage = void 0;
-    let providerInstance = void 0;
     const serverStateManagment = this.context.globalState.get("serverStateManagement") ?? true;
     const enabledWebSearch = this.context.globalState.get("webSearchEnabled") ?? false;
     const savedWebMode = this.context.globalState.get("webSearchMode") ?? "tavily";
+    const webSearchMode = enabledWebSearch ? savedWebMode : "none";
+    const apiKey = await this.apiManager.getChatAPIKey(provider);
+    const providerInstance = ChatFactory.create(provider, apiKey, webSearchMode);
+    let runStatus = "ok";
+    let statusMessage = void 0;
     try {
-      const apiKey = await this.apiManager.getChatAPIKey(provider);
-      const webSearchMode = enabledWebSearch ? savedWebMode : "none";
-      providerInstance = ChatFactory.create(provider, apiKey, webSearchMode);
+      this.post({ type: "toggleChatControls", disabled: true });
+      this.post({ type: "startRun", provider, model });
       this.contextManager.prepareRun(provider);
       this.contextManager.addUserMessage(userMessage);
       let keepGoing = true;
@@ -112254,7 +112352,7 @@ var ChatApp = class {
     } catch (e2) {
       this.contextManager.rollback();
       if (e2.name === "AbortError" || e2.message?.toLowerCase().includes("abort")) {
-        if (providerInstance) await providerInstance.abortStream();
+        if (providerInstance) await providerInstance.abortGeneration();
         runStatus = "aborted";
         statusMessage = "Execution halted manually";
         this.contextManager.addSystemMessage("The response was canceled by the user.");
@@ -112269,6 +112367,62 @@ var ChatApp = class {
       await this.contextManager.updateRunBoundary();
       await this.contextManager.save();
       this.contextManager.estimateCategorizedTokens();
+      this.post({ type: "endRun", status: runStatus, text: statusMessage });
+      this.post({ type: "toggleChatControls", disabled: false });
+    }
+  }
+  async runCompaction() {
+    this.aborter = new AbortController();
+    const chatProvider = this.context.globalState.get("chatProvider") || "";
+    const chatModel = this.context.globalState.get(`${chatProvider}_chatModel`);
+    if (!chatProvider || !chatModel) throw new Error("Model not configured!");
+    const chatAPIKey = await this.apiManager.getChatAPIKey(chatProvider);
+    const providerInstance = ChatFactory.create(chatProvider, chatAPIKey, "none");
+    const compactionStartIndex = this.contextManager.getHistory().length;
+    let runStatus = "ok";
+    let statusMessage = void 0;
+    try {
+      this.post({ type: "toggleChatControls", disabled: true });
+      this.post({ type: "startRun", provider: chatProvider, model: chatModel, isSummary: true });
+      this.contextManager.prepareRun(chatProvider);
+      this.contextManager.addUserMessage(ChatFactory.getCompactionPrompt(chatProvider));
+      let keepGoing = true;
+      while (keepGoing) {
+        if (this.aborter.signal.aborted) throw new Error("AbortError");
+        const response = await providerInstance.summarizeContext(
+          chatModel,
+          this.contextManager.getLLMContext(),
+          this.contextManager.getTurnID(),
+          this.aborter.signal
+        );
+        if (response.tokenUsage) {
+          this.contextManager.recordTokenUsage(response.tokenUsage);
+          this.contextManager.updateTokenUsage();
+        }
+        const currentTurnID = response.turnID;
+        this.contextManager.setTurnID(currentTurnID);
+        const functionCalls = this.contextManager.processResponseItems(response.items);
+        const summary = await this.toolManager.executeTools(functionCalls, this.aborter.signal);
+        keepGoing = summary.shouldContinue;
+      }
+      this.toolManager.finalizeRun();
+      await this.contextManager.compactContext(compactionStartIndex);
+    } catch (e2) {
+      this.contextManager.rollback();
+      this.contextManager.compactionCleanup(compactionStartIndex);
+      if (e2.name === "AbortError" || e2.message?.toLowerCase().includes("abort")) {
+        if (providerInstance) await providerInstance.abortGeneration();
+        runStatus = "aborted";
+        statusMessage = "Compaction Halted";
+      } else {
+        runStatus = "error";
+        statusMessage = `Error: ${e2.message || String(e2)}`;
+        console.log(`Error compacting context: ${formatError(e2)}`);
+      }
+    } finally {
+      this.aborter = null;
+      this.contextManager.addRunSummary(chatProvider, chatModel, runStatus, statusMessage);
+      await this.contextManager.save();
       this.post({ type: "endRun", status: runStatus, text: statusMessage });
       this.post({ type: "toggleChatControls", disabled: false });
     }
@@ -112439,28 +112593,23 @@ var ChatApp = class {
           else if (data.run) await this.context.globalState.update("pruneRunInterval", data.run);
           break;
         }
-        case "condenseHistory": {
+        case "compactHistory": {
           try {
-            const chatProvider = this.context.globalState.get("chatProvider") || "";
-            const chatModel = this.context.globalState.get(`${chatProvider}_chatModel`);
-            if (!chatProvider || !chatModel) throw new Error("Unconfigured model!");
-            const chatAPIKey = await this.apiManager.getChatAPIKey(chatProvider);
-            this.aborter = new AbortController();
-            this.post({ type: "toggleChatControls", disabled: true });
-            await this.contextManager.condenseContext(chatProvider, chatModel, chatAPIKey, this.aborter.signal);
+            await this.runCompaction();
           } catch (e2) {
-            vscode12.window.showErrorMessage(`Failed to condense history: ${e2}`);
+            vscode12.window.showErrorMessage(`Failed to compact history: ${e2}`);
           } finally {
-            this.post({ type: "toggleChatControls", disabled: false });
+            this.contextManager.estimateCategorizedTokens();
           }
           break;
         }
         case "askAgent": {
-          if (!data.value) {
-            return;
+          try {
+            if (!data.value) throw new Error("Empty prompt!");
+            this.runAgentTurn(data.provider, data.model, data.effort, data.value);
+          } catch (e2) {
+            vscode12.window.showErrorMessage(`Failed to run agent turn: ${e2}`);
           }
-          this.post({ type: "toggleChatControls", disabled: true });
-          this.runAgentTurn(data.provider, data.model, data.effort, data.value);
           break;
         }
         // Cancel ongoing response

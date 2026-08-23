@@ -1,6 +1,6 @@
 import OpenAI from 'openai';
 import { ChatProvider, ModelInfo, StreamYield, WebSearchMode } from './chatProvider';
-import { requiredSchemas, ToolSchema, webSchema } from '../../tools/toolIndex';
+import { compactionSchemas, requiredSchemas, ToolSchema, webSchema } from '../../tools/toolIndex';
 import { ChatItem, ChatResponse, TokenUsage } from '../../managers/contextManager';
 
 export class OpenAIChatProvider extends ChatProvider {
@@ -247,7 +247,7 @@ export class OpenAIChatProvider extends ChatProvider {
         return { items: [], tokenUsage };
     }
 
-    async abortStream(): Promise<void> {
+    async abortGeneration(): Promise<void> {
         return;
     }
 
@@ -256,21 +256,40 @@ export class OpenAIChatProvider extends ChatProvider {
         history: ChatItem[],
         previousTurnID: string | undefined, 
         abortSignal?: AbortSignal
-    ): Promise<string> {
-
-        const formatted = [
-            ...this.formatMessages(history, true),
-            { role: 'user', content: OpenAIChatProvider.compactionPrompt }
-        ];
+    ): Promise<ChatResponse> {
 
         const response = await this.client.responses.create({
             model: model,
-            input: formatted,
+            input: this.formatMessages(history, previousTurnID === undefined),
             stream: false,
+            tools: OpenAIChatProvider.compactionTools,
             ...(previousTurnID && { previous_response_id: previousTurnID })
         }, { signal: abortSignal });
 
-        return (response.output_text || '').trim();
+        let fullText = response.output_text || '';
+        const currentCalls = new Map<any, any>();
+
+        if (response.output && Array.isArray(response.output)) {
+            for (const item of response.output) {
+                if (item.type === 'function_call') {
+                    currentCalls.set(item.id, {
+                        id: item.call_id,
+                        name: item.name,
+                        arguments: item.arguments
+                    });
+                }
+            }
+        }
+
+        const usage = response.usage;
+        const tokenUsage: TokenUsage = {
+            totalTokens: usage?.total_tokens,
+            inputTokens: usage?.input_tokens,
+            outputTokens: usage ? (usage.output_tokens - (usage.output_tokens_details?.reasoning_tokens || 0)) : undefined,
+            thoughtTokens: usage?.output_tokens_details?.reasoning_tokens || 0
+        };
+
+        return ChatProvider.formatResponse(fullText, currentCalls, tokenUsage, response.id);
     }
 }
 
@@ -278,6 +297,7 @@ export class OpenAIChatProvider extends ChatProvider {
 export abstract class OpenAICompatibleProvider extends ChatProvider {
     protected client: OpenAI;
     public static baseTools: any[] = OpenAICompatibleProvider.parseTools(requiredSchemas);
+    public static compactionTools: any[] = OpenAICompatibleProvider.parseTools(compactionSchemas);
     
     constructor(apiKey: string, baseURL: string, webSearchMode: WebSearchMode) {
         super();
@@ -464,7 +484,7 @@ export abstract class OpenAICompatibleProvider extends ChatProvider {
         return { items: [], tokenUsage };
     }
 
-    async abortStream(): Promise<void> {
+    async abortGeneration(): Promise<void> {
         return;
     }
 
@@ -473,7 +493,7 @@ export abstract class OpenAICompatibleProvider extends ChatProvider {
         history: ChatItem[],
         previousTurnID: string | undefined,
         abortSignal?: AbortSignal
-    ): Promise<string> {
+    ): Promise<ChatResponse> {
         const formatted = [
             ...this.formatMessages(history),
             { role: 'user', content: OpenAICompatibleProvider.compactionPrompt }
@@ -481,10 +501,38 @@ export abstract class OpenAICompatibleProvider extends ChatProvider {
 
         const response = await this.client.chat.completions.create({
             model: model,
-            messages: formatted,
+            messages: this.formatMessages(history),
+            tools: OpenAICompatibleProvider.compactionTools,
             stream: false
         }, { signal: abortSignal });
 
-        return (response.choices[0]?.message?.content || '').trim();
+        const choice = response.choices[0];
+        const fullText = choice?.message?.content || '';
+        const reasoningContent = (choice?.message as any)?.reasoning_content;
+        const currentCalls = new Map<any, any>();
+
+        if (choice?.message?.tool_calls) {
+            for (let i = 0; i < choice.message.tool_calls.length; i++) {
+                const toolCall = choice.message.tool_calls[i];
+                
+                if (toolCall.type === 'function') {
+                    currentCalls.set(i, {
+                        id: toolCall.id,
+                        name: toolCall.function.name,
+                        arguments: toolCall.function.arguments
+                    });
+                }
+            }
+        }
+
+        const usage = response.usage;
+        const tokenUsage: TokenUsage = {
+            totalTokens: usage?.total_tokens,
+            inputTokens: usage?.prompt_tokens,
+            outputTokens: usage ? (usage.completion_tokens - (usage.completion_tokens_details?.reasoning_tokens || 0)) : undefined,
+            thoughtTokens: usage?.completion_tokens_details?.reasoning_tokens || 0
+        };
+
+        return ChatProvider.formatResponse(fullText, currentCalls, tokenUsage, undefined, reasoningContent);
     }
 }

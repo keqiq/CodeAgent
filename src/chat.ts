@@ -59,29 +59,25 @@ export class ChatApp implements vscode.WebviewViewProvider {
     }
 
     private async runAgentTurn(provider: string, model: string, effort: string, userMessage: string,): Promise<void> {
-
-        this.post({ type: 'startRun', provider: provider, model: model });
-
+        
         await this.worktreeManager.setup();
-
+        
         this.aborter = new AbortController();
-
-        let runStatus: 'ok' | 'aborted' | 'error' = 'ok';
-        let statusMessage: string | undefined = undefined;
-
-        let providerInstance: ChatProvider | undefined = undefined;
-
+        
         const serverStateManagment = this.context.globalState.get<boolean>('serverStateManagement') ?? true;
         const enabledWebSearch = this.context.globalState.get<boolean>('webSearchEnabled') ?? false;
         const savedWebMode = this.context.globalState.get<string>('webSearchMode') ?? 'tavily';
-
+        const webSearchMode: WebSearchMode = enabledWebSearch ? (savedWebMode as WebSearchMode) : 'none';
+        const apiKey = await this.apiManager.getChatAPIKey(provider);
+        
+        const providerInstance: ChatProvider = ChatFactory.create(provider, apiKey, webSearchMode);
+        
+        let runStatus: 'ok' | 'aborted' | 'error' = 'ok';
+        let statusMessage: string | undefined = undefined;
+        
         try {
-            const apiKey = await this.apiManager.getChatAPIKey(provider);
-
-            const webSearchMode: WebSearchMode = enabledWebSearch ? (savedWebMode as WebSearchMode) : 'none';
-
-            providerInstance = ChatFactory.create(provider, apiKey, webSearchMode);
-
+            this.post({ type: 'toggleChatControls', disabled: true });
+            this.post({ type: 'startRun', provider: provider, model: model });
 
             this.contextManager.prepareRun(provider);
             this.contextManager.addUserMessage(userMessage);
@@ -188,7 +184,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
             this.contextManager.rollback();
 
             if (e.name === 'AbortError' || e.message?.toLowerCase().includes('abort')) {
-                if (providerInstance) await providerInstance.abortStream();
+                if (providerInstance) await providerInstance.abortGeneration();
                 runStatus = 'aborted';
                 statusMessage = 'Execution halted manually';
                 // let the agent know we aborted
@@ -212,6 +208,80 @@ export class ChatApp implements vscode.WebviewViewProvider {
 
             this.post({ type: 'endRun', status: runStatus, text: statusMessage });
 
+            this.post({ type: 'toggleChatControls', disabled: false });
+        }
+    }
+
+    private async runCompaction(): Promise<void> {
+        
+        this.aborter = new AbortController();
+        const chatProvider = this.context.globalState.get<string>('chatProvider') || '';
+        const chatModel = this.context.globalState.get<string>(`${chatProvider}_chatModel`);
+        if (!chatProvider || ! chatModel) throw new Error('Model not configured!');
+        
+        const chatAPIKey = await this.apiManager.getChatAPIKey(chatProvider);
+        const providerInstance = ChatFactory.create(chatProvider, chatAPIKey, 'none');
+        
+        const compactionStartIndex = this.contextManager.getHistory().length;
+        
+        let runStatus: 'ok' | 'aborted' | 'error' = 'ok';
+        let statusMessage: string | undefined = undefined;
+        
+        try {
+            this.post({ type: 'toggleChatControls', disabled: true });
+            this.post({ type: 'startRun', provider: chatProvider, model: chatModel, isSummary: true });
+    
+            this.contextManager.prepareRun(chatProvider);
+            this.contextManager.addUserMessage(ChatFactory.getCompactionPrompt(chatProvider));
+            
+            let keepGoing = true;
+            while (keepGoing) {
+                if (this.aborter.signal.aborted) throw new Error('AbortError');
+
+                const response = await providerInstance.summarizeContext(
+                    chatModel,
+                    this.contextManager.getLLMContext(),
+                    this.contextManager.getTurnID(),
+                    this.aborter.signal
+                );
+                
+                if (response.tokenUsage) {
+                    this.contextManager.recordTokenUsage(response.tokenUsage);
+                    this.contextManager.updateTokenUsage();
+                }
+
+                const currentTurnID = response.turnID;
+                this.contextManager.setTurnID(currentTurnID);
+                
+                const functionCalls = this.contextManager.processResponseItems(response.items);
+                const summary = await this.toolManager.executeTools(functionCalls, this.aborter.signal);
+
+                keepGoing = summary.shouldContinue;
+            }
+
+            this.toolManager.finalizeRun();
+            await this.contextManager.compactContext(compactionStartIndex);
+
+        } catch (e: any) {
+            this.contextManager.rollback();
+            this.contextManager.compactionCleanup(compactionStartIndex);
+            if (e.name === 'AbortError' || e.message?.toLowerCase().includes('abort')) {
+                if (providerInstance) await providerInstance.abortGeneration();
+                runStatus = 'aborted';
+                statusMessage = 'Compaction Halted';
+            } else {
+                runStatus = 'error';
+                statusMessage = `Error: ${e.message || String(e)}`;
+                console.log(`Error compacting context: ${formatError(e)}`);
+            }
+        } finally {
+            this.aborter = null;
+
+            this.contextManager.addRunSummary(chatProvider, chatModel, runStatus, statusMessage);
+
+            await this.contextManager.save();
+
+            this.post({ type: 'endRun', status: runStatus, text: statusMessage });
             this.post({ type: 'toggleChatControls', disabled: false });
         }
     }
@@ -421,29 +491,24 @@ export class ChatApp implements vscode.WebviewViewProvider {
                     break;
                 }
 
-                case 'condenseHistory': {
+                case 'compactHistory': {
                     try {
-                        const chatProvider = this.context.globalState.get<string>('chatProvider') || '';
-                        const chatModel = this.context.globalState.get<string>(`${chatProvider}_chatModel`);
-                        if (!chatProvider || !chatModel) throw new Error('Unconfigured model!');
-
-                        const chatAPIKey = await this.apiManager.getChatAPIKey(chatProvider);
-                        this.aborter = new AbortController();
-                        this.post({ type: 'toggleChatControls', disabled: true });
-                        await this.contextManager.condenseContext(chatProvider, chatModel, chatAPIKey, this.aborter.signal);
-
+                        await this.runCompaction();
                     } catch (e) {
-                        vscode.window.showErrorMessage(`Failed to condense history: ${e}`);
+                        vscode.window.showErrorMessage(`Failed to compact history: ${e}`);
                     } finally {
-                        this.post({ type: 'toggleChatControls', disabled: false });
+                        this.contextManager.estimateCategorizedTokens();
                     }
                     break;
                 }
 
                 case 'askAgent': {
-                    if (!data.value) { return; }
-                    this.post({ type: 'toggleChatControls', disabled: true });
-                    this.runAgentTurn(data.provider, data.model, data.effort, data.value);
+                    try {
+                        if (!data.value) throw new Error('Empty prompt!');
+                        this.runAgentTurn(data.provider, data.model, data.effort, data.value);
+                    } catch (e) {
+                        vscode.window.showErrorMessage(`Failed to run agent turn: ${e}`);
+                    }
                     break;
                 }
 

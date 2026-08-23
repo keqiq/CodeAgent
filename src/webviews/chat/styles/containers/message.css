@@ -287,6 +287,33 @@
     border-color: var(--vscode-charts-blue, #3794ff);
 }
 
+/* Animation for instant summary / checkpoint appearance */
+@keyframes checkpointReveal {
+    0% {
+        opacity: 0;
+        transform: translateY(12px) scale(0.99);
+        box-shadow: 0 0 0 1px color-mix(in srgb, var(--vscode-focusBorder) 60%, transparent), 0 4px 16px rgba(0, 0, 0, 0.2);
+    }
+    60% {
+        opacity: 0.9;
+        transform: translateY(0) scale(1);
+        box-shadow: 0 0 0 1px color-mix(in srgb, var(--vscode-focusBorder) 40%, transparent), 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        box-shadow: 0 0 0 1px color-mix(in srgb, var(--vscode-widget-border) 40%, transparent);
+    }
+}
+
+.message.agent.checkpoint-card {
+    animation: checkpointReveal 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    border-left: 2px solid var(--vscode-charts-purple, #b180d7);
+    padding: 12px 14px;
+    margin: 8px 0;
+    will-change: transform, opacity;
+}
+
 /* ==========================================================================
    Markdown Elements (Code, Inline Code, Links)
    ========================================================================== */

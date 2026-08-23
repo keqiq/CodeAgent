@@ -49,29 +49,39 @@
     min-width: 200px;
 }
 
-/* --- Token Pie Chart --- */
+/* --- Token Donut Chart & Modern Container --- */
 .context-chart-container {
     display: flex;
     align-items: center;
-    gap: 16px;
-    padding: 8px 10px 12px 10px;
+    gap: 18px;
+    padding: 10px 12px 14px 12px;
 }
 
+/* Donut Chart with CSS Radial Masking */
 .context-pie-chart {
-    width: 65px;
-    height: 65px;
+    position: relative;
+    width: 66px;
+    height: 66px;
     border-radius: 50%;
-    /* Default empty state */
-    background: var(--vscode-editorWidget-background);
-    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--vscode-widget-border) 60%, transparent);
     flex-shrink: 0;
-    transition: background 0.3s ease;
+    
+    -webkit-mask-image: radial-gradient(circle, transparent 42%, black 45%);
+    mask-image: radial-gradient(circle, transparent 42%, black 45%);
+    
+    background: color-mix(in srgb, var(--vscode-widget-border) 40%, transparent);
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.18));
+    transition: background 0.3s ease, transform 0.2s ease;
 }
 
+.context-pie-chart:hover {
+    transform: scale(1.04);
+}
+
+/* --- Refined Modern Legend --- */
 .context-legend {
     display: flex;
     flex-direction: column;
-    gap: 5px;
+    gap: 6px;
     font-size: 11px;
     color: var(--vscode-foreground);
     flex: 1;
@@ -80,25 +90,53 @@
 .legend-item {
     display: flex;
     align-items: center;
-    justify-content: flex-start;
+    width: 100%;
     gap: 6px;
-    opacity: 0.85;
-}
-
-.legend-item strong {
-    margin-left: auto; /* Pushes the number to the right edge */
-    font-weight: 600;
+    opacity: 0.9;
+    transition: opacity 0.15s ease;
 }
 
 .legend-color {
-    width: 8px;
-    height: 8px;
-    border-radius: 2px;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%; /* Modern pill / circular dot */
+    box-shadow: 0 0 4px currentColor;
     flex-shrink: 0;
 }
+.legend-name {
+    font-size: 11px;
+    color: var(--vscode-foreground);
+    white-space: nowrap;
+}
 
-/* Fallback colors included just in case the theme doesn't define them */
-.user-color { background-color: var(--vscode-charts-blue, #3794ff); }
-.assistant-color { background-color: var(--vscode-charts-purple, #b180d7); }
-.system-color { background-color: var(--vscode-charts-green, #89d185); }
-.tools-color { background-color: var(--vscode-charts-orange, #d18616); }
+.legend-item strong {
+    margin-left: auto; /* Pushes the token number to the right margin */
+    font-family: var(--vscode-editor-font-family, monospace);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--vscode-descriptionForeground);
+    text-align: right;
+    white-space: nowrap;
+    padding-left: 8px;
+}
+
+/* Palette Tokens */
+.user-color { background-color: var(--vscode-charts-blue, #3794ff); color: var(--vscode-charts-blue, #3794ff); }
+.assistant-color { background-color: var(--vscode-charts-purple, #b180d7); color: var(--vscode-charts-purple, #b180d7); }
+.system-color { background-color: var(--vscode-charts-green, #89d185); color: var(--vscode-charts-green, #89d185); }
+.tools-color { background-color: var(--vscode-charts-orange, #d18616); color: var(--vscode-charts-orange, #d18616); }
+
+@keyframes compactingPulse {
+    0%, 100% {
+        border-color: var(--vscode-focusBorder, #007fd4);
+        box-shadow: 0 0 6px color-mix(in srgb, var(--vscode-focusBorder, #007fd4) 50%, transparent);
+    }
+    50% {
+        border-color: color-mix(in srgb, var(--vscode-focusBorder, #007fd4) 25%, transparent);
+        box-shadow: 0 0 2px color-mix(in srgb, var(--vscode-focusBorder, #007fd4) 15%, transparent);
+    }
+}
+
+.context-bar-btn.compacting {
+    animation: compactingPulse 1.4s ease-in-out infinite;
+}

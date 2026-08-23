@@ -61,14 +61,22 @@ export class ChatContainer {
                     // User messages are the start of a new interaction cycle
                     if (m.role === 'user') {
                         this.addMessage(m);
-                        this.startRun();
+                        this.startRun({});
                         this.removeTypingIndicator();
                     }
                     
                     else if (m.role === 'assistant') this.addMessage(m);
                 }
 
-                else if (m.type === 'checkpoint') this.addCheckpoint(m);
+                else if (m.type === 'checkpoint') {
+                    this.startRun({ isSummary: true });
+                    this.addMessage({
+                        type: 'message',
+                        role: 'assistant',
+                        content: m.content,
+                        style: 'checkpoint-card'
+                    });
+                }
                 
                 else if (m.type === 'run_summary') {
                     if (this.runContainer) {
@@ -88,10 +96,11 @@ export class ChatContainer {
     // -------------------------- RUN CONTAINER SECTION ----------------------------
     // -----------------------------------------------------------------------------
 
-    public startRun(provider?: string, model?: string): void {
+    public startRun(msg: { provider?: string, model?: string, isSummary?: boolean}): void {
         this.endMessage();
         this.isAutoScrollEnabled = true;
-        this.runContainer = new RunContainer(this.container, provider, model);
+        this.runContainer = new RunContainer(this.container, msg.provider, msg.model);
+        if (msg.isSummary) this.runContainer.setCheckpoint();
         this.showTypingIndicator();
     }
 
@@ -115,6 +124,7 @@ export class ChatContainer {
     // -----------------------------------------------------------------------------
 
     public addMessage(msg: any): void {
+        this.removeTypingIndicator();
         if (this.patchContainer) this.patchContainer.end();
         if (!this.messageContainer) this.messageContainer = new MessageContainer(this.runContainer?.activeRunContent || this.container);
         this.messageContainer.add(msg);
@@ -122,6 +132,7 @@ export class ChatContainer {
     }
 
     public updateMessage(chunk: string): void {
+        this.removeTypingIndicator();
         if (this.thoughtContainer) this.thoughtContainer.pauseThoughtTimer();
         if (!this.messageContainer) this.messageContainer = new MessageContainer(this.runContainer?.activeRunContent || this.container);
         this.messageContainer.streamUpdate(chunk);
@@ -133,19 +144,17 @@ export class ChatContainer {
         this.messageContainer = null;
     }
 
-    public addCheckpoint(msg: {summary: string, provider: string, model: string}): void {
-        this.startRun(msg.provider, msg.model);
+    public addCheckpoint(msg: {content: string}) {
         this.removeTypingIndicator();
-
-        if (this.runContainer) this.runContainer.setSummary();
-
-        this.addMessage({
+        if (!this.messageContainer) this.messageContainer = new MessageContainer(this.runContainer?.activeRunContent || this.container);
+        this.messageContainer.add({
             type: 'message',
             role: 'assistant',
-            content: msg.summary
+            content: msg.content,
+            style: 'checkpoint-card'
         });
 
-        this.endRun('ok');
+        this.scrollToBottom();
     }
 
     // -----------------------------------------------------------------------------

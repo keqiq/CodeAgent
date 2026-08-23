@@ -11,6 +11,7 @@ interface ChatProviderConstructor {
     stateManagementSupport: boolean;
     serverWebSearchSupport: boolean;
     systemPrompt: string;
+    compactionPrompt: string;
     baseTools: any[];
 }
 
@@ -42,6 +43,12 @@ export class ChatFactory {
     static getSystemPrompt(providerName: string): string {
         const ProviderClass = this.providers[providerName];
         return ProviderClass.systemPrompt;
+    }
+
+    static getCompactionPrompt(providerName: string): string {
+        const ProviderClass = this.providers[providerName];
+        return ProviderClass.compactionPrompt;
+
     }
 
     static getToolSchemas(providerName: string): any[] {

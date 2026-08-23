@@ -44,6 +44,10 @@ export const requiredSchemas: ToolSchema[] = [
     ...mcpSchemas
 ];
 
+export const compactionSchemas: ToolSchema[] = [
+    ...artifactSchema
+];
+
 export { webSchema };
 
 export type ToolDeps = {

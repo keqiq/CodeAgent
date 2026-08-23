@@ -151,18 +151,23 @@
         <div class="unified-box">
 
             <div class="input-row">
-                
+
                 <div id="commandApprovalContainer" class="command-approval hidden">
                     <div class="approval-text">
-                        <span style="color: var(--vscode-editorWarning-foreground); font-weight: bold; display: flex; align-items: center; gap: 4px;">
-                            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path fill-rule="evenodd" clip-rule="evenodd" d="M8.22 1.754a.25.25 0 00-.44 0L1.698 13.132a.25.25 0 00.22.368h12.164a.25.25 0 00.22-.368L8.22 1.754zm1.116-.406a1.75 1.75 0 00-3.08 0L.17 13.292A1.75 1.75 0 001.698 15h12.164a1.75 1.75 0 001.528-2.672L9.336 1.348zM8 11.5a.75.75 0 100-1.5.75.75 0 000 1.5zm.74-5.946a.75.75 0 00-1.48 0l-.2 3.5a.75.75 0 001.48.084l.2-3.584z"/></svg>
+                        <span
+                            style="color: var(--vscode-editorWarning-foreground); font-weight: bold; display: flex; align-items: center; gap: 4px;">
+                            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+                                <path fill-rule="evenodd" clip-rule="evenodd"
+                                    d="M8.22 1.754a.25.25 0 00-.44 0L1.698 13.132a.25.25 0 00.22.368h12.164a.25.25 0 00.22-.368L8.22 1.754zm1.116-.406a1.75 1.75 0 00-3.08 0L.17 13.292A1.75 1.75 0 001.698 15h12.164a1.75 1.75 0 001.528-2.672L9.336 1.348zM8 11.5a.75.75 0 100-1.5.75.75 0 000 1.5zm.74-5.946a.75.75 0 00-1.48 0l-.2 3.5a.75.75 0 001.48.084l.2-3.584z" />
+                            </svg>
                             Agent wants to run an unlisted command:
                         </span>
                         <code id="approvalCommandText"></code>
                     </div>
                     <div class="approval-actions">
                         <button id="approveCommandBtn" class="approve-btn">Allow Once</button>
-                        <button id="saveApproveCommandBtn" class="save-approve-btn" title="Add to agent-rules.json">Always Allow</button>
+                        <button id="saveApproveCommandBtn" class="save-approve-btn"
+                            title="Add to agent-rules.json">Always Allow</button>
                         <button id="denyCommandBtn" class="deny-btn">Deny</button>
                     </div>
                 </div>
@@ -211,7 +216,7 @@
                         title="Toggle Agent Mode (Auto/Manual)">
                         MANUAL
                     </button>
-                    
+
                     <button id="agentConfigBtn" class="icon-btn agent-config-btn hidden" title="Edit Agent Rules">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
@@ -239,19 +244,23 @@
                             <div class="context-legend">
                                 <div class="legend-item">
                                     <span class="legend-color user-color"></span>
-                                    <span>User: <strong id="legUser">0</strong></span>
+                                    <span class="legend-name">User</span>
+                                    <strong id="legUser">0</strong>
                                 </div>
                                 <div class="legend-item">
                                     <span class="legend-color assistant-color"></span>
-                                    <span>Assistant: <strong id="legAssistant">0</strong></span>
+                                    <span class="legend-name">Assistant</span>
+                                    <strong id="legAssistant">0</strong>
                                 </div>
                                 <div class="legend-item">
                                     <span class="legend-color system-color"></span>
-                                    <span>System: <strong id="legSystem">0</strong></span>
+                                    <span class="legend-name">System</span>
+                                    <strong id="legSystem">0</strong>
                                 </div>
                                 <div class="legend-item">
                                     <span class="legend-color tools-color"></span>
-                                    <span>Tools: <strong id="legTools">0</strong></span>
+                                    <span class="legend-name">Tools</span>
+                                    <strong id="legTools">0</strong>
                                 </div>
                             </div>
                         </div>
@@ -296,8 +305,8 @@
 
                         <div class="menu-divider"></div>
 
-                        <div class="menu-item" id="menuCondenseHistoryBtn">
-                            <div class="menu-item-title">Condense History</div>
+                        <div class="menu-item" id="menuCompactHistoryBtn">
+                            <div class="menu-item-title">Compact History</div>
                             <div class="menu-item-desc">Summarize to free up context.</div>
                         </div>
                     </div>

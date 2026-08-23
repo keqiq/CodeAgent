@@ -64,10 +64,8 @@ export class MessageContainer {
         const cssClass = role === 'assistant' ? 'agent' : role;
         msgDiv.classList.add('message', cssClass);
 
-        // Apply optional style class for interrupt/error messages
-        if (msg.style) {
-            msgDiv.classList.add(msg.style);
-        }
+        // Apply optional style class summary
+        if (msg.style)  msgDiv.classList.add(msg.style);
 
         // Agent messages, need markdown parsing and code highlight
         if (role === 'assistant') {

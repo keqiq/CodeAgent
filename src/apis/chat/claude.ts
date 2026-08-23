@@ -1,15 +1,16 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { ChatProvider, ModelInfo, StreamYield, WebSearchMode } from './chatProvider';
-import { requiredSchemas, webSchema, ToolSchema } from '../../tools/toolIndex';
+import { requiredSchemas, compactionSchemas, webSchema, ToolSchema } from '../../tools/toolIndex';
 import { ChatItem, ChatResponse, TokenUsage } from '../../managers/contextManager';
 
 export class ClaudeChatProvider extends ChatProvider {
     public static stateManagementSupport: boolean = true;
     public static serverWebSearchSupport: boolean = true;
     public static baseTools = ClaudeChatProvider.parseTool(requiredSchemas);
+    public static compactionTools = ClaudeChatProvider.parseTool(compactionSchemas);
     private client: Anthropic;
     // private static claudeTools: Anthropic.Tool[] = ClaudeChatProvider.parseTool(allToolSchemas);
-    
+
     protected featuredModels: string[] = [
         'claude-opus-5',
         'claude-fable-5',
@@ -20,7 +21,7 @@ export class ClaudeChatProvider extends ChatProvider {
     constructor(apiKey: string, webSearchMode: WebSearchMode) {
         super();
         this.client = new Anthropic({ apiKey: apiKey });
-        
+
         const runTools: any[] = [...ClaudeChatProvider.baseTools];
         let webTools: any[] = [];
 
@@ -56,8 +57,8 @@ export class ClaudeChatProvider extends ChatProvider {
             infos.push({
                 id: m.id,
                 reason: reasonCapable,
-                efforts: reasonCapable? efforts : [],
-                defaultEffort: reasonCapable? 'high' : null,
+                efforts: reasonCapable ? efforts : [],
+                defaultEffort: reasonCapable ? 'high' : null,
                 ...(m.max_input_tokens && { contextWindow: m.max_input_tokens })
             });
         }
@@ -71,7 +72,7 @@ export class ClaudeChatProvider extends ChatProvider {
                 name: tool.name,
                 description: tool.description,
                 input_schema: {
-                    type: 'object' as const, 
+                    type: 'object' as const,
                     properties: tool.parameters?.properties || {},
                     required: tool.parameters?.required || []
                 }
@@ -85,7 +86,7 @@ export class ClaudeChatProvider extends ChatProvider {
         for (const item of items) {
             if (item.type === 'message') {
                 messages.push({ role: item.role as 'user' | 'assistant', content: item.content });
-            }  
+            }
             else if (item.type === 'function_call') {
                 messages.push({
                     role: 'assistant',
@@ -108,7 +109,7 @@ export class ClaudeChatProvider extends ChatProvider {
                 });
             }
         }
-        return messages ;
+        return messages;
     }
 
     // TODO: ?
@@ -129,14 +130,14 @@ export class ClaudeChatProvider extends ChatProvider {
 
         let fullText = '';
         const currentCalls = new Map();
-   
+
         let tokenUsage: TokenUsage = {
             totalTokens: 0,
             inputTokens: 0,
             outputTokens: 0,
             thoughtTokens: 0
         };
-        
+
         const stream = await this.client.messages.create({
             model: model as any,
             system: ClaudeChatProvider.systemPrompt,
@@ -167,7 +168,7 @@ export class ClaudeChatProvider extends ChatProvider {
                         arguments: ''
                     });
 
-                    if (event.content_block.name) yield { type: 'tool', content: event.content_block.name };   
+                    if (event.content_block.name) yield { type: 'tool', content: event.content_block.name };
                 }
 
                 // Purely for web search atm
@@ -200,7 +201,7 @@ export class ClaudeChatProvider extends ChatProvider {
 
                         if (parentCall) {
                             const newQuery = ((event.content_block.input) as any).query;
-                            
+
                             // Append with a newline if we already have previous queries
                             if (parentCall.arguments) {
                                 parentCall.arguments += '\n' + newQuery;
@@ -240,14 +241,14 @@ export class ClaudeChatProvider extends ChatProvider {
                     const usage = event.message.usage;
                     const totalInput = usage.input_tokens + (usage.cache_read_input_tokens || 0) + (usage.cache_creation_input_tokens || 0);
                     tokenUsage.inputTokens = totalInput;
-                } 
+                }
             }
             // Similarly for output tokens, though it is cumulative everytime we receive delta
             else if (event.type === 'message_delta') {
                 if (event.usage) {
                     const usage = event.usage;
                     const thinkingTokens = usage.output_tokens_details?.thinking_tokens || 0;
-                    
+
                     // looking at the events, the input tokens are updated every delta
                     const totalInput = (usage.input_tokens || 0) + (usage.cache_read_input_tokens || 0) + (usage.cache_creation_input_tokens || 0);
                     tokenUsage.inputTokens = totalInput;
@@ -269,37 +270,49 @@ export class ClaudeChatProvider extends ChatProvider {
         return { items: [], tokenUsage };
     }
 
-    async abortStream(): Promise<void> {
+    async abortGeneration(): Promise<void> {
         return;
     }
 
     async summarizeContext(
-        model: string, 
-        history: ChatItem[], 
-        previousTurnID: string | undefined, 
+        model: string,
+        history: ChatItem[],
+        previousTurnID: string | undefined,
         abortSignal?: AbortSignal
-    ): Promise<string> {
-
-        const messages: Anthropic.MessageParam[] = [
-            ...this.formatMessages(history),
-            { role: 'user', content: ClaudeChatProvider.compactionPrompt }
-        ];
+    ): Promise<ChatResponse> {
 
         const response = await this.client.messages.create({
             model: model as any,
             system: ClaudeChatProvider.systemPrompt,
-            messages: messages,
-            max_tokens: 4096,
+            messages: this.formatMessages(history),
+            max_tokens: 8192,
+            tools: ClaudeChatProvider.compactionTools,
             thinking: { type: 'adaptive' }
         }, { signal: abortSignal });
 
-        let summary = '';
-        for (const block of response.content) {
+        let fullText = '';
+        const currentCalls = new Map<number, any>();
+
+        for (let i = 0; i < response.content.length; i++) {
+            const block = response.content[i];
             if (block.type === 'text') {
-                summary += block.text;
+                fullText += block.text;
+            } else if (block.type === 'tool_use') {
+                currentCalls.set(i, {
+                    id: block.id,
+                    name: block.name,
+                    arguments: block.input
+                });
             }
         }
 
-        return summary.trim();
+        const tokenUsage: TokenUsage = {
+            totalTokens: (response.usage?.input_tokens || 0) + (response.usage?.output_tokens || 0),
+            inputTokens: response.usage?.input_tokens || 0,
+            outputTokens: response.usage?.output_tokens || 0,
+            thoughtTokens: (response.usage as any)?.output_tokens_details?.thinking_tokens || 0
+        };
+
+        return ChatProvider.formatResponse(fullText, currentCalls, tokenUsage);
     }
 }

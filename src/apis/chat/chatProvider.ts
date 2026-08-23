@@ -1,5 +1,5 @@
 import { ChatItem, ChatResponse, TokenUsage } from "../../managers/contextManager";
-import { requiredSchemas, ToolResult } from "../../tools/toolIndex";
+import { compactionSchemas, requiredSchemas, ToolResult } from "../../tools/toolIndex";
 
 export interface StreamYield {
     type: 'text' | 'thought' | 'server_action' | 'tool';
@@ -28,11 +28,25 @@ export abstract class ChatProvider {
                       Tools like 'glob' and 'grep' should be used as a fallback if semantic search fails to return relevant results.
                       Find the relevant code, read it, and edit it to add features and fix issues.`;
 
-    public static compactionPrompt: string = `placeholder`;
+    public static compactionPrompt: string = `You are performing conversation history compaction.
+                        Review the conversation history above. Notice that past large tool results were pruned into artifacts.
+
+                        Instructions:
+                        1. If you need specific missing details (e.g. key code diffs, compiler errors, or configurations) to write an accurate summary, call the 'recall' tool with the artifactID.
+                        2. When you have all necessary context, your FINAL response MUST be a comprehensive text summary (with NO tool calls).
+
+                        Summary Structure:
+                        - **Primary Goal & Requirements**: What the user requested.
+                        - **Key Actions & File Changes**: Exact file paths inspected, created, or modified.
+                        - **Errors & Discoveries**: Issues encountered and how they were resolved.
+                        - **Active State & Next Steps**: What remains pending or what the agent should do next.
+
+                        Provide only the summary as your final response once all needed artifacts are inspected.`;
 
     public static stateManagementSupport: boolean = false;
     public static serverWebSearchSupport: boolean = false;
     public static baseTools: any[] = [...requiredSchemas];
+    public static compactionTools: any[] = [...compactionSchemas];
 
     protected abstract featuredModels: string[];
 
@@ -61,31 +75,31 @@ export abstract class ChatProvider {
     }
 
     abstract fetchStream(
-        model: string, 
-        effort: string, 
-        history: ChatItem[], 
+        model: string,
+        effort: string,
+        history: ChatItem[],
         previousTurnID: string | undefined,
         useCache: boolean,
         abortSignal: AbortSignal
     ): AsyncGenerator<StreamYield, ChatResponse, unknown>;
 
-    abstract abortStream(): Promise<void>;
+    abstract abortGeneration(): Promise<void>;
 
     protected static formatResponse(
-        text: string, 
-        toolCalls: Map<any, any>, 
-        tokenUsage: TokenUsage, 
+        text: string,
+        toolCalls: Map<any, any>,
+        tokenUsage: TokenUsage,
         turnID?: string,
         reasoning_content?: string
     ): ChatResponse {
         const items: ChatItem[] = [];
 
         items.push({
-             type: 'message', 
-             role: 'assistant', 
-             content: text,
-             ...(reasoning_content && { reasoning_content: reasoning_content } )
-            });
+            type: 'message',
+            role: 'assistant',
+            content: text,
+            ...(reasoning_content && { reasoning_content: reasoning_content })
+        });
 
         for (const call of Array.from(toolCalls.values())) {
 
@@ -101,17 +115,17 @@ export abstract class ChatProvider {
                     }
                 }
             }
-            items.push({ 
-                type: 'function_call', 
-                id: call.id, 
-                name: call.name, 
+            items.push({
+                type: 'function_call',
+                id: call.id,
+                name: call.name,
                 arguments: parsedArgs,
                 turnID: call.turnID,
                 server: call.server,
             });
         }
 
-        return { items, tokenUsage, ...(turnID && {turnID}) };
+        return { items, tokenUsage, ...(turnID && { turnID }) };
     }
 
     abstract summarizeContext(
@@ -119,5 +133,5 @@ export abstract class ChatProvider {
         history: ChatItem[],
         previousTurnID: string | undefined,
         abortSignal?: AbortSignal
-    ): Promise<string>;
+    ): Promise<ChatResponse>;
 }

@@ -13,7 +13,7 @@ export class ContextWindow {
     private legAssistant: HTMLElement;
     private legSystem: HTMLElement;
     private legTools: HTMLElement;
-    
+
     private maxContext: number | undefined = undefined;
     private currentTokens: number = 0;
     private categorizedUsage: TokenCategoryUsage | null = null;
@@ -23,7 +23,7 @@ export class ContextWindow {
     private pruneStrategyLabel: HTMLElement;
     private pruneIntervalContainer: HTMLElement;
     private pruneIntervalTitle: HTMLElement;
-    
+
     private pruneIntervalInput: HTMLInputElement;
     private pruneIntervalMinus: HTMLElement;
     private pruneIntervalPlus: HTMLElement;
@@ -32,7 +32,7 @@ export class ContextWindow {
     private turnInterval: number = 1;
     private runInterval: number = 1;
 
-    private condenseHistory: HTMLElement;
+    private compactHistoryBtn: HTMLElement;
 
     constructor(private vscodeAPI: WebviewApi) {
         this.contextContainer = document.getElementById('contextWindowContainer') as HTMLElement;
@@ -52,12 +52,12 @@ export class ContextWindow {
         this.pruneStrategyLabel = document.getElementById('pruneStrategyLabel') as HTMLElement;
         this.pruneIntervalContainer = document.getElementById('menuPruneInterval') as HTMLElement;
         this.pruneIntervalTitle = document.getElementById('pruneIntervalTitle') as HTMLElement;
-        
+
         this.pruneIntervalInput = document.getElementById('pruneIntervalInput') as HTMLInputElement;
         this.pruneIntervalMinus = document.getElementById('pruneIntervalMinus') as HTMLElement;
         this.pruneIntervalPlus = document.getElementById('pruneIntervalPlus') as HTMLElement;
 
-        this.condenseHistory = document.getElementById('menuCondenseHistoryBtn') as HTMLElement;
+        this.compactHistoryBtn = document.getElementById('menuCompactHistoryBtn') as HTMLElement;
 
         this.initListeners();
     }
@@ -136,8 +136,10 @@ export class ContextWindow {
             this.setIntervalValue(val);
         });
 
-        this.condenseHistory.addEventListener('click', () => {
-            this.vscodeAPI.postMessage({ type: 'condenseHistory' });
+        this.compactHistoryBtn.addEventListener('click', () => {
+            this.contextTextLabel.textContent = 'Compacting...';
+            this.contextToggleBtn.classList.add('compacting');
+            this.vscodeAPI.postMessage({ type: 'compactHistory' });
         });
     }
 
@@ -158,7 +160,7 @@ export class ContextWindow {
 
     private setIntervalValue(val: number) {
         this.pruneIntervalInput.value = val.toString();
-        
+
         if (this.activeStrategy === 'turn') {
             this.turnInterval = val;
             this.vscodeAPI.postMessage({ type: 'setPruneInterval', turn: val });
@@ -205,6 +207,7 @@ export class ContextWindow {
     }
 
     public updateTokenUsage(usage: TokenCategoryUsage) {
+        this.contextToggleBtn.classList.remove('compacting');
         this.currentTokens = usage.totalTokens || 0;
         this.categorizedUsage = usage;
         this.render();
@@ -231,11 +234,11 @@ export class ContextWindow {
             this.contextTextLabel.textContent = `${formatNum(this.currentTokens)} / ${formatNum(this.maxContext)}`;
 
             if (percent > 90) this.contextFillBar.style.backgroundColor = 'var(--vscode-errorForeground)';
-            else if (percent > 75) this.contextFillBar.style.backgroundColor = 'var(--vscode-charts-orange)';
+            else if (percent > 70) this.contextFillBar.style.backgroundColor = 'var(--vscode-charts-orange)';
             else this.contextFillBar.style.backgroundColor = 'var(--vscode-progressBar-background)';
         }
 
-        // Render pie chart
+        // Render Donut Chart
         if (this.categorizedUsage && this.categorizedUsage.totalTokens > 0) {
             const cu = this.categorizedUsage;
             const total = cu.totalTokens;
@@ -254,9 +257,7 @@ export class ContextWindow {
             const pTools = (toolsTotal / total) * 100;
 
             let currentStop = 0;
-            
-            // Build gradient string mapping to the CSS variables
-            const gradientParts = [];
+            const gradientParts: string[] = [];
 
             if (pUser > 0) {
                 gradientParts.push(`var(--vscode-charts-blue, #3794ff) ${currentStop}% ${currentStop + pUser}%`);
@@ -276,12 +277,12 @@ export class ContextWindow {
 
             this.pieChart.style.background = `conic-gradient(${gradientParts.join(', ')})`;
         } else {
-            // Empty State
+            // Empty State: neutral track ring
             this.legUser.textContent = '0';
             this.legAssistant.textContent = '0';
             this.legSystem.textContent = '0';
             this.legTools.textContent = '0';
-            this.pieChart.style.background = 'var(--vscode-editorWidget-background)';
+            this.pieChart.style.background = 'color-mix(in srgb, var(--vscode-widget-border) 40%, transparent)';
         }
     }
 }
