@@ -75,22 +75,16 @@ export class ChatApp implements vscode.WebviewViewProvider {
         let runStatus: 'ok' | 'aborted' | 'error' = 'ok';
         let statusMessage: string | undefined = undefined;
 
-        
         try {
             let keepGoing = true;
             let turnCount = 0;
             const turnLimit = this.context.globalState.get<number>('turnLimit') ?? 0;
 
-            let initialPrompt = userMessage;
-            if (turnLimit > 0) {
-                initialPrompt += `\n\n[Execution Budget: You have at most ${turnLimit} tool-use iterations. Plan your investigation, avoid redundant calls, and provide a final answer before the budget is exhausted.]`;
-            }
-
             this.post({ type: 'toggleChatControls', disabled: true });
             this.post({ type: 'startRun', provider: provider, model: model });
 
             this.contextManager.prepareRun(provider);
-            this.contextManager.addUserMessage(initialPrompt);
+            this.contextManager.addUserMessage(userMessage);
 
             let previousTurnHadError = false;
 
@@ -119,7 +113,6 @@ export class ChatApp implements vscode.WebviewViewProvider {
 
                 let streamStartTime: number | null = null;
                 let turnGeneratedTokens = 0;
-                let lastSpeedPostTime = 0;
 
                 // Wait for the stream to finish, then run all tools called if any
                 while (!streamResult.done) {
@@ -138,7 +131,6 @@ export class ChatApp implements vscode.WebviewViewProvider {
                             const elapsedSeconds = (now - streamStartTime) / 1000;
 
                             if (elapsedSeconds > 0.1) {
-                                lastSpeedPostTime = now;
                                 const tokenPerSecond = (turnGeneratedTokens / elapsedSeconds).toFixed(1);
                                 this.post({ type: 'streamSpeed', speed: tokenPerSecond });
                             }
@@ -577,7 +569,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
                     // Clear the old indexer if we have one
                     if (this.indexer) this.indexer.dispose();
 
-                    this.indexer = await Indexer.create(this.context, data.model, (provider: string) => this.apiManager.getEmbedAPIKey(provider));
+                    this.indexer = await Indexer.create(this.context, data.model, this.apiManager);
                     this.indexer.onDidUpdateStatus(event => this.post(event));
                     await this.indexer.broadcastCurrentState();
                     break;
@@ -600,11 +592,8 @@ export class ChatApp implements vscode.WebviewViewProvider {
 
                 case 'indexWorkspace': {
                     if (!this.indexer) return;
-                    const apiKey = await this.apiManager.getEmbedAPIKey(data.provider);
 
-                    const embedProvider = EmbedFactory.create(data.provider, apiKey);
-
-                    await this.indexer.indexWorkspace(embedProvider, data.model);
+                    await this.indexer.indexWorkspace();
                     break;
                 }
 

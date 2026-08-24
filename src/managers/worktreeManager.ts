@@ -65,9 +65,9 @@ export class WorktreeManager {
             await fs.mkdir(path.dirname(this.worktreePath), { recursive: true });
             await exec(`git worktree add --detach "${this.worktreePath}" HEAD`, { cwd: this.originalWorkspace });
             await this.link();
+            await this.reset();
         }
 
-        await this.reset();
     }
 
     public async reset(): Promise<void> {

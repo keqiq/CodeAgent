@@ -60375,10 +60375,10 @@ __export(extension_exports, {
   deactivate: () => deactivate
 });
 module.exports = __toCommonJS(extension_exports);
-var vscode15 = __toESM(require("vscode"));
+var vscode16 = __toESM(require("vscode"));
 
 // src/chat.ts
-var vscode12 = __toESM(require("vscode"));
+var vscode13 = __toESM(require("vscode"));
 var fs8 = __toESM(require("fs"));
 var path12 = __toESM(require("path"));
 
@@ -61030,10 +61030,7 @@ var globalExcludePatterns = [
   "**/.next/**",
   "**/coverage/**",
   "**/.DS_Store",
-  "**/*.vsix",
-  // Agent worktrees — temporary copies of the repo created for agent runs.
-  // These don't need indexing and cause ENOENT errors when cleaned up.
-  "**/.agent-worktree-*/**"
+  "**/*.vsix"
 ];
 var languageExcludePatterns = [
   // Python
@@ -97457,6 +97454,9 @@ var EmbedFactory = class {
   }
 };
 
+// src/indexing/indexer.ts
+var vscode7 = __toESM(require("vscode"));
+
 // src/indexing/vectorDB.ts
 var lancedb = __toESM(require("@lancedb/lancedb"));
 var vscode4 = __toESM(require("vscode"));
@@ -108568,7 +108568,11 @@ var CodeChunker = class _CodeChunker {
     const tree = this.parser.parse(content);
     const lines = content.split(/\r?\n/);
     if (!tree) return [];
-    return this.chunkRootNode(tree.rootNode, config2, lines, filePath, siblings);
+    try {
+      return this.chunkRootNode(tree.rootNode, config2, lines, filePath, siblings);
+    } finally {
+      tree.delete();
+    }
   }
   clearNeighbourHoodCache() {
     this.neighbourhoodCache.clear();
@@ -108734,7 +108738,7 @@ ${siblings.join("\n")}
   }
 };
 
-// src/indexing/indexer.ts
+// src/indexing/watcher.ts
 var vscode6 = __toESM(require("vscode"));
 
 // node_modules/brace-expansion/node_modules/balanced-match/dist/esm/index.js
@@ -110539,106 +110543,422 @@ minimatch.Minimatch = Minimatch;
 minimatch.escape = escape2;
 minimatch.unescape = unescape2;
 
-// src/indexing/indexer.ts
-var Indexer = class _Indexer {
-  constructor(context, model, cc, getApiKey, db) {
-    this.context = context;
-    this.model = model;
-    this.cc = cc;
-    this.getApiKey = getApiKey;
-    this.db = db;
+// src/indexing/watcher.ts
+var Watcher = class {
+  constructor(options) {
+    this.options = options;
     const extGlob = supportedExtensions.map((ext2) => ext2.replace(/^\./, "")).join(",");
-    const watchPattern = `**/*.{${extGlob}}`;
-    this.watcher = vscode6.workspace.createFileSystemWatcher(watchPattern);
-    this.watcher.onDidChange(async (uri) => {
-      if (!this.shouldWatch(uri)) return;
-      this.markWorkspaceModified();
-      if (!this.indexEnabled() || !this.db) return;
-      this.scheduleIndex([vscode6.workspace.asRelativePath(uri)]);
-    });
-    this.watcher.onDidCreate(async (uri) => {
-      if (!this.shouldWatch(uri)) return;
-      this.markWorkspaceModified();
-      if (!this.indexEnabled() || !this.db) return;
-      this.scheduleIndex([vscode6.workspace.asRelativePath(uri)]);
-      await this.scheduleNeighbourHoodUpdate(uri);
-    });
-    this.watcher.onDidDelete(async (uri) => {
-      if (!this.shouldWatch(uri)) return;
-      this.markWorkspaceModified();
-      if (!this.indexEnabled() || !this.db) return;
-      this.scheduleDeleteFile([vscode6.workspace.asRelativePath(uri)]);
-      await this.scheduleNeighbourHoodUpdate(uri);
-    });
-    this.renameDisposable = vscode6.workspace.onDidRenameFiles(async (e2) => {
-      this.markWorkspaceModified();
-      if (!this.indexEnabled() || !this.db) return;
-      for (const file of e2.files) {
-        if (this.isWorktreePath(file.oldUri) || this.isWorktreePath(file.newUri)) continue;
-        const oldPath = vscode6.workspace.asRelativePath(file.oldUri);
-        const newPath = vscode6.workspace.asRelativePath(file.newUri);
-        const oldIsIndexable = this.isSupportedFile(oldPath) && !this.isExcluded(oldPath);
-        const newIsIndexable = this.isSupportedFile(newPath) && !this.isExcluded(newPath);
-        if (newIsIndexable) {
-          this.scheduleIndex([newPath]);
+    this.watcher = vscode6.workspace.createFileSystemWatcher(`**/*.{${extGlob}}`);
+    this.watcher.onDidChange(async (uri) => await this.handleFileChange(uri));
+    this.watcher.onDidCreate(async (uri) => await this.handleFileCreate(uri));
+    this.watcher.onDidDelete(async (uri) => await this.handleFileDelete(uri));
+    this.renameDisposable = vscode6.workspace.onDidRenameFiles(async (e2) => await this.handleFileRename(e2));
+  }
+  options;
+  watcher;
+  renameDisposable;
+  excludePatterns = [...globalExcludePatterns, ...languageExcludePatterns];
+  normalizePath(filePath) {
+    return filePath.replace(/\\/g, "/");
+  }
+  isSupportedFile(filePath) {
+    return supportedExtensions.some((ext2) => filePath.endsWith(ext2));
+  }
+  isExcluded(filePath) {
+    const normalized = this.normalizePath(filePath);
+    return this.excludePatterns.some((pattern) => minimatch(normalized, pattern, { dot: true }));
+  }
+  shouldWatch(uri) {
+    const relativePath = this.normalizePath(vscode6.workspace.asRelativePath(uri));
+    return this.isSupportedFile(relativePath) && !this.isExcluded(relativePath);
+  }
+  async handleFileChange(uri) {
+    if (!this.shouldWatch(uri)) return;
+    this.options.onWorkspaceModified();
+    if (!await this.options.isReady()) return;
+    const path13 = this.normalizePath(vscode6.workspace.asRelativePath(uri));
+    this.options.dirtyFiles.add(path13);
+    this.options.deletedFiles.delete(path13);
+    this.options.headerDirtyFiles.delete(path13);
+    this.options.onQueueChanged();
+  }
+  async handleFileCreate(uri) {
+    if (!this.shouldWatch(uri)) return;
+    this.options.onWorkspaceModified();
+    if (!await this.options.isReady()) return;
+    const path13 = this.normalizePath(vscode6.workspace.asRelativePath(uri));
+    this.options.dirtyFiles.add(path13);
+    this.options.deletedFiles.delete(path13);
+    this.options.headerDirtyFiles.delete(path13);
+    await this.scheduleNeighbourHoodUpdate(uri);
+    this.options.onQueueChanged();
+  }
+  async handleFileDelete(uri) {
+    if (!this.shouldWatch(uri)) return;
+    this.options.onWorkspaceModified();
+    if (!await this.options.isReady()) return;
+    const path13 = this.normalizePath(vscode6.workspace.asRelativePath(uri));
+    this.options.deletedFiles.add(path13);
+    this.options.dirtyFiles.delete(path13);
+    this.options.headerDirtyFiles.delete(path13);
+    await this.scheduleNeighbourHoodUpdate(uri);
+    this.options.onQueueChanged();
+  }
+  async handleFileRename(e2) {
+    this.options.onWorkspaceModified();
+    if (!await this.options.isReady()) return;
+    let queueUpdated = false;
+    for (const file of e2.files) {
+      const oldPath = this.normalizePath(vscode6.workspace.asRelativePath(file.oldUri));
+      const newPath = this.normalizePath(vscode6.workspace.asRelativePath(file.newUri));
+      if (this.isSupportedFile(oldPath) && !this.isExcluded(oldPath)) {
+        this.options.deletedFiles.add(oldPath);
+        this.options.dirtyFiles.delete(oldPath);
+        this.options.headerDirtyFiles.delete(oldPath);
+        queueUpdated = true;
+      }
+      if (this.isSupportedFile(newPath) && !this.isExcluded(newPath)) {
+        this.options.dirtyFiles.add(newPath);
+        this.options.deletedFiles.delete(newPath);
+        this.options.headerDirtyFiles.delete(newPath);
+        queueUpdated = true;
+      }
+      if (this.options.getDependentFiles && this.isSupportedFile(oldPath)) {
+        try {
+          const dependents = await this.options.getDependentFiles(oldPath);
+          for (const dep of dependents) {
+            const normalizedDep = this.normalizePath(dep);
+            if (!this.options.dirtyFiles.has(normalizedDep) && !this.options.deletedFiles.has(normalizedDep)) {
+              this.options.headerDirtyFiles.add(normalizedDep);
+              queueUpdated = true;
+            }
+          }
+        } catch (err) {
+          console.warn(`Failed to resolve dependents for ${oldPath}`, err);
         }
-        if (oldIsIndexable) {
-          this.scheduleDeleteFile([oldPath]);
-        }
-        const dependants = await this.findDependantFiles(oldPath);
-        for (const dep of dependants) {
-          if (!this.dirtyFiles.has(dep) && !this.deletedFiles.has(dep)) {
-            this.headerDirtyFiles.add(dep);
+      }
+    }
+    if (queueUpdated) this.options.onQueueChanged();
+  }
+  async scheduleNeighbourHoodUpdate(triggerUri) {
+    try {
+      const parentUri = vscode6.Uri.joinPath(triggerUri, "..");
+      const entries = await vscode6.workspace.fs.readDirectory(parentUri);
+      const triggerFileName = triggerUri.path.split("/").pop();
+      for (const [name, type] of entries) {
+        if (type === vscode6.FileType.File && name !== triggerFileName) {
+          const siblingUri = vscode6.Uri.joinPath(parentUri, name);
+          const siblingPath = this.normalizePath(vscode6.workspace.asRelativePath(siblingUri));
+          if (this.isSupportedFile(name) && !this.isExcluded(siblingPath)) {
+            if (!this.options.dirtyFiles.has(siblingPath) && !this.options.deletedFiles.has(siblingPath)) {
+              this.options.headerDirtyFiles.add(siblingPath);
+            }
           }
         }
       }
-      this.resetDebounceTimer();
-    });
-  }
-  context;
-  model;
-  cc;
-  getApiKey;
-  db;
-  dirtyFiles = /* @__PURE__ */ new Set();
-  deletedFiles = /* @__PURE__ */ new Set();
-  headerDirtyFiles = /* @__PURE__ */ new Set();
-  debounceTimer;
-  flushInProgress = false;
-  emitter = new vscode6.EventEmitter();
-  onDidUpdateStatus = this.emitter.event;
-  excludePattern = [...globalExcludePatterns, ...languageExcludePatterns];
-  /** Regex to detect agent worktree directories so we can ignore them in file watchers */
-  static worktreePattern = /[\/\\]\.agent-worktree-\d+[\/\\]/;
-  /** Returns true if the URI path is inside an agent worktree directory */
-  isWorktreePath(uri) {
-    return _Indexer.worktreePattern.test(uri.fsPath);
-  }
-  watcher;
-  renameDisposable;
-  static async create(context, model, getAPIKey) {
-    const cc = await CodeChunker.create(context.extensionUri);
-    let db;
-    try {
-      db = await VectorDB.create(context, model);
     } catch (e2) {
-      console.log(`Failed to connect to database: ${e2}`);
-      db = void 0;
+      console.warn(`Failed to schedule neighbourhood update`, e2);
     }
-    return new _Indexer(context, model, cc, getAPIKey, db);
   }
   dispose() {
     this.watcher.dispose();
     this.renameDisposable.dispose();
-    this.emitter.dispose();
+  }
+};
+
+// src/indexing/indexer.ts
+var Indexer = class _Indexer {
+  constructor(context, model, apiManager, chunker, database) {
+    this.context = context;
+    this.model = model;
+    this.apiManager = apiManager;
+    this.chunker = chunker;
+    this.database = database;
+    this.watcher = new Watcher({
+      dirtyFiles: this.dirtyFiles,
+      deletedFiles: this.deletedFiles,
+      headerDirtyFiles: this.headerDirtyFiles,
+      onQueueChanged: () => this.resetDebounceTimer(),
+      onWorkspaceModified: () => this.markWorkspaceModified(),
+      isReady: () => this.isReadyToIndex(),
+      getDependentFiles: (oldPath) => this.findDependantFiles(oldPath)
+    });
+  }
+  context;
+  model;
+  apiManager;
+  chunker;
+  database;
+  dirtyFiles = /* @__PURE__ */ new Set();
+  deletedFiles = /* @__PURE__ */ new Set();
+  headerDirtyFiles = /* @__PURE__ */ new Set();
+  watcher;
+  debounceTimer;
+  flushInProgress = false;
+  emitter = new vscode7.EventEmitter();
+  onDidUpdateStatus = this.emitter.event;
+  static async create(context, model, apiManager) {
+    const chunker = await CodeChunker.create(context.extensionUri);
+    let database;
+    try {
+      database = await VectorDB.create(context, model);
+    } catch (e2) {
+      console.log(`Failed to connect to database: ${e2}`);
+      database = void 0;
+    }
+    return new _Indexer(context, model, apiManager, chunker, database);
+  }
+  // Update the timestamp for the last modification to track which database is in or out of sync
+  markWorkspaceModified() {
+    this.context.workspaceState.update("lastModified", Date.now());
+  }
+  // Set the current table to the latest edit timestamp
+  async markDatabaseSynced(syncTimestamp) {
+    const dbTimestamps = this.context.workspaceState.get("dbTimestamps") || {};
+    dbTimestamps[this.model] = syncTimestamp;
+    await this.context.workspaceState.update("dbTimestamps", dbTimestamps);
+  }
+  indexEnabled() {
+    return this.context.globalState.get("indexEnabled") ?? true;
+  }
+  async isReadyToIndex() {
+    const provider = this.context.globalState.get("embedProvider") || "";
+    try {
+      await this.apiManager.getEmbedAPIKey(provider);
+      return Boolean(this.indexEnabled() && this.database);
+    } catch {
+      return false;
+    }
+  }
+  resetDebounceTimer() {
     if (this.debounceTimer) clearTimeout(this.debounceTimer);
+    const fileCount = this.dirtyFiles.size + this.deletedFiles.size + this.headerDirtyFiles.size;
+    if (fileCount === 0) return;
+    const delay = this.context.globalState.get("debounceTime") ?? 10;
+    this.emitter.fire({
+      type: "updateIndexStatus",
+      state: "queued",
+      fileCount,
+      delay
+    });
+    this.debounceTimer = setTimeout(() => {
+      void this.flushIndexQueue();
+    }, delay * 1e3);
+  }
+  async flushIndexQueue() {
+    if (this.flushInProgress) return;
+    if (!this.isReadyToIndex() || !this.database) {
+      this.flushInProgress = false;
+      return;
+    }
+    this.flushInProgress = true;
+    const filesToDelete = Array.from(this.deletedFiles);
+    const filesToIndex = Array.from(this.dirtyFiles).filter((f3) => !this.deletedFiles.has(f3));
+    const filesForHeaderUpdate = Array.from(this.headerDirtyFiles).filter(
+      (f3) => !this.dirtyFiles.has(f3) && !this.deletedFiles.has(f3)
+    );
+    if (filesToDelete.length === 0 && filesToIndex.length === 0 && filesForHeaderUpdate.length === 0) {
+      this.flushInProgress = false;
+      return;
+    }
+    const successfulDeletions = /* @__PURE__ */ new Set();
+    const successfulIndexes = /* @__PURE__ */ new Set();
+    const successfulHeaders = /* @__PURE__ */ new Set();
+    const provider = this.context.globalState.get("embedProvider") || "";
+    try {
+      const apiKey = await this.apiManager.getEmbedAPIKey(provider);
+      const embedProvider = EmbedFactory.create(provider, apiKey);
+      const syncTime = this.context.workspaceState.get("lastModified") || Date.now();
+      if (filesToDelete.length > 0) {
+        this.emitter.fire({
+          type: "updateIndexStatus",
+          state: "indexing",
+          text: `Deleting ${filesToDelete.length} file(s)...`
+        });
+        for (const filePath of filesToDelete) {
+          await this.database.deleteByFilePath(filePath);
+          successfulDeletions.add(filePath);
+        }
+      }
+      if (filesToIndex.length > 0) {
+        this.emitter.fire({
+          type: "updateIndexStatus",
+          state: "indexing",
+          text: `Chunking ${filesToIndex.length} file(s)...`
+        });
+        const allChunks = [];
+        const filesWithChunks = /* @__PURE__ */ new Set();
+        for (const filePath of filesToIndex) {
+          if (this.deletedFiles.has(filePath)) continue;
+          const workspaceUri = getWorkspaceUri(filePath);
+          try {
+            await vscode7.workspace.fs.stat(workspaceUri);
+            const fileChunks = await this.chunker.chunkFile(workspaceUri);
+            await this.database.deleteByFilePath(filePath);
+            if (fileChunks.length > 0) {
+              allChunks.push(...fileChunks);
+              filesWithChunks.add(filePath);
+            }
+            successfulIndexes.add(filePath);
+          } catch {
+            await this.database.deleteByFilePath(filePath);
+            successfulIndexes.add(filePath);
+          }
+        }
+        if (allChunks.length > 0) {
+          this.emitter.fire({
+            type: "updateIndexStatus",
+            state: "indexing",
+            text: `Embedding ${allChunks.length} chunk(s)...`
+          });
+          const BATCH_SIZE = 100;
+          const rowsToInsert = [];
+          for (let i2 = 0; i2 < allChunks.length; i2 += BATCH_SIZE) {
+            const chunkSlice = allChunks.slice(i2, i2 + BATCH_SIZE);
+            const texts = chunkSlice.map((c) => c.text);
+            const vectors = await embedProvider.embed(this.model, texts);
+            for (let j = 0; j < chunkSlice.length; j++) {
+              if (!this.deletedFiles.has(chunkSlice[j].filePath)) {
+                rowsToInsert.push({
+                  vector: vectors[j],
+                  ...chunkSlice[j]
+                });
+              }
+            }
+          }
+          if (rowsToInsert.length > 0) {
+            await this.database.insertRows(rowsToInsert);
+          }
+        }
+      }
+      if (filesForHeaderUpdate.length > 0) {
+        this.emitter.fire({
+          type: "updateIndexStatus",
+          state: "indexing",
+          text: `Updating ${filesForHeaderUpdate.length} header(s)...`
+        });
+        for (const filePath of filesForHeaderUpdate) {
+          if (this.dirtyFiles.has(filePath) || this.deletedFiles.has(filePath)) continue;
+          const workspaceUri = getWorkspaceUri(filePath);
+          try {
+            await vscode7.workspace.fs.stat(workspaceUri);
+            await this.updateFileHeader(filePath);
+            successfulHeaders.add(filePath);
+          } catch {
+            await this.database.deleteByFilePath(filePath);
+            successfulHeaders.add(filePath);
+          }
+        }
+      }
+      for (const path13 of successfulDeletions) this.deletedFiles.delete(path13);
+      for (const path13 of successfulIndexes) this.dirtyFiles.delete(path13);
+      for (const path13 of successfulHeaders) this.headerDirtyFiles.delete(path13);
+      this.chunker.clearNeighbourHoodCache();
+      await this.markDatabaseSynced(syncTime);
+      const vectorCount = await this.database.getVectorCount();
+      this.emitter.fire({ type: "updateIndexStatus", state: "indexed", vectorCount });
+    } catch (e2) {
+      console.error(`Failed to flush index queue: ${e2}`);
+      this.emitter.fire({
+        type: "updateIndexStatus",
+        state: "error",
+        text: e2 instanceof Error ? e2.message : String(e2)
+      });
+    } finally {
+      this.flushInProgress = false;
+      if (this.dirtyFiles.size > 0 || this.deletedFiles.size > 0 || this.headerDirtyFiles.size > 0) {
+        this.resetDebounceTimer();
+      }
+    }
+  }
+  // Create a new database and chunk and embed ALL relevant files in the workspace
+  async indexWorkspace() {
+    try {
+      const provider = this.context.globalState.get("embedProvider") || "";
+      const apiKey = await this.apiManager.getEmbedAPIKey(provider);
+      const providerInstance = EmbedFactory.create(provider, apiKey);
+      const syncTime = this.context.workspaceState.get("lastModified") || Date.now();
+      this.emitter.fire({ type: "updateIndexStatus", state: "indexing", text: "Reading workspace..." });
+      const chunks = await this.chunker.chunkWorkspace();
+      this.chunker.clearNeighbourHoodCache();
+      if (chunks.length === 0) {
+        this.emitter.fire({ type: "updateIndexStatus", state: "unindexed", text: "No supported files" });
+        return;
+      }
+      this.emitter.fire({ type: "updateIndexStatus", state: "indexing", text: `Embedding ${chunks.length} chunks...` });
+      const BATCH_SIZE = 100;
+      const rows = [];
+      for (let i2 = 0; i2 < chunks.length; i2 += BATCH_SIZE) {
+        const slice = chunks.slice(i2, i2 + BATCH_SIZE);
+        const texts = slice.map((c) => c.text);
+        const vectors = await providerInstance.embed(this.model, texts);
+        for (let j = 0; j < slice.length; j++) {
+          rows.push({
+            vector: vectors[j],
+            ...slice[j]
+          });
+        }
+      }
+      const dimension = rows[0].vector.length;
+      this.emitter.fire({ type: "updateIndexStatus", state: "indexing", text: "Saving to database..." });
+      this.database = await VectorDB.create(this.context, this.model, dimension);
+      await this.database.insertRows(rows);
+      await this.markDatabaseSynced(syncTime);
+      this.dirtyFiles.clear();
+      this.deletedFiles.clear();
+      this.headerDirtyFiles.clear();
+      const vectorCount = await this.database.getVectorCount();
+      this.emitter.fire({ type: "updateIndexStatus", state: "indexed", vectorCount });
+    } catch (e2) {
+      console.error(`Workspace indexing failed: ${e2}`);
+      this.emitter.fire({
+        type: "updateIndexStatus",
+        state: "error",
+        text: e2 instanceof Error ? e2.message : String(e2)
+      });
+    }
+  }
+  // Update the header only, which contains information like sibling files and imports
+  // Wouldn't want to re-embed all sibling files just because a file was renamed, created or deleted
+  async updateFileHeader(filePath) {
+    if (!this.database) return;
+    const existingRows = await this.database.getRowsByFilePath(filePath);
+    if (existingRows.length === 0) return;
+    const workspaceUri = getWorkspaceUri(filePath);
+    const { imports, siblings } = await this.chunker.getFileContext(workspaceUri);
+    const siblingsRegex = /\[SIBLINGS\][\s\S]*?\[\/SIBLINGS\]/;
+    const importsRegex = /\[IMPORTS\][\s\S]*?\[\/IMPORTS\]/;
+    const rowsToUpdate = existingRows.map((row) => {
+      let updatedText = row.text;
+      if (siblingsRegex.test(updatedText)) {
+        updatedText = updatedText.replace(siblingsRegex, siblings);
+      }
+      if (importsRegex.test(updatedText)) {
+        updatedText = updatedText.replace(importsRegex, imports);
+      }
+      return {
+        ...row,
+        vector: Array.from(row.vector),
+        text: updatedText
+      };
+    });
+    await this.database.deleteByFilePath(filePath);
+    await this.database.insertRows(rowsToUpdate);
+  }
+  async findDependantFiles(oldFileName) {
+    if (!this.database) return [];
+    const importName = oldFileName.replace(/\.[^/.]+$/, "");
+    const dependants = await this.database.getFilePathByImport(importName);
+    const uniqueFiles = new Set(dependants.map((r2) => r2.filePath));
+    uniqueFiles.delete(oldFileName);
+    return Array.from(uniqueFiles);
   }
   async broadcastCurrentState() {
-    if (this.db) {
+    if (this.database) {
       const lastModified = this.context.workspaceState.get("lastModified") || 0;
       const dbTimestamps = this.context.workspaceState.get("dbTimestamps") || {};
       const tableTimeStamp = dbTimestamps[this.model] || 0;
-      const count = await this.db.getVectorCount();
+      const count = await this.database.getVectorCount();
       if (tableTimeStamp > 0 && lastModified > tableTimeStamp) {
         this.emitter.fire({
           type: "updateIndexStatus",
@@ -110660,239 +110980,15 @@ var Indexer = class _Indexer {
       });
     }
   }
-  // Initial indexing of all relevant files in the workspace
-  async indexWorkspace(embedProvider, model) {
-    try {
-      const syncTime = this.context.workspaceState.get("lastModified") || Date.now();
-      this.emitter.fire({ type: "updateIndexStatus", state: "indexing", text: "Reading workspace..." });
-      const chunks = await this.cc.chunkWorkspace();
-      this.cc.clearNeighbourHoodCache();
-      if (chunks.length === 0) {
-        this.emitter.fire({ type: "updateIndexStatus", state: "unindexed", text: "No supported files" });
-        return;
-      }
-      this.emitter.fire({ type: "updateIndexStatus", state: "indexing", text: `Embedding ${chunks.length} chunks...` });
-      const texts = chunks.map((chunk) => chunk.text);
-      const vectors = await embedProvider.embed(model, texts);
-      const dimension = vectors[0].length;
-      this.emitter.fire({ type: "updateIndexStatus", state: "indexing", text: "Saving to database..." });
-      this.db = await VectorDB.create(this.context, model, dimension);
-      const rows = chunks.map((chunk, i2) => ({
-        vector: vectors[i2],
-        ...chunk
-      }));
-      await this.db.insertRows(rows);
-      await this.markDatabaseSynced(syncTime);
-      const vectorCount = await this.db.getVectorCount();
-      this.emitter.fire({ type: "updateIndexStatus", state: "indexed", vectorCount });
-    } catch (e2) {
-      console.error(`Workspace indexing failed: ${e2}`);
-      this.emitter.fire({
-        type: "updateIndexStatus",
-        state: "error",
-        text: e2 instanceof Error ? e2.message : String(e2)
-      });
-    }
-  }
-  scheduleIndex(filePaths) {
-    for (const filePath of filePaths) {
-      this.dirtyFiles.add(filePath);
-      this.headerDirtyFiles.delete(filePath);
-      this.deletedFiles.delete(filePath);
-    }
-    this.resetDebounceTimer();
-  }
-  scheduleDeleteFile(filePaths) {
-    for (const filePath of filePaths) {
-      this.deletedFiles.add(filePath);
-      this.dirtyFiles.delete(filePath);
-      this.headerDirtyFiles.delete(filePath);
-    }
-    this.resetDebounceTimer();
-  }
-  async scheduleNeighbourHoodUpdate(triggerUri) {
-    try {
-      const parentUri = vscode6.Uri.joinPath(triggerUri, "..");
-      const entries = await vscode6.workspace.fs.readDirectory(parentUri);
-      const triggerFileName = triggerUri.path.split("/").pop();
-      for (const [name, type] of entries) {
-        if (type === vscode6.FileType.File && name !== triggerFileName) {
-          const siblingUri = vscode6.Uri.joinPath(parentUri, name);
-          const siblingPath = vscode6.workspace.asRelativePath(siblingUri);
-          if (this.isSupportedFile(name) && !this.isExcluded(siblingPath)) {
-            if (!this.dirtyFiles.has(siblingPath) && !this.deletedFiles.has(siblingPath)) {
-              this.headerDirtyFiles.add(siblingPath);
-            }
-          }
-        }
-      }
-      this.resetDebounceTimer();
-    } catch (e2) {
-      console.warn(`Failed to schedule neighbourhood update`, e2);
-    }
-  }
   async search(queryText, vector) {
+    if (!this.database) throw new Error("VectorDB is not connected");
     const limit3 = this.context.globalState.get("retrievalCount") ?? 10;
-    return this.db.hybridSearch(queryText, vector, limit3);
-  }
-  async indexFile(filePath, embedProvider, model) {
-    if (!this.db) throw new Error("Cannot index file: VectorDB is not connected");
-    const workspaceUri = getWorkspaceUri(filePath);
-    const chunks = await this.cc.chunkFile(workspaceUri);
-    await this.db.deleteByFilePath(filePath);
-    if (chunks.length === 0) return;
-    const texts = chunks.map((chunk) => chunk.text);
-    const vectors = await embedProvider.embed(model, texts);
-    const rows = chunks.map((chunk, i2) => ({
-      vector: vectors[i2],
-      ...chunk
-    }));
-    await this.db.insertRows(rows);
-  }
-  async deleteFile(filePath) {
-    if (!this.db) throw new Error("Cannot delete file: VectorDB is not connected");
-    await this.db.deleteByFilePath(filePath);
-  }
-  isSupportedFile(fileName) {
-    return supportedExtensions.some((ext2) => fileName.endsWith(ext2));
-  }
-  isExcluded(filePath) {
-    return this.excludePattern.some((pattern) => minimatch(filePath, pattern, { dot: true }));
-  }
-  /**
-   * The FileSystemWatcher only supports an include glob. Keep its events in
-   * sync with chunkWorkspace() by applying the same exclusions here. This is
-   * important for generated bundles: the extension build writes dist/*.js,
-   * which otherwise looks like user source to the JavaScript watcher.
-   */
-  shouldWatch(uri) {
-    if (this.isWorktreePath(uri)) return false;
-    const relativePath = vscode6.workspace.asRelativePath(uri);
-    return this.isSupportedFile(relativePath) && !this.isExcluded(relativePath);
-  }
-  indexEnabled() {
-    return this.context.globalState.get("indexEnabled") ?? true;
-  }
-  async updateFileHeader(filePath) {
-    if (!this.db) throw new Error("Cannot update file: VectorDB is not connected");
-    const existingRows = await this.db.getRowsByFilePath(filePath);
-    if (existingRows.length === 0) return;
-    const workspaceUri = getWorkspaceUri(filePath);
-    const { imports, siblings } = await this.cc.getFileContext(workspaceUri);
-    const siblingsRegex = /\[SIBLINGS\][\s\S]*?\[\/SIBLINGS\]/;
-    const importsRegex = /\[IMPORTS\][\s\S]*?\[\/IMPORTS\]/;
-    const rowsToUpdate = existingRows.map((row) => {
-      let updatedText = row.text;
-      if (siblingsRegex.test(updatedText)) {
-        updatedText = updatedText.replace(siblingsRegex, siblings);
-      }
-      if (importsRegex.test(updatedText)) {
-        updatedText = updatedText.replace(importsRegex, imports);
-      }
-      return {
-        ...row,
-        vector: Array.from(row.vector),
-        text: updatedText
-      };
-    });
-    await this.db.deleteByFilePath(filePath);
-    await this.db.insertRows(rowsToUpdate);
-  }
-  async findDependantFiles(oldFileName) {
-    if (!this.db) throw new Error("Cannot find dependant files: VectorDB is not Connected");
-    const importName = oldFileName.replace(/\.[^/.]+$/, "");
-    const dependants = await this.db.getFilePathByImport(importName);
-    const uniqueFiles = new Set(dependants.map((r2) => r2.filePath));
-    uniqueFiles.delete(oldFileName);
-    return Array.from(uniqueFiles);
-  }
-  async flushIndexQueue() {
-    if (this.flushInProgress) return;
-    this.flushInProgress = true;
-    const provider = this.context.globalState.get("embedProvider");
-    if (!provider) {
-      this.flushInProgress = false;
-      return;
-    }
-    try {
-      const apiKey = await this.getApiKey(provider);
-      if (!apiKey) throw new Error(`${provider} API key missing`);
-      if (!this.db) throw new Error(`Failed to flush queue: Database not connected`);
-      const syncTime = this.context.workspaceState.get("lastModified") || Date.now();
-      const deletedFiles = [...this.deletedFiles];
-      const dirtyFiles = [...this.dirtyFiles].filter((f3) => !this.deletedFiles.has(f3));
-      const headerDirtyFiles = [...this.headerDirtyFiles].filter(
-        (f3) => !this.dirtyFiles.has(f3) && !this.deletedFiles.has(f3)
-      );
-      if (deletedFiles.length === 0 && dirtyFiles.length === 0 && headerDirtyFiles.length === 0) return;
-      this.dirtyFiles.clear();
-      this.deletedFiles.clear();
-      this.headerDirtyFiles.clear();
-      const embedProvider = EmbedFactory.create(provider, apiKey);
-      if (deletedFiles.length > 0) {
-        this.emitter.fire({ type: "updateIndexStatus", state: "indexing", text: `Deleting ${deletedFiles.length} file(s)...` });
-        for (const file of deletedFiles) await this.deleteFile(file);
-      }
-      if (dirtyFiles.length > 0) {
-        this.emitter.fire({ type: "updateIndexStatus", state: "indexing", text: `Indexing ${dirtyFiles.length} files(s)...` });
-        for (const file of dirtyFiles) await this.indexFile(file, embedProvider, this.model);
-      }
-      if (headerDirtyFiles.length > 0) {
-        this.emitter.fire({ type: "updateIndexStatus", state: "indexing", text: `Updating ${headerDirtyFiles.length} header(s)...` });
-        for (const file of headerDirtyFiles) await this.updateFileHeader(file);
-      }
-      this.cc.clearNeighbourHoodCache();
-      await this.markDatabaseSynced(syncTime);
-      const vectorCount = await this.db.getVectorCount();
-      this.emitter.fire({
-        type: "updateIndexStatus",
-        state: "indexed",
-        vectorCount
-      });
-    } catch (e2) {
-      console.error(`Failed to flush index queue: ${e2}`);
-      this.emitter.fire({
-        type: "updateIndexStatus",
-        state: "error",
-        text: e2 instanceof Error ? e2.message : String(e2)
-      });
-    } finally {
-      this.flushInProgress = false;
-      if (this.dirtyFiles.size > 0 || this.deletedFiles.size > 0 || this.headerDirtyFiles.size > 0) {
-        this.resetDebounceTimer();
-      }
-    }
-  }
-  resetDebounceTimer() {
-    if (this.debounceTimer) clearTimeout(this.debounceTimer);
-    const fileCount = this.dirtyFiles.size + this.deletedFiles.size + this.headerDirtyFiles.size;
-    const delay = this.context.globalState.get("debounceTime") ?? 10;
-    if (fileCount > 0) {
-      this.emitter.fire({
-        type: "updateIndexStatus",
-        state: "queued",
-        fileCount,
-        delay
-      });
-    }
-    this.debounceTimer = setTimeout(() => {
-      void this.flushIndexQueue();
-    }, delay * 1e3);
-  }
-  // After flushing queue, store the time stamp of the latest edits
-  markWorkspaceModified() {
-    this.context.workspaceState.update("lastModified", Date.now());
-  }
-  // Set the current table to the latest edit timestamp
-  async markDatabaseSynced(syncTimestamp) {
-    const dbTimestamps = this.context.workspaceState.get("dbTimestamps") || {};
-    dbTimestamps[this.model] = syncTimestamp;
-    await this.context.workspaceState.update("dbTimestamps", dbTimestamps);
+    return this.database.hybridSearch(queryText, vector, limit3);
   }
   async deleteIndex() {
-    if (this.db) {
-      await this.db.dropTable();
-      this.db = void 0;
+    if (this.database) {
+      await this.database.dropTable();
+      this.database = void 0;
     }
     this.dirtyFiles.clear();
     this.deletedFiles.clear();
@@ -110907,26 +111003,18 @@ var Indexer = class _Indexer {
       text: "Not Indexed"
     });
   }
-  // private static debugVector(label: string, vector: ArrayLike<number>, text: string) {
-  //     const values = Array.from(vector);
-  //     const textHash = crypto
-  //         .createHash('sha256')
-  //         .update(text)
-  //         .digest('hex')
-  //         .slice(0, 12);
-  //     console.log(`[INDEX DEBUG] ${label}`);
-  //     console.log(`  textHash: ${textHash}`);
-  //     console.log(`  dimension: ${values.length}`);
-  //     console.log(`  first10: ${values.slice(0, 10).map(n => Number(n).toFixed(5)).join(', ')}`);
-  //     console.log(`  preview: ${text.slice(0, 160).replace(/\s+/g, ' ')}`);
-  // }
+  dispose() {
+    this.watcher.dispose();
+    this.emitter.dispose();
+    if (this.debounceTimer) clearTimeout(this.debounceTimer);
+  }
 };
 
 // src/managers/worktreeManager.ts
 var cp2 = __toESM(require("child_process"));
 var util5 = __toESM(require("util"));
 var path10 = __toESM(require("path"));
-var vscode7 = __toESM(require("vscode"));
+var vscode8 = __toESM(require("vscode"));
 var fs7 = __toESM(require("fs/promises"));
 var crypto4 = __toESM(require("crypto"));
 var exec2 = util5.promisify(cp2.exec);
@@ -110945,17 +111033,17 @@ var WorktreeManager = class _WorktreeManager {
   context;
   worktreePath;
   originalWorkspace;
-  emitter = new vscode7.EventEmitter();
+  emitter = new vscode8.EventEmitter();
   onDidUpdateStatus = this.emitter.event;
   async setup() {
     const gitInstalled = await _WorktreeManager.isGitInstalled();
     if (!gitInstalled) {
-      vscode7.window.showErrorMessage("Install Git on your system and restart VS Code.", "Understood");
+      vscode8.window.showErrorMessage("Install Git on your system and restart VS Code.", "Understood");
       throw new Error("Git is not installed on the system.");
     }
     const isRepo = await _WorktreeManager.isGitRepo(this.originalWorkspace);
     if (!isRepo) {
-      const userChoice = await vscode7.window.showWarningMessage(
+      const userChoice = await vscode8.window.showWarningMessage(
         "Git repository required for file edits. Initialize now?",
         "Initialize",
         "Cancel"
@@ -110963,9 +111051,9 @@ var WorktreeManager = class _WorktreeManager {
       if (userChoice === "Initialize") {
         try {
           await _WorktreeManager.initGitRepo(this.originalWorkspace);
-          vscode7.window.showInformationMessage("Git repository initialized successfully.");
+          vscode8.window.showInformationMessage("Git repository initialized successfully.");
         } catch (e2) {
-          vscode7.window.showErrorMessage(`Failed to initialize Git: ${e2}`);
+          vscode8.window.showErrorMessage(`Failed to initialize Git: ${e2}`);
           throw new Error(`Failed to initialize Git: ${e2}`);
         }
       } else {
@@ -110977,8 +111065,8 @@ var WorktreeManager = class _WorktreeManager {
       await fs7.mkdir(path10.dirname(this.worktreePath), { recursive: true });
       await exec2(`git worktree add --detach "${this.worktreePath}" HEAD`, { cwd: this.originalWorkspace });
       await this.link();
+      await this.reset();
     }
-    await this.reset();
   }
   async reset() {
     const { stdout: headSha } = await exec2(`git rev-parse HEAD`, { cwd: this.originalWorkspace });
@@ -111066,14 +111154,14 @@ var WorktreeManager = class _WorktreeManager {
       return filePath;
     });
     for (const file of dirtyFiles) {
-      const src = vscode7.Uri.file(path10.join(this.originalWorkspace, file));
-      const dest = vscode7.Uri.file(path10.join(this.worktreePath, file));
+      const src = vscode8.Uri.file(path10.join(this.originalWorkspace, file));
+      const dest = vscode8.Uri.file(path10.join(this.worktreePath, file));
       try {
-        await vscode7.workspace.fs.stat(src);
-        await vscode7.workspace.fs.copy(src, dest, { overwrite: true });
+        await vscode8.workspace.fs.stat(src);
+        await vscode8.workspace.fs.copy(src, dest, { overwrite: true });
       } catch {
         try {
-          await vscode7.workspace.fs.delete(dest, { useTrash: false });
+          await vscode8.workspace.fs.delete(dest, { useTrash: false });
         } catch (e2) {
         }
       }
@@ -111127,14 +111215,14 @@ var WorktreeManager = class _WorktreeManager {
     const { stdout } = await exec2(`git diff --name-only HEAD`, { cwd: this.worktreePath });
     const files = stdout.split("\n").map((f3) => f3.trim()).filter((f3) => f3.length > 0);
     for (const file of files) {
-      const src = vscode7.Uri.file(path10.join(this.worktreePath, file));
-      const dest = vscode7.Uri.file(path10.join(this.originalWorkspace, file));
+      const src = vscode8.Uri.file(path10.join(this.worktreePath, file));
+      const dest = vscode8.Uri.file(path10.join(this.originalWorkspace, file));
       try {
-        await vscode7.workspace.fs.stat(src);
-        await vscode7.workspace.fs.copy(src, dest, { overwrite: true });
+        await vscode8.workspace.fs.stat(src);
+        await vscode8.workspace.fs.copy(src, dest, { overwrite: true });
       } catch {
         try {
-          await vscode7.workspace.fs.delete(dest, { useTrash: false });
+          await vscode8.workspace.fs.delete(dest, { useTrash: false });
         } catch (e2) {
         }
       }
@@ -111166,12 +111254,12 @@ var WorktreeManager = class _WorktreeManager {
 };
 
 // src/managers/contextManager.ts
-var vscode8 = __toESM(require("vscode"));
+var vscode9 = __toESM(require("vscode"));
 var ContextManager = class {
   constructor(context) {
     this.context = context;
     this.storageUri = context.storageUri;
-    if (this.storageUri) this.artifactsUri = vscode8.Uri.joinPath(this.storageUri, "artifacts");
+    if (this.storageUri) this.artifactsUri = vscode9.Uri.joinPath(this.storageUri, "artifacts");
     this.currentProvider = this.context.globalState.get("chatProvider");
   }
   context;
@@ -111206,13 +111294,13 @@ var ContextManager = class {
   tokenEncoder = getEncoding("o200k_base");
   storageUri;
   artifactsUri;
-  emitter = new vscode8.EventEmitter();
+  emitter = new vscode9.EventEmitter();
   onDidUpdateStatus = this.emitter.event;
   async initialize() {
     if (!this.storageUri || this.isInitialized) return;
     try {
-      await vscode8.workspace.fs.createDirectory(this.storageUri);
-      if (this.artifactsUri) await vscode8.workspace.fs.createDirectory(this.artifactsUri);
+      await vscode9.workspace.fs.createDirectory(this.storageUri);
+      if (this.artifactsUri) await vscode9.workspace.fs.createDirectory(this.artifactsUri);
     } catch (e2) {
       console.error("Failed to create context directory");
     }
@@ -111221,9 +111309,9 @@ var ContextManager = class {
   }
   async loadHistory() {
     if (!this.storageUri) return;
-    const fileUri = vscode8.Uri.joinPath(this.storageUri, "chat_history.json");
+    const fileUri = vscode9.Uri.joinPath(this.storageUri, "chat_history.json");
     try {
-      const data = await vscode8.workspace.fs.readFile(fileUri);
+      const data = await vscode9.workspace.fs.readFile(fileUri);
       const state = JSON.parse(new TextDecoder().decode(data));
       if (state.history) this.history = state.history;
       if (state.summarizedHistory) this.summarizedHistory = state.summarizedHistory;
@@ -111239,9 +111327,9 @@ var ContextManager = class {
       summarizedHistory: this.summarizedHistory,
       summarizeIndex: this.summarizeIndex
     };
-    const fileUri = vscode8.Uri.joinPath(this.storageUri, "chat_history.json");
+    const fileUri = vscode9.Uri.joinPath(this.storageUri, "chat_history.json");
     const data = new TextEncoder().encode(JSON.stringify(state, null, 2));
-    await vscode8.workspace.fs.writeFile(fileUri, data);
+    await vscode9.workspace.fs.writeFile(fileUri, data);
   }
   getHistory() {
     return [...this.history];
@@ -111441,16 +111529,16 @@ var ContextManager = class {
   }
   async readArtifact(artifactID) {
     if (!this.artifactsUri) throw new Error("Artifact storage not initialized");
-    const fileUri = vscode8.Uri.joinPath(this.artifactsUri, artifactID);
-    const data = await vscode8.workspace.fs.readFile(fileUri);
+    const fileUri = vscode9.Uri.joinPath(this.artifactsUri, artifactID);
+    const data = await vscode9.workspace.fs.readFile(fileUri);
     return new TextDecoder().decode(data);
   }
   async saveArtifactContent(name, id, content) {
     if (!this.artifactsUri) return "artifact_storage_disabled";
     const artifactID = `artifact_${name}_${id}_${Date.now()}.txt`;
-    const fileUri = vscode8.Uri.joinPath(this.artifactsUri, artifactID);
+    const fileUri = vscode9.Uri.joinPath(this.artifactsUri, artifactID);
     const data = new TextEncoder().encode(content);
-    await vscode8.workspace.fs.writeFile(fileUri, data);
+    await vscode9.workspace.fs.writeFile(fileUri, data);
     return artifactID;
   }
   async pruneActiveTools() {
@@ -111515,8 +111603,8 @@ ${resultItem.result}
   async clearArtifacts() {
     if (!this.artifactsUri) return;
     try {
-      await vscode8.workspace.fs.delete(this.artifactsUri, { recursive: true, useTrash: false });
-      await vscode8.workspace.fs.createDirectory(this.artifactsUri);
+      await vscode9.workspace.fs.delete(this.artifactsUri, { recursive: true, useTrash: false });
+      await vscode9.workspace.fs.createDirectory(this.artifactsUri);
     } catch (e2) {
       console.error("Failed to clear artifacts directory:", e2);
     }
@@ -111633,7 +111721,7 @@ Please continue fulfilling the request using this context.`,
 };
 
 // src/managers/commandManager.ts
-var vscode9 = __toESM(require("vscode"));
+var vscode10 = __toESM(require("vscode"));
 var import_child_process2 = require("child_process");
 var path11 = __toESM(require("path"));
 var import_shell_quote = __toESM(require_shell_quote());
@@ -111758,7 +111846,7 @@ var CommandManager = class _CommandManager {
   };
   config = _CommandManager.DEFAULT_CONFIG;
   watcher;
-  emitter = new vscode9.EventEmitter();
+  emitter = new vscode10.EventEmitter();
   onDidUpdateStatus = this.emitter.event;
   pendingApprovals = /* @__PURE__ */ new Map();
   requestApproval(bin, args) {
@@ -111775,7 +111863,7 @@ var CommandManager = class _CommandManager {
   }
   getConfigUri = () => {
     if (!this.context.storageUri) return void 0;
-    return vscode9.Uri.joinPath(this.context.storageUri, "agent-rules.json");
+    return vscode10.Uri.joinPath(this.context.storageUri, "agent-rules.json");
   };
   async receiveApproval(requestID, approved, save = false) {
     const pending = this.pendingApprovals.get(requestID);
@@ -111788,8 +111876,8 @@ var CommandManager = class _CommandManager {
   }
   initWatcher() {
     if (!this.context.storageUri) return;
-    const pattern = new vscode9.RelativePattern(this.context.storageUri, "agent-rules.json");
-    this.watcher = vscode9.workspace.createFileSystemWatcher(pattern);
+    const pattern = new vscode10.RelativePattern(this.context.storageUri, "agent-rules.json");
+    this.watcher = vscode10.workspace.createFileSystemWatcher(pattern);
     this.watcher.onDidChange(async () => {
       await this.loadConfig();
       this.emitter.fire({
@@ -111805,10 +111893,10 @@ var CommandManager = class _CommandManager {
     const uri = this.getConfigUri();
     if (!uri) return;
     try {
-      await vscode9.workspace.fs.stat(uri);
+      await vscode10.workspace.fs.stat(uri);
     } catch {
-      await vscode9.workspace.fs.createDirectory(this.context.storageUri);
-      await vscode9.workspace.fs.writeFile(
+      await vscode10.workspace.fs.createDirectory(this.context.storageUri);
+      await vscode10.workspace.fs.writeFile(
         uri,
         Buffer.from(JSON.stringify(_CommandManager.DEFAULT_CONFIG, null, 4))
       );
@@ -111817,12 +111905,12 @@ var CommandManager = class _CommandManager {
   async openConfigFile() {
     const uri = this.getConfigUri();
     if (!uri) {
-      vscode9.window.showErrorMessage("No active workspace");
+      vscode10.window.showErrorMessage("No active workspace");
       return;
     }
     await this.ensureConfigExists();
-    const document2 = await vscode9.workspace.openTextDocument(uri);
-    await vscode9.window.showTextDocument(document2);
+    const document2 = await vscode10.workspace.openTextDocument(uri);
+    await vscode10.window.showTextDocument(document2);
   }
   async loadConfig() {
     const uri = this.getConfigUri();
@@ -111832,7 +111920,7 @@ var CommandManager = class _CommandManager {
     }
     await this.ensureConfigExists();
     try {
-      const fileData = await vscode9.workspace.fs.readFile(uri);
+      const fileData = await vscode10.workspace.fs.readFile(uri);
       this.config = JSON.parse(Buffer.from(fileData).toString("utf-8"));
     } catch (error2) {
       this.config = _CommandManager.DEFAULT_CONFIG;
@@ -111841,7 +111929,7 @@ var CommandManager = class _CommandManager {
   async addCommandToAllowList(bin, args) {
     const uri = this.getConfigUri();
     if (!uri) {
-      vscode9.window.showErrorMessage("Unable to open configuration file.");
+      vscode10.window.showErrorMessage("Unable to open configuration file.");
       return;
     }
     await this.loadConfig();
@@ -111853,13 +111941,13 @@ var CommandManager = class _CommandManager {
     if (!this.config.allowedCommands[bin].includes(regexPattern)) {
       this.config.allowedCommands[bin].push(regexPattern);
       try {
-        await vscode9.workspace.fs.writeFile(
+        await vscode10.workspace.fs.writeFile(
           uri,
           Buffer.from(JSON.stringify(this.config, null, 4))
         );
-        vscode9.window.showInformationMessage(`Added '${bin} ${args}' to your allowed commands.`);
+        vscode10.window.showInformationMessage(`Added '${bin} ${args}' to your allowed commands.`);
       } catch (e2) {
-        vscode9.window.showErrorMessage(`Failed to save allowed command: ${e2}`);
+        vscode10.window.showErrorMessage(`Failed to save allowed command: ${e2}`);
       }
     }
   }
@@ -111990,14 +112078,14 @@ ${text.slice(-half)}`;
 };
 
 // src/managers/apiManager.ts
-var vscode10 = __toESM(require("vscode"));
+var vscode11 = __toESM(require("vscode"));
 var APIManager = class {
   constructor(context) {
     this.context = context;
   }
   context;
   chatModelInfo = /* @__PURE__ */ new Map();
-  emitter = new vscode10.EventEmitter();
+  emitter = new vscode11.EventEmitter();
   onDidUpdateStatus = this.emitter.event;
   async getChatAPIKey(provider) {
     if (provider.toLowerCase() === "ollama") {
@@ -112052,7 +112140,7 @@ var APIManager = class {
       const isValidModel = infos.some((info) => info.id === chatModel);
       this.emitter.fire({ type: "updateChatModel", model: isValidModel ? chatModel : void 0 });
     } catch (e2) {
-      vscode10.window.showErrorMessage(`Failed to fetch chat models: ${e2}`);
+      vscode11.window.showErrorMessage(`Failed to fetch chat models: ${e2}`);
       this.emitter.fire({ type: "requestChatAPIKey", provider });
     }
   }
@@ -112067,7 +112155,7 @@ var APIManager = class {
       const isValidModel = models.includes(savedModel);
       this.emitter.fire({ type: "updateEmbedModel", model: isValidModel ? savedModel : void 0 });
     } catch (e2) {
-      vscode10.window.showErrorMessage(`Failed to fetch embed models: ${e2}`);
+      vscode11.window.showErrorMessage(`Failed to fetch embed models: ${e2}`);
       this.emitter.fire({ type: "requestEmbedAPIKey", provider });
     }
   }
@@ -112133,14 +112221,14 @@ var APIManager = class {
       await this.verifyTavilyAPIKey(key);
       await this.context.secrets.store("TAVILY_API_KEY", key);
     } catch (e2) {
-      vscode10.window.showErrorMessage("Invalid Tavily API key");
+      vscode11.window.showErrorMessage("Invalid Tavily API key");
       this.emitter.fire({ type: "requestTavilyAPIKey" });
     }
   }
 };
 
 // src/managers/toolManager.ts
-var vscode11 = __toESM(require("vscode"));
+var vscode12 = __toESM(require("vscode"));
 var ToolManager = class {
   constructor(deps) {
     this.deps = deps;
@@ -112149,7 +112237,7 @@ var ToolManager = class {
   deps;
   toolRegistry;
   activeSignal = null;
-  emitter = new vscode11.EventEmitter();
+  emitter = new vscode12.EventEmitter();
   onDidUpdateStatus = this.emitter.event;
   totalCustomTools = 0;
   totalServerTools = 0;
@@ -112160,7 +112248,7 @@ var ToolManager = class {
         if (this.deps.worktreeManager?.worktreePath) {
           return this.deps.worktreeManager.worktreePath;
         }
-        const root = vscode11.workspace.workspaceFolders?.[0]?.uri.fsPath;
+        const root = vscode12.workspace.workspaceFolders?.[0]?.uri.fsPath;
         if (!root) throw new Error("No active workspace");
         return root;
       },
@@ -112301,7 +112389,7 @@ var ChatApp = class {
     this.contextManager.onDidUpdateStatus((event) => this.post(event));
     this.commandManager = new CommandManager(context);
     this.commandManager.onDidUpdateStatus((event) => this.post(event));
-    const workspaceRoot = vscode12.workspace.workspaceFolders?.[0].uri.fsPath;
+    const workspaceRoot = vscode13.workspace.workspaceFolders?.[0].uri.fsPath;
     this.worktreeManager = new WorktreeManager(context, workspaceRoot);
     this.worktreeManager.onDidUpdateStatus((event) => this.post(event));
     this.toolManager = new ToolManager({
@@ -112340,16 +112428,10 @@ var ChatApp = class {
       let keepGoing = true;
       let turnCount = 0;
       const turnLimit = this.context.globalState.get("turnLimit") ?? 0;
-      let initialPrompt = userMessage;
-      if (turnLimit > 0) {
-        initialPrompt += `
-
-[Execution Budget: You have at most ${turnLimit} tool-use iterations. Plan your investigation, avoid redundant calls, and provide a final answer before the budget is exhausted.]`;
-      }
       this.post({ type: "toggleChatControls", disabled: true });
       this.post({ type: "startRun", provider, model });
       this.contextManager.prepareRun(provider);
-      this.contextManager.addUserMessage(initialPrompt);
+      this.contextManager.addUserMessage(userMessage);
       let previousTurnHadError = false;
       while (keepGoing && (turnLimit === 0 || turnCount < turnLimit)) {
         if (this.aborter.signal.aborted) throw new Error("AbortError");
@@ -112368,7 +112450,6 @@ var ChatApp = class {
         let streamResult = await streamGenerator.next();
         let streamStartTime = null;
         let turnGeneratedTokens = 0;
-        let lastSpeedPostTime = 0;
         while (!streamResult.done) {
           if (streamResult.value) {
             const content = streamResult.value.content;
@@ -112380,7 +112461,6 @@ var ChatApp = class {
               turnGeneratedTokens += countChunkTokens(content);
               const elapsedSeconds = (now - streamStartTime) / 1e3;
               if (elapsedSeconds > 0.1) {
-                lastSpeedPostTime = now;
                 const tokenPerSecond = (turnGeneratedTokens / elapsedSeconds).toFixed(1);
                 this.post({ type: "streamSpeed", speed: tokenPerSecond });
               }
@@ -112574,7 +112654,7 @@ var ChatApp = class {
               isUnsafe: currentConfig?.unsafeFullAutonomous ?? false
             });
           } catch (e2) {
-            vscode12.window.showErrorMessage(`Failed to restore state ${e2}`);
+            vscode13.window.showErrorMessage(`Failed to restore state ${e2}`);
           }
           break;
         }
@@ -112647,7 +112727,7 @@ var ChatApp = class {
             try {
               await this.apiManager.verifyTavilyAPIKey(tavilyAPIKey);
             } catch (e2) {
-              vscode12.window.showErrorMessage("Invalid Tavily API key");
+              vscode13.window.showErrorMessage("Invalid Tavily API key");
               this.post({ type: "requestTavilyAPIKey" });
             }
           }
@@ -112666,7 +112746,7 @@ var ChatApp = class {
           try {
             await this.runCompaction();
           } catch (e2) {
-            vscode12.window.showErrorMessage(`Failed to compact history: ${e2}`);
+            vscode13.window.showErrorMessage(`Failed to compact history: ${e2}`);
           } finally {
             this.contextManager.estimateCategorizedTokens();
           }
@@ -112677,7 +112757,7 @@ var ChatApp = class {
             if (!data.value) throw new Error("Empty prompt!");
             this.runAgentTurn(data.provider, data.model, data.effort, data.value);
           } catch (e2) {
-            vscode12.window.showErrorMessage(`Failed to run agent turn: ${e2}`);
+            vscode13.window.showErrorMessage(`Failed to run agent turn: ${e2}`);
           }
           break;
         }
@@ -112722,7 +112802,7 @@ var ChatApp = class {
         // Checks if a table for the model already exists and broadcast index status
         case "loadVectorDB": {
           if (this.indexer) this.indexer.dispose();
-          this.indexer = await Indexer.create(this.context, data.model, (provider) => this.apiManager.getEmbedAPIKey(provider));
+          this.indexer = await Indexer.create(this.context, data.model, this.apiManager);
           this.indexer.onDidUpdateStatus((event) => this.post(event));
           await this.indexer.broadcastCurrentState();
           break;
@@ -112741,9 +112821,7 @@ var ChatApp = class {
         }
         case "indexWorkspace": {
           if (!this.indexer) return;
-          const apiKey = await this.apiManager.getEmbedAPIKey(data.provider);
-          const embedProvider = EmbedFactory.create(data.provider, apiKey);
-          await this.indexer.indexWorkspace(embedProvider, data.model);
+          await this.indexer.indexWorkspace();
           break;
         }
         case "deleteIndex": {
@@ -112759,7 +112837,7 @@ var ChatApp = class {
             await this.contextManager.save();
           } catch (e2) {
             if (e2.message !== "MERGE_CONFLICT") {
-              vscode12.window.showErrorMessage(`Failed to apply patch: ${e2.message || String(e2)}`);
+              vscode13.window.showErrorMessage(`Failed to apply patch: ${e2.message || String(e2)}`);
             }
           }
           break;
@@ -112787,24 +112865,24 @@ var ChatApp = class {
             this.contextManager.addSystemMessage("The user force-applied your changes, overwriting their local edits.");
             await this.contextManager.save();
           } catch (e2) {
-            vscode12.window.showErrorMessage(`Failed to force apply: ${e2}`);
+            vscode13.window.showErrorMessage(`Failed to force apply: ${e2}`);
           }
           break;
         }
         case "openDiffView": {
           if (this.worktreeManager) {
-            const workspaceRoot = vscode12.workspace.workspaceFolders?.[0].uri.fsPath;
+            const workspaceRoot = vscode13.workspace.workspaceFolders?.[0].uri.fsPath;
             if (!workspaceRoot) return;
-            const originalUri = vscode12.Uri.file(path12.join(workspaceRoot, data.file));
-            const worktreeUri = vscode12.Uri.file(path12.join(this.worktreeManager.worktreePath, data.file));
+            const originalUri = vscode13.Uri.file(path12.join(workspaceRoot, data.file));
+            const worktreeUri = vscode13.Uri.file(path12.join(this.worktreeManager.worktreePath, data.file));
             if (data.isNew) {
-              vscode12.commands.executeCommand("vscode.open", worktreeUri, { preview: true });
+              vscode13.commands.executeCommand("vscode.open", worktreeUri, { preview: true });
             } else if (data.isDeleted) {
-              vscode12.commands.executeCommand("vscode.open", originalUri, { preview: true });
-              vscode12.window.showInformationMessage(`${data.file} is marked for deletion.`);
+              vscode13.commands.executeCommand("vscode.open", originalUri, { preview: true });
+              vscode13.window.showInformationMessage(`${data.file} is marked for deletion.`);
             } else {
               const title = `${data.file} (Agent Proposal)`;
-              vscode12.commands.executeCommand("vscode.diff", originalUri, worktreeUri, title);
+              vscode13.commands.executeCommand("vscode.diff", originalUri, worktreeUri, title);
             }
           }
           break;
@@ -112815,7 +112893,7 @@ var ChatApp = class {
             const hasSeenWarning = this.context.workspaceState.get("hasSeenAutoWarning");
             if (!hasSeenWarning) {
               await this.context.workspaceState.update("hasSeenAutoWarning", true);
-              vscode12.window.showWarningMessage(
+              vscode13.window.showWarningMessage(
                 "Auto Mode enabled. The agent can now execute terminal commands without confirmation. Review the list of allowed commands.",
                 "Understood"
               );
@@ -112839,9 +112917,9 @@ var ChatApp = class {
     this.view?.webview.postMessage(message);
   }
   getHTML() {
-    const htmlPath = vscode12.Uri.joinPath(this.context.extensionUri, "dist", "chat.html");
-    const scriptPath = vscode12.Uri.joinPath(this.context.extensionUri, "dist", "chat.bundle.js");
-    const cssPath = vscode12.Uri.joinPath(this.context.extensionUri, "dist", "chat.bundle.css");
+    const htmlPath = vscode13.Uri.joinPath(this.context.extensionUri, "dist", "chat.html");
+    const scriptPath = vscode13.Uri.joinPath(this.context.extensionUri, "dist", "chat.bundle.js");
+    const cssPath = vscode13.Uri.joinPath(this.context.extensionUri, "dist", "chat.bundle.css");
     try {
       let html = fs8.readFileSync(htmlPath.fsPath, "utf-8");
       const scriptUri = this.view.webview.asWebviewUri(scriptPath);
@@ -112850,7 +112928,7 @@ var ChatApp = class {
       html = html.replace("{{scriptUri}}", scriptUri.toString());
       return html;
     } catch (e2) {
-      vscode12.window.showErrorMessage(`Error loading frontend html: ${e2}`);
+      vscode13.window.showErrorMessage(`Error loading frontend html: ${e2}`);
       return `<!DOCTYPE html><html><body>Error loading UI</body></html>`;
     }
   }
@@ -112871,7 +112949,7 @@ function countChunkTokens(text) {
 }
 
 // src/mcp.ts
-var vscode13 = __toESM(require("vscode"));
+var vscode14 = __toESM(require("vscode"));
 var fs9 = __toESM(require("fs"));
 var import_shell_quote2 = __toESM(require_shell_quote());
 var MCPViewProvider = class {
@@ -112921,7 +112999,7 @@ var MCPViewProvider = class {
               await this.mcpManager.connect(data.name);
             }
           } catch (e2) {
-            vscode13.window.showErrorMessage(`Failed to add MCP server: ${e2.message || String(e2)}`);
+            vscode14.window.showErrorMessage(`Failed to add MCP server: ${e2.message || String(e2)}`);
           }
           break;
         }
@@ -112933,7 +113011,7 @@ var MCPViewProvider = class {
               await this.mcpManager.disconnect(data.name);
             }
           } catch (e2) {
-            vscode13.window.showErrorMessage(`Connection error: ${e2.message || String(e2)}`);
+            vscode14.window.showErrorMessage(`Connection error: ${e2.message || String(e2)}`);
           }
           break;
         }
@@ -112941,7 +113019,7 @@ var MCPViewProvider = class {
           try {
             await this.mcpManager.toggleTool(data.serverName, data.toolName, data.enabled);
           } catch (e2) {
-            vscode13.window.showErrorMessage(`Error toggling tool: ${e2.message || String(e2)}`);
+            vscode14.window.showErrorMessage(`Error toggling tool: ${e2.message || String(e2)}`);
           }
           break;
         }
@@ -112956,9 +113034,9 @@ var MCPViewProvider = class {
     this.view?.webview.postMessage(message);
   }
   getHTML() {
-    const htmlPath = vscode13.Uri.joinPath(this.context.extensionUri, "dist", "mcp.html");
-    const scriptPath = vscode13.Uri.joinPath(this.context.extensionUri, "dist", "mcp.bundle.js");
-    const cssPath = vscode13.Uri.joinPath(this.context.extensionUri, "dist", "mcp.bundle.css");
+    const htmlPath = vscode14.Uri.joinPath(this.context.extensionUri, "dist", "mcp.html");
+    const scriptPath = vscode14.Uri.joinPath(this.context.extensionUri, "dist", "mcp.bundle.js");
+    const cssPath = vscode14.Uri.joinPath(this.context.extensionUri, "dist", "mcp.bundle.css");
     try {
       let html = fs9.readFileSync(htmlPath.fsPath, "utf-8");
       const scriptUri = this.view.webview.asWebviewUri(scriptPath);
@@ -112967,14 +113045,14 @@ var MCPViewProvider = class {
       html = html.replace("{{scriptUri}}", scriptUri.toString());
       return html;
     } catch (e2) {
-      vscode13.window.showErrorMessage(`Error loading MCP HTML: ${e2}`);
+      vscode14.window.showErrorMessage(`Error loading MCP HTML: ${e2}`);
       return `<!DOCTYPE html><html><body>Error loading UI</body></html>`;
     }
   }
 };
 
 // src/managers/mcpManager.ts
-var vscode14 = __toESM(require("vscode"));
+var vscode15 = __toESM(require("vscode"));
 
 // node_modules/zod/v4/core/core.js
 var _a10;
@@ -123430,7 +123508,7 @@ var MCPManager = class {
   serverStates = /* @__PURE__ */ new Map();
   serverTools = /* @__PURE__ */ new Map();
   clients = /* @__PURE__ */ new Map();
-  emitter = new vscode14.EventEmitter();
+  emitter = new vscode15.EventEmitter();
   onDidUpdateStatus = this.emitter.event;
   getAllServerStates() {
     const result = {};
@@ -123524,7 +123602,7 @@ var MCPManager = class {
   }
   async connect(serverName) {
     if (!this.serverStates.has(serverName)) {
-      vscode14.window.showErrorMessage(`Cannot connect to unconfigured server: ${serverName}!`);
+      vscode15.window.showErrorMessage(`Cannot connect to unconfigured server: ${serverName}!`);
       return;
     }
     const serverState = this.serverStates.get(serverName);
@@ -123695,15 +123773,15 @@ ${block.resource.text}`;
 
 // src/extension.ts
 async function activate(context) {
-  if (context.storageUri) await vscode15.workspace.fs.createDirectory(context.storageUri);
+  if (context.storageUri) await vscode16.workspace.fs.createDirectory(context.storageUri);
   const mcpManager = new MCPManager(context);
   const mcpProvider = new MCPViewProvider(context, mcpManager);
   context.subscriptions.push(
-    vscode15.window.registerWebviewViewProvider("codeagent-mcp", mcpProvider)
+    vscode16.window.registerWebviewViewProvider("codeagent-mcp", mcpProvider)
   );
   const chatApp = new ChatApp(context, mcpManager);
   context.subscriptions.push(
-    vscode15.window.registerWebviewViewProvider(
+    vscode16.window.registerWebviewViewProvider(
       "codeagent-sidebar",
       chatApp,
       {

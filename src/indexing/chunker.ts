@@ -76,8 +76,11 @@ export class CodeChunker {
         const lines = content.split(/\r?\n/);
         
         if (!tree) return [];
-        return this.chunkRootNode(tree.rootNode, config, lines, filePath, siblings);
-        
+        try {
+            return this.chunkRootNode(tree.rootNode, config, lines, filePath, siblings);
+        } finally {
+            tree.delete();
+        }
     }
 
     public clearNeighbourHoodCache() {

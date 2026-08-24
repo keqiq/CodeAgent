@@ -85,10 +85,6 @@ export const globalExcludePatterns = [
 
     "**/.DS_Store",
     "**/*.vsix",
-
-    // Agent worktrees — temporary copies of the repo created for agent runs.
-    // These don't need indexing and cause ENOENT errors when cleaned up.
-    "**/.agent-worktree-*/**",
 ];
 
 export const languageExcludePatterns = [
