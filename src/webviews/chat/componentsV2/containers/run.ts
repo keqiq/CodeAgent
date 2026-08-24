@@ -8,6 +8,7 @@ export class RunContainer {
 
     private tabsContainer: HTMLElement;
     private modelTab: HTMLElement;
+    private turnTab: HTMLElement;
     private tokenTab: HTMLElement;
     private speedTab: HTMLElement;
     private statusTab: HTMLElement;
@@ -43,6 +44,18 @@ export class RunContainer {
             this.modelTab.style.display = 'none';
         }
 
+        // Turn tab showing current agent loop progress
+        this.turnTab = document.createElement('div');
+        this.turnTab.classList.add('run-tab', 'turn-tab');
+        this.turnTab.innerHTML = `
+            <svg class="turn-icon" width="11" height="11" viewBox="0 0 16 16" fill="currentColor">
+                <path fill-rule="evenodd" clip-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/>
+                <path d="M8 0a.5.5 0 0 1 .5.5v3a.5.5 0 0 1-.5.5H5a.5.5 0 0 1 0-1h2.5V.5A.5.5 0 0 1 8 0z"/>
+            </svg>
+            <span class="tab-text turn-text">1</span>
+        `;
+        this.turnTab.style.display = 'none';
+
         // Token tab reporting token usage from provider
         this.tokenTab = document.createElement('div');
         this.tokenTab.classList.add('run-tab', 'token-tab');
@@ -71,6 +84,7 @@ export class RunContainer {
         this.statusTab.style.display = 'none';
 
         this.tabsContainer.appendChild(this.modelTab);
+        this.tabsContainer.appendChild(this.turnTab);
         this.tabsContainer.appendChild(this.tokenTab);
         this.tabsContainer.appendChild(this.speedTab);
         this.tabsContainer.appendChild(this.statusTab);
@@ -96,6 +110,32 @@ export class RunContainer {
         if (iconSpan && provider) iconSpan.innerHTML = this.getProviderIcon(provider);
 
         this.modelTab.style.display = 'inline-flex';
+    }
+
+    public setTurn(current: number, limit: number): void {
+        this.turnTab.style.display = 'inline-flex';
+
+        const textSpan = this.turnTab.querySelector('.turn-text');
+        const icon = this.turnTab.querySelector('.turn-icon') as SVGElement | null;
+
+        if (textSpan) {
+            textSpan.textContent = limit > 0 ? `${current}/${limit}` : `${current}`;
+        }
+
+        // Trigger exactly 1 full rotation smoothly
+        if (icon) {
+            icon.animate(
+                [
+                    { transform: 'rotate(0deg)' },
+                    { transform: 'rotate(360deg)' }
+                ],
+                {
+                    duration: 600,
+                    easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)',
+                    iterations: 1
+                }
+            );
+        }
     }
 
     public setSpeed(speed: string, isStreaming: boolean = false): void {

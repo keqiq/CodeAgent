@@ -74,23 +74,34 @@ export class ChatApp implements vscode.WebviewViewProvider {
         
         let runStatus: 'ok' | 'aborted' | 'error' = 'ok';
         let statusMessage: string | undefined = undefined;
+
         
         try {
+            let keepGoing = true;
+            let turnCount = 0;
+            const turnLimit = this.context.globalState.get<number>('turnLimit') ?? 0;
+
+            let initialPrompt = userMessage;
+            if (turnLimit > 0) {
+                initialPrompt += `\n\n[Execution Budget: You have at most ${turnLimit} tool-use iterations. Plan your investigation, avoid redundant calls, and provide a final answer before the budget is exhausted.]`;
+            }
+
             this.post({ type: 'toggleChatControls', disabled: true });
             this.post({ type: 'startRun', provider: provider, model: model });
 
             this.contextManager.prepareRun(provider);
-            this.contextManager.addUserMessage(userMessage);
-
-            let keepGoing = true;
-            let turnCount = 0;
-            const turnLimit = this.context.globalState.get<number>('turnLimit') ?? 0;
+            this.contextManager.addUserMessage(initialPrompt);
 
             let previousTurnHadError = false;
 
             while (keepGoing && (turnLimit === 0 || turnCount < turnLimit)) {
                 if (this.aborter.signal.aborted) throw new Error('AbortError');
                 turnCount++;
+
+                this.post({ type: 'updateTurnProgress', current: turnCount, limit: turnLimit });
+
+                // Disable all tool use during the final turn
+                const isFinalTurn = turnLimit > 0 && turnCount === turnLimit;
 
                 // TODO: EDGE CASE
                 // If we keep the extension open with an valid turnID for too long without sending a new prompt
@@ -101,7 +112,8 @@ export class ChatApp implements vscode.WebviewViewProvider {
                     this.contextManager.getLLMContext(),
                     this.contextManager.getTurnID(),
                     serverStateManagment,
-                    this.aborter.signal
+                    this.aborter.signal,
+                    isFinalTurn
                 );
                 let streamResult = await streamGenerator.next();
 
@@ -171,6 +183,8 @@ export class ChatApp implements vscode.WebviewViewProvider {
                 previousTurnHadError = summary.hasErrors;
                 keepGoing = summary.shouldContinue;
 
+                // Remind the agent of turn budget!
+                if (keepGoing && turnLimit > 0) this.contextManager.addTurnReminder(turnCount, turnLimit);
             }
 
             this.toolManager.finalizeRun();

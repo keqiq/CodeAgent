@@ -71,6 +71,32 @@
     opacity: 0.9;
 }
 
+/* Turn Counter Tab */
+.run-tab.turn-tab {
+    font-family: var(--vscode-editor-font-family);
+    color: var(--vscode-charts-blue, #75beff);
+    background-color: color-mix(in srgb, var(--vscode-charts-blue, #75beff) 8%, var(--vscode-sideBar-background));
+    border-color: color-mix(in srgb, var(--vscode-charts-blue, #75beff) 25%, transparent);
+    border-top-color: transparent;
+}
+
+.run-tab.turn-tab .turn-icon {
+    display: inline-block;
+    color: var(--vscode-charts-blue, #75beff);
+    opacity: 0.9;
+    transform-origin: 50% 50%;
+    will-change: transform;
+}
+
+@keyframes turn-spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
 /* 2. Token Counter Tab */
 .run-tab.token-tab {
     cursor: help;

@@ -80,7 +80,8 @@ export abstract class ChatProvider {
         history: ChatItem[],
         previousTurnID: string | undefined,
         useCache: boolean,
-        abortSignal: AbortSignal
+        abortSignal: AbortSignal,
+        disableTools: boolean
     ): AsyncGenerator<StreamYield, ChatResponse, unknown>;
 
     abstract abortGeneration(): Promise<void>;

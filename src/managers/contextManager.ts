@@ -29,6 +29,7 @@ export interface FunctionResultItem {
     error: boolean;
     turnID?: string;
     data?: any;
+    turnReminder?: string;
 }
 
 export interface RunSummaryItem {
@@ -86,6 +87,8 @@ export class ContextManager {
     private activeToolResults: FunctionResultItem[] = [];
     private turnsSinceLastPrune: number = 0;
     private runsSinceLastPrune: number = 0;
+
+    private reminderResults: FunctionResultItem[] = [];
 
     private summarizedHistory: ChatItem[] = [];
     private summarizeIndex = 0;
@@ -325,6 +328,7 @@ export class ContextManager {
         this.currentTurnToolResults.push(item);
     }
 
+    // Run summaries are processed by the frontend to get those tabs that show model, tokens and other things on restore
     public addRunSummary(provider: string, model: string, status: 'ok' | 'aborted' | 'error', message?: string): void {
         this.history.push({
             type: 'run_summary',
@@ -335,6 +339,29 @@ export class ContextManager {
             ...(this.runTokenUsage && { tokenUsage: { ...this.runTokenUsage } }),
             ...(this.currentTurnID && { turnID: this.currentTurnID })
         });
+    }
+
+    // This is called after toolManager executes all the tools during a turn
+    // We attach a turn reminder to the last tool result, which will be added to the result in each provider's implementation
+    // We also keep a reference to all the tool results with turn reminders, for easy removal when the task is finished
+    public addTurnReminder(currentTurn: number, turnLimit: number) {
+        if (turnLimit <= 0 || this.currentTurnToolResults.length === 0) return;
+
+        const remaining = turnLimit - currentTurn;
+        // By calling after all tool execution, we can simply take the last tool result
+        const lastResult = this.currentTurnToolResults[this.currentTurnToolResults.length - 1];
+
+        if (remaining > 3) {
+            lastResult.turnReminder = `[Runtime status: ${remaining - 1} tool-use iterations remain. If you have enough information, return the final answer now. Do not start work that cannot be completed within the remaining budget.]`;
+        } else if (remaining === 3) {
+            lastResult.turnReminder = `[Runtime status: You have 2 iterations remaining. Prioritize completing the task over further exploration.]`;
+        } else if (remaining === 2) {
+            lastResult.turnReminder = `[Runtime status: CRITICAL: This is your final tool-use opportunity. Do not make exploratory calls. Either perform the single highest-value action or return a final answer now.]`;
+        } else if (remaining === 1) {
+            lastResult.turnReminder = `[Runtime status: CRITICAL: 0 tool iterations remain. This is your final turn. Do NOT call any tools. Synthesize all findings and provide your final response to the user now.]`;
+        }
+
+        this.reminderResults.push(lastResult);
     }
 
     public async clear(): Promise<void> {
@@ -356,6 +383,15 @@ export class ContextManager {
         await this.clearArtifacts();
     }
 
+    public clearTurnReminders(): void {
+        if (this.reminderResults.length === 0) return;
+
+        for (const item of this.reminderResults) {
+            delete item.turnReminder;
+        }
+        this.reminderResults = [];
+    }
+
     public async updateTurnBoundary(previousTurnHadError: boolean): Promise<void> {
         this.turnsSinceLastPrune++;
 
@@ -369,6 +405,7 @@ export class ContextManager {
 
     public async updateRunBoundary(): Promise<void> {
         this.runsSinceLastPrune++;
+        this.clearTurnReminders();
 
         if (this.pruneMode === 'run' && this.runsSinceLastPrune >= this.pruneRunInterval) {
             await this.pruneActiveTools();

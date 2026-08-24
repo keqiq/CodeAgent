@@ -108,6 +108,10 @@ export class ChatContainer {
         if (this.runContainer) this.runContainer.update(usage);
     }
 
+    public updateTurn(msg: { current: number, limit: number }): void {
+        if (this.runContainer) this.runContainer.setTurn(msg.current, msg.limit);
+    }
+
     public updateSpeed(speed: string): void {
         if (this.runContainer) this.runContainer.setSpeed(speed, true);
     }

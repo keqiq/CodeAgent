@@ -93,6 +93,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 chatContainer.startRun(msg);
                 break;
 
+            case 'updateTurnProgress':
+                chatContainer.updateTurn(msg);
+                break;
+
             case 'receiveMessage':
                 chatContainer.addMessage({ type: 'message', role: 'assistant', content: msg.text, style: msg.style });
                 break;

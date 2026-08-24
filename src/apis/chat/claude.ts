@@ -99,12 +99,16 @@ export class ClaudeChatProvider extends ChatProvider {
                 });
             }
             else if (item.type === 'function_result') {
+                const content = item.turnReminder 
+                    ? `${item.result}\n\n${item.turnReminder}` 
+                    : item.result;
+
                 messages.push({
                     role: 'user',
                     content: [{
                         type: 'tool_result',
                         tool_use_id: item.id,
-                        content: item.result
+                        content: content
                     }]
                 });
             }
@@ -125,7 +129,8 @@ export class ClaudeChatProvider extends ChatProvider {
         history: ChatItem[],
         previousTurnID: string | undefined,
         useCache: boolean,
-        abortSignal: AbortSignal
+        abortSignal: AbortSignal,
+        disableTools: boolean
     ): AsyncGenerator<StreamYield, ChatResponse, unknown> {
 
         let fullText = '';
@@ -142,7 +147,7 @@ export class ClaudeChatProvider extends ChatProvider {
             model: model as any,
             system: ClaudeChatProvider.systemPrompt,
             messages: this.formatMessages(history),
-            tools: this.tools,
+            tools: disableTools ? undefined : this.tools,
             stream: true,
             max_tokens: 100000,
             thinking: {

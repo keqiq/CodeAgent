@@ -121,10 +121,22 @@ export class OpenAIChatProvider extends ChatProvider {
         for (const item of items) {
             if (item.type === 'message') {
                 formatted.push({ role: item.role, content: item.content });
+
             } else if (item.type === 'function_call') {
-                formatted.push({ type: "function_call", call_id: item.id, name: item.name, arguments: typeof item.arguments === "string" ? item.arguments : JSON.stringify(item.arguments) });
+                formatted.push({ 
+                    type: "function_call", 
+                    call_id: item.id, 
+                    name: item.name, 
+                    arguments: typeof item.arguments === "string" ? item.arguments : JSON.stringify(item.arguments)
+                });
+
             } else if (item.type === 'function_result') {
-                formatted.push({ type: "function_call_output", call_id: item.id, output: item.result });
+                const outputText = item.turnReminder ? `${item.result}\n\n${item.turnReminder}` : item.result;
+                formatted.push({ 
+                    type: "function_call_output", 
+                    call_id: item.id, 
+                    output: outputText
+                });
             }
         }
         return formatted;
@@ -136,7 +148,8 @@ export class OpenAIChatProvider extends ChatProvider {
         history: ChatItem[], 
         previousTurnID: string | undefined,
         useCache: boolean,
-        abortSignal: AbortSignal
+        abortSignal: AbortSignal,
+        disableTools: boolean
     ): AsyncGenerator<StreamYield, ChatResponse, unknown> {
         
         let fullText = "";
@@ -147,7 +160,7 @@ export class OpenAIChatProvider extends ChatProvider {
         const stream = await this.client.responses.create({
             model: model,
             input: this.formatMessages(history, previousTurnID === undefined),
-            tools: this.tools,
+            tools: disableTools ? undefined : this.tools,
             stream: true,
             reasoning: { effort: effort as any, summary: 'auto' },
 
@@ -367,10 +380,11 @@ export abstract class OpenAICompatibleProvider extends ChatProvider {
             } 
             
             else if (item.type === 'function_result') {
+                const contentText = item.turnReminder ? `${item.result}\n\n${item.turnReminder}` : item.result;
                 formattedMessages.push({
                     role: 'tool',
                     tool_call_id: item.id,
-                    content: item.result
+                    content: contentText
                 });
             }
         }
@@ -397,7 +411,8 @@ export abstract class OpenAICompatibleProvider extends ChatProvider {
         history: ChatItem[], 
         previousTurnID: string | undefined,
         useCache: boolean,
-        abortSignal: AbortSignal
+        abortSignal: AbortSignal,
+        disableTools: boolean
     ): AsyncGenerator<StreamYield, ChatResponse, unknown> {
 
         // Providers like deepseek and kimi requires passing back the reasoning content
@@ -411,7 +426,7 @@ export abstract class OpenAICompatibleProvider extends ChatProvider {
         const stream = await this.client.chat.completions.create({
             model: model,
             messages: formattedMessages,
-            tools: this.tools,
+            tools: disableTools ? undefined : this.tools,
             stream: true,
             stream_options: { include_usage: true },
 

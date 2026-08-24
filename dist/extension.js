@@ -67942,12 +67942,15 @@ var ClaudeChatProvider = class _ClaudeChatProvider extends ChatProvider {
           }]
         });
       } else if (item.type === "function_result") {
+        const content = item.turnReminder ? `${item.result}
+
+${item.turnReminder}` : item.result;
         messages.push({
           role: "user",
           content: [{
             type: "tool_result",
             tool_use_id: item.id,
-            content: item.result
+            content
           }]
         });
       }
@@ -67961,7 +67964,7 @@ var ClaudeChatProvider = class _ClaudeChatProvider extends ChatProvider {
   // But contextManager is constantly pruning tools, so it will be invalidated based on how frequently it's pruning
   // But if i don't prune, the cache write is expensive and if not caching, the input is expensive...
   // Not sure what to do here
-  async *fetchStream(model, effort, history, previousTurnID, useCache, abortSignal) {
+  async *fetchStream(model, effort, history, previousTurnID, useCache, abortSignal, disableTools) {
     let fullText = "";
     const currentCalls = /* @__PURE__ */ new Map();
     let tokenUsage = {
@@ -67974,7 +67977,7 @@ var ClaudeChatProvider = class _ClaudeChatProvider extends ChatProvider {
       model,
       system: _ClaudeChatProvider.systemPrompt,
       messages: this.formatMessages(history),
-      tools: this.tools,
+      tools: disableTools ? void 0 : this.tools,
       stream: true,
       max_tokens: 1e5,
       thinking: {
@@ -77883,14 +77886,26 @@ var OpenAIChatProvider = class _OpenAIChatProvider extends ChatProvider {
       if (item.type === "message") {
         formatted.push({ role: item.role, content: item.content });
       } else if (item.type === "function_call") {
-        formatted.push({ type: "function_call", call_id: item.id, name: item.name, arguments: typeof item.arguments === "string" ? item.arguments : JSON.stringify(item.arguments) });
+        formatted.push({
+          type: "function_call",
+          call_id: item.id,
+          name: item.name,
+          arguments: typeof item.arguments === "string" ? item.arguments : JSON.stringify(item.arguments)
+        });
       } else if (item.type === "function_result") {
-        formatted.push({ type: "function_call_output", call_id: item.id, output: item.result });
+        const outputText = item.turnReminder ? `${item.result}
+
+${item.turnReminder}` : item.result;
+        formatted.push({
+          type: "function_call_output",
+          call_id: item.id,
+          output: outputText
+        });
       }
     }
     return formatted;
   }
-  async *fetchStream(model, effort, history, previousTurnID, useCache, abortSignal) {
+  async *fetchStream(model, effort, history, previousTurnID, useCache, abortSignal, disableTools) {
     let fullText = "";
     const currentCalls = /* @__PURE__ */ new Map();
     let responseID = null;
@@ -77898,7 +77913,7 @@ var OpenAIChatProvider = class _OpenAIChatProvider extends ChatProvider {
     const stream4 = await this.client.responses.create({
       model,
       input: this.formatMessages(history, previousTurnID === void 0),
-      tools: this.tools,
+      tools: disableTools ? void 0 : this.tools,
       stream: true,
       reasoning: { effort, summary: "auto" },
       ...previousTurnID && { previous_response_id: previousTurnID }
@@ -78060,10 +78075,13 @@ var OpenAICompatibleProvider = class _OpenAICompatibleProvider extends ChatProvi
         }
         formattedMessages.push(msg);
       } else if (item.type === "function_result") {
+        const contentText = item.turnReminder ? `${item.result}
+
+${item.turnReminder}` : item.result;
         formattedMessages.push({
           role: "tool",
           tool_call_id: item.id,
-          content: item.result
+          content: contentText
         });
       }
     }
@@ -78081,14 +78099,14 @@ var OpenAICompatibleProvider = class _OpenAICompatibleProvider extends ChatProvi
       };
     });
   }
-  async *fetchStream(model, effort, history, previousTurnID, useCache, abortSignal) {
+  async *fetchStream(model, effort, history, previousTurnID, useCache, abortSignal, disableTools) {
     let fullText = "";
     let fullThought = "";
     const formattedMessages = this.formatMessages(history);
     const stream4 = await this.client.chat.completions.create({
       model,
       messages: formattedMessages,
-      tools: this.tools,
+      tools: disableTools ? void 0 : this.tools,
       stream: true,
       stream_options: { include_usage: true },
       reasoning_effort: effort
@@ -96859,25 +96877,29 @@ var GeminiChatProvider = class _GeminiChatProvider extends ChatProvider {
           arguments: typeof item.arguments === "string" ? item.arguments ? JSON.parse(item.arguments) : {} : item.arguments || {}
         });
       } else if (item.type === "function_result") {
+        const rawOutput = typeof item.result === "string" ? item.result : JSON.stringify(item.result);
+        const contentText = item.turnReminder ? `${rawOutput}
+
+${item.turnReminder}` : rawOutput;
         formatted.push({
           type: "function_result",
           call_id: item.id,
           name: item.name || "",
           result: [{
             type: "text",
-            text: JSON.stringify({ response: item.result })
+            text: JSON.stringify({ response: contentText })
           }]
         });
       }
     }
     return formatted;
   }
-  async *fetchStream(model, effort, history, previousTurnID, useCache, abortSignal) {
+  async *fetchStream(model, effort, history, previousTurnID, useCache, abortSignal, disableTools) {
     let fullText = "";
     const stream4 = await this.client.interactions.create({
       model,
       input: this.formatMessages(history),
-      tools: this.tools,
+      tools: disableTools ? void 0 : this.tools,
       system_instruction: _GeminiChatProvider.systemPrompt,
       stream: true,
       store: useCache && previousTurnID !== void 0,
@@ -111151,6 +111173,7 @@ var ContextManager = class {
   activeToolResults = [];
   turnsSinceLastPrune = 0;
   runsSinceLastPrune = 0;
+  reminderResults = [];
   summarizedHistory = [];
   summarizeIndex = 0;
   currentProvider;
@@ -111338,6 +111361,7 @@ var ContextManager = class {
     this.activeToolResults.push(item);
     this.currentTurnToolResults.push(item);
   }
+  // Run summaries are processed by the frontend to get those tabs that show model, tokens and other things on restore
   addRunSummary(provider, model, status, message) {
     this.history.push({
       type: "run_summary",
@@ -111348,6 +111372,24 @@ var ContextManager = class {
       ...this.runTokenUsage && { tokenUsage: { ...this.runTokenUsage } },
       ...this.currentTurnID && { turnID: this.currentTurnID }
     });
+  }
+  // This is called after toolManager executes all the tools during a turn
+  // We attach a turn reminder to the last tool result, which will be added to the result in each provider's implementation
+  // We also keep a reference to all the tool results with turn reminders, for easy removal when the task is finished
+  addTurnReminder(currentTurn, turnLimit) {
+    if (turnLimit <= 0 || this.currentTurnToolResults.length === 0) return;
+    const remaining = turnLimit - currentTurn;
+    const lastResult = this.currentTurnToolResults[this.currentTurnToolResults.length - 1];
+    if (remaining > 3) {
+      lastResult.turnReminder = `[Runtime status: ${remaining - 1} tool-use iterations remain. If you have enough information, return the final answer now. Do not start work that cannot be completed within the remaining budget.]`;
+    } else if (remaining === 3) {
+      lastResult.turnReminder = `[Runtime status: You have 2 iterations remaining. Prioritize completing the task over further exploration.]`;
+    } else if (remaining === 2) {
+      lastResult.turnReminder = `[Runtime status: CRITICAL: This is your final tool-use opportunity. Do not make exploratory calls. Either perform the single highest-value action or return a final answer now.]`;
+    } else if (remaining === 1) {
+      lastResult.turnReminder = `[Runtime status: CRITICAL: 0 tool iterations remain. This is your final turn. Do NOT call any tools. Synthesize all findings and provide your final response to the user now.]`;
+    }
+    this.reminderResults.push(lastResult);
   }
   async clear() {
     this.history = [];
@@ -111367,6 +111409,13 @@ var ContextManager = class {
     await this.save();
     await this.clearArtifacts();
   }
+  clearTurnReminders() {
+    if (this.reminderResults.length === 0) return;
+    for (const item of this.reminderResults) {
+      delete item.turnReminder;
+    }
+    this.reminderResults = [];
+  }
   async updateTurnBoundary(previousTurnHadError) {
     this.turnsSinceLastPrune++;
     if (previousTurnHadError) return;
@@ -111376,6 +111425,7 @@ var ContextManager = class {
   }
   async updateRunBoundary() {
     this.runsSinceLastPrune++;
+    this.clearTurnReminders();
     if (this.pruneMode === "run" && this.runsSinceLastPrune >= this.pruneRunInterval) {
       await this.pruneActiveTools();
     }
@@ -112278,24 +112328,33 @@ var ChatApp = class {
     let runStatus = "ok";
     let statusMessage = void 0;
     try {
-      this.post({ type: "toggleChatControls", disabled: true });
-      this.post({ type: "startRun", provider, model });
-      this.contextManager.prepareRun(provider);
-      this.contextManager.addUserMessage(userMessage);
       let keepGoing = true;
       let turnCount = 0;
       const turnLimit = this.context.globalState.get("turnLimit") ?? 0;
+      let initialPrompt = userMessage;
+      if (turnLimit > 0) {
+        initialPrompt += `
+
+[Execution Budget: You have at most ${turnLimit} tool-use iterations. Plan your investigation, avoid redundant calls, and provide a final answer before the budget is exhausted.]`;
+      }
+      this.post({ type: "toggleChatControls", disabled: true });
+      this.post({ type: "startRun", provider, model });
+      this.contextManager.prepareRun(provider);
+      this.contextManager.addUserMessage(initialPrompt);
       let previousTurnHadError = false;
       while (keepGoing && (turnLimit === 0 || turnCount < turnLimit)) {
         if (this.aborter.signal.aborted) throw new Error("AbortError");
         turnCount++;
+        this.post({ type: "updateTurnProgress", current: turnCount, limit: turnLimit });
+        const isFinalTurn = turnLimit > 0 && turnCount === turnLimit;
         const streamGenerator = providerInstance.fetchStream(
           model,
           effort,
           this.contextManager.getLLMContext(),
           this.contextManager.getTurnID(),
           serverStateManagment,
-          this.aborter.signal
+          this.aborter.signal,
+          isFinalTurn
         );
         let streamResult = await streamGenerator.next();
         let streamStartTime = null;
@@ -112345,6 +112404,7 @@ var ChatApp = class {
         const summary = await this.toolManager.executeTools(functionCalls, this.aborter.signal);
         previousTurnHadError = summary.hasErrors;
         keepGoing = summary.shouldContinue;
+        if (keepGoing && turnLimit > 0) this.contextManager.addTurnReminder(turnCount, turnLimit);
       }
       this.toolManager.finalizeRun();
       this.contextManager.updateTokenUsage();

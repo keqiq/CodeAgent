@@ -94,13 +94,16 @@ export class GeminiChatProvider extends ChatProvider {
                         : (item.arguments || {})
                 });
             } else if (item.type === 'function_result') {
+                const rawOutput = typeof item.result === 'string' ? item.result : JSON.stringify(item.result);
+                const contentText = item.turnReminder ? `${rawOutput}\n\n${item.turnReminder}` : rawOutput;
+
                 formatted.push({ 
                     type: "function_result", 
                     call_id: item.id, 
                     name: item.name || "", 
                     result: [{ 
                         type: "text", 
-                        text: JSON.stringify({ response: item.result }) 
+                        text: JSON.stringify({ response: contentText })
                     }] 
                 });
             }
@@ -114,7 +117,8 @@ export class GeminiChatProvider extends ChatProvider {
         history: ChatItem[], 
         previousTurnID: string | undefined,
         useCache: boolean,
-        abortSignal: AbortSignal
+        abortSignal: AbortSignal,
+        disableTools: boolean,
     ): AsyncGenerator<StreamYield, ChatResponse, unknown> {
         
         let fullText = '';
@@ -122,7 +126,7 @@ export class GeminiChatProvider extends ChatProvider {
         const stream = await this.client.interactions.create({
             model: model,
             input: this.formatMessages(history),
-            tools: this.tools,
+            tools: disableTools ? undefined : this.tools,
             system_instruction: GeminiChatProvider.systemPrompt,
             stream: true,
             store: useCache && previousTurnID !== undefined,
