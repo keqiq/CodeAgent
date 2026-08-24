@@ -154,7 +154,6 @@ export class CommandManager {
         });
     }
 
-    
     private getConfigUri = (): vscode.Uri | undefined => {
         if (!this.context.storageUri) return undefined;
         return vscode.Uri.joinPath(this.context.storageUri, 'agent-rules.json');

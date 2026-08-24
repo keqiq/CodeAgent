@@ -3,6 +3,7 @@ import * as util from 'util';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import * as fs from 'fs/promises';
+import * as crypto from 'crypto';
 
 const exec = util.promisify(cp.exec);
 
@@ -15,10 +16,19 @@ export class WorktreeManager {
 
     constructor(private context: vscode.ExtensionContext, workspacePath: string) {
         this.originalWorkspace = workspacePath;
-        this.worktreePath = path.join(workspacePath, '..', '.agent-worktree');
+
+        let id = this.context.workspaceState.get<string>('worktreeID');
+        if (!id) {
+            id = crypto.randomUUID();
+            this.context.workspaceState.update('worktreeID', id);
+        }
+
+        const storageBase = context.storageUri!.fsPath;
+        this.worktreePath = path.join(storageBase, 'worktrees', id);
     }
 
     public async setup(): Promise<void> {
+
         // check if git is installed
         const gitInstalled = await WorktreeManager.isGitInstalled();
         if (!gitInstalled) {
@@ -52,6 +62,7 @@ export class WorktreeManager {
 
         if (!exists) {
             // Only create the worktree and link heavy deps if it doesn't exist
+            await fs.mkdir(path.dirname(this.worktreePath), { recursive: true });
             await exec(`git worktree add --detach "${this.worktreePath}" HEAD`, { cwd: this.originalWorkspace });
             await this.link();
         }
@@ -297,6 +308,7 @@ export class WorktreeManager {
         try {
             await this.clearState();
             await exec(`git worktree remove "${this.worktreePath}" --force`, { cwd: this.originalWorkspace });
+            await this.context.workspaceState.update('workTreeID', undefined);
         } catch {
             // Ignore if it's already gone
         }

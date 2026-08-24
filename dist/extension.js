@@ -161,13 +161,13 @@ var uuid4;
 var init_uuid = __esm({
   "node_modules/@anthropic-ai/sdk/internal/utils/uuid.mjs"() {
     uuid4 = function() {
-      const { crypto: crypto5 } = globalThis;
-      if (crypto5?.randomUUID) {
-        uuid4 = crypto5.randomUUID.bind(crypto5);
-        return crypto5.randomUUID();
+      const { crypto: crypto6 } = globalThis;
+      if (crypto6?.randomUUID) {
+        uuid4 = crypto6.randomUUID.bind(crypto6);
+        return crypto6.randomUUID();
       }
       const u8 = new Uint8Array(1);
-      const randomByte = crypto5 ? () => crypto5.getRandomValues(u8)[0] : () => Math.random() * 255 & 255;
+      const randomByte = crypto6 ? () => crypto6.getRandomValues(u8)[0] : () => Math.random() * 255 & 255;
       return "10000000-1000-4000-8000-100000000000".replace(/[018]/g, (c) => (+c ^ randomByte() & 15 >> +c / 4).toString(16));
     };
   }
@@ -5710,10 +5710,10 @@ async function setupSkills(ctx) {
     try {
       const versionId = await resolveSkillVersion(client, skill.skill_id, skill.version);
       const version2 = await client.beta.skills.versions.retrieve(versionId, { skill_id: skill.skill_id });
-      let dirname4 = path3.basename(version2.name.trim());
-      if (dirname4 === "" || dirname4 === "." || dirname4 === "..")
-        dirname4 = skill.skill_id;
-      const dest = path3.resolve(skillsRoot, dirname4);
+      let dirname5 = path3.basename(version2.name.trim());
+      if (dirname5 === "" || dirname5 === "." || dirname5 === "..")
+        dirname5 = skill.skill_id;
+      const dest = path3.resolve(skillsRoot, dirname5);
       if (dest !== skillsRoot && !dest.startsWith(skillsRoot + path3.sep)) {
         log.warn("skill name escapes the skills dir; skipping", {
           component: "agent-tool-context",
@@ -22543,7 +22543,7 @@ var require_form_data = __commonJS({
     var parseUrl2 = require("url").parse;
     var fs10 = require("fs");
     var Stream6 = require("stream").Stream;
-    var crypto5 = require("crypto");
+    var crypto6 = require("crypto");
     var mime = require_mime_types();
     var asynckit = require_asynckit();
     var setToStringTag = require_es_set_tostringtag();
@@ -22752,7 +22752,7 @@ var require_form_data = __commonJS({
       return Buffer.concat([dataBuffer, Buffer.from(this._lastBoundary())]);
     };
     FormData5.prototype._generateBoundary = function() {
-      this._boundary = "--------------------------" + crypto5.randomBytes(12).toString("hex");
+      this._boundary = "--------------------------" + crypto6.randomBytes(12).toString("hex");
     };
     FormData5.prototype.getLengthSync = function() {
       var knownLength = this._overheadLength + this._valueLength;
@@ -32485,7 +32485,7 @@ var require_gaxios = __commonJS({
     var retry_js_1 = require_retry3();
     var stream_1 = require("stream");
     var interceptor_js_1 = require_interceptor();
-    var randomUUID3 = async () => globalThis.crypto?.randomUUID() || (await import("crypto")).randomUUID();
+    var randomUUID4 = async () => globalThis.crypto?.randomUUID() || (await import("crypto")).randomUUID();
     var HTTP_STATUS_NO_CONTENT = 204;
     var Gaxios = class {
       agentCache = /* @__PURE__ */ new Map();
@@ -32758,7 +32758,7 @@ var require_gaxios = __commonJS({
          */
         ["Blob", "File", "FormData"].includes(opts.data?.constructor?.name || "");
         if (opts.multipart?.length) {
-          const boundary = await randomUUID3();
+          const boundary = await randomUUID4();
           preparedHeaders.set("content-type", `multipart/related; boundary=${boundary}`);
           opts.body = stream_1.Readable.from(this.getMultipartRequest(opts.multipart, boundary));
         } else if (shouldDirectlyPassData) {
@@ -35545,22 +35545,22 @@ var require_crypto2 = __commonJS({
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.NodeCrypto = void 0;
-    var crypto5 = require("crypto");
+    var crypto6 = require("crypto");
     var NodeCrypto = class {
       async sha256DigestBase64(str2) {
-        return crypto5.createHash("sha256").update(str2).digest("base64");
+        return crypto6.createHash("sha256").update(str2).digest("base64");
       }
       randomBytesBase64(count) {
-        return crypto5.randomBytes(count).toString("base64");
+        return crypto6.randomBytes(count).toString("base64");
       }
       async verify(pubkey, data, signature) {
-        const verifier = crypto5.createVerify("RSA-SHA256");
+        const verifier = crypto6.createVerify("RSA-SHA256");
         verifier.update(data);
         verifier.end();
         return verifier.verify(pubkey, signature, "base64");
       }
       async sign(privateKey, data) {
-        const signer = crypto5.createSign("RSA-SHA256");
+        const signer = crypto6.createSign("RSA-SHA256");
         signer.update(data);
         signer.end();
         return signer.sign(privateKey, "base64");
@@ -35578,7 +35578,7 @@ var require_crypto2 = __commonJS({
        *   string in hexadecimal encoding.
        */
       async sha256DigestHex(str2) {
-        return crypto5.createHash("sha256").update(str2).digest("hex");
+        return crypto6.createHash("sha256").update(str2).digest("hex");
       }
       /**
        * Computes the HMAC hash of a message using the provided crypto key and the
@@ -35590,7 +35590,7 @@ var require_crypto2 = __commonJS({
        */
       async signWithHmacSha256(key, msg) {
         const cryptoKey = typeof key === "string" ? key : toBuffer(key);
-        return toArrayBuffer(crypto5.createHmac("sha256", cryptoKey).update(msg).digest());
+        return toArrayBuffer(crypto6.createHmac("sha256", cryptoKey).update(msg).digest());
       }
     };
     exports2.NodeCrypto = NodeCrypto;
@@ -36504,10 +36504,10 @@ var require_oauth2client = __commonJS({
        * https://github.com/googleapis/google-auth-library-nodejs/blob/main/samples/oauth2-codeVerifier.js
        */
       async generateCodeVerifierAsync() {
-        const crypto5 = (0, crypto_1.createCrypto)();
-        const randomString2 = crypto5.randomBytesBase64(96);
+        const crypto6 = (0, crypto_1.createCrypto)();
+        const randomString2 = crypto6.randomBytesBase64(96);
         const codeVerifier = randomString2.replace(/\+/g, "~").replace(/=/g, "_").replace(/\//g, "-");
-        const unencodedCodeChallenge = await crypto5.sha256DigestBase64(codeVerifier);
+        const unencodedCodeChallenge = await crypto6.sha256DigestBase64(codeVerifier);
         const codeChallenge = unencodedCodeChallenge.split("=")[0].replace(/\+/g, "-").replace(/\//g, "_");
         return { codeVerifier, codeChallenge };
       }
@@ -36948,7 +36948,7 @@ var require_oauth2client = __commonJS({
        * @return Returns a promise resolving to LoginTicket on verification.
        */
       async verifySignedJwtWithCertsAsync(jwt, certs, requiredAudience, issuers, maxExpiry) {
-        const crypto5 = (0, crypto_1.createCrypto)();
+        const crypto6 = (0, crypto_1.createCrypto)();
         if (!maxExpiry) {
           maxExpiry = _OAuth2Client.DEFAULT_MAX_TOKEN_LIFETIME_SECS_;
         }
@@ -36961,7 +36961,7 @@ var require_oauth2client = __commonJS({
         let envelope;
         let payload;
         try {
-          envelope = JSON.parse(crypto5.decodeBase64StringUtf8(segments[0]));
+          envelope = JSON.parse(crypto6.decodeBase64StringUtf8(segments[0]));
         } catch (err) {
           if (err instanceof Error) {
             err.message = `Can't parse token envelope: ${segments[0]}': ${err.message}`;
@@ -36972,7 +36972,7 @@ var require_oauth2client = __commonJS({
           throw new Error("Can't parse token envelope: " + segments[0]);
         }
         try {
-          payload = JSON.parse(crypto5.decodeBase64StringUtf8(segments[1]));
+          payload = JSON.parse(crypto6.decodeBase64StringUtf8(segments[1]));
         } catch (err) {
           if (err instanceof Error) {
             err.message = `Can't parse token payload '${segments[0]}`;
@@ -36989,7 +36989,7 @@ var require_oauth2client = __commonJS({
         if (envelope.alg === "ES256") {
           signature = formatEcdsa.joseToDer(signature, "ES256").toString("base64");
         }
-        const verified = await crypto5.verify(cert, signed, signature);
+        const verified = await crypto6.verify(cert, signed, signature);
         if (!verified) {
           throw new Error("Invalid token signature: " + jwt);
         }
@@ -37364,14 +37364,14 @@ var require_buffer_equal_constant_time = __commonJS({
 var require_jwa = __commonJS({
   "node_modules/jwa/index.js"(exports2, module2) {
     var Buffer5 = require_safe_buffer().Buffer;
-    var crypto5 = require("crypto");
+    var crypto6 = require("crypto");
     var formatEcdsa = require_ecdsa_sig_formatter();
     var util6 = require("util");
     var MSG_INVALID_ALGORITHM = '"%s" is not a valid algorithm.\n  Supported algorithms are:\n  "HS256", "HS384", "HS512", "RS256", "RS384", "RS512", "PS256", "PS384", "PS512", "ES256", "ES384", "ES512" and "none".';
     var MSG_INVALID_SECRET = "secret must be a string or buffer";
     var MSG_INVALID_VERIFIER_KEY = "key must be a string or a buffer";
     var MSG_INVALID_SIGNER_KEY = "key must be a string, a buffer or an object";
-    var supportsKeyObjects = typeof crypto5.createPublicKey === "function";
+    var supportsKeyObjects = typeof crypto6.createPublicKey === "function";
     if (supportsKeyObjects) {
       MSG_INVALID_VERIFIER_KEY += " or a KeyObject";
       MSG_INVALID_SECRET += "or a KeyObject";
@@ -37461,17 +37461,17 @@ var require_jwa = __commonJS({
       return function sign(thing, secret) {
         checkIsSecretKey(secret);
         thing = normalizeInput(thing);
-        var hmac = crypto5.createHmac("sha" + bits, secret);
+        var hmac = crypto6.createHmac("sha" + bits, secret);
         var sig = (hmac.update(thing), hmac.digest("base64"));
         return fromBase64(sig);
       };
     }
     var bufferEqual;
-    var timingSafeEqual = "timingSafeEqual" in crypto5 ? function timingSafeEqual2(a, b) {
+    var timingSafeEqual = "timingSafeEqual" in crypto6 ? function timingSafeEqual2(a, b) {
       if (a.byteLength !== b.byteLength) {
         return false;
       }
-      return crypto5.timingSafeEqual(a, b);
+      return crypto6.timingSafeEqual(a, b);
     } : function timingSafeEqual2(a, b) {
       if (!bufferEqual) {
         bufferEqual = require_buffer_equal_constant_time();
@@ -37488,7 +37488,7 @@ var require_jwa = __commonJS({
       return function sign(thing, privateKey) {
         checkIsPrivateKey(privateKey);
         thing = normalizeInput(thing);
-        var signer = crypto5.createSign("RSA-SHA" + bits);
+        var signer = crypto6.createSign("RSA-SHA" + bits);
         var sig = (signer.update(thing), signer.sign(privateKey, "base64"));
         return fromBase64(sig);
       };
@@ -37498,7 +37498,7 @@ var require_jwa = __commonJS({
         checkIsPublicKey(publicKey);
         thing = normalizeInput(thing);
         signature = toBase64(signature);
-        var verifier = crypto5.createVerify("RSA-SHA" + bits);
+        var verifier = crypto6.createVerify("RSA-SHA" + bits);
         verifier.update(thing);
         return verifier.verify(publicKey, signature, "base64");
       };
@@ -37507,11 +37507,11 @@ var require_jwa = __commonJS({
       return function sign(thing, privateKey) {
         checkIsPrivateKey(privateKey);
         thing = normalizeInput(thing);
-        var signer = crypto5.createSign("RSA-SHA" + bits);
+        var signer = crypto6.createSign("RSA-SHA" + bits);
         var sig = (signer.update(thing), signer.sign({
           key: privateKey,
-          padding: crypto5.constants.RSA_PKCS1_PSS_PADDING,
-          saltLength: crypto5.constants.RSA_PSS_SALTLEN_DIGEST
+          padding: crypto6.constants.RSA_PKCS1_PSS_PADDING,
+          saltLength: crypto6.constants.RSA_PSS_SALTLEN_DIGEST
         }, "base64"));
         return fromBase64(sig);
       };
@@ -37521,12 +37521,12 @@ var require_jwa = __commonJS({
         checkIsPublicKey(publicKey);
         thing = normalizeInput(thing);
         signature = toBase64(signature);
-        var verifier = crypto5.createVerify("RSA-SHA" + bits);
+        var verifier = crypto6.createVerify("RSA-SHA" + bits);
         verifier.update(thing);
         return verifier.verify({
           key: publicKey,
-          padding: crypto5.constants.RSA_PKCS1_PSS_PADDING,
-          saltLength: crypto5.constants.RSA_PSS_SALTLEN_DIGEST
+          padding: crypto6.constants.RSA_PKCS1_PSS_PADDING,
+          saltLength: crypto6.constants.RSA_PSS_SALTLEN_DIGEST
         }, signature, "base64");
       };
     }
@@ -40102,14 +40102,14 @@ var require_awsrequestsigner = __commonJS({
       }
     };
     exports2.AwsRequestSigner = AwsRequestSigner;
-    async function sign(crypto5, key, msg) {
-      return await crypto5.signWithHmacSha256(key, msg);
+    async function sign(crypto6, key, msg) {
+      return await crypto6.signWithHmacSha256(key, msg);
     }
-    async function getSigningKey(crypto5, key, dateStamp, region, serviceName) {
-      const kDate = await sign(crypto5, `AWS4${key}`, dateStamp);
-      const kRegion = await sign(crypto5, kDate, region);
-      const kService = await sign(crypto5, kRegion, serviceName);
-      const kSigning = await sign(crypto5, kService, "aws4_request");
+    async function getSigningKey(crypto6, key, dateStamp, region, serviceName) {
+      const kDate = await sign(crypto6, `AWS4${key}`, dateStamp);
+      const kRegion = await sign(crypto6, kDate, region);
+      const kService = await sign(crypto6, kRegion, serviceName);
+      const kSigning = await sign(crypto6, kService, "aws4_request");
       return kSigning;
     }
     async function generateAuthenticationHeaderMap(options) {
@@ -41828,24 +41828,24 @@ var require_googleauth = __commonJS({
           const signed = await client.sign(data);
           return signed.signedBlob;
         }
-        const crypto5 = (0, crypto_1.createCrypto)();
+        const crypto6 = (0, crypto_1.createCrypto)();
         if (client instanceof jwtclient_1.JWT && client.key) {
-          const sign = await crypto5.sign(client.key, data);
+          const sign = await crypto6.sign(client.key, data);
           return sign;
         }
         const creds = await this.getCredentials();
         if (!creds.client_email) {
           throw new Error("Cannot sign data without `client_email`.");
         }
-        return this.signBlob(crypto5, creds.client_email, data, endpoint);
+        return this.signBlob(crypto6, creds.client_email, data, endpoint);
       }
-      async signBlob(crypto5, emailOrUniqueId, data, endpoint) {
+      async signBlob(crypto6, emailOrUniqueId, data, endpoint) {
         const url3 = new URL(endpoint + `${emailOrUniqueId}:signBlob`);
         const res = await this.request({
           method: "POST",
           url: url3.href,
           data: {
-            payload: crypto5.encodeBase64StringUtf8(data)
+            payload: crypto6.encodeBase64StringUtf8(data)
           },
           retry: true,
           retryConfig: {
@@ -68118,13 +68118,13 @@ function __classPrivateFieldGet2(receiver, state, kind, f3) {
 
 // node_modules/openai/internal/utils/uuid.mjs
 var uuid42 = function() {
-  const { crypto: crypto5 } = globalThis;
-  if (crypto5?.randomUUID) {
-    uuid42 = crypto5.randomUUID.bind(crypto5);
-    return crypto5.randomUUID();
+  const { crypto: crypto6 } = globalThis;
+  if (crypto6?.randomUUID) {
+    uuid42 = crypto6.randomUUID.bind(crypto6);
+    return crypto6.randomUUID();
   }
   const u8 = new Uint8Array(1);
-  const randomByte = crypto5 ? () => crypto5.getRandomValues(u8)[0] : () => Math.random() * 255 & 255;
+  const randomByte = crypto6 ? () => crypto6.getRandomValues(u8)[0] : () => Math.random() * 255 & 255;
   return "10000000-1000-4000-8000-100000000000".replace(/[018]/g, (c) => (+c ^ randomByte() & 15 >> +c / 4).toString(16));
 };
 
@@ -93094,13 +93094,13 @@ var FileSearchStores = class extends BaseModule {
   }
 };
 var uuid4Internal = function() {
-  const { crypto: crypto5 } = globalThis;
-  if (crypto5 === null || crypto5 === void 0 ? void 0 : crypto5.randomUUID) {
-    uuid4Internal = crypto5.randomUUID.bind(crypto5);
-    return crypto5.randomUUID();
+  const { crypto: crypto6 } = globalThis;
+  if (crypto6 === null || crypto6 === void 0 ? void 0 : crypto6.randomUUID) {
+    uuid4Internal = crypto6.randomUUID.bind(crypto6);
+    return crypto6.randomUUID();
   }
   const u8 = new Uint8Array(1);
-  const randomByte = crypto5 ? () => crypto5.getRandomValues(u8)[0] : () => Math.random() * 255 & 255;
+  const randomByte = crypto6 ? () => crypto6.getRandomValues(u8)[0] : () => Math.random() * 255 & 255;
   return "10000000-1000-4000-8000-100000000000".replace(/[018]/g, (c) => (+c ^ randomByte() & 15 >> +c / 4).toString(16));
 };
 var uuid43 = () => uuid4Internal();
@@ -110928,12 +110928,19 @@ var util5 = __toESM(require("util"));
 var path10 = __toESM(require("path"));
 var vscode7 = __toESM(require("vscode"));
 var fs7 = __toESM(require("fs/promises"));
+var crypto4 = __toESM(require("crypto"));
 var exec2 = util5.promisify(cp2.exec);
 var WorktreeManager = class _WorktreeManager {
   constructor(context, workspacePath) {
     this.context = context;
     this.originalWorkspace = workspacePath;
-    this.worktreePath = path10.join(workspacePath, "..", ".agent-worktree");
+    let id = this.context.workspaceState.get("worktreeID");
+    if (!id) {
+      id = crypto4.randomUUID();
+      this.context.workspaceState.update("worktreeID", id);
+    }
+    const storageBase = context.storageUri.fsPath;
+    this.worktreePath = path10.join(storageBase, "worktrees", id);
   }
   context;
   worktreePath;
@@ -110967,6 +110974,7 @@ var WorktreeManager = class _WorktreeManager {
     }
     const exists = await fs7.stat(this.worktreePath).then(() => true).catch(() => false);
     if (!exists) {
+      await fs7.mkdir(path10.dirname(this.worktreePath), { recursive: true });
       await exec2(`git worktree add --detach "${this.worktreePath}" HEAD`, { cwd: this.originalWorkspace });
       await this.link();
     }
@@ -111151,6 +111159,7 @@ var WorktreeManager = class _WorktreeManager {
     try {
       await this.clearState();
       await exec2(`git worktree remove "${this.worktreePath}" --force`, { cwd: this.originalWorkspace });
+      await this.context.workspaceState.update("workTreeID", void 0);
     } catch {
     }
   }
@@ -121963,12 +121972,12 @@ function createFetchWithInit(baseFetch = fetch, baseInit) {
 }
 
 // node_modules/pkce-challenge/dist/index.node.js
-var crypto4;
-crypto4 = globalThis.crypto?.webcrypto ?? // Node.js [18-16] REPL
+var crypto5;
+crypto5 = globalThis.crypto?.webcrypto ?? // Node.js [18-16] REPL
 globalThis.crypto ?? // Node.js >18
 import("node:crypto").then((m2) => m2.webcrypto);
 async function getRandomValues(size) {
-  return (await crypto4).getRandomValues(new Uint8Array(size));
+  return (await crypto5).getRandomValues(new Uint8Array(size));
 }
 async function random(size) {
   const mask = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._~";
@@ -121988,7 +121997,7 @@ async function generateVerifier(length) {
   return await random(length);
 }
 async function generateChallenge(code_verifier) {
-  const buffer = await (await crypto4).subtle.digest("SHA-256", new TextEncoder().encode(code_verifier));
+  const buffer = await (await crypto5).subtle.digest("SHA-256", new TextEncoder().encode(code_verifier));
   return btoa(String.fromCharCode(...new Uint8Array(buffer))).replace(/\//g, "_").replace(/\+/g, "-").replace(/=/g, "");
 }
 async function pkceChallenge(length) {
@@ -123685,7 +123694,8 @@ ${block.resource.text}`;
 };
 
 // src/extension.ts
-function activate(context) {
+async function activate(context) {
+  if (context.storageUri) await vscode15.workspace.fs.createDirectory(context.storageUri);
   const mcpManager = new MCPManager(context);
   const mcpProvider = new MCPViewProvider(context, mcpManager);
   context.subscriptions.push(

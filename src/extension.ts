@@ -6,7 +6,10 @@ import { MCPManager } from './managers/mcpManager';
 
 declare const console: any;
 
-export function activate(context: vscode.ExtensionContext) {
+export async function activate(context: vscode.ExtensionContext) {
+
+    if (context.storageUri) await vscode.workspace.fs.createDirectory(context.storageUri);
+
 	const mcpManager = new MCPManager(context);
 
     const mcpProvider = new MCPViewProvider(context, mcpManager);
