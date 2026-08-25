@@ -13,43 +13,20 @@
 
 .header-left {
     display: flex;
-    gap: 20px;
     align-items: center;
+    gap: 8px;
+    flex: 1;
+    min-width: 0;
 }
 
 .header-right {
     display: flex;
-    gap: 8px;
+    gap: 1px;
     align-items: center;
+    flex-shrink: 0;
 }
 
-.header-controls {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-}
-
-.chat-header .dropdown-trigger {
-    border: 1px solid var(--vscode-dropdown-border);
-    color: var(--vscode-dropdown-foreground);
-    border-radius: 4px;
-    padding: 4px 10px;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    transition: background-color 0.15s;
-}
-
-.chat-header .dropdown-trigger:hover:not(:disabled) {
-    background-color: var(--vscode-list-hoverBackground);
-}
-
-.header-action-btn #indexStatus {
-    color: inherit;
-    font-size: 11px;
-    font-weight: 600;
-    font-family: var(--vscode-font-family);
-}
+/* --- Status Button & Indicators --- */
 
 .header-action-btn {
     display: inline-flex;
@@ -69,7 +46,12 @@
     color: var(--vscode-foreground);
 }
 
-/* --- Status Indicators --- */
+.header-action-btn #indexStatus {
+    color: inherit;
+    font-size: 11px;
+    font-weight: 600;
+    font-family: var(--vscode-font-family);
+}
 
 .status-dot {
     width: 7px;
@@ -111,33 +93,77 @@
     50% { opacity: 1; transform: scale(1.1); }
 }
 
-#indexStatus {
+/* --- Index Action Button --- */
+
+.action-index-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
     font-size: 11px;
-    font-weight: 500;
+    font-weight: 400;
+    padding: 6px;
+    border-radius: 4px;
+    background: transparent;
+    border: 1px solid transparent;
+    cursor: pointer;
+    font-family: var(--vscode-font-family);
+    transition: color 0.15s ease, opacity 0.15s ease, background-color 0.15s ease;
 }
 
-@keyframes dropFadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(-4px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+.action-index-btn:hover:not(:disabled) {
+    background-color: var(--vscode-toolbar-hoverBackground);
 }
 
-
-/* Forces the header's option panels downward instead of popping upwards out of frame */
-.chat-header .custom-dropdown .dropdown-list {
-    top: calc(100% + 6px) !important;
-    bottom: auto !important;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+.action-index-btn svg.action-index-icon {
+    flex-shrink: 0;
+    transform-origin: 50% 50%;
 }
 
-.chat-header .dropdown-list {
-    animation: dropFadeIn 0.15s ease-out;
+/* 1. Indexed: Greyed out / muted */
+.action-index-btn.state-indexed {
+    color: var(--vscode-descriptionForeground);
+    opacity: 0.6;
 }
+
+.action-index-btn.state-indexed:hover:not(:disabled) {
+    opacity: 1;
+    color: var(--vscode-foreground);
+}
+
+/* 2. Unindexed: Yellow */
+.action-index-btn.state-unindexed {
+    color: var(--vscode-charts-yellow);
+}
+
+/* 3. Error: Red */
+.action-index-btn.state-error {
+    color: var(--vscode-testing-iconFailed, var(--vscode-errorForeground));
+}
+
+/* 4. Outdated: Yellow */
+.action-index-btn.state-outdated {
+    color: var(--vscode-charts-yellow);
+}
+
+/* 5. Indexing / Queued: Blue / spin animation matching turn-tab */
+.action-index-btn.state-indexing,
+.action-index-btn.state-queued {
+    color: var(--vscode-charts-blue, var(--vscode-textLink-foreground));
+    cursor: wait;
+}
+
+.action-index-btn.state-indexing svg.action-index-icon,
+.action-index-btn.state-queued svg.action-index-icon {
+    animation: turn-spin 0.8s linear infinite;
+}
+
+.action-index-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* --- Header Settings Button & Menu Container --- */
 
 .header-settings-btn {
     display: inline-flex;
@@ -146,7 +172,7 @@
     background: transparent;
     border: 1px solid transparent;
     border-radius: 4px;
-    padding: 6px; 
+    padding: 6px;
     color: var(--vscode-icon-foreground);
     cursor: pointer;
     transition: background-color 0.15s, color 0.15s;
@@ -162,87 +188,107 @@
     bottom: auto !important;
     right: 0;
     left: auto;
-    min-width: 240px;
+    min-width: 250px;
     padding: 6px;
     z-index: 100;
 }
 
-/* Base style for the context indexing operation button */
-.action-index-btn {
-    display: inline-flex;
+/* --- Settings Menu Inline Dropdown Controls --- */
+
+#indexSettingsDropdown .menu-item-row {
+    display: flex;
+    justify-content: space-between;
     align-items: center;
-    justify-content: center;
-    gap: 6px;                  /* Space between icon and text */
-    font-size: 12px;           /* Larger text */
-    font-weight: 600;
-    padding: 5px 14px;         /* Taller and wider padding */
-    border-radius: 4px;
+    padding: 6px 10px;
+    gap: 8px;
     cursor: pointer;
-    font-family: var(--vscode-font-family);
-    border: 1px solid transparent;
-    transition: background-color 0.15s, border-color 0.15s, opacity 0.15s, color 0.15s;
+    user-select: none;
+    border-radius: 4px;
 }
 
-/* Prevent the SVG from squishing */
-.action-index-btn svg {
-    flex-shrink: 0;
+#indexSettingsDropdown .menu-item-row:hover:not(.disabled) {
+    background-color: var(--vscode-list-hoverBackground);
 }
 
-/* State: Unindexed (Allows user to index) */
-.action-index-btn.state-unindexed {
-    background-color: var(--vscode-button-background);
-    color: var(--vscode-button-foreground);
-}
-.action-index-btn.state-unindexed:hover:not(:disabled) {
-    background-color: var(--vscode-button-hoverBackground);
+#indexSettingsDropdown .custom-dropdown {
+    position: relative;
+    display: inline-block;
 }
 
-.action-index-btn.state-indexed {
-    background-color: transparent;
-    border: 1px solid var(--vscode-descriptionForeground);
-    color: var(--vscode-descriptionForeground);
+#indexSettingsDropdown .dropdown-trigger {
+    height: auto;
+    min-width: unset;
+    max-width: 140px;
+    padding: 2px 4px;
+    font-size: 11px;
+    font-weight: 700;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    background: transparent;
+    border: none;
+    color: var(--vscode-textLink-foreground);
+    border-radius: 3px;
+    cursor: pointer;
+    transition: opacity 0.15s, color 0.15s;
 }
 
-.action-index-btn.state-indexed:hover:not(:disabled) {
-    background-color: color-mix(in srgb, var(--vscode-foreground) 10%, transparent);
-    color: var(--vscode-foreground);
-    border-color: var(--vscode-foreground);
+#indexSettingsDropdown .dropdown-trigger:hover:not(:disabled) {
+    background: transparent;
+    color: var(--vscode-textLink-activeForeground, var(--vscode-textLink-foreground));
+    text-decoration: underline;
 }
-/* State: Disabled / Indexing Ongoing */
-.action-index-btn:disabled {
+
+#indexSettingsDropdown .dropdown-trigger:disabled {
     opacity: 0.5;
     cursor: not-allowed;
-    background-color: color-mix(in srgb, var(--vscode-widget-border) 40%, transparent);
-    color: var(--vscode-descriptionForeground);
-    border-color: transparent;
+    text-decoration: none;
 }
 
-/* State: Error (Allows user to retry) */
-.action-index-btn.state-error {
-    background-color: var(--vscode-errorForeground);
-    color: white; 
-}
-.action-index-btn.state-error:hover:not(:disabled) {
-    background-color: color-mix(in srgb, var(--vscode-errorForeground) 80%, black);
+#indexSettingsDropdown .dropdown-trigger .selected-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
-/* Relying on the :disabled styles for background/text color */
-.action-index-btn.state-indexing {
-    opacity: 0.8; /* Slightly higher opacity so the spinner is visible */
+#indexSettingsDropdown .custom-dropdown .dropdown-list {
+    position: absolute !important;
+    top: calc(100% + 3px) !important;
+    bottom: auto !important;
+    right: 0 !important;
+    left: auto !important;
+    min-width: 140px !important;
+    max-width: 180px !important;
+    max-height: 160px;
+    overflow-y: auto;
+    padding: 4px;
+    margin: 0;
+    background-color: var(--vscode-dropdown-listBackground, var(--vscode-dropdown-background));
+    border: 1px solid var(--vscode-dropdown-border);
+    border-radius: 4px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+    z-index: 150;
 }
-.action-index-btn.state-indexing svg {
-    display: none;
+
+#indexSettingsDropdown .custom-dropdown .dropdown-item {
+    padding: 4px 8px;
+    font-size: 11px;
+    color: var(--vscode-dropdown-foreground);
+    border-radius: 3px;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
-.action-index-btn.state-indexing::before {
-    content: "";
-    display: inline-block;
-    width: 12px;
-    height: 12px;
-    border: 2px solid var(--vscode-descriptionForeground);
-    border-radius: 50%;
-    border-top-color: transparent;
-    animation: spin 1s linear infinite;
-    flex-shrink: 0;
+
+#indexSettingsDropdown .custom-dropdown .dropdown-item:hover {
+    background-color: var(--vscode-list-hoverBackground);
+    color: var(--vscode-list-hoverForeground, var(--vscode-foreground));
+}
+
+#indexSettingsDropdown .custom-dropdown .dropdown-item.selected {
+    background-color: var(--vscode-list-activeSelectionBackground);
+    color: var(--vscode-list-activeSelectionForeground, #ffffff);
 }
 
 #embedKeyInput::-webkit-outer-spin-button,

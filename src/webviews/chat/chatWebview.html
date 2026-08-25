@@ -11,41 +11,30 @@
 <body>
     <div class="chat-header">
         <div class="header-left">
-            <button id="indexBtn" class="header-action-btn" title="Toggle Index Controls">
-                <span id="indexDot" class="status-dot disabled"></span>
-                <span id="indexStatus">Disabled</span>
-            </button>
-
-            <div id="indexControls" class="header-controls hidden">
-
-                <div class="custom-dropdown" id="embedProviderDropdown">
-                    <button class="dropdown-trigger provider-op" type="button">
-                        <span class="selected-text">Provider...</span>
-                    </button>
-                    <div class="dropdown-list hidden"></div>
-                </div>
-
-                <span class="divider">|</span>
-
-                <div class="custom-dropdown" id="embedModelDropdown">
-                    <button class="dropdown-trigger model-op" type="button" disabled>
-                        <span class="selected-text">Models...</span>
-                    </button>
-                    <div class="dropdown-list hidden"></div>
-                </div>
-            </div>
+            <!-- Placeholder for upcoming feature -->
+            <div id="headerFeatureSlot" class="header-feature-slot"></div>
         </div>
 
         <div class="header-right">
 
-            <button id="actionIndexBtn" class="action-index-btn state-unindexed" disabled>
-                <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
-                    <path
-                        d="M8 2c-3.31 0-6 1.34-6 3v6c0 1.66 2.69 3 6 3s6-1.34 6-3V5c0-1.66-2.69-3-6-3zm0 2c2.62 0 4.28.84 4.8 1.5-.52.66-2.18 1.5-4.8 1.5s-4.28-.84-4.8-1.5C3.72 4.84 5.38 4 8 4zm-4.8 4.23c1.07.83 2.79 1.27 4.8 1.27s3.73-.44 4.8-1.27V9.5c-.52.66-2.18 1.5-4.8 1.5s-4.28-.84-4.8-1.5V8.23zm0 3c1.07.83 2.79 1.27 4.8 1.27s3.73-.44 4.8-1.27V12.5c-.52.66-2.18 1.5-4.8 1.5s-4.28-.84-4.8-1.5v-1.27z" />
+            <!-- Index Status Badge -->
+            <button id="indexBtn" class="header-action-btn" title="Index Status">
+                <span id="indexDot" class="status-dot disabled"></span>
+                <span id="indexStatus">Disabled</span>
+            </button>
+
+            <!-- Index / Reindex Action Button -->
+            <button id="actionIndexBtn" class="action-index-btn state-unindexed" title="Index / Reindex Workspace"
+                disabled>
+                <svg class="action-index-icon" width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                    <path fill-rule="evenodd" clip-rule="evenodd"
+                        d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z" />
+                    <path d="M8 0a.5.5 0 0 1 .5.5v3a.5.5 0 0 1-.5.5H5a.5.5 0 0 1 0-1h2.5V.5A.5.5 0 0 1 8 0z" />
                 </svg>
                 <span id="actionIndexBtnText">Index</span>
             </button>
 
+            <!-- Index Settings Menu -->
             <div class="settings-menu-wrapper" id="indexSettingsContainer">
                 <button id="indexSettingsBtn" class="header-settings-btn" title="Index Settings">
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
@@ -55,6 +44,47 @@
                 </button>
 
                 <div class="dropdown-list hidden" id="indexSettingsDropdown">
+                    <!-- Enable Indexing Master Toggle -->
+                    <div class="menu-item active" id="menuIndexToggle">
+                        <div class="menu-item-title">Enable Indexing</div>
+                        <div class="menu-item-desc">Allow vector embedding semantic search.</div>
+                    </div>
+
+                    <!-- Provider Selector (Conditional) -->
+                    <div class="menu-item menu-item-row hidden" id="menuEmbedProviderRow">
+                        <span class="menu-item-title">Provider</span>
+                        <div class="custom-dropdown" id="embedProviderDropdown">
+                            <button class="dropdown-trigger provider-op" type="button" id="embedProviderTrigger">
+                                <span class="selected-text">Provider...</span>
+                            </button>
+                            <div class="dropdown-list hidden" id="embedProviderList"></div>
+                        </div>
+                    </div>
+
+                    <!-- Model Selector (Conditional) -->
+                    <div class="menu-item menu-item-row hidden" id="menuEmbedModelRow">
+                        <span class="menu-item-title">Model</span>
+                        <div class="custom-dropdown" id="embedModelDropdown">
+                            <button class="dropdown-trigger model-op" type="button" id="embedModelTrigger" disabled>
+                                <span class="selected-text">Models...</span>
+                            </button>
+                            <div class="dropdown-list hidden" id="embedModelList"></div>
+                        </div>
+                    </div>
+
+                    <!-- API Key Button & Container (Conditional) -->
+                    <div class="menu-item disabled hidden" id="menuEmbedKeyBtn">
+                        Set API Key
+                    </div>
+
+                    <div class="inlineAPIKeyContainer hidden" id="embedKeyContainer">
+                        <input type="password" id="embedKeyInput" placeholder="sk-..." autocomplete="off">
+                        <button id="embedKeySaveBtn" class="send-btn">Save</button>
+                    </div>
+
+                    <div class="menu-divider" id="indexConfigDivider"></div>
+
+                    <!-- Number Controls -->
                     <div class="menu-item number-input">
                         <div class="menu-item-text">
                             <div class="menu-item-title">Retrieval Count</div>
@@ -105,24 +135,7 @@
 
                     <div class="menu-divider"></div>
 
-                    <div class="menu-item disabled" id="menuEmbedKeyBtn">
-                        Set API Key
-                    </div>
-
-                    <div class="inlineAPIKeyContainer hidden" id="embedKeyContainer">
-                        <input type="password" id="embedKeyInput" placeholder="sk-..." autocomplete="off">
-                        <button id="embedKeySaveBtn" class="send-btn">Save</button>
-                    </div>
-
-                    <div class="menu-divider"></div>
-
-                    <div class="menu-item active" id="menuIndexToggle">
-                        <div class="menu-item-title">Enable Indexing</div>
-                        <div class="menu-item-desc">Allow vector embedding semantic search.</div>
-                    </div>
-
-                    <div class="menu-divider"></div>
-
+                    <!-- Clear Index -->
                     <div class="menu-item clear-chat-item" id="menuClearIndexBtn">
                         <div class="menu-item-title" style="color: var(--vscode-errorForeground);">Delete Index</div>
                         <button id="clearIndexConfirmBtn" class="icon-btn hidden" title="Confirm Delete"

@@ -6,11 +6,12 @@ export class ChatHeader {
     private indexBtn: HTMLButtonElement;
     private indexStatus: HTMLSpanElement;
     private indexDot: HTMLSpanElement;
-    private indexControls: HTMLElement;
     private indexSettingsBtn: HTMLButtonElement;
     private actionIndexBtn: HTMLButtonElement;
     private actionIndexBtnText: HTMLSpanElement;
 
+    private providerRow: HTMLElement;
+    private modelRow: HTMLElement;
     private providerDropdown: CustomDropdown;
     private modelDropdown: CustomDropdown;
     private currentEmbedProvider: string = '';
@@ -40,12 +41,15 @@ export class ChatHeader {
         this.indexBtn = document.getElementById('indexBtn') as HTMLButtonElement;
         this.indexStatus = document.getElementById('indexStatus') as HTMLSpanElement;
         this.indexDot = document.getElementById('indexDot') as HTMLSpanElement;
-        this.indexControls = document.getElementById('indexControls') as HTMLElement;
         this.indexSettingsBtn = document.getElementById('indexSettingsBtn') as HTMLButtonElement;
         this.indexSettingsContainer = document.getElementById('indexSettingsContainer') as HTMLElement;
         this.indexSettingsDropdown = document.getElementById('indexSettingsDropdown') as HTMLElement;
         this.actionIndexBtn = document.getElementById('actionIndexBtn') as HTMLButtonElement;
         this.actionIndexBtnText = document.getElementById('actionIndexBtnText') as HTMLSpanElement;
+
+        this.providerRow = document.getElementById('menuEmbedProviderRow') as HTMLElement;
+        this.modelRow = document.getElementById('menuEmbedModelRow') as HTMLElement;
+
         this.vectorCountInput = document.getElementById('vectorCountInput') as HTMLInputElement;
         this.debounceTimeInput = document.getElementById('debounceTimeInput') as HTMLInputElement;
         this.keyBtn = document.getElementById('menuEmbedKeyBtn') as HTMLElement;
@@ -69,29 +73,21 @@ export class ChatHeader {
 
     private initListeners(): void {
         // Toggle inline controls
-        this.indexBtn.addEventListener('click', () => {
-            this.indexControls.classList.toggle('hidden');
-        });
+        // this.indexBtn.addEventListener('click', () => {
+        //     this.toggleSettingsMenu();
+        // });
 
         // Toggle settings menu
         this.indexSettingsBtn.addEventListener('click', (e: MouseEvent) => {
             e.stopPropagation();
-            const willOpen = this.indexSettingsDropdown.classList.contains('hidden');
-
-            // Notify all other menus to close
-            document.dispatchEvent(new CustomEvent('closeAllMenus', { detail: { source: this } }));
-
-            if (willOpen) {
-                this.indexSettingsDropdown.classList.remove('hidden');
-            } else {
-                this.close();
-            }
+            this.toggleSettingsMenu();
         });
 
         // Close when another menu opens
         document.addEventListener('closeAllMenus', (e: Event) => {
             const customEvent = e as CustomEvent;
-            if (customEvent.detail?.source !== this) {
+            const source = customEvent.detail?.source;
+            if (source !== this && source !== this.providerDropdown && source !== this.modelDropdown) {
                 this.close();
             }
         });
@@ -117,7 +113,7 @@ export class ChatHeader {
 
             minus.addEventListener('click', (e) => { e.stopPropagation(); updateValue(parseInt(input.value) - 1); });
             plus.addEventListener('click', (e) => { e.stopPropagation(); updateValue(parseInt(input.value) + 1); });
-            
+
             input.addEventListener('change', () => {
                 const val = parseInt(input.value);
                 updateValue(isNaN(val) ? minVal : val);
@@ -143,7 +139,7 @@ export class ChatHeader {
         this.keyBtn.addEventListener('click', () => {
             if (this.keyBtn.classList.contains('disabled')) return;
             const isHidden = this.keyContainer.classList.toggle('hidden');
-            
+
             if (!isHidden) {
                 if (this.currentEmbedProvider.toLowerCase() === 'ollama') {
                     this.keyInput.type = 'number';
@@ -172,15 +168,15 @@ export class ChatHeader {
                     const port = parseInt(val, 10) || 11434;
                     this.currentOllamaPort = port;
                     this.keyBtn.innerHTML = `Set Ollama Port (${this.currentOllamaPort})`;
-                    this.vscodeAPI.postMessage({ 
-                        type: 'saveOllamaEmbedPort', 
-                        port: port 
+                    this.vscodeAPI.postMessage({
+                        type: 'saveOllamaEmbedPort',
+                        port: port
                     });
                 } else {
-                    this.vscodeAPI.postMessage({ 
-                        type: 'saveEmbedAPIKey', 
-                        provider: this.currentEmbedProvider, 
-                        key: val 
+                    this.vscodeAPI.postMessage({
+                        type: 'saveEmbedAPIKey',
+                        provider: this.currentEmbedProvider,
+                        key: val
                     });
                 }
             }
@@ -205,22 +201,50 @@ export class ChatHeader {
             e.stopPropagation();
             this.clearIndexConfirmBtn.classList.add('hidden');
             this.indexSettingsDropdown.classList.add('hidden');
-            
+
             this.vscodeAPI.postMessage({ type: 'deleteIndex' });
         });
+
+        this.providerRow.addEventListener('click', (e: MouseEvent) => {
+            e.stopPropagation();
+            if (!this.providerDropdown.trigger.disabled && !this.providerDropdown.list.contains(e.target as Node)) {
+                this.providerDropdown.toggle();
+            }
+        });
+
+        this.modelRow.addEventListener('click', (e: MouseEvent) => {
+            e.stopPropagation();
+            if (!this.modelDropdown.trigger.disabled && !this.modelDropdown.list.contains(e.target as Node)) {
+                this.modelDropdown.toggle();
+            }
+        });
+    }
+
+    private toggleSettingsMenu(): void {
+        const willOpen = this.indexSettingsDropdown.classList.contains('hidden');
+        document.dispatchEvent(new CustomEvent('closeAllMenus', { detail: { source: this } }));
+
+        if (willOpen) {
+            this.indexSettingsDropdown.classList.remove('hidden');
+            this.keyContainer.classList.add('hidden');
+        } else {
+            this.close();
+        }
     }
 
     public close(): void {
         this.indexSettingsDropdown.classList.add('hidden');
         this.keyContainer.classList.add('hidden');
         this.clearIndexConfirmBtn.classList.add('hidden');
+        this.providerDropdown?.close();
+        this.modelDropdown?.close();
     }
 
-    public restoreSettings(msg: { 
-        retrievalCount?: number, 
-        debounceTime?: number, 
+    public restoreSettings(msg: {
+        retrievalCount?: number,
+        debounceTime?: number,
         enabled?: boolean,
-        ollamaPort?: number 
+        ollamaPort?: number
     }): void {
         if (msg.retrievalCount !== undefined) {
             this.vectorCountInput.value = msg.retrievalCount.toString();
@@ -244,28 +268,39 @@ export class ChatHeader {
 
         if (!enabled) {
             // Lock down the UI
+            this.toggleIndex.classList.remove('active');
+            this.providerRow.classList.add('hidden');
+            this.modelRow.classList.add('hidden');
+            this.keyBtn.classList.add('hidden');
+            this.keyContainer.classList.add('hidden');
+
             this.updateStatusText('Indexing Disabled', 'disabled');
-            this.providerDropdown.setDisabled(true);
-            this.modelDropdown.setDisabled(true);
             
             this.actionIndexBtn.disabled = true;
-            this.actionIndexBtn.classList.remove('state-indexed', 'state-indexing', 'state-error');
-            this.actionIndexBtn.classList.add('state-unindexed');
-            this.actionIndexBtnText.textContent = 'Index';
+            this.actionIndexBtn.className = 'action-index-btn state-indexed';
+            this.actionIndexBtnText.textContent = '';
+
             this.clearIndexBtn.classList.add('disabled');
             this.clearIndexConfirmBtn.classList.add('hidden');
+
         } else {
             // Unlock the UI
-            this.providerDropdown.setDisabled(false);
-            this.modelDropdown.setDisabled(false);
-            
+            this.toggleIndex.classList.add('active');
+            this.providerRow.classList.remove('hidden');
+            this.modelRow.classList.remove('hidden');
+
+            if (this.currentEmbedProvider) {
+                this.keyBtn.classList.remove('hidden');
+            }
+
             // Attempt to restore visual state based on what's selected
             if (this.currentEmbedModel) {
                 this.updateStatusText(`Loading ${this.currentEmbedModel}...`, 'spinning');
+
                 this.actionIndexBtn.disabled = true;
-                this.actionIndexBtn.classList.remove('state-indexed', 'state-unindexed', 'state-error');
-                this.actionIndexBtn.classList.add('state-indexing');
-                this.actionIndexBtnText.textContent = 'Loading...';
+                this.actionIndexBtn.className = 'action-index-btn state-indexing';
+                this.actionIndexBtnText.textContent = '';
+
                 this.vscodeAPI.postMessage({ type: 'loadVectorDB', model: this.currentEmbedModel });
             } else if (this.currentEmbedProvider) {
                 this.updateStatusText('Select Embedding Model', 'warning');
@@ -302,8 +337,8 @@ export class ChatHeader {
         if (!provider || provider === this.currentEmbedProvider) return;
         this.providerDropdown.selectValue(provider, false);
         this.currentEmbedProvider = provider;
-        this.keyBtn.classList.remove('disabled');
-        
+        if (this.isIndexGloballyEnabled) this.keyBtn.classList.remove('hidden', 'disabled');
+
         if (provider.toLowerCase() === 'ollama') {
             this.keyBtn.innerHTML = `Set Ollama Embedding Port (${this.currentOllamaPort})`;
         } else {
@@ -324,9 +359,8 @@ export class ChatHeader {
             this.updateStatusText(`Loading ${model} embedding vectors...`, 'spinning');
 
             this.actionIndexBtn.disabled = true;
-            this.actionIndexBtn.classList.remove('state-unindexed', 'state-indexed', 'state-error');
-            this.actionIndexBtn.classList.add('state-indexing');
-            this.actionIndexBtnText.textContent = 'Loading...';
+            this.actionIndexBtn.className = 'action-index-btn state-indexing';
+            this.actionIndexBtnText.textContent = '';
 
             this.vscodeAPI.postMessage({ type: 'loadVectorDB', model: model });
         }
@@ -338,9 +372,8 @@ export class ChatHeader {
             this.updateStatusText('Select Embedding Model', 'warning');
 
             this.actionIndexBtn.disabled = true;
+            this.actionIndexBtn.className = 'action-index-btn state-unindexed';
             this.actionIndexBtnText.textContent = 'Index';
-            this.actionIndexBtn.classList.remove('state-indexed', 'state-indexing', 'state-error');
-            this.actionIndexBtn.classList.add('state-unindexed');
         }
         this.modelDropdown.setDisabled(false);
     }
@@ -348,7 +381,7 @@ export class ChatHeader {
     // Update indexing status text and index action button
     public updateIndexStatus(msg: IndexStatusMessage): void {
         if (!this.isIndexGloballyEnabled) return;
-        this.actionIndexBtn.classList.remove('state-unindexed', 'state-indexed', 'state-indexing', 'state-error');
+        this.actionIndexBtn.className = 'action-index-btn';
 
         if (this.countdownInterval) {
             window.clearInterval(this.countdownInterval);
@@ -361,36 +394,44 @@ export class ChatHeader {
         switch (msg.state) {
             case 'indexed':
                 this.updateStatusText(`${msg.vectorCount} Vectors Loaded`, 'ready');
-                this.actionIndexBtnText.textContent = 'Reindex';
+
+                this.actionIndexBtnText.textContent = '';
                 this.actionIndexBtn.classList.add('state-indexed');
                 this.clearIndexBtn.classList.remove('disabled');
                 break;
-                
+
             case 'unindexed':
                 this.updateStatusText(msg.text || 'Not Indexed', 'warning');
+
                 this.actionIndexBtnText.textContent = 'Index';
                 this.actionIndexBtn.classList.add('state-unindexed');
+
                 this.clearIndexBtn.classList.add('disabled');
                 this.clearIndexConfirmBtn.classList.add('hidden');
                 break;
-                
+
             case 'error':
                 this.updateStatusText(msg.text, 'error');
+
                 this.actionIndexBtnText.textContent = 'Index';
                 this.actionIndexBtn.classList.add('state-error');
+
                 this.clearIndexBtn.classList.remove('disabled');
                 break;
 
             case 'outdated':
                 this.updateStatusText(msg.text, 'warning');
-                this.actionIndexBtnText.textContent = 'Reindex';
-                this.actionIndexBtn.classList.add('state-unindexed');
+
+                this.actionIndexBtnText.textContent = 'Resync';
+                this.actionIndexBtn.classList.add('state-outdated');
+
                 this.clearIndexBtn.classList.remove('disabled');
                 break;
-                
+
             case 'indexing':
                 this.updateStatusText(msg.text, 'spinning');
-                this.actionIndexBtnText.textContent = 'Indexing...';
+
+                this.actionIndexBtnText.textContent = '';
                 this.actionIndexBtn.classList.add('state-indexing');
                 break;
 
@@ -398,7 +439,9 @@ export class ChatHeader {
                 let timeLeft = msg.delay;
 
                 this.updateStatusText(`${msg.fileCount} queued (Reindex in ${timeLeft}s)`, 'spinning');
-                this.actionIndexBtn.classList.add('state-indexed');
+
+                this.actionIndexBtnText.textContent = '';
+                this.actionIndexBtn.classList.add('state-queued');
 
                 this.countdownInterval = window.setInterval(() => {
                     timeLeft -= 1;
@@ -422,7 +465,7 @@ export class ChatHeader {
 
         // Settings Menu 
         this.indexSettingsBtn.disabled = isProcessing;
-        
+
         // Only re-enable the key button if a provider is actually selected
         if (isProcessing) {
             this.indexSettingsDropdown.classList.add('hidden');
@@ -434,7 +477,7 @@ export class ChatHeader {
     public requestEmbedAPIKey(provider: string): void {
         this.currentEmbedModel = '';
         this.updateStatusText(`${provider} API key required`, 'warning');
-        
+
         // Unhide the dropdown and the input container
         this.indexSettingsDropdown.classList.remove('hidden');
         this.keyContainer.classList.remove('hidden');

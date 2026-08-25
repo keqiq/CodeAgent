@@ -25,16 +25,7 @@ export class CustomDropdown {
         // Toggle list on click
         this.trigger.addEventListener('click', (e: MouseEvent) => {
             e.stopPropagation();
-            if (!this.trigger.disabled) {
-
-                // Close other dropdowns
-                document.querySelectorAll('.dropdown-list:not(.hidden)').forEach((el: Element) => {
-                    if (el !== this.list) el.classList.add('hidden');
-                });
-
-                // Open this dropdown
-                this.list.classList.toggle('hidden');
-            }
+            this.toggle();
         });
 
         // Close dropdown when clicking off
@@ -57,7 +48,8 @@ export class CustomDropdown {
             item.textContent = val;
             item.dataset.value = val;
 
-            item.addEventListener('click', () => {
+            item.addEventListener('click', (e: MouseEvent) => {
+                e.stopPropagation();
                 this.selectValue(val);
             });
 
@@ -89,5 +81,19 @@ export class CustomDropdown {
     public setDisabled(disabled: boolean): void {
         this.trigger.disabled = disabled;
         if (disabled) this.list.classList.add('hidden');
+    }
+
+    public close(): void {
+        this.list.classList.add('hidden');
+    }
+
+    public toggle(): void {
+        if (this.trigger.disabled) return;
+
+        document.querySelectorAll('.custom-dropdown .dropdown-list:not(.hidden)').forEach((el: Element) => {
+            if (el !== this.list) el.classList.add('hidden');
+        });
+
+        this.list.classList.toggle('hidden');
     }
 }
