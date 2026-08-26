@@ -7,9 +7,11 @@ import { ContextManager, FunctionCallItem } from './contextManager';
 import { CommandManager } from './commandManager';
 import { APIManager } from './apiManager';
 import { MCPManager } from './mcpManager';
+import { SessionMetadata } from '../session/agentSession';
 
 export interface ToolManagerDependencies {
     context: vscode.ExtensionContext;
+    metadata: SessionMetadata;
     apiManager: APIManager;
     contextManager: ContextManager;
     commandManager: CommandManager;
@@ -93,7 +95,9 @@ export class ToolManager {
 
             getCommandManager: () => this.deps.commandManager,
 
-            getMCPManager: () => this.deps.mcpManager
+            getMCPManager: () => this.deps.mcpManager,
+
+            getSessionID: () => this.deps.metadata.id,
         });
     }
 
@@ -116,6 +120,7 @@ export class ToolManager {
                     this.totalServerTools++;
                     this.emitter.fire({
                         type: 'updateTool',
+                        sessionID: this.deps.metadata.id,
                         status: 'server',
                         toolID: toolID,
                         toolName,
@@ -143,6 +148,7 @@ export class ToolManager {
 
                 this.emitter.fire({
                     type: uiType,
+                    sessionID: this.deps.metadata.id,
                     status: 'running',
                     toolID,
                     toolName,
@@ -158,13 +164,25 @@ export class ToolManager {
                 if (this.toolRegistry[toolName]) {
                     try {
                         result = await this.toolRegistry[toolName](toolArgs, toolID);
-                        this.emitter.fire({ type: uiType , status: 'success', toolID: toolID });
+                        this.emitter.fire({ 
+                            type: uiType,
+                            sessionID: this.deps.metadata.id, 
+                            status: 'success', 
+                            toolID: toolID 
+                        });
+
                     } catch (e) {
                         isError = true;
                         hasErrors = true;
                         const message = e instanceof Error ? e.message : String(e);
                         result = { message: `Error executing ${toolName}: ${message}` };
-                        this.emitter.fire({ type: uiType, status: 'error', toolID: toolID, error: message });
+                        this.emitter.fire({ 
+                            type: uiType,
+                            sessionID: this.deps.metadata.id,
+                            status: 'error', 
+                            toolID: toolID, 
+                            error: message 
+                        });
                     }
                 }
                 // Tool not found in registry or connected MCP servers
@@ -172,7 +190,13 @@ export class ToolManager {
                     isError = true;
                     hasErrors = true;
                     result = { message: `Error: tool '${toolName}' is not registered.`};
-                    this.emitter.fire({ type: 'updateTool', status: 'error', toolID: toolID, error: 'Invalid tool call.' });
+                    this.emitter.fire({ 
+                        type: 'updateTool',
+                        sessionID: this.deps.metadata.id,
+                        status: 'error', 
+                        toolID: toolID, 
+                        error: 'Invalid tool call.' 
+                    });
                 }
 
                 this.deps.contextManager.addFunctionResult(toolID, toolName, result.message, isError, result.data);
@@ -193,13 +217,14 @@ export class ToolManager {
         if (this.totalCustomTools > 0 || this.totalServerTools > 0) {
             this.emitter.fire({
                 type: 'endTools',
+                sessionID: this.deps.metadata.id,
                 customCount: this.totalCustomTools - this.totalExecuteRun,
                 serverCount: this.totalServerTools
             });
         }
 
         if (this.totalExecuteRun > 0) {
-            this.emitter.fire({ type: 'endExecute' });
+            this.emitter.fire({ type: 'endExecute', sessionID: this.deps.metadata.id });
         }
 
         // Reset counters for the next run

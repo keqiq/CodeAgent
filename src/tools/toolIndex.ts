@@ -58,6 +58,7 @@ export type ToolDeps = {
     getContextManager:() => ContextManager;
     getCommandManager:() => CommandManager;
     getMCPManager:() => MCPManager;
+    getSessionID: () => string;
 };
 
 // Tools with potentionally large output that could use pruning
@@ -92,7 +93,8 @@ export function createToolRegistry(deps: ToolDeps): Record<string, (args: any, t
                 args.cwd,
                 deps.getCwd(),
                 deps.getSignal(),
-                toolID
+                toolID,
+                deps.getSessionID()
             );
         },
 

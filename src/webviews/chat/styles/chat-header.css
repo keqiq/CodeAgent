@@ -123,7 +123,7 @@
 /* 1. Indexed: Greyed out / muted */
 .action-index-btn.state-indexed {
     color: var(--vscode-descriptionForeground);
-    opacity: 0.6;
+    opacity: 0.4;
 }
 
 .action-index-btn.state-indexed:hover:not(:disabled) {

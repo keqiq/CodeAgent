@@ -56,15 +56,25 @@ export class APIManager {
         return embedAPIKey;
     }
 
-    public async verifyTavilyAPIKey(apiKey: string | undefined) {
-        if (!apiKey) throw new Error('Tavily API key not configured!');
-        const client = tavily({ apiKey: apiKey });
-        await client.search("ping", { maxResults: 1 }); // this is wasting a call... but how else can i check the key is valid
+    public async verifyTavilyAPIKey() {
+        try {
+            const apiKey = await this.context.secrets.get('TAVILY_API_KEY');
+            if (!apiKey) throw new Error('Tavily API key not configured!');
+            const client = tavily({ apiKey: apiKey });
+            await client.search("ping", { maxResults: 1 }); // this is wasting a call... but how else can i check the key is valid
+        } catch (e) {
+            vscode.window.showErrorMessage('Invalid Tavily API key');
+            this.emitter.fire({ type: 'requestTavilyAPIKey' });
+        }
     }
 
-    public async getChatModels(provider: string) {
+    public async getChatModels(provider: string, sessionID: string) {
         try {
-            this.emitter.fire({ type: 'setChatModelsLoading', provider: provider });
+            this.emitter.fire({ 
+                type: 'setChatModelsLoading', 
+                sessionID: sessionID,
+                provider: provider
+            });
 
             const apiKey = await this.getChatAPIKey(provider);
 
@@ -75,16 +85,27 @@ export class APIManager {
             this.chatModelInfo.clear();
             infos.forEach((info: ModelInfo) => this.chatModelInfo.set(info.id, info));
 
-            this.emitter.fire({ type: 'setChatModels', models: infos.map((info: ModelInfo) => info.id) });
+            this.emitter.fire({ 
+                type: 'setChatModels',
+                sessionID: sessionID, 
+                models: infos.map((info: ModelInfo) => info.id) 
+            });
 
             const chatModel = this.context.globalState.get<string>(`${provider}_chatModel`);
             const isValidModel = infos.some((info: ModelInfo) => info.id === chatModel);
 
-            this.emitter.fire({ type: 'updateChatModel', model: isValidModel ? chatModel : undefined });
+            this.emitter.fire({ 
+                type: 'updateChatModel', 
+                sessionID: sessionID,
+                model: isValidModel ? chatModel : undefined });
 
         } catch (e) {
             vscode.window.showErrorMessage(`Failed to fetch chat models: ${e}`);
-            this.emitter.fire({ type: 'requestChatAPIKey', provider: provider });
+            this.emitter.fire({ 
+                type: 'requestChatAPIKey',
+                sessionID: sessionID,
+                provider: provider 
+            });
         }
     }
 
@@ -109,23 +130,22 @@ export class APIManager {
         }
     }
 
-    public getChatModelInfo(model: string): void {
-         const info = this.chatModelInfo.get(model);
+    public getChatModelInfo(model: string, effort: string | undefined, sessionID: string): void {
+        const info = this.chatModelInfo.get(model);
         if (info) {
-            const chatProvider = this.context.globalState.get<string>('chatProvider');
-            const savedEffort = this.context.globalState.get<string>(`${chatProvider}_${model}_Effort`);
             this.emitter.fire({
                 type: 'updateChatModelInfo',
+                sessionID: sessionID,
                 reason: info.reason,
                 efforts: info.efforts,
-                defaultEffort: savedEffort ? savedEffort : info.defaultEffort,
+                defaultEffort: effort ? effort : info.defaultEffort,
                 contextWindow: info.contextWindow
             });
         }
     }
 
-    public async saveChatProvider(provider: string): Promise<void> {
-        await this.context.globalState.update('chatProvider', provider);
+    public async saveChatProvider(provider: string, sessionID: string): Promise<void> {
+        await this.context.globalState.update('lastUsedChatProvider', provider);
 
         const serverStateManagement = this.context.globalState.get<boolean>('serverStateManagement') ?? true;
         this.emitter.fire({ type: 'restoreChatSettings', stateful: serverStateManagement });
@@ -133,6 +153,7 @@ export class APIManager {
         const serverWebSearchSupport = ChatFactory.supportsServerWebSearch(provider);
         this.emitter.fire({
             type: 'updateChatProvider',
+            sessionID: sessionID,
             provider: provider,
             stateful: stateManagementSupport,
             serverSearch: serverWebSearchSupport
@@ -144,9 +165,13 @@ export class APIManager {
         this.emitter.fire({ type: 'updateEmbedProvider', provider: provider });
     }
 
-    public async saveChatModel(provider: string, model: string): Promise<void> {
-        await this.context.globalState.update(`${provider}_chatModel`, model);
-        this.emitter.fire({ type: 'updateChatModel', model: model });
+    public async saveChatModel(provider: string, model: string, sessionID: string): Promise<void> {
+        await this.context.globalState.update(`lastUsed_${provider}_chatModel`, model);
+        this.emitter.fire({ 
+            type: 'updateChatModel',
+            sessionID: sessionID,
+            model: model 
+        });
     }
 
     public async saveEmbedModel(provider: string, model: string): Promise<void> {
@@ -176,12 +201,8 @@ export class APIManager {
     }
 
     public async saveTavilyAPIKey(key: string): Promise<void> {
-        try {
-            await this.verifyTavilyAPIKey(key);
-            await this.context.secrets.store('TAVILY_API_KEY', key);
-        } catch (e) {
-            vscode.window.showErrorMessage('Invalid Tavily API key');
-            this.emitter.fire({ type: 'requestTavilyAPIKey' });
-        }
+        await this.context.secrets.store('TAVILY_API_KEY', key);
+        await this.verifyTavilyAPIKey();
+
     }
 }

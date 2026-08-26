@@ -138,7 +138,7 @@ export class CommandManager {
         args: string;
     }>();
 
-    private requestApproval(bin: string, args: string): Promise<boolean> {
+    private requestApproval(bin: string, args: string, sessionID: string): Promise<boolean> {
         return new Promise((resolve) => {
             const requestID = `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
 
@@ -146,6 +146,7 @@ export class CommandManager {
 
             this.emitter.fire({
                 type: 'requestCommandApproval',
+                sessionID,
                 requestID,
                 bin,
                 args
@@ -277,7 +278,8 @@ export class CommandManager {
         requestedCwd: string = '.',
         workspaceRoot: string,
         signal: AbortSignal,
-        toolID: string
+        toolID: string,
+        sessionID: string
     ): Promise<ToolResult> {
         
         const resolvedCwd = path.resolve(workspaceRoot, requestedCwd);
@@ -302,7 +304,7 @@ export class CommandManager {
         const agentMode = this.context.workspaceState.get<string>('agentMode') ?? 'manual';
         // Manual mode, alway ask for confirmation
         if (agentMode === 'manual') {
-            const userApproved = await this.requestApproval(bin, argsString);
+            const userApproved = await this.requestApproval(bin, argsString, sessionID);
             if (!userApproved) throw new Error(`User denied execution of command: ${commandStr}`);
         } 
         
@@ -322,7 +324,7 @@ export class CommandManager {
                 if (!this.config.promptForUnlistedCommands) {
                     throw new Error(`Command blocked. '${bin} ${argsString}' is not in allowedCommands.`);
                 }
-                const userApproved = await this.requestApproval(bin, argsString);
+                const userApproved = await this.requestApproval(bin, argsString, sessionID);
                 if (!userApproved) throw new Error(`User denied execution of unlisted command: ${commandStr}`);
             }
         }

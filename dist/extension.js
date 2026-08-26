@@ -110709,6 +110709,7 @@ var Indexer = class _Indexer {
     return new _Indexer(context, model, apiManager, chunker, database);
   }
   // Update the timestamp for the last modification to track which database is in or out of sync
+  // This is quick and dirty, it will not track which files are modified and needs reindexing
   markWorkspaceModified() {
     this.context.workspaceState.update("lastModified", Date.now());
   }

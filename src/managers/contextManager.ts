@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { getEncoding, Tiktoken } from 'js-tiktoken';
 import { ChatFactory } from '../apis/chat/chatFactory';
 import { PRUNE_OUTPUT, PRUNE_INPUT } from '../tools/toolIndex';
+import { SessionMetadata, SessionPreferences } from '../session/agentSession';
 
 export interface MessageItem {
     type: 'message';
@@ -102,10 +103,6 @@ export class ContextManager {
     private previousTurnID: string | undefined;
     private previousProvider: string | undefined;
 
-    private stateful: boolean = true;
-    private pruneMode: string = 'run';
-    private pruneTurnInterval: number = 2;
-    private pruneRunInterval: number = 1;
     private readonly PRUNE_CHAR_THRESHOLD = 1_250;
 
     private runTokenUsage: TokenUsage = {
@@ -122,10 +119,16 @@ export class ContextManager {
     private emitter = new vscode.EventEmitter();
     public readonly onDidUpdateStatus = this.emitter.event;
 
-    constructor(private readonly context: vscode.ExtensionContext) {
-        this.storageUri = context.storageUri;
-        if (this.storageUri) this.artifactsUri = vscode.Uri.joinPath(this.storageUri, 'artifacts');
-        this.currentProvider = this.context.globalState.get<string>('chatProvider');
+    constructor(
+        private readonly context: vscode.ExtensionContext,
+        private readonly metadata: SessionMetadata,
+        private readonly preferences: SessionPreferences
+    ) {
+        if (this.context.storageUri) {
+            this.storageUri = vscode.Uri.joinPath(this.context.storageUri, 'session', this.metadata.id);
+            this.artifactsUri = vscode.Uri.joinPath(this.storageUri, 'artifacts');
+        }
+        this.currentProvider = this.preferences.provider;
     }
 
     public async initialize(): Promise<void> {
@@ -162,6 +165,8 @@ export class ContextManager {
     public async save(): Promise<void> {
         if (!this.storageUri) return;
 
+        this.metadata.updatedAt = Date.now();
+
         const state: ChatState = {
             history: this.history,
             summarizedHistory: this.summarizedHistory,
@@ -191,12 +196,6 @@ export class ContextManager {
 
     public prepareRun(provider: string): void {
         this.resetTokenUsage();
-
-        this.stateful = this.context.globalState.get<boolean>('serverStateManagement') ?? true;
-        this.pruneMode = this.context.globalState.get<string>('pruneMode') ?? 'run';
-        this.pruneTurnInterval = this.context.globalState.get<number>('pruneTurnInterval') ?? 2;
-        this.pruneRunInterval = this.context.globalState.get<number>('pruneRunInterval') ?? 1;
-
         this.changeProvider(provider);
     }
 
@@ -206,8 +205,9 @@ export class ContextManager {
         this.previousProvider = this.currentProvider;
 
         // If the provider changed or stateful is disabled, reset turn id
-        if (this.currentProvider !== provider || !this.stateful) this.currentTurnID = undefined;
+        if (this.currentProvider !== provider || !this.preferences.stateful) this.currentTurnID = undefined;
         this.currentProvider = provider;
+        this.preferences.provider = provider;
     }
 
     // Extract all function calls for the agent loop
@@ -264,7 +264,11 @@ export class ContextManager {
     }
 
     public updateTokenUsage(): void {
-        this.emitter.fire({ type: 'updateTokenUsage', usage: this.runTokenUsage });
+        this.emitter.fire({ 
+            type: 'updateTokenUsage', 
+            sessionID: this.metadata.id,
+            usage: this.runTokenUsage 
+        });
     }
 
     public addUserMessage(content: string): void {
@@ -398,7 +402,7 @@ export class ContextManager {
         // If previous tool results contain errors, keep tool results for debug context
         if (previousTurnHadError) return;
 
-        if (this.pruneMode === 'turn' && this.turnsSinceLastPrune >= this.pruneTurnInterval) {
+        if (this.preferences.pruneMode === 'turn' && this.turnsSinceLastPrune >= this.preferences.pruneTurnInterval) {
             await this.pruneActiveTools();
         }
     }
@@ -407,7 +411,7 @@ export class ContextManager {
         this.runsSinceLastPrune++;
         this.clearTurnReminders();
 
-        if (this.pruneMode === 'run' && this.runsSinceLastPrune >= this.pruneRunInterval) {
+        if (this.preferences.pruneMode === 'run' && this.runsSinceLastPrune >= this.preferences.pruneRunInterval) {
             await this.pruneActiveTools();
         }
     }
@@ -530,7 +534,7 @@ export class ContextManager {
         const supportsState = this.currentProvider ? ChatFactory.supportsStateManagement(this.currentProvider) : false;
 
         // For providers with serverside context management, send only newest tool result and user prompt
-        if (!fullContext && this.stateful && supportsState && this.currentTurnID) {
+        if (!fullContext && this.preferences.stateful && supportsState && this.currentTurnID) {
             const delta: ChatItem[] = [];
 
             // Only include the cached user message if it belongs to the active turn
@@ -608,7 +612,10 @@ export class ContextManager {
 
         usage.totalTokens = usage.userTokens + usage.assistantTokens + usage.systemTokens + usage.toolCallTokens + usage.toolResultTokens;
 
-        this.emitter.fire({ type: 'updateContextWindowUsage', usage: usage });
+        this.emitter.fire({ 
+            type: 'updateContextWindowUsage',
+            sessionID: this.metadata.id,
+            usage: usage });
     }
 
     public async compactContext(
@@ -665,7 +672,11 @@ export class ContextManager {
         this.currentTurnID = undefined;
         this.currentTurnToolResults = [];
         
-        this.emitter.fire({ type: 'createCheckpoint', content: summaryText });
+        this.emitter.fire({ 
+            type: 'createCheckpoint',
+            sessionID: this.metadata.id,
+            content: summaryText 
+        });
     }
     
     // Remove compaction scratchpad items (prompt, recall calls, recall results, assistant messages)

@@ -3,28 +3,28 @@ import * as util from 'util';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import * as fs from 'fs/promises';
-import * as crypto from 'crypto';
+import { SessionMetadata } from '../session/agentSession';
 
 const exec = util.promisify(cp.exec);
 
 export class WorktreeManager {
     public readonly worktreePath: string;
-    private readonly originalWorkspace: string;
+    private readonly statusFilePath: string;
 
     private emitter = new vscode.EventEmitter();
     public readonly onDidUpdateStatus = this.emitter.event;
 
-    constructor(private context: vscode.ExtensionContext, workspacePath: string) {
-        this.originalWorkspace = workspacePath;
-
-        let id = this.context.workspaceState.get<string>('worktreeID');
-        if (!id) {
-            id = crypto.randomUUID();
-            this.context.workspaceState.update('worktreeID', id);
-        }
+    constructor(
+        private readonly context: vscode.ExtensionContext, 
+        private readonly originalWorkspace: string,
+        private readonly metadata: SessionMetadata
+    ) {
 
         const storageBase = context.storageUri!.fsPath;
-        this.worktreePath = path.join(storageBase, 'worktrees', id);
+        const sessionDir = path.join(storageBase, 'sessions', this.metadata.id);
+        
+        this.worktreePath = path.join(sessionDir, 'worktree');
+        this.statusFilePath = path.join(sessionDir, 'patch_status.txt');
     }
 
     public async setup(): Promise<void> {
@@ -200,6 +200,28 @@ export class WorktreeManager {
         await exec(`git add -A`, { cwd: this.worktreePath });
     }
 
+    private async getPatchStatus(): Promise<string | undefined> {
+        try {
+            const status = await fs.readFile(this.statusFilePath, 'utf-8');
+            return status.trim() || undefined;
+        } catch {
+            return undefined;
+        }
+    }
+
+    private async setPatchStatus(status?: string): Promise<void> {
+        try {
+            if (status) {
+                await fs.mkdir(path.dirname(this.statusFilePath), { recursive: true });
+                await fs.writeFile(this.statusFilePath, status, 'utf-8');
+            } else {
+                await fs.unlink(this.statusFilePath).catch(() => {});
+            }
+        } catch {
+            // Ignore if file doesn't exist
+        }
+    }
+
     private async getPatch(): Promise<string> {
 
         try {
@@ -219,9 +241,20 @@ export class WorktreeManager {
         const patchContent = await this.getPatch();
         if (!patchContent.trim()) return;
         
-        this.emitter.fire({ type: 'reviewPatch', patch: patchContent });
-        const currentStatus = this.context.workspaceState.get<string>('patchStatus');
-        if (currentStatus) this.emitter.fire({ type: 'updatePatchStatus', status: currentStatus });
+        this.emitter.fire({ 
+            type: 'reviewPatch',
+            sessionID: this.metadata.id,
+            patch: patchContent 
+        });
+        
+        const currentStatus = await this.getPatchStatus();
+        if (currentStatus) {
+            this.emitter.fire({ 
+                type: 'updatePatchStatus', 
+                sessionID: this.metadata.id, 
+                status: currentStatus 
+            });
+        }
     }
 
     public async applyPatch(): Promise<void> {
@@ -229,7 +262,7 @@ export class WorktreeManager {
         if (!patchContent.trim()) return;
 
         // Write patch to temp file in main workspace
-        const patchPath = path.join(this.originalWorkspace, '.agent-run.patch');
+        const patchPath = path.join(this.originalWorkspace, `.agent-run-${this.metadata.id}.patch`);
         await fs.writeFile(patchPath, patchContent, 'utf-8');
 
         try {
@@ -237,9 +270,13 @@ export class WorktreeManager {
             await exec(`git add -A`, { cwd: this.originalWorkspace });
             // apply patch
             await exec(`git apply --3way --ignore-whitespace "${patchPath}"`, { cwd: this.originalWorkspace });
-            await this.context.workspaceState.update('patchStatus', 'accepted');
+            await this.setPatchStatus('accepted');
             await this.reset();
-            this.emitter.fire({ type: 'updatePatchStatus', status: 'accepted' });
+            this.emitter.fire({ 
+                type: 'updatePatchStatus',
+                sessionID: this.metadata.id,
+                status: 'accepted' 
+            });
         }
         catch (e: any) {
             // Check if any of these outputs have 'with conflicts' to catch merge conflicts
@@ -247,8 +284,12 @@ export class WorktreeManager {
             console.log(errorStr);
 
             if (errorStr.includes('with conflicts')) {
-                await this.context.workspaceState.update('patchStatus', 'conflict');
-                this.emitter.fire({ type: 'updatePatchStatus', status: 'conflict' });
+                await this.setPatchStatus('conflict');
+                this.emitter.fire({ 
+                    type: 'updatePatchStatus',
+                    sessionID: this.metadata.id,
+                    status: 'conflict' 
+                });
                 throw new Error('MERGE_CONFLICT');
             }
             throw e;
@@ -284,24 +325,37 @@ export class WorktreeManager {
                 } catch (e) {}
             } 
         }
-        await this.context.workspaceState.update('patchStatus', 'accepted');
+        await this.setPatchStatus('accepted');
         await this.reset();
-        this.emitter.fire({ type: 'updatePatchStatus', status: 'accepted' });
+        this.emitter.fire({ 
+            type: 'updatePatchStatus',
+            sessionID: this.metadata.id,
+            status: 'accepted' 
+        });
     }
 
     public async rejectPatch(): Promise<void> {
         await this.reset();
-        this.emitter.fire({ type: 'updatePatchStatus', status: 'rejected' });
+        await this.setPatchStatus('rejected');
+        this.emitter.fire({ 
+            type: 'updatePatchStatus',
+            sessionID: this.metadata.id,
+            status: 'rejected' 
+        });
     }
     
     public async resolveConflicts(): Promise<void> {
         await this.reset();
-        await this.context.workspaceState.update('patchStatus', 'accepted');
-        this.emitter.fire({ type: 'updatePatchStatus', status: 'accepted' });
+        await this.setPatchStatus('accepted');
+        this.emitter.fire({ 
+            type: 'updatePatchStatus',
+            sessionID: this.metadata.id,
+            status: 'accepted' 
+        });
     }
     
     private async clearState(): Promise<void> {
-        await this.context.workspaceState.update('patchStatus', undefined);
+        await this.setPatchStatus(undefined);
     }
     
     public async cleanup(): Promise<void> {
