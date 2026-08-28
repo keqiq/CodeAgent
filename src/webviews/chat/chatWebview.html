@@ -11,8 +11,27 @@
 <body>
     <div class="chat-header">
         <div class="header-left">
-            <!-- Placeholder for upcoming feature -->
-            <div id="headerFeatureSlot" class="header-feature-slot"></div>
+            <div class="session-selector-wrapper" id="sessionSelectorContainer">
+                <!-- New Session Quick Action Button -->
+                <button id="newSessionBtn" class="header-action-btn icon-only" title="New Chat">
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+                        <path
+                            d="M8 2a.75.75 0 0 1 .75.75v4.5h4.5a.75.75 0 0 1 0 1.5h-4.5v4.5a.75.75 0 0 1-1.5 0v-4.5h-4.5a.75.75 0 0 1 0-1.5h4.5v-4.5A.75.75 0 0 1 8 2z" />
+                    </svg>
+                </button>
+
+                <!-- Session Selector Dropdown -->
+                <div class="custom-dropdown session-dropdown" id="sessionDropdown">
+                    <button class="dropdown-trigger session-op" type="button" id="sessionTrigger">
+                        <span class="selected-text" id="sessionSelectedText">Select Chat...</span>
+                        <svg class="dropdown-arrow" width="10" height="10" viewBox="0 0 16 16" fill="currentColor">
+                            <path fill-rule="evenodd" clip-rule="evenodd"
+                                d="M7.976 10.072l4.357-4.357.62.618L8.284 11h-.618L3 6.333l.619-.618 4.357 4.357z" />
+                        </svg>
+                    </button>
+                    <div class="dropdown-list session-list hidden" id="sessionList"></div>
+                </div>
+            </div>
         </div>
 
         <div class="header-right">
@@ -152,273 +171,274 @@
         </div>
     </div>
 
-    <div class="chat-container" id="chatContainer"></div>
+    <!-- Container where active & background sessions mount -->
+    <div id="sessionsViewport" class="sessions-viewport"></div>
 
-    <button id="scrollToBottomBtn" class="scroll-bottom-btn" title="Scroll to bottom">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-            <path fill-rule="evenodd" clip-rule="evenodd" d="M8 11L3 6l.7-.7L8 9.6l4.3-4.3.7.7L8 11z" />
-        </svg>
-    </button>
+    <!-- Template Cloned Per Session -->
+    <template id="sessionViewTemplate">
+        <div class="session-view hidden" data-session-id="">
+            <div class="chat-container"></div>
 
-    <div class="chat-input">
-        <div class="unified-box">
+            <button class="scroll-bottom-btn" title="Scroll to bottom">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M8 11L3 6l.7-.7L8 9.6l4.3-4.3.7.7L8 11z" />
+                </svg>
+            </button>
 
-            <div class="input-row">
+            <div class="chat-input">
+                <div class="unified-box">
+                    <div class="input-row">
+                        <div class="command-approval hidden">
+                            <div class="approval-text">
+                                <span
+                                    style="color: var(--vscode-editorWarning-foreground); font-weight: bold; display: flex; align-items: center; gap: 4px;">
+                                    <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+                                        <path fill-rule="evenodd" clip-rule="evenodd"
+                                            d="M8.22 1.754a.25.25 0 00-.44 0L1.698 13.132a.25.25 0 00.22.368h12.164a.25.25 0 00.22-.368L8.22 1.754zm1.116-.406a1.75 1.75 0 00-3.08 0L.17 13.292A1.75 1.75 0 001.698 15h12.164a1.75 1.75 0 001.528-2.672L9.336 1.348zM8 11.5a.75.75 0 100-1.5.75.75 0 000 1.5zm.74-5.946a.75.75 0 00-1.48 0l-.2 3.5a.75.75 0 001.48.084l.2-3.584z" />
+                                    </svg>
+                                    Agent wants to run an unlisted command:
+                                </span>
+                                <code class="approval-command-text"></code>
+                            </div>
+                            <div class="approval-actions">
+                                <button class="approve-btn approve-command-btn">Allow Once</button>
+                                <button class="save-approve-btn save-approve-command-btn"
+                                    title="Add to agent-rules.json">Always Allow</button>
+                                <button class="deny-btn deny-command-btn">Deny</button>
+                            </div>
+                        </div>
 
-                <div id="commandApprovalContainer" class="command-approval hidden">
-                    <div class="approval-text">
-                        <span
-                            style="color: var(--vscode-editorWarning-foreground); font-weight: bold; display: flex; align-items: center; gap: 4px;">
+                        <textarea class="prompt-input" rows="1" placeholder="Select Provider..."></textarea>
+                        <button class="send-btn action-btn" disabled>
                             <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
-                                <path fill-rule="evenodd" clip-rule="evenodd"
-                                    d="M8.22 1.754a.25.25 0 00-.44 0L1.698 13.132a.25.25 0 00.22.368h12.164a.25.25 0 00.22-.368L8.22 1.754zm1.116-.406a1.75 1.75 0 00-3.08 0L.17 13.292A1.75 1.75 0 001.698 15h12.164a1.75 1.75 0 001.528-2.672L9.336 1.348zM8 11.5a.75.75 0 100-1.5.75.75 0 000 1.5zm.74-5.946a.75.75 0 00-1.48 0l-.2 3.5a.75.75 0 001.48.084l.2-3.584z" />
+                                <path d="M8 1L1 8h5v7h4V8h5L8 1z" />
                             </svg>
-                            Agent wants to run an unlisted command:
-                        </span>
-                        <code id="approvalCommandText"></code>
-                    </div>
-                    <div class="approval-actions">
-                        <button id="approveCommandBtn" class="approve-btn">Allow Once</button>
-                        <button id="saveApproveCommandBtn" class="save-approve-btn"
-                            title="Add to agent-rules.json">Always Allow</button>
-                        <button id="denyCommandBtn" class="deny-btn">Deny</button>
+                        </button>
                     </div>
                 </div>
 
-                <textarea id="prompt" rows="1" placeholder="Select Provider..."></textarea>
-                <button id="actionBtn" class="send-btn" disabled>
-                    <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
-                        <path d="M8 1L1 8h5v7h4V8h5L8 1z" />
-                    </svg>
-                </button>
-            </div>
-        </div>
-
-        <div class="box-actions">
-            <div class="action-group">
-                <div class="custom-dropdown" id="providerDropdown">
-                    <button class="dropdown-trigger provider-op" type="button" id="providerTrigger">
-                        <span class="selected-text">Provider...</span>
-                    </button>
-                    <div class="dropdown-list hidden" id="providerList"></div>
-                </div>
-
-                <span class="divider">|</span>
-
-                <div class="custom-dropdown" id="modelDropdown">
-                    <button class="dropdown-trigger model-op" type="button" id="modelTrigger" disabled>
-                        <span class="selected-text">Models...</span>
-                    </button>
-                    <div class="dropdown-list hidden" id="modelList"></div>
-                </div>
-
-                <span class="divider hidden" id="effortDivider">|</span>
-
-                <div class="custom-dropdown effort-dropdown hidden" id="effortDropdown">
-                    <button class="dropdown-trigger effort-op" type="button" id="effortTrigger">
-                        <span class="selected-text">Effort</span>
-                    </button>
-                    <div class="dropdown-list hidden" id="effortList"></div>
-                </div>
-            </div>
-
-            <div class="right-actions">
-
-                <div class="agent-mode-container">
-                    <button id="modeToggleBtn" class="icon-btn mode-toggle-btn mode-manual"
-                        title="Toggle Agent Mode (Auto/Manual)">
-                        MANUAL
-                    </button>
-
-                    <button id="agentConfigBtn" class="icon-btn agent-config-btn hidden" title="Edit Agent Rules">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
-                            <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
-                            <g id="SVGRepo_iconCarrier">
-                                <path fill-rule="evenodd" clip-rule="evenodd"
-                                    d="M10 1C9.73478 1 9.48043 1.10536 9.29289 1.29289L3.29289 7.29289C3.10536 7.48043 3 7.73478 3 8V20C3 21.6569 4.34315 23 6 23H8C8.55228 23 9 22.5523 9 22C9 21.4477 8.55228 21 8 21H6C5.44772 21 5 20.5523 5 20V9H10C10.5523 9 11 8.55228 11 8V3H18C18.5523 3 19 3.44772 19 4V7C19 7.55228 19.4477 8 20 8C20.5523 8 21 7.55228 21 7V4C21 2.34315 19.6569 1 18 1H10ZM9 7H6.41421L9 4.41421V7ZM13.5067 11.3155C13.6011 10.0209 14.6813 9 16 9H17C18.3186 9 19.3988 10.0209 19.4933 11.3155C20.6616 10.75 22.0859 11.175 22.7452 12.317L23.2452 13.183C23.9045 14.325 23.5605 15.7709 22.4866 16.5C23.5605 17.2291 23.9045 18.675 23.2452 19.817L22.7452 20.683C22.0859 21.825 20.6616 22.25 19.4933 21.6845C19.3988 22.9791 18.3186 24 17 24H16C14.6813 24 13.6011 22.9791 13.5067 21.6845C12.3384 22.25 10.9141 21.825 10.2548 20.683L9.7548 19.817C9.09548 18.675 9.43952 17.2291 10.5134 16.5C9.43952 15.7709 9.09548 14.325 9.7548 13.183L10.2548 12.317C10.9141 11.175 12.3384 10.75 13.5067 11.3155ZM16 11C15.7238 11 15.5 11.2239 15.5 11.5V12.4678C15.5 12.8474 15.285 13.1943 14.945 13.3633C14.8128 13.429 14.6852 13.5029 14.5629 13.5844C14.2464 13.7952 13.8378 13.8083 13.5085 13.6181L12.6699 13.134C12.4307 12.9959 12.1249 13.0778 11.9868 13.317L11.4868 14.183C11.3488 14.4222 11.4307 14.728 11.6699 14.866L12.5088 15.3504C12.8375 15.5402 13.0304 15.8997 13.0069 16.2785C13.0023 16.3516 13 16.4255 13 16.5C13 16.5745 13.0023 16.6484 13.0069 16.7215C13.0304 17.1003 12.8375 17.4598 12.5088 17.6496L11.6699 18.134C11.4307 18.272 11.3488 18.5778 11.4868 18.817L11.9868 19.683C12.1249 19.9222 12.4307 20.0041 12.6699 19.866L13.5085 19.3819C13.8378 19.1917 14.2464 19.2048 14.5629 19.4156C14.6852 19.4971 14.8128 19.571 14.945 19.6367C15.285 19.8057 15.5 20.1526 15.5 20.5322V21.5C15.5 21.7761 15.7238 22 16 22H17C17.2761 22 17.5 21.7761 17.5 21.5V20.5323C17.5 20.1526 17.715 19.8057 18.055 19.6367C18.1872 19.571 18.3148 19.4971 18.4372 19.4156C18.7536 19.2048 19.1622 19.1917 19.4915 19.3819L20.3301 19.866C20.5693 20.0041 20.8751 19.9222 21.0131 19.683L21.5131 18.817C21.6512 18.5778 21.5693 18.272 21.3301 18.134L20.4912 17.6496C20.1625 17.4599 19.9696 17.1004 19.9931 16.7215C19.9977 16.6484 20 16.5745 20 16.5C20 16.4255 19.9977 16.3516 19.9931 16.2785C19.9696 15.8996 20.1625 15.5401 20.4912 15.3504L21.3301 14.866C21.5693 14.728 21.6512 14.4222 21.5131 14.183L21.0131 13.317C20.8751 13.0778 20.5693 12.9959 20.3301 13.134L19.4915 13.6181C19.1622 13.8083 18.7536 13.7952 18.4372 13.5844C18.3148 13.5029 18.1872 13.429 18.055 13.3633C17.715 13.1943 17.5 12.8474 17.5 12.4677V11.5C17.5 11.2239 17.2761 11 17 11H16ZM18.5 16.5C18.5 17.6046 17.6046 18.5 16.5 18.5C15.3954 18.5 14.5 17.6046 14.5 16.5C14.5 15.3954 15.3954 14.5 16.5 14.5C17.6046 14.5 18.5 15.3954 18.5 16.5Z"
-                                    fill="currentColor"></path>
-                            </g>
-                        </svg>
-                    </button>
-                </div>
-
-                <div class="settings-menu-wrapper" id="contextWindowContainer">
-                    <button id="contextWindowToggleBtn" class="context-bar-btn" title="Context Window Usage">
-                        <div class="context-bar-fill" id="contextBarFill"></div>
-                        <span class="context-bar-text" id="contextBarText">0 / 0</span>
-                    </button>
-
-                    <div class="dropdown-list hidden" id="contextWindowDropdown">
-
-                        <div class="context-chart-container" id="contextChartContainer">
-                            <div class="context-pie-chart" id="contextPieChart"></div>
-
-                            <div class="context-legend">
-                                <div class="legend-item">
-                                    <span class="legend-color user-color"></span>
-                                    <span class="legend-name">User</span>
-                                    <strong id="legUser">0</strong>
-                                </div>
-                                <div class="legend-item">
-                                    <span class="legend-color assistant-color"></span>
-                                    <span class="legend-name">Assistant</span>
-                                    <strong id="legAssistant">0</strong>
-                                </div>
-                                <div class="legend-item">
-                                    <span class="legend-color system-color"></span>
-                                    <span class="legend-name">System</span>
-                                    <strong id="legSystem">0</strong>
-                                </div>
-                                <div class="legend-item">
-                                    <span class="legend-color tools-color"></span>
-                                    <span class="legend-name">Tools</span>
-                                    <strong id="legTools">0</strong>
-                                </div>
-                            </div>
+                <div class="box-actions">
+                    <div class="action-group">
+                        <div class="custom-dropdown provider-dropdown">
+                            <button class="dropdown-trigger provider-op" type="button">
+                                <span class="selected-text">Provider...</span>
+                            </button>
+                            <div class="dropdown-list hidden"></div>
                         </div>
 
-                        <div class="menu-divider"></div>
+                        <span class="divider">|</span>
 
-                        <div class="menu-item active" id="menuPruneToggle">
-                            <div class="menu-item-title">Prune Tool Calls/Results</div>
-                            <div class="menu-item-desc">Tool input/output into artifact pointer.</div>
+                        <div class="custom-dropdown model-dropdown">
+                            <button class="dropdown-trigger model-op" type="button" disabled>
+                                <span class="selected-text">Models...</span>
+                            </button>
+                            <div class="dropdown-list hidden"></div>
                         </div>
 
-                        <div class="menu-item" id="menuPruneStrategyToggle">
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <span class="menu-item-title">Strategy</span>
-                                <span id="pruneStrategyLabel"
-                                    style="font-size: 10px; font-weight: 700; color: var(--vscode-textLink-foreground);">TURN</span>
-                            </div>
-                        </div>
+                        <span class="divider effort-divider hidden">|</span>
 
-                        <div class="menu-item number-input" id="menuPruneInterval">
-                            <div class="menu-item-text">
-                                <div class="menu-item-title" id="pruneIntervalTitle">Turn Interval</div>
-                                <div class="menu-item-desc">How often to prune.</div>
-                            </div>
-
-                            <div class="number-control">
-                                <button type="button" id="pruneIntervalMinus" class="icon-btn" title="Decrease">
-                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                                        <path fill-rule="evenodd" clip-rule="evenodd"
-                                            d="M10.4 12.4L6.1 8l4.3-4.4-.7-.7L4.7 8l5 5.1.7-.7z" />
-                                    </svg>
-                                </button>
-                                <input type="number" id="pruneIntervalInput" value="1" min="1">
-                                <button type="button" id="pruneIntervalPlus" class="icon-btn" title="Increase">
-                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                                        <path fill-rule="evenodd" clip-rule="evenodd"
-                                            d="M5.6 3.6L9.9 8l-4.3 4.4.7.7L11.3 8l-5-5.1-.7.7z" />
-                                    </svg>
-                                </button>
-                            </div>
-                        </div>
-
-                        <div class="menu-divider"></div>
-
-                        <div class="menu-item" id="menuCompactHistoryBtn">
-                            <div class="menu-item-title">Compact History</div>
-                            <div class="menu-item-desc">Summarize to free up context.</div>
+                        <div class="custom-dropdown effort-dropdown hidden">
+                            <button class="dropdown-trigger effort-op" type="button">
+                                <span class="selected-text">Effort</span>
+                            </button>
+                            <div class="dropdown-list hidden"></div>
                         </div>
                     </div>
-                </div>
 
-                <div class="settings-menu-wrapper" id="chatSettingsContainer">
-                    <button id="chatSettingsToggleBtn" class="icon-btn" title="Model Settings">Settings</button>
-
-                    <div class="dropdown-list hidden" id="chatSettingsDropdown">
-                        <div class="menu-item number-input" id="menuMaxTurns">
-                            <div class="menu-item-text">
-                                <div class="menu-item-title">Max turns</div>
-                                <div class="menu-item-desc">Set 0 to disable turn limit.</div>
-                            </div>
-
-                            <div class="number-control" id="maxTurnsControl">
-                                <button type="button" id="maxTurnsMinus" class="icon-btn" title="Decrease">
-                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                                        <path fill-rule="evenodd" clip-rule="evenodd"
-                                            d="M10.4 12.4L6.1 8l4.3-4.4-.7-.7L4.7 8l5 5.1.7-.7z" />
-                                    </svg>
-                                </button>
-                                <input type="number" id="maxTurnsInput" value="0" min="0">
-                                <button type="button" id="maxTurnsPlus" class="icon-btn" title="Increase">
-                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                                        <path fill-rule="evenodd" clip-rule="evenodd"
-                                            d="M5.6 3.6L9.9 8l-4.3 4.4.7.7L11.3 8l-5-5.1-.7.7z" />
-                                    </svg>
-                                </button>
-                            </div>
-                        </div>
-
-                        <div class="menu-divider"></div>
-
-                        <div class="menu-item" id="menuAllModelsToggle">
-                            <div class="menu-item-title">All Models</div>
-                            <div class="menu-item-desc">Show all available models.</div>
-                        </div>
-
-                        <div class="menu-item" id="menuStatefulToggle">
-                            <div class="menu-item-title">Stateful</div>
-                            <div class="menu-item-desc">Server-side context management.</div>
-                        </div>
-
-                        <div class="menu-divider"></div>
-
-                        <div class="menu-item" id="menuWebSearchToggle">
-                            <div class="menu-item-title">Web Search</div>
-                            <div class="menu-item-desc">Enable live web lookups.</div>
-                        </div>
-
-                        <div class="menu-item hidden" id="menuWebSearchModeToggle">
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <span class="menu-item-title">Engine</span>
-                                <span id="webSearchModeLabel"
-                                    style="font-size: 10px; font-weight: 700; color: var(--vscode-textLink-foreground);">TAVILY</span>
-                            </div>
-                        </div>
-
-                        <div class="menu-item hidden" id="menuTavilyKeyBtn">
-                            Set Tavily API Key
-                        </div>
-
-                        <div class="inlineAPIKeyContainer hidden" id="tavilyKeyContainer">
-                            <input type="password" id="tavilyKeyInput" placeholder="tvly-..." autocomplete="off">
-                            <button id="tavilyKeySaveBtn" class="send-btn">Save</button>
-                        </div>
-
-                        <div class="menu-divider"></div>
-
-                        <div class="menu-item disabled" id="menuChatKeyBtn">
-                            Set API Key
-                        </div>
-
-                        <div class="inlineAPIKeyContainer hidden" id="chatKeyContainer">
-                            <input type="password" id="chatKeyInput" placeholder="sk-..." autocomplete="off">
-                            <button id="chatKeySaveBtn" class="send-btn">Save</button>
-                        </div>
-
-                        <div class="menu-divider"></div>
-
-                        <div class="menu-item clear-chat-item" id="menuClearChatBtn">
-                            <div class="menu-item-title" style="color: var(--vscode-errorForeground);">Delete Chat</div>
-                            <button id="clearChatConfirmBtn" class="icon-btn hidden" title="Confirm Clear"
-                                style="color: var(--vscode-errorForeground); border: 1px solid var(--vscode-errorForeground);">
-                                <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+                    <div class="right-actions">
+                        <div class="agent-mode-container">
+                            <button class="icon-btn mode-toggle-btn mode-manual"
+                                title="Toggle Agent Mode (Auto/Manual)">
+                                MANUAL
+                            </button>
+                            <button class="icon-btn agent-config-btn hidden" title="Edit Agent Rules">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                    xmlns="http://www.w3.org/2000/svg">
                                     <path fill-rule="evenodd" clip-rule="evenodd"
-                                        d="M10 3h3v1h-1v9l-1 1H4l-1-1V4H2V3h3V2a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v1zM9 2H6v1h3V2zM4 13h7V4H4v9zm2-8H5v7h1V5zm1 0h1v7H7V5zm2 0h1v7H9V5z" />
+                                        d="M10 1C9.73478 1 9.48043 1.10536 9.29289 1.29289L3.29289 7.29289C3.10536 7.48043 3 7.73478 3 8V20C3 21.6569 4.34315 23 6 23H8C8.55228 23 9 22.5523 9 22C9 21.4477 8.55228 21 8 21H6C5.44772 21 5 20.5523 5 20V9H10C10.5523 9 11 8.55228 11 8V3H18C18.5523 3 19 3.44772 19 4V7C19 7.55228 19.4477 8 20 8C20.5523 8 21 7.55228 21 7V4C21 2.34315 19.6569 1 18 1H10ZM9 7H6.41421L9 4.41421V7ZM13.5067 11.3155C13.6011 10.0209 14.6813 9 16 9H17C18.3186 9 19.3988 10.0209 19.4933 11.3155C20.6616 10.75 22.0859 11.175 22.7452 12.317L23.2452 13.183C23.9045 14.325 23.5605 15.7709 22.4866 16.5C23.5605 17.2291 23.9045 18.675 23.2452 19.817L22.7452 20.683C22.0859 21.825 20.6616 22.25 19.4933 21.6845C19.3988 22.9791 18.3186 24 17 24H16C14.6813 24 13.6011 22.9791 13.5067 21.6845C12.3384 22.25 10.9141 21.825 10.2548 20.683L9.7548 19.817C9.09548 18.675 9.43952 17.2291 10.5134 16.5C9.43952 15.7709 9.09548 14.325 9.7548 13.183L10.2548 12.317C10.9141 11.175 12.3384 10.75 13.5067 11.3155ZM16 11C15.7238 11 15.5 11.2239 15.5 11.5V12.4678C15.5 12.8474 15.285 13.1943 14.945 13.3633C14.8128 13.429 14.6852 13.5029 14.5629 13.5844C14.2464 13.7952 13.8378 13.8083 13.5085 13.6181L12.6699 13.134C12.4307 12.9959 12.1249 13.0778 11.9868 13.317L11.4868 14.183C11.3488 14.4222 11.4307 14.728 11.6699 14.866L12.5088 15.3504C12.8375 15.5402 13.0304 15.8997 13.0069 16.2785C13.0023 16.3516 13 16.4255 13 16.5C13 16.5745 13.0023 16.6484 13.0069 16.7215C13.0304 17.1003 12.8375 17.4598 12.5088 17.6496L11.6699 18.134C11.4307 18.272 11.3488 18.5778 11.4868 18.817L11.9868 19.683C12.1249 19.9222 12.4307 20.0041 12.6699 19.866L13.5085 19.3819C13.8378 19.1917 14.2464 19.2048 14.5629 19.4156C14.6852 19.4971 14.8128 19.571 14.945 19.6367C15.285 19.8057 15.5 20.1526 15.5 20.5322V21.5C15.5 21.7761 15.7238 22 16 22H17C17.2761 22 17.5 21.7761 17.5 21.5V20.5323C17.5 20.1526 17.715 19.8057 18.055 19.6367C18.1872 19.571 18.3148 19.4971 18.4372 19.4156C18.7536 19.2048 19.1622 19.1917 19.4915 19.3819L20.3301 19.866C20.5693 20.0041 20.8751 19.9222 21.0131 19.683L21.5131 18.817C21.6512 18.5778 21.5693 18.272 21.3301 18.134L20.4912 17.6496C20.1625 17.4599 19.9696 17.1004 19.9931 16.7215C19.9977 16.6484 20 16.5745 20 16.5C20 16.4255 19.9977 16.3516 19.9931 16.2785C19.9696 15.8996 20.1625 15.5401 20.4912 15.3504L21.3301 14.866C21.5693 14.728 21.6512 14.4222 21.5131 14.183L21.0131 13.317C20.8751 13.0778 20.5693 12.9959 20.3301 13.134L19.4915 13.6181C19.1622 13.8083 18.7536 13.7952 18.4372 13.5844C18.3148 13.5029 18.1872 13.429 18.055 13.3633C17.715 13.1943 17.5 12.8474 17.5 12.4677V11.5C17.5 11.2239 17.2761 11 17 11H16ZM18.5 16.5C18.5 17.6046 17.6046 18.5 16.5 18.5C15.3954 18.5 14.5 17.6046 14.5 16.5C14.5 15.3954 15.3954 14.5 16.5 14.5C17.6046 14.5 18.5 15.3954 18.5 16.5Z"
+                                        fill="currentColor"></path>
                                 </svg>
-                                <span>Confirm</span>
                             </button>
                         </div>
+
+                        <div class="settings-menu-wrapper context-window-container">
+                            <button class="context-bar-btn context-window-toggle-btn" title="Context Window Usage">
+                                <div class="context-bar-fill"></div>
+                                <span class="context-bar-text">0 / 0</span>
+                            </button>
+
+                            <div class="dropdown-list context-window-dropdown hidden">
+                                <div class="context-chart-container">
+                                    <div class="context-pie-chart"></div>
+
+                                    <div class="context-legend">
+                                        <div class="legend-item">
+                                            <span class="legend-color user-color"></span>
+                                            <span class="legend-name">User</span>
+                                            <strong class="leg-user">0</strong>
+                                        </div>
+                                        <div class="legend-item">
+                                            <span class="legend-color assistant-color"></span>
+                                            <span class="legend-name">Assistant</span>
+                                            <strong class="leg-assistant">0</strong>
+                                        </div>
+                                        <div class="legend-item">
+                                            <span class="legend-color system-color"></span>
+                                            <span class="legend-name">System</span>
+                                            <strong class="leg-system">0</strong>
+                                        </div>
+                                        <div class="legend-item">
+                                            <span class="legend-color tools-color"></span>
+                                            <span class="legend-name">Tools</span>
+                                            <strong class="leg-tools">0</strong>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="menu-divider"></div>
+
+                                <div class="menu-item active menu-prune-toggle">
+                                    <div class="menu-item-title">Prune Tool Calls/Results</div>
+                                    <div class="menu-item-desc">Tool input/output into artifact pointer.</div>
+                                </div>
+
+                                <div class="menu-item menu-prune-strategy-toggle">
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                        <span class="menu-item-title">Strategy</span>
+                                        <span class="prune-strategy-label"
+                                            style="font-size: 10px; font-weight: 700; color: var(--vscode-textLink-foreground);">TURN</span>
+                                    </div>
+                                </div>
+
+                                <div class="menu-item number-input menu-prune-interval">
+                                    <div class="menu-item-text">
+                                        <div class="menu-item-title prune-interval-title">Turn Interval</div>
+                                        <div class="menu-item-desc">How often to prune.</div>
+                                    </div>
+
+                                    <div class="number-control">
+                                        <button type="button" class="icon-btn prune-interval-minus" title="Decrease">
+                                            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                                                <path fill-rule="evenodd" clip-rule="evenodd"
+                                                    d="M10.4 12.4L6.1 8l4.3-4.4-.7-.7L4.7 8l5 5.1.7-.7z" />
+                                            </svg>
+                                        </button>
+                                        <input type="number" class="prune-interval-input" value="1" min="1">
+                                        <button type="button" class="icon-btn prune-interval-plus" title="Increase">
+                                            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                                                <path fill-rule="evenodd" clip-rule="evenodd"
+                                                    d="M5.6 3.6L9.9 8l-4.3 4.4.7.7L11.3 8l-5-5.1-.7.7z" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="menu-divider"></div>
+
+                                <div class="menu-item menu-compact-history-btn">
+                                    <div class="menu-item-title">Compact History</div>
+                                    <div class="menu-item-desc">Summarize to free up context.</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="settings-menu-wrapper chat-settings-container">
+                            <button class="icon-btn chat-settings-toggle-btn" title="Model Settings">Settings</button>
+
+                            <div class="dropdown-list chat-settings-dropdown hidden">
+                                <div class="menu-item number-input menu-max-turns">
+                                    <div class="menu-item-text">
+                                        <div class="menu-item-title">Max turns</div>
+                                        <div class="menu-item-desc">Set 0 to disable turn limit.</div>
+                                    </div>
+
+                                    <div class="number-control">
+                                        <button type="button" class="icon-btn max-turns-minus" title="Decrease">
+                                            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                                                <path fill-rule="evenodd" clip-rule="evenodd"
+                                                    d="M10.4 12.4L6.1 8l4.3-4.4-.7-.7L4.7 8l5 5.1.7-.7z" />
+                                            </svg>
+                                        </button>
+                                        <input type="number" class="max-turns-input" value="0" min="0">
+                                        <button type="button" class="icon-btn max-turns-plus" title="Increase">
+                                            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                                                <path fill-rule="evenodd" clip-rule="evenodd"
+                                                    d="M5.6 3.6L9.9 8l-4.3 4.4.7.7L11.3 8l-5-5.1-.7.7z" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="menu-divider"></div>
+
+                                <div class="menu-item menu-all-models-toggle">
+                                    <div class="menu-item-title">All Models</div>
+                                    <div class="menu-item-desc">Show all available models.</div>
+                                </div>
+
+                                <div class="menu-item menu-stateful-toggle">
+                                    <div class="menu-item-title">Stateful</div>
+                                    <div class="menu-item-desc">Server-side context management.</div>
+                                </div>
+
+                                <div class="menu-divider"></div>
+
+                                <div class="menu-item menu-web-search-toggle">
+                                    <div class="menu-item-title">Web Search</div>
+                                    <div class="menu-item-desc">Enable live web lookups.</div>
+                                </div>
+
+                                <div class="menu-item hidden menu-web-search-mode-toggle">
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                        <span class="menu-item-title">Engine</span>
+                                        <span class="web-search-mode-label"
+                                            style="font-size: 10px; font-weight: 700; color: var(--vscode-textLink-foreground);">TAVILY</span>
+                                    </div>
+                                </div>
+
+                                <div class="menu-item hidden menu-tavily-key-btn">
+                                    Set Tavily API Key
+                                </div>
+
+                                <div class="inlineAPIKeyContainer hidden tavily-key-container">
+                                    <input type="password" class="tavily-key-input" placeholder="tvly-..."
+                                        autocomplete="off">
+                                    <button class="send-btn tavily-key-save-btn">Save</button>
+                                </div>
+
+                                <div class="menu-divider"></div>
+
+                                <div class="menu-item disabled menu-chat-key-btn">
+                                    Set API Key
+                                </div>
+
+                                <div class="inlineAPIKeyContainer hidden chat-key-container">
+                                    <input type="password" class="chat-key-input" placeholder="sk-..."
+                                        autocomplete="off">
+                                    <button class="send-btn chat-key-save-btn">Save</button>
+                                </div>
+
+                                <div class="menu-divider"></div>
+
+                                <div class="menu-item clear-chat-item menu-clear-chat-btn">
+                                    <div class="menu-item-title" style="color: var(--vscode-errorForeground);">Delete
+                                        Chat</div>
+                                    <button class="icon-btn hidden clear-chat-confirm-btn" title="Confirm Clear"
+                                        style="color: var(--vscode-errorForeground); border: 1px solid var(--vscode-errorForeground);">
+                                        <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+                                            <path fill-rule="evenodd" clip-rule="evenodd"
+                                                d="M10 3h3v1h-1v9l-1 1H4l-1-1V4H2V3h3V2a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v1zM9 2H6v1h3V2zM4 13h7V4H4v9zm2-8H5v7h1V5zm1 0h1v7H7V5zm2 0h1v7H9V5z" />
+                                        </svg>
+                                        <span>Confirm</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-
-
-    </div>
+    </template>
 
     <script src="{{scriptUri}}"></script>
 </body>

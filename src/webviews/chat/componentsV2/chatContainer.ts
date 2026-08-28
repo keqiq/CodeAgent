@@ -21,9 +21,9 @@ export class ChatContainer {
     private isAutoScrollEnabled: boolean = true;
     private readonly SCROLL_THRESHOLD = 50; //px
 
-    constructor(private vscodeAPI: WebviewApi) {
-        this.container = document.getElementById('chatContainer') as HTMLElement;
-        this.scrollToBottomBtn = document.getElementById('scrollToBottomBtn') as HTMLButtonElement;
+    constructor(rootElement: HTMLElement, private vscodeAPI: WebviewApi) {
+        this.container = rootElement.querySelector('.chat-container') as HTMLElement;
+        this.scrollToBottomBtn = rootElement.querySelector('.scroll-bottom-btn') as HTMLButtonElement;
 
         this.initListeners();
     }
@@ -83,7 +83,7 @@ export class ChatContainer {
                         const item = m as any;
                         this.runContainer.setModel(item.model, item.provider);
                     }
-                    if (m.tokenUsage) this.updateRun(m.tokenUsage);
+                    if (m.tokenUsage) this.updateUsage(m.tokenUsage);
                     this.endRun(m.status, m.message);
                 }
             });
@@ -104,7 +104,7 @@ export class ChatContainer {
         this.showTypingIndicator();
     }
 
-    public updateRun(usage: any): void {
+    public updateUsage(usage: any): void {
         if (this.runContainer) this.runContainer.update(usage);
     }
 
@@ -238,7 +238,7 @@ export class ChatContainer {
     }
 
     private autoScroll(): void {
-        if (this.isAutoScrollEnabled) {
+        if (this.isAutoScrollEnabled && this.container.offsetParent !== null) {
             this.container.scrollTop = this.container.scrollHeight;
         }
     }
@@ -248,7 +248,7 @@ export class ChatContainer {
     }
 
     private removeTypingIndicator(): void {
-        const indicator = document.getElementById('typingIndicator');
+        const indicator = this.container.querySelector('#typingIndicator');
         if (indicator) indicator.remove();
     }
 

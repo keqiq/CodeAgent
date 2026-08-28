@@ -34,30 +34,30 @@ export class ContextWindow {
 
     private compactHistoryBtn: HTMLElement;
 
-    constructor(private vscodeAPI: WebviewApi) {
-        this.contextContainer = document.getElementById('contextWindowContainer') as HTMLElement;
-        this.contextToggleBtn = document.getElementById('contextWindowToggleBtn') as HTMLButtonElement;
-        this.contextFillBar = document.getElementById('contextBarFill') as HTMLElement;
-        this.contextTextLabel = document.getElementById('contextBarText') as HTMLElement;
-        this.contextDropdown = document.getElementById('contextWindowDropdown') as HTMLElement;
+    constructor(rootElement: HTMLElement, private vscodeAPI: WebviewApi) {
+        this.contextContainer = rootElement.querySelector('.context-window-container') as HTMLElement;
+        this.contextToggleBtn = rootElement.querySelector('.context-window-toggle-btn') as HTMLButtonElement;
+        this.contextFillBar = rootElement.querySelector('.context-bar-fill') as HTMLElement;
+        this.contextTextLabel = rootElement.querySelector('.context-bar-text') as HTMLElement;
+        this.contextDropdown = rootElement.querySelector('.context-window-dropdown') as HTMLElement;
 
-        this.pieChart = document.getElementById('contextPieChart') as HTMLElement;
-        this.legUser = document.getElementById('legUser') as HTMLElement;
-        this.legAssistant = document.getElementById('legAssistant') as HTMLElement;
-        this.legSystem = document.getElementById('legSystem') as HTMLElement;
-        this.legTools = document.getElementById('legTools') as HTMLElement;
+        this.pieChart = rootElement.querySelector('.context-pie-chart') as HTMLElement;
+        this.legUser = rootElement.querySelector('.leg-user') as HTMLElement;
+        this.legAssistant = rootElement.querySelector('.leg-assistant') as HTMLElement;
+        this.legSystem = rootElement.querySelector('.leg-system') as HTMLElement;
+        this.legTools = rootElement.querySelector('.leg-tools') as HTMLElement;
 
-        this.togglePrune = document.getElementById('menuPruneToggle') as HTMLElement;
-        this.togglePruneStrategy = document.getElementById('menuPruneStrategyToggle') as HTMLElement;
-        this.pruneStrategyLabel = document.getElementById('pruneStrategyLabel') as HTMLElement;
-        this.pruneIntervalContainer = document.getElementById('menuPruneInterval') as HTMLElement;
-        this.pruneIntervalTitle = document.getElementById('pruneIntervalTitle') as HTMLElement;
+        this.togglePrune = rootElement.querySelector('.menu-prune-toggle') as HTMLElement;
+        this.togglePruneStrategy = rootElement.querySelector('.menu-prune-strategy-toggle') as HTMLElement;
+        this.pruneStrategyLabel = rootElement.querySelector('.prune-strategy-label') as HTMLElement;
+        this.pruneIntervalContainer = rootElement.querySelector('.menu-prune-interval') as HTMLElement;
+        this.pruneIntervalTitle = rootElement.querySelector('.prune-interval-title') as HTMLElement;
 
-        this.pruneIntervalInput = document.getElementById('pruneIntervalInput') as HTMLInputElement;
-        this.pruneIntervalMinus = document.getElementById('pruneIntervalMinus') as HTMLElement;
-        this.pruneIntervalPlus = document.getElementById('pruneIntervalPlus') as HTMLElement;
+        this.pruneIntervalInput = rootElement.querySelector('.prune-interval-input') as HTMLInputElement;
+        this.pruneIntervalMinus = rootElement.querySelector('.prune-interval-minus') as HTMLElement;
+        this.pruneIntervalPlus = rootElement.querySelector('.prune-interval-plus') as HTMLElement;
 
-        this.compactHistoryBtn = document.getElementById('menuCompactHistoryBtn') as HTMLElement;
+        this.compactHistoryBtn = rootElement.querySelector('.menu-compact-history-btn') as HTMLElement;
 
         this.initListeners();
     }
@@ -182,11 +182,11 @@ export class ContextWindow {
         }
     }
 
-    public restorePruneSettings(mode: string, turnInterval: number, runInterval: number): void {
-        this.turnInterval = Math.max(1, turnInterval);
-        this.runInterval = Math.max(1, runInterval);
+    public restorePruneSettings(msg: {mode: string, turnInterval: number, runInterval: number}): void {
+        this.turnInterval = Math.max(1, msg.turnInterval);
+        this.runInterval = Math.max(1, msg.runInterval);
 
-        if (mode === 'none') {
+        if (msg.mode === 'none') {
             this.togglePrune.classList.remove('active');
             this.togglePruneStrategy.classList.add('hidden');
             this.pruneIntervalContainer.classList.add('hidden');
@@ -195,7 +195,7 @@ export class ContextWindow {
             this.togglePrune.classList.add('active');
             this.togglePruneStrategy.classList.remove('hidden');
             this.pruneIntervalContainer.classList.remove('hidden');
-            this.activeStrategy = mode as 'turn' | 'run';
+            this.activeStrategy = msg.mode as 'turn' | 'run';
         }
 
         this.updateStrategyUI();

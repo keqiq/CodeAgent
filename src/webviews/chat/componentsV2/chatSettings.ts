@@ -10,7 +10,6 @@ export class ChatSettings {
     private dropdown: HTMLElement;
 
     private toggleAllModels: HTMLElement;
-    private allModelsDesc: HTMLElement;
     private toggleStateful: HTMLElement;
     private statefulDesc: HTMLElement;
     private keyBtn: HTMLElement;
@@ -37,36 +36,35 @@ export class ChatSettings {
     private tavilyKeySaveBtn: HTMLElement;
 
 
-    constructor(private vscodeAPI: WebviewApi) {
-        this.container = document.getElementById('chatSettingsContainer') as HTMLElement;
-        this.toggleBtn = document.getElementById('chatSettingsToggleBtn') as HTMLButtonElement;
-        this.dropdown = document.getElementById('chatSettingsDropdown') as HTMLElement;
+    constructor(rootElement: HTMLElement, private vscodeAPI: WebviewApi) {
+        this.container = rootElement.querySelector('.chat-settings-container') as HTMLElement;
+        this.toggleBtn = rootElement.querySelector('.chat-settings-toggle-btn') as HTMLButtonElement;
+        this.dropdown = rootElement.querySelector('.chat-settings-dropdown') as HTMLElement;
 
-        this.toggleAllModels = document.getElementById('menuAllModelsToggle') as HTMLElement;
-        this.allModelsDesc = this.toggleAllModels.querySelector('.menu-item-desc')!;
-        this.toggleStateful = document.getElementById('menuStatefulToggle') as HTMLElement;
+        this.toggleAllModels = rootElement.querySelector('.menu-all-models-toggle') as HTMLElement;
+        this.toggleStateful = rootElement.querySelector('.menu-stateful-toggle') as HTMLElement;
         this.statefulDesc = this.toggleStateful.querySelector('.menu-item-desc')!;
-        this.keyBtn = document.getElementById('menuChatKeyBtn') as HTMLElement;
+        this.keyBtn = rootElement.querySelector('.menu-chat-key-btn') as HTMLElement;
 
-        this.keyContainer = document.getElementById('chatKeyContainer') as HTMLElement;
-        this.keyInput = document.getElementById('chatKeyInput') as HTMLInputElement;
-        this.keySaveBtn = document.getElementById('chatKeySaveBtn') as HTMLElement;
+        this.keyContainer = rootElement.querySelector('.chat-key-container') as HTMLElement;
+        this.keyInput = rootElement.querySelector('.chat-key-input') as HTMLInputElement;
+        this.keySaveBtn = rootElement.querySelector('.chat-key-save-btn') as HTMLElement;
 
-        this.maxTurnInput = document.getElementById('maxTurnsInput') as HTMLInputElement;
-        this.maxTurnMinus = document.getElementById('maxTurnsMinus') as HTMLElement;
-        this.maxTurnPlus = document.getElementById('maxTurnsPlus') as HTMLElement;
+        this.maxTurnInput = rootElement.querySelector('.max-turns-input') as HTMLInputElement;
+        this.maxTurnMinus = rootElement.querySelector('.max-turns-minus') as HTMLElement;
+        this.maxTurnPlus = rootElement.querySelector('.max-turns-plus') as HTMLElement;
 
-        this.clearChatBtn = document.getElementById('menuClearChatBtn') as HTMLElement;
-        this.clearChatConfirmBtn = document.getElementById('clearChatConfirmBtn') as HTMLElement;
+        this.clearChatBtn = rootElement.querySelector('.menu-clear-chat-btn') as HTMLElement;
+        this.clearChatConfirmBtn = rootElement.querySelector('.clear-chat-confirm-btn') as HTMLElement;
 
-        this.toggleWebSearch = document.getElementById('menuWebSearchToggle') as HTMLElement;
-        this.toggleWebSearchMode = document.getElementById('menuWebSearchModeToggle') as HTMLElement;
-        this.webSearchModeLabel = document.getElementById('webSearchModeLabel') as HTMLElement;
+        this.toggleWebSearch = rootElement.querySelector('.menu-web-search-toggle') as HTMLElement;
+        this.toggleWebSearchMode = rootElement.querySelector('.menu-web-search-mode-toggle') as HTMLElement;
+        this.webSearchModeLabel = rootElement.querySelector('.web-search-mode-label') as HTMLElement;
 
-        this.tavilyKeyBtn = document.getElementById('menuTavilyKeyBtn') as HTMLElement;
-        this.tavilyKeyContainer = document.getElementById('tavilyKeyContainer') as HTMLElement;
-        this.tavilyKeyInput = document.getElementById('tavilyKeyInput') as HTMLInputElement;
-        this.tavilyKeySaveBtn = document.getElementById('tavilyKeySaveBtn') as HTMLElement;
+        this.tavilyKeyBtn = rootElement.querySelector('.menu-tavily-key-btn') as HTMLElement;
+        this.tavilyKeyContainer = rootElement.querySelector('.tavily-key-container') as HTMLElement;
+        this.tavilyKeyInput = rootElement.querySelector('.tavily-key-input') as HTMLInputElement;
+        this.tavilyKeySaveBtn = rootElement.querySelector('.tavily-key-save-btn') as HTMLElement;
 
         this.initListeners();
     }

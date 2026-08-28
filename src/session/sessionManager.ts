@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import * as crypto from 'crypto';
-import { AgentSession, SessionMetadata, SessionPreferences, SharedSessionDeps } from "./agentSession";
+import { AgentSession, SessionAPIConfig, SessionConfigFile, SessionMetadata, SessionPreferences, SharedSessionDeps } from "./agentSession";
+import { ChatFactory } from '../apis/chat/chatFactory';
 
 export interface SessionManifest {
     activeSessionID: string | null;
@@ -12,6 +13,9 @@ export class SessionManager {
     private metadataMap: Map<string, SessionMetadata> = new Map();
     private activeSessionID: string | null = null;
     private manifestUri: vscode.Uri;
+
+    // Track sessions already rendered in the webview
+    private loadedSessionIDs: Set<string> = new Set();
 
     private emitter = new vscode.EventEmitter<any>();
     public readonly onDidUpdateStatus = this.emitter.event;
@@ -71,8 +75,6 @@ export class SessionManager {
     public async createSession(title?: string): Promise<AgentSession> {
         const id = crypto.randomUUID();
         const now = Date.now();
-        const defaultProvider = this.shared.context.globalState.get<string>('chatProvider');
-        const defaultModel = this.shared.context.globalState.get<string>(`${defaultProvider}_chatModel`);
 
         const metadata: SessionMetadata = {
             id,
@@ -81,11 +83,12 @@ export class SessionManager {
             updatedAt: now,
         };
 
-        const preferences = this.getDefaultPreferences();
+        const config = this.getDefaultConfig();
 
-        const session = new AgentSession(metadata, preferences, this.shared);
+        const session = new AgentSession(metadata, config.apiConfig, config.preferences, this.shared);
         session.onDidUpdateStatus(event => this.emitter.fire(event));
         await session.initialize();
+        await session.saveConfig();
 
         this.sessions.set(id, session);
         this.metadataMap.set(id, metadata);
@@ -109,10 +112,11 @@ export class SessionManager {
         }
 
         const metadata = this.metadataMap.get(sessionID);
-        const preferences = await this.loadSessionPreferences(sessionID);
         if (!metadata) return undefined;
 
-        const session = new AgentSession(metadata, preferences, this.shared);
+        const config = await this.loadSessionConfig(sessionID);
+
+        const session = new AgentSession(metadata, config.apiConfig, config.preferences, this.shared);
         session.onDidUpdateStatus(event => this.emitter.fire(event));
         await session.initialize();
 
@@ -142,15 +146,8 @@ export class SessionManager {
 
         this.emitter.fire({
             type: 'sessionSwitched',
-            sessionID,
-            metadata: session.metadata,
-            history: session.contextManager.getHistory()
+            sessionID
         });
-
-        if (!session.isRunning()) {
-            session.contextManager.estimateCategorizedTokens();
-            await session.worktreeManager.displayPatch();
-        }
 
         return session;
     }
@@ -192,38 +189,106 @@ export class SessionManager {
         }
     }
 
-    private async loadSessionPreferences(sessionID: string): Promise<SessionPreferences> {
+    private async loadSessionConfig(sessionID: string): Promise<SessionConfigFile> {
         const configUri = vscode.Uri.joinPath(this.shared.context.storageUri!, 'sessions', sessionID, 'config.json');
 
         try {
             const data = await vscode.workspace.fs.readFile(configUri);
-            const saved = JSON.parse(new TextDecoder().decode(data)) as SessionPreferences;
-            return saved;
+            const saved = JSON.parse(new TextDecoder().decode(data)) as Partial<SessionConfigFile>;
+            const defaults = this.getDefaultConfig();
+            return {
+                apiConfig: {
+                    provider: saved.apiConfig?.provider ?? defaults.apiConfig.provider,
+                    providerModelConfig: saved.apiConfig?.providerModelConfig ?? defaults.apiConfig.providerModelConfig,
+                    modelEffortConfig: saved.apiConfig?.modelEffortConfig ?? defaults.apiConfig.modelEffortConfig,
+                },
+                preferences: {
+                    ...defaults.preferences,
+                    ...(saved.preferences ?? {})
+                }
+            };
         } catch {
-            return this.getDefaultPreferences();
+            return this.getDefaultConfig();
         }
     }
 
-    private getDefaultPreferences(): SessionPreferences {
-        const defaultProvider = this.shared.context.globalState.get<string>('chatProvider');
-        const defaultModel = this.shared.context.globalState.get<string>(`${defaultProvider}_chatModel`);
-        const defaultEffort = (defaultProvider && defaultModel)
-            ? this.shared.context.globalState.get<string>(`${defaultProvider}_${defaultModel}_Effort`) || 'none'
-            : 'none';
-
+    private getDefaultConfig(): SessionConfigFile {
         return {
-            provider: defaultProvider,
-            model: defaultModel,
-            effort: defaultEffort,
-            showAll: this.shared.context.globalState.get<boolean>('showAllChatModels') ?? false,
-            stateful: this.shared.context.globalState.get<boolean>('serverStateManagement') ?? true,
-            turnLimit: this.shared.context.globalState.get<number>('turnLimit') ?? 0,
-            webSearchEnabled: this.shared.context.globalState.get<boolean>('webSearchEnabled') ?? false,
-            webSearchMode: this.shared.context.globalState.get<string>('webSearchMode') ?? 'tavily',
-            pruneMode: this.shared.context.globalState.get<string>('pruneMode') ?? 'run',
-            pruneTurnInterval: this.shared.context.globalState.get<number>('pruneTurnInterval') ?? 3,
-            pruneRunInterval: this.shared.context.globalState.get<number>('pruneRunInterval') ?? 1,
-            agentMode: this.shared.context.workspaceState.get<string>('agentMode') ?? 'manual'
+            apiConfig: {
+                provider: this.shared.context.globalState.get<string>('chatProvider') || '',
+                providerModelConfig: this.shared.context.globalState.get<Record<string, string>>('providerModelConfig') || {},
+                modelEffortConfig: this.shared.context.globalState.get<Record<string, string>>('modelEffortConfig') || {}
+            },
+            preferences: {
+                showAll: this.shared.context.globalState.get<boolean>('showAllChatModels') ?? false,
+                stateful: this.shared.context.globalState.get<boolean>('serverStateManagement') ?? true,
+                turnLimit: this.shared.context.globalState.get<number>('turnLimit') ?? 0,
+                webSearchEnabled: this.shared.context.globalState.get<boolean>('webSearchEnabled') ?? false,
+                webSearchMode: this.shared.context.globalState.get<string>('webSearchMode') ?? 'tavily',
+                pruneMode: this.shared.context.globalState.get<string>('pruneMode') ?? 'run',
+                pruneTurnInterval: this.shared.context.globalState.get<number>('pruneTurnInterval') ?? 3,
+                pruneRunInterval: this.shared.context.globalState.get<number>('pruneRunInterval') ?? 1,
+                agentMode: this.shared.context.workspaceState.get<string>('agentMode') ?? 'manual'
+            }
         };
+    }
+
+    public async syncSessionUI(session: AgentSession): Promise<void> {
+        const sid = session.metadata.id;
+        const apiConfig = session.apiConfig;
+        const prefs = session.preferences;
+        const ollamaChatPort = this.shared.context.globalState.get<number>('ollamaChatPort') ?? 11434;
+
+        this.emitter.fire({ type: 'sessionSwitched', sessionID: sid });
+
+        // Restore session chat history
+        this.emitter.fire({
+            type: 'restoreChatHistory',
+            sessionID: sid,
+            history: session.contextManager.getHistory()
+        });
+
+        // Restore session chat settings
+        this.emitter.fire({
+            type: 'restoreChatSettings',
+            sessionID: sid,
+            showAll: prefs.showAll,
+            stateful: prefs.stateful,
+            turnLimit: prefs.turnLimit,
+            webSearch: prefs.webSearchEnabled,
+            searchMode: prefs.webSearchMode,
+            ollamaPort: ollamaChatPort
+        });
+
+        // Restore session Context management setting
+        this.emitter.fire({
+            type: 'restorePruneSettings',
+            sessionID: sid,
+            mode: prefs.pruneMode,
+            turnInterval: prefs.pruneTurnInterval,
+            runInterval: prefs.pruneRunInterval
+        });
+
+        // Restore session agent mode setting
+        this.emitter.fire({
+            type: 'restoreAgentMode',
+            sessionID: sid,
+            mode: prefs.agentMode
+        });
+
+        // Restore session provider choice
+        if (apiConfig.provider) {
+            this.emitter.fire({
+                type: 'updateChatProvider',
+                sessionID: sid,
+                provider: apiConfig.provider,
+                stateful: ChatFactory.supportsStateManagement(apiConfig.provider),
+                serverSearch: ChatFactory.supportsServerWebSearch(apiConfig.provider)
+            });
+
+            session.contextManager.estimateCategorizedTokens();
+        }
+
+        await session.worktreeManager.displayPatch();
     }
 }

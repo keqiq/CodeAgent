@@ -5,11 +5,16 @@ import { tavily } from '@tavily/core';
 import { ModelInfo } from '../apis/chat/chatProvider';
 
 export class APIManager {
-    private chatModelInfo: Map<string, ModelInfo> = new Map();
+    private chatModelInfo: Map<string, Map<string, ModelInfo>> = new Map();
+    private providerModelConfig: Record<string, string> = {};
+    private modelEffortConfig: Record<string, string> = {};
     private emitter = new vscode.EventEmitter();
     public readonly onDidUpdateStatus = this.emitter.event;
     
-    constructor(private context: vscode.ExtensionContext) {};
+    constructor(private context: vscode.ExtensionContext) {
+        this.providerModelConfig = this.context.globalState.get<Record<string, string>>('providerModelConfig') || {};
+        this.modelEffortConfig = this.context.globalState.get<Record<string, string>>('modelEffortConfig') || {};
+    };
     
     public async getChatAPIKey(provider: string): Promise<string> {
         if (provider.toLowerCase() === 'ollama') {
@@ -68,7 +73,7 @@ export class APIManager {
         }
     }
 
-    public async getChatModels(provider: string, sessionID: string) {
+    public async getChatModels(provider: string, model: string | undefined, fetchAll: boolean, sessionID: string) {
         try {
             this.emitter.fire({ 
                 type: 'setChatModelsLoading', 
@@ -78,26 +83,35 @@ export class APIManager {
 
             const apiKey = await this.getChatAPIKey(provider);
 
-            const fetchAll = this.context.globalState.get<boolean>('showAllChatModels') ?? false;
             const providerInstance = ChatFactory.create(provider, apiKey, 'none');
             const infos = await providerInstance.getModels(fetchAll);
 
-            this.chatModelInfo.clear();
-            infos.forEach((info: ModelInfo) => this.chatModelInfo.set(info.id, info));
+            // Get or initialize provider cache
+            let providerModelInfo = this.chatModelInfo.get(provider);
+            if (!providerModelInfo) {
+                providerModelInfo = new Map<string, ModelInfo>();
+                this.chatModelInfo.set(provider, providerModelInfo);
+            }
 
+            // Merge entries if new models were fetched or cache is smaller
+            if (infos.length > providerModelInfo.size || !providerModelInfo.size) {
+                infos.forEach((info: ModelInfo) => providerModelInfo!.set(info.id, info));
+            }
+
+            // Fill the frontend model dropdown
             this.emitter.fire({ 
                 type: 'setChatModels',
                 sessionID: sessionID, 
                 models: infos.map((info: ModelInfo) => info.id) 
             });
 
-            const chatModel = this.context.globalState.get<string>(`${provider}_chatModel`);
-            const isValidModel = infos.some((info: ModelInfo) => info.id === chatModel);
+            // If we pass in a stored model, set the value of the dropdown
+            const isValidModel = infos.some((info: ModelInfo) => info.id === model);
 
             this.emitter.fire({ 
                 type: 'updateChatModel', 
                 sessionID: sessionID,
-                model: isValidModel ? chatModel : undefined });
+                model: isValidModel ? model : undefined });
 
         } catch (e) {
             vscode.window.showErrorMessage(`Failed to fetch chat models: ${e}`);
@@ -130,8 +144,9 @@ export class APIManager {
         }
     }
 
-    public getChatModelInfo(model: string, effort: string | undefined, sessionID: string): void {
-        const info = this.chatModelInfo.get(model);
+    public getChatModelInfo(provider: string, model: string, effort: string | undefined, sessionID: string): void {
+        const info = this.chatModelInfo.get(provider)?.get(model);
+        console.log(provider, model, effort);
         if (info) {
             this.emitter.fire({
                 type: 'updateChatModelInfo',
@@ -145,7 +160,7 @@ export class APIManager {
     }
 
     public async saveChatProvider(provider: string, sessionID: string): Promise<void> {
-        await this.context.globalState.update('lastUsedChatProvider', provider);
+        await this.context.globalState.update('chatProvider', provider);
 
         const serverStateManagement = this.context.globalState.get<boolean>('serverStateManagement') ?? true;
         this.emitter.fire({ type: 'restoreChatSettings', stateful: serverStateManagement });
@@ -166,12 +181,18 @@ export class APIManager {
     }
 
     public async saveChatModel(provider: string, model: string, sessionID: string): Promise<void> {
-        await this.context.globalState.update(`lastUsed_${provider}_chatModel`, model);
+        this.providerModelConfig[provider] = model;
+        await this.context.globalState.update('providerModelConfig', this.providerModelConfig);
         this.emitter.fire({ 
             type: 'updateChatModel',
             sessionID: sessionID,
             model: model 
         });
+    }
+
+    public async saveChatModelEffort(model: string, effort: string, sessionID: string): Promise<void> {
+        this.modelEffortConfig[model] = effort;
+        await this.context.globalState.update('modelEffortConfig', this.modelEffortConfig);
     }
 
     public async saveEmbedModel(provider: string, model: string): Promise<void> {

@@ -17,10 +17,13 @@ export interface SessionMetadata {
     updatedAt: number;
 }
 
+export interface SessionAPIConfig {
+    provider: string;
+    providerModelConfig: Record<string, string>;
+    modelEffortConfig: Record<string, string>;
+}
+
 export interface SessionPreferences {
-    provider?: string;
-    model?: string;
-    effort?: string;
     showAll: boolean;
     stateful: boolean;
     turnLimit: number;
@@ -30,6 +33,11 @@ export interface SessionPreferences {
     pruneTurnInterval: number;
     pruneRunInterval: number;
     agentMode: string;
+}
+
+export interface SessionConfigFile {
+    apiConfig: SessionAPIConfig;
+    preferences: SessionPreferences;
 }
 
 export interface SharedSessionDeps {
@@ -63,6 +71,7 @@ export class AgentSession {
 
     constructor(
         public metadata: SessionMetadata,
+        public apiConfig: SessionAPIConfig,
         public preferences: SessionPreferences,
         private readonly shared: SharedSessionDeps
     ) {
@@ -70,7 +79,7 @@ export class AgentSession {
         this.configUri = vscode.Uri.joinPath(shared.context.storageUri!, 'sessions', this.metadata.id, 'config.json');
 
         // Each session keeps track of it's own context
-        this.contextManager = new ContextManager(shared.context, this.metadata, this.preferences);
+        this.contextManager = new ContextManager(shared.context, this.metadata, this.apiConfig, this.preferences);
         this.contextManager.onDidUpdateStatus(event => this.emitter.fire(event));
 
         // Each session gets a separate worktree for concurrent edits
@@ -97,8 +106,43 @@ export class AgentSession {
         this.contextManager.initialize();
     }
 
+    public getAPIConfig(): [provider: string, model: string | undefined, effort: string | undefined] {
+        const provider = this.apiConfig.provider;
+        const model = this.apiConfig.providerModelConfig[provider];
+        const effort = model ? this.apiConfig.modelEffortConfig[model] : undefined;
+
+        return [provider, model, effort];
+    }
+
+    public async saveChatProvider(provider: string): Promise<void> {
+        this.apiConfig.provider = provider;
+        await this.saveConfig();
+        await this.shared.apiManager.saveChatProvider(provider, this.metadata.id);
+    }
+
+    public async saveChatModel(model: string): Promise<void> {
+        const provider = this.apiConfig.provider;
+        this.apiConfig.providerModelConfig[provider] = model;
+        await this.saveConfig();
+        await this.shared.apiManager.saveChatModel(provider, model, this.metadata.id);
+    }
+
+    public async saveChatModelEffort(effort: string): Promise<void> {
+        const provider = this.apiConfig.provider;
+        const model = this.apiConfig.providerModelConfig[provider];
+        if (!model) return;
+        this.apiConfig.modelEffortConfig[model] = effort.toLowerCase();
+        await this.saveConfig();
+        await this.shared.apiManager.saveChatModelEffort(model, effort, this.metadata.id);
+    }
+
     public async saveConfig(): Promise<void> {
-        const data = new TextEncoder().encode(JSON.stringify(this.preferences, null, 2));
+        const fileContent = {
+            apiConfig: this.apiConfig,
+            preferences: this.preferences
+        };
+
+        const data = new TextEncoder().encode(JSON.stringify(fileContent, null, 2));
         await vscode.workspace.fs.writeFile(this.configUri, data);
     }
 
@@ -114,9 +158,9 @@ export class AgentSession {
         this.aborter = new AbortController();
 
         await this.worktreeManager.setup();
-        const provider = this.preferences.provider || '';
-        const model = this.preferences.model || '';
-        const effort = this.preferences.effort || 'none';
+        const provider = this.apiConfig.provider || '';
+        const model = this.apiConfig.providerModelConfig[provider] || '';
+        const effort = this.apiConfig.modelEffortConfig[model];
         const serverStateManagement = this.preferences.stateful;
         const webSearchMode: WebSearchMode = this.preferences.webSearchEnabled 
             ? (this.preferences.webSearchMode as WebSearchMode) 
@@ -161,7 +205,7 @@ export class AgentSession {
                 // The serverside context will expire...
                 const streamGenerator = providerInstance.fetchStream(
                     model,
-                    effort,
+                    effort!,
                     this.contextManager.getLLMContext(),
                     this.contextManager.getTurnID(),
                     serverStateManagement,
@@ -296,13 +340,13 @@ export class AgentSession {
 
     public async runCompaction(): Promise<void> {
         this.aborter = new AbortController();
-        const chatProvider = this.preferences.provider;
-        const chatModel = this.preferences.model;
+        const provider = this.apiConfig.provider || '';
+        const model = this.apiConfig.providerModelConfig[provider];
         
-        if (!chatProvider || !chatModel) throw new Error('Model not configured!');
+        if (!provider || !model) throw new Error('Model not configured!');
 
-        const chatAPIKey = await this.shared.apiManager.getChatAPIKey(chatProvider);
-        const providerInstance = ChatFactory.create(chatProvider, chatAPIKey, 'none');
+        const chatAPIKey = await this.shared.apiManager.getChatAPIKey(provider);
+        const providerInstance = ChatFactory.create(provider, chatAPIKey, 'none');
 
         const compactionStartIndex = this.contextManager.getHistory().length;
         let runStatus: 'ok' | 'aborted' | 'error' = 'ok';
@@ -310,17 +354,17 @@ export class AgentSession {
 
         try {
             this.emitter.fire({ type: 'toggleChatControls', sessionID: this.metadata.id, disabled: true });
-            this.emitter.fire({ type: 'startRun', sessionID: this.metadata.id, provider: chatProvider, model: chatModel, isSummary: true });
+            this.emitter.fire({ type: 'startRun', sessionID: this.metadata.id, provider: provider, model: model, isSummary: true });
 
-            this.contextManager.prepareRun(chatProvider);
-            this.contextManager.addUserMessage(ChatFactory.getCompactionPrompt(chatProvider));
+            this.contextManager.prepareRun(provider);
+            this.contextManager.addUserMessage(ChatFactory.getCompactionPrompt(provider));
 
             let keepGoing = true;
             while (keepGoing) {
                 if (this.aborter.signal.aborted) throw new Error('AbortError');
 
                 const response = await providerInstance.summarizeContext(
-                    chatModel,
+                    model,
                     this.contextManager.getLLMContext(),
                     this.contextManager.getTurnID(),
                     this.aborter.signal
@@ -355,7 +399,7 @@ export class AgentSession {
             }
         } finally {
             this.aborter = null;
-            this.contextManager.addRunSummary(chatProvider, chatModel, runStatus, statusMessage);
+            this.contextManager.addRunSummary(provider, model, runStatus, statusMessage);
             await this.contextManager.save();
 
             this.emitter.fire({ type: 'endRun', sessionID: this.metadata.id, status: runStatus, text: statusMessage });

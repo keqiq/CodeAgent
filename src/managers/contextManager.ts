@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { getEncoding, Tiktoken } from 'js-tiktoken';
 import { ChatFactory } from '../apis/chat/chatFactory';
 import { PRUNE_OUTPUT, PRUNE_INPUT } from '../tools/toolIndex';
-import { SessionMetadata, SessionPreferences } from '../session/agentSession';
+import { SessionAPIConfig, SessionMetadata, SessionPreferences } from '../session/agentSession';
 
 export interface MessageItem {
     type: 'message';
@@ -122,13 +122,14 @@ export class ContextManager {
     constructor(
         private readonly context: vscode.ExtensionContext,
         private readonly metadata: SessionMetadata,
+        private readonly apiConfig: SessionAPIConfig,
         private readonly preferences: SessionPreferences
     ) {
         if (this.context.storageUri) {
             this.storageUri = vscode.Uri.joinPath(this.context.storageUri, 'session', this.metadata.id);
             this.artifactsUri = vscode.Uri.joinPath(this.storageUri, 'artifacts');
         }
-        this.currentProvider = this.preferences.provider;
+        this.currentProvider = this.apiConfig.provider;
     }
 
     public async initialize(): Promise<void> {
@@ -207,7 +208,6 @@ export class ContextManager {
         // If the provider changed or stateful is disabled, reset turn id
         if (this.currentProvider !== provider || !this.preferences.stateful) this.currentTurnID = undefined;
         this.currentProvider = provider;
-        this.preferences.provider = provider;
     }
 
     // Extract all function calls for the agent loop

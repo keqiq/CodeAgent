@@ -8,9 +8,9 @@ export class AgentMode {
     private isAutoMode: boolean = false;
     private isUnsafe: boolean = false;
 
-    constructor(private vscodeAPI: WebviewApi) {
-        this.modeToggleBtn = document.getElementById('modeToggleBtn') as HTMLButtonElement;
-        this.agentConfigBtn = document.getElementById('agentConfigBtn') as HTMLButtonElement;
+    constructor(rootElement: HTMLElement, private vscodeAPI: WebviewApi) {
+        this.modeToggleBtn = rootElement.querySelector('.mode-toggle-btn') as HTMLButtonElement;
+        this.agentConfigBtn = rootElement.querySelector('.agent-config-btn') as HTMLButtonElement;
 
         this.initListeners();
     }

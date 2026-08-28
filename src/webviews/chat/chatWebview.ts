@@ -1,213 +1,306 @@
 import './styles/chat.css';
-
-import { ChatContainer } from "./componentsV2/chatContainer";
-import { ChatInput } from "./componentsV2/chatInput";
-import { ChatHeader } from "./componentsV2/chatHeader";
-import { ChatSettings } from "./componentsV2/chatSettings";
-import { ContextWindow } from './componentsV2/contextWindow';
-import { AgentMode } from './componentsV2/agentMode';
+import { IndexContainer } from "./componentsV2/indexContainer";
 import { WebviewApi } from '../Webview';
+import { SessionView } from './sessionView';
+import { SessionSelector } from './componentsV2/sessionMenu';
 
 declare function acquireVsCodeApi<StateType = any>(): WebviewApi<StateType>;
 const vscodeAPI: WebviewApi = acquireVsCodeApi();
 
 document.addEventListener('DOMContentLoaded', () => {
-    const chatContainer = new ChatContainer(vscodeAPI);
-    const chatSettings = new ChatSettings(vscodeAPI);
-    const chatInput = new ChatInput(vscodeAPI, chatContainer, chatSettings);
-    const chatHeader = new ChatHeader(vscodeAPI);
-    const contextWindow = new ContextWindow(vscodeAPI);
-    const agentMode = new AgentMode(vscodeAPI);
+    // DOM Element and templates
+    const sessionsViewport = document.getElementById('sessionsViewport') as HTMLElement;
+    const sessionTemplate = document.getElementById('sessionViewTemplate') as HTMLTemplateElement;
+
+    // Global components
+    const indexContainer = new IndexContainer(vscodeAPI);
+    const sessionMenu = new SessionSelector(vscodeAPI);
+
+    // Session view 
+    const sessionViews = new Map<string, SessionView>();
+    let activeSessionID: string | null = null;
+
+    let availableChatProviders: string[] = [];
+ 
+    function getOrCreateSessionView(sessionID: string): SessionView {
+        let view = sessionViews.get(sessionID);
+        if (!view) {
+            view = new SessionView(sessionID, sessionTemplate, vscodeAPI);
+            sessionsViewport.appendChild(view.rootElement);
+            sessionViews.set(sessionID, view);
+
+            view.chatInput.populateChatProviders(availableChatProviders);
+            vscodeAPI.postMessage({ type: 'syncSessionUI', sessionID: sessionID });
+        }
+
+        return view;
+    }
+
+    function switchActiveSession(sessionID: string): void {
+        if (activeSessionID && sessionViews.has(activeSessionID)) {
+            sessionViews.get(activeSessionID)!.hide();
+        }
+
+        activeSessionID = sessionID;
+        const currentView = getOrCreateSessionView(sessionID);
+        currentView.show();
+    }
+
+    const globalHandlers: Record<string, (msg: any) => void> = {
+
+        // Store chat providers
+        setChatProviders: (msg) => {
+            availableChatProviders = msg.providers;
+        },
+        
+        // Restore index settings from saved values
+        restoreIndexSettings: (msg) => {
+            indexContainer.restoreSettings(msg);
+        },
+
+        // Store embed providers
+        setEmbedProviders: (msg) => {
+            indexContainer.populateEmbedProviders(msg.providers);
+        },
+
+        // Change embed provider in indexing menu
+        updateEmbedProvider: (msg) => {
+            indexContainer.updateEmbedProviders(msg.provider);
+        },
+
+        // Disable indexing controls whilset fetching models
+        setEmbedModelsLoading: (msg) => {
+            indexContainer.setEmbedModelsLoading(msg.provider);
+        },
+
+        // Store models for the current embed provider
+        setEmbedModels: (msg) => {
+            indexContainer.populateEmbedModels(msg.models);
+        },
+
+        // Change embed model in indexing menu
+        updateEmbedModel: (msg) => {
+            indexContainer.updateEmbedModel(msg.model);
+        },
+
+        // Change the status dot and other indexing component display based on status
+        updateIndexStatus: (msg) => {
+            indexContainer.updateIndexStatus(msg);
+        },
+
+        // Open the embedding API key input container
+        requestEmbedAPIKey: (msg) => {
+            indexContainer.requestEmbedAPIKey(msg.provider);
+        },
+
+        // Update agent unsafe visual indicator for all sessions
+        updateUnsafeFlag: (msg) => {
+            sessionViews.forEach(v => v.agentMode.setUnsafe(msg.isUnsafe));
+        },
+
+        updateSessionList: (msg) => {
+            sessionMenu.updateSessions(msg.sessions, msg.activeSessionID);
+            if (msg.activeSessionID) switchActiveSession(msg.activeSessionID);
+        },
+
+        sessionSwitched: (msg) => {
+            sessionMenu.setActiveSession(msg.sessionID);
+            switchActiveSession(msg.sessionID);
+        },
+
+        sessionDeleted: (msg) => {
+            const view = sessionViews.get(msg.sessionID);
+            if (view) {
+                view.destroy();
+                sessionViews.delete(msg.sessionID);
+            }
+        },
+    };
+
+    const sessionHandlers: Record<string, (view: SessionView, msg: any) => void> = {
+        // Restore session perferences into chat settings menu
+        restoreChatSettings: (view, msg) => {
+            view.chatSettings.restoreSettings(msg);
+        },
+
+        // Restore session preferences into chat context window menu
+        restorePruneSettings: (view, msg) => {
+            view.contextWindow.restorePruneSettings(msg);
+        },
+
+        // Restore session preferences into agent mode toggle
+        restoreAgentMode: (view, msg) => {
+            view.agentMode.setAgentMode(msg.mode);
+        },
+
+        // Restore session chat history
+        restoreChatHistory: (view, msg) => {
+            view.chatContainer.restoreChatHistory(msg.history);
+            const visible = msg.history.filter((m: any) => m.role !== 'developer');
+            view.chatSettings.toggleClearChatBtn(visible.length > 0);
+        },
+
+        // Change chat provider in the dropdown and in settings menu
+        updateChatProvider: (view, msg) => {
+            view.chatInput.updateChatProvider(msg.provider);
+            view.chatSettings.setProvider(msg);
+        },
+
+        // Disable chat controls whilset fetching models
+        setChatModelsLoading: (view, msg) => {
+            view.chatInput.setChatModelsLoading();
+        },
+
+        // Store the chat models from current chat provider in dropdown
+        setChatModels: (view, msg) => {
+            view.chatInput.populateChatModels(msg.models);
+        },
+
+        // Change the chat model in the dropdown
+        updateChatModel: (view, msg) => {
+            view.chatInput.updateChatModel(msg.model);
+        },
+
+        // Store the model effort values and update max context length
+        updateChatModelInfo: (view, msg) => {
+            view.chatInput.updateChatModelInfo(msg);
+            view.contextWindow.updateContextWindow(msg.contextWindow);
+        },
+
+        // Open chat API key input container
+        requestChatAPIKey: (view, msg) => {
+            view.chatInput.waitForChatAPIKey(msg.provider);
+            view.chatSettings.showChatAPIKeyInput(msg.provider);
+        },
+
+        // Open tavily API key input container
+        requestTavilyAPIKey: (view) => {
+            view.chatSettings.showTavilyAPIKeyInput();
+        },
+
+        // Disable/Enable all chat controls
+        toggleChatControls: (view, msg) => {
+            view.chatInput.setDisabled(msg.disabled);
+            view.chatSettings.setDisabled(msg.disabled);
+            view.contextWindow.setDisabled(msg.disabled);
+        },
+
+        // Begin agent loop
+        startRun: (view, msg) => {
+            view.chatContainer.startRun(msg);
+        },
+
+        // Update agent loop turn progress
+        updateTurnProgress: (view, msg) => {
+            view.chatContainer.updateTurn(msg);
+        },
+
+        // Update token usage per turn
+        updateTokenUsage: (view, msg) => {
+            view.chatContainer.updateUsage(msg.usage);
+        },
+        
+        // update context window visualization per turn
+        updateContextWindowUsage: (view, msg) => {
+            view.contextWindow.updateTokenUsage(msg.usage);
+        },
+
+        // Auxiliary add message
+        receiveMessage: (view, msg) => {
+            view.chatContainer.addMessage({ type: 'message', role: 'assistant', content: msg.text, style: msg.style });
+        },
+
+        // Receive stream text output delta
+        streamChunk: (view, msg) => {
+            view.chatContainer.updateMessage(msg.chunk);
+        },
+
+        // Receive stream thought delta
+        streamThought: (view, msg) => {
+            view.chatContainer.updateThought(msg.chunk);
+        },
+
+        // Receive live token generation speed
+        streamSpeed: (view, msg) => {
+            view.chatContainer.updateSpeed(msg.speed);
+        },
+
+        // End streaming 
+        streamEnd: (view) => {
+            view.chatContainer.endMessage();
+        },
+
+        // Update tool container with tool status
+        updateTool: (view, msg) => {
+            view.chatContainer.updateTools(msg);
+        },
+
+        // Mark tool execute as finished with statistics
+        endTools: (view, msg) => {
+            view.chatContainer.endTools(msg);
+        },
+
+        // Update execute container with execution status
+        updateExecute: (view, msg) => {
+            view.chatContainer.updateExecute(msg);
+        },
+
+        // Show the unlisted command issued by agent
+        // Allow user to decide whether to allow or disallow before it is executed
+        requestCommandApproval: (view, msg) => {
+            view.chatInput.showCommandApproval(msg);
+        },
+
+        // Makr execution as finished with statistics
+        endExecute: (view, msg) => {
+            view.chatContainer.endExecute(msg);
+        },
+
+        // Mark agent loop as finished with statistics
+        endRun: (view, msg) => {
+            view.chatContainer.endRun(msg.status, msg.text);
+            view.chatContainer.cancelActiveUI(); // any unfinished items will marked as halted
+            view.chatSettings.toggleClearChatBtn(true);
+        },
+
+        // Display any modifications during the run
+        reviewPatch: (view, msg) => {
+            view.chatContainer.makePatch(msg.patch);
+        },
+
+        // Update the patch status ie accepted, rejected or conflict
+        updatePatchStatus: (view, msg) => {
+            view.chatContainer.updatePatch(msg.status);
+        },
+
+        clearChatContainer: (view) => {
+            view.chatContainer.clearChatUI();
+            view.chatSettings.toggleClearChatBtn(false);
+            view.contextWindow.clearTokenUsage();
+        },
+
+    };
 
     window.addEventListener('message', (event: MessageEvent) => {
         const msg = event.data;
+        if (!msg?.type) return;
 
-        switch (msg.type) {
-            // --- INITIALIZATION & SETTINGS ---
-            case 'restoreChatSettings':
-                chatSettings.restoreSettings(msg);
-                break;
+        // Route to Global Handler
+        const globalHandler = globalHandlers[msg.type];
+        if (globalHandler) {
+            globalHandler(msg);
+            return;
+        }
 
-            case 'initChatProviders':
-                chatInput.populateChatProviders(msg.providers);
-                break;
-
-            case 'initEmbedProviders':
-                chatHeader.populateEmbedProviders(msg.providers);
-                break;
-
-            case 'restoreChatHistory':
-                chatContainer.restoreChatHistory(msg.history);
-                const visibleMessages = msg.history.filter((m: any) => m.role !== 'developer');
-                chatSettings.toggleClearChatBtn(visibleMessages.length > 0);
-                break;
-
-            case 'restorePruneSettings':
-                contextWindow.restorePruneSettings(msg.mode, msg.turnInterval, msg.runInterval);
-                break;
-
-            case 'restoreAgentMode':
-                agentMode.setAgentMode(msg.mode);
-                break;
-
-            // --- CHAT PROVIDER & MODELS ---
-            case 'updateChatProvider':
-                chatInput.updateChatProvider(msg.provider);
-                chatSettings.setProvider(msg);
-                break;
-
-            case 'setChatModelsLoading':
-                chatInput.setChatModelsLoading();
-                break;
-
-            case 'setChatModels':
-                chatInput.populateChatModels(msg.models);
-                break;
-
-            case 'updateChatModel':
-                chatInput.updateChatModel(msg.model);
-                break;
-
-            case 'updateChatModelInfo':
-                chatInput.updateChatModelInfo(msg);
-                contextWindow.updateContextWindow(msg.contextWindow);
-                break;
-
-            case 'requestChatAPIKey':
-                chatInput.waitForChatAPIKey(msg.provider);
-                chatSettings.showChatAPIKeyInput(msg.provider);
-                break;
-
-            case 'requestTavilyAPIKey':
-                chatSettings.showTavilyAPIKeyInput();
-                break;
-
-            // --- CHAT STREAMING & TOOLS & PATCH & TOKEN ---
-            case 'toggleChatControls':
-                chatInput.setDisabled(msg.disabled);
-                chatSettings.setDisabled(msg.disabled);
-                contextWindow.setDisabled(msg.disabled);
-                break;
-
-            case 'startRun':
-                chatContainer.startRun(msg);
-                break;
-
-            case 'updateTurnProgress':
-                chatContainer.updateTurn(msg);
-                break;
-
-            case 'receiveMessage':
-                chatContainer.addMessage({ type: 'message', role: 'assistant', content: msg.text, style: msg.style });
-                break;
-
-            case 'streamChunk':
-                chatContainer.updateMessage(msg.chunk);
-                break;
-
-            case 'streamThought':
-                chatContainer.updateThought(msg.chunk);
-                break;
-
-            case 'streamEnd':
-                chatContainer.endMessage();
-                break;
-
-            case 'updateTool':
-                chatContainer.updateTools(msg);
-                break;
-
-            case 'endTools':
-                chatContainer.endTools(msg);
-                break;
-
-            case 'endRun':
-                chatContainer.endRun(msg.status, msg.text);
-                chatContainer.cancelActiveUI();
-                chatSettings.toggleClearChatBtn(true);
-                break;
-
-            case 'reviewPatch':
-                chatContainer.makePatch(msg.patch);
-                break;
-
-            case 'updatePatchStatus':
-                chatContainer.updatePatch(msg.status);
-                break;
-
-            case 'streamSpeed':
-                chatContainer.updateSpeed(msg.speed);
-                break;
-
-            case 'updateTokenUsage':
-                chatContainer.updateRun(msg.usage);
-                break;
-
-            case 'updateContextWindowUsage':
-                contextWindow.updateTokenUsage(msg.usage);
-                break;
-
-            case 'createCheckpoint':
-                chatContainer.addCheckpoint(msg);
-                break;
-
-            case 'updateExecute':
-                chatContainer.updateExecute(msg);
-                break;
-
-            case 'endExecute':
-                chatContainer.endExecute(msg);
-                break;
-
-            case 'requestCommandApproval':
-                chatInput.showCommandApproval(msg.requestID, msg.bin, msg.args);
-                break;
-
-            case 'updateUnsafeFlag':
-                agentMode.setUnsafe(msg.isUnsafe);
-                break;
-
-            case 'clearChatContainer':
-                chatContainer.clearChatUI();
-                chatSettings.toggleClearChatBtn(false);
-                contextWindow.clearTokenUsage();
-                break;
-
-            // --- INDEXING & HEADER ---
-
-            case 'restoreIndexSettings':
-                chatHeader.restoreSettings(msg);
-                break;
-
-            case 'updateEmbedProvider':
-                chatHeader.updateEmbedProviders(msg.provider);
-                break;
-
-            case 'setEmbedModelsLoading':
-                chatHeader.setEmbedModelsLoading(msg.provider);
-                break;
-
-            case 'setEmbedModels':
-                chatHeader.populateEmbedModels(msg.models);
-                break;
-
-            case 'updateEmbedModel':
-                chatHeader.updateEmbedModel(msg.model);
-                break;
-
-            case 'updateIndexStatus':
-                chatHeader.updateIndexStatus(msg);
-                break;
-
-            case 'requestEmbedAPIKey':
-                chatHeader.requestEmbedAPIKey(msg.provider);
-                break;
-
-            default:
-                console.warn(`[Webview Router] Unknown message type: ${msg.type}`);
-                break;
+        // Route to Session-Scoped Handler
+        const sessionHandler = sessionHandlers[msg.type];
+        if (sessionHandler && msg.sessionID) {
+            const view = getOrCreateSessionView(msg.sessionID);
+            sessionHandler(view, msg);
         }
     });
 
     vscodeAPI.postMessage({ type: 'webviewReady' });
 });
+
+

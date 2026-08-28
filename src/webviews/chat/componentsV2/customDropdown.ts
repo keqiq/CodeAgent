@@ -8,8 +8,15 @@ export class CustomDropdown {
 
     private onChange?: (value: string) => void;
 
-    constructor(containerId: string, placeholder: string, onChangeCallBack?: (value: string) =>  void) {
-        this.container = document.getElementById(containerId) as HTMLElement;
+    constructor(target: HTMLElement | string, placeholder: string, onChangeCallBack?: (value: string) => void, root: ParentNode = document) {
+        if (typeof target === 'string') {
+            const el = root.querySelector(target) as HTMLElement;
+            if (!el) throw new Error(`CustomDropdown target not found: ${target}`);
+            this.container = el;
+        } else {
+            this.container = target;
+        }
+
         this.trigger = this.container.querySelector('.dropdown-trigger') as HTMLButtonElement;
         this.list = this.container.querySelector('.dropdown-list') as HTMLElement;
         this.textSpan = this.trigger.querySelector('.selected-text') as HTMLElement;

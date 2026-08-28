@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
+import path from 'path';
 import { APIManager } from './managers/apiManager';
 import { CommandManager } from './managers/commandManager';
 import { SessionManager } from './session/sessionManager';
@@ -8,7 +9,6 @@ import { MCPManager } from './managers/mcpManager';
 import { ChatFactory } from './apis/chat/chatFactory';
 import { EmbedFactory } from './apis/embed/embedFactory';
 import { AgentSession } from './session/agentSession';
-import path from 'path';
 
 export class ChatApp implements vscode.WebviewViewProvider {
     private view?: vscode.WebviewView;
@@ -32,7 +32,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
 
         // Don't even activate the extension outside of an active workspace there is no point
         // This is set in package.json in activationEvents
-        this. workspaceRoot = vscode.workspace.workspaceFolders?.[0].uri.fsPath!;
+        this.workspaceRoot = vscode.workspace.workspaceFolders?.[0].uri.fsPath!;
 
         this.sessionManager = new SessionManager({
             context: this.context,
@@ -50,90 +50,31 @@ export class ChatApp implements vscode.WebviewViewProvider {
         // Restore on reload
         webviewReady: async () => {
             try {
-                await this.sessionManager.initialize();
 
-                const showAllChatModels = this.context.globalState.get<boolean>('showAllChatModels') ?? false;
-                const serverStateManagement = this.context.globalState.get<boolean>('serverStateManagement') ?? true;
-                const turnLimit = this.context.globalState.get<number>('turnLimit') ?? 0;
-                const enabledWebSearch = this.context.globalState.get<boolean>('webSearchEnabled') ?? false;
-                const webSearchMode = this.context.globalState.get<string>('webSearchMode') ?? 'tavily';
-                const ollamaChatPort = this.context.globalState.get<number>('ollamaChatPort') ?? 11434;
-
-                this.post({
-                    type: 'restoreChatSettings',
-                    showAll: showAllChatModels,
-                    stateful: serverStateManagement,
-                    turnLimit: turnLimit,
-                    webSearch: enabledWebSearch,
-                    searchMode: webSearchMode,
-                    ollamaPort: ollamaChatPort
-                });
-
-                const retrievalCount = this.context.globalState.get<number>('retrievalCount') ?? 10;
-                const debounceTime = this.context.globalState.get<number>('debounceTime') ?? 10;
-                const enabledIndex = this.context.globalState.get<boolean>('enableIndex') ?? true;
-                const ollamaEmbedPort = this.context.globalState.get<number>('ollamaEmbedPort') ?? 11434;
-
-                this.post({
-                    type: 'restoreIndexSettings',
-                    retrievalCount: retrievalCount,
-                    debounceTime: debounceTime,
-                    enabled: enabledIndex,
-                    ollamaPort: ollamaEmbedPort
-                });
-
-                this.post({ type: 'initChatProviders', providers: ChatFactory.getAvailableProviders() });
-                this.post({ type: 'initEmbedProviders', providers: EmbedFactory.getAvailableProviders() });
-
+                // Global provider lists and workspace session List
+                this.post({ type: 'setChatProviders', providers: ChatFactory.getAvailableProviders() });
+                this.post({ type: 'setEmbedProviders', providers: EmbedFactory.getAvailableProviders() });
                 this.post({
                     type: 'updateSessionList',
                     activeSessionID: this.sessionManager.getActiveSessionID(),
                     sessions: this.sessionManager.getAllSessions()
                 });
 
-                const activeSession = this.sessionManager.getActiveSession();
-                if (activeSession) {
-                    this.post({
-                        type: 'restoreChatHistory',
-                        sessionID: activeSession.metadata.id,
-                        history: activeSession.contextManager.getHistory()
-                    });
-
-                    if (activeSession.preferences.provider) {
-                        this.post({
-                            type: 'updateChatProvider',
-                            sessionID: activeSession.metadata.id,
-                            provider: activeSession.preferences.provider,
-                            stateful: ChatFactory.supportsStateManagement(activeSession.preferences.provider),
-                            serverSearch: ChatFactory.supportsServerWebSearch(activeSession.preferences.provider)
-                        });
-                    }
-
-                    activeSession.contextManager.estimateCategorizedTokens();
-                    await activeSession.worktreeManager.displayPatch();
-                }
-
-                const pruneMode = this.context.globalState.get<string>('pruneMode') ?? 'run';
-                const pruneTurnInterval = this.context.globalState.get<number>('pruneTurnInterval') ?? 3;
-                const pruneRunInterval = this.context.globalState.get<number>('pruneRunInterval') ?? 1;
-
+                // Global workspace index settings
+                const indexEnabled = this.context.globalState.get<boolean>('indexEnabled') ?? true;
                 this.post({
-                    type: 'restorePruneSettings',
-                    mode: pruneMode,
-                    turnInterval: pruneTurnInterval,
-                    runInterval: pruneRunInterval
+                    type: 'restoreIndexSettings',
+                    retrievalCount: this.context.globalState.get<number>('retrievalCount') ?? 10,
+                    debounceTime: this.context.globalState.get<number>('debounceTime') ?? 10,
+                    enabled: indexEnabled,
+                    ollamaPort: this.context.globalState.get<number>('ollamaEmbedPort') ?? 11434
                 });
-
-                const indexEnabled = this.context.globalState.get<boolean>('indexEnabled') ?? false;
-
                 if (indexEnabled) {
                     const embedProvider = this.context.globalState.get<string>('embedProvider');
                     this.post({ type: 'updateEmbedProvider', provider: embedProvider });
                 }
 
-                const agentMode = this.context.workspaceState.get<string>('agentMode') ?? 'manual';
-                this.post({ type: 'restoreAgentMode', mode: agentMode });
-
+                // Global agent mode settings
                 await this.commandManager.loadConfig();
                 const currentConfig = this.commandManager.getConfig();
                 this.post({
@@ -141,9 +82,30 @@ export class ChatApp implements vscode.WebviewViewProvider {
                     isUnsafe: currentConfig?.unsafeFullAutonomous ?? false
                 });
 
+                // Session specific settings
+                await this.sessionManager.initialize();
+                let activeSession = this.sessionManager.getActiveSession();
+
+                // Create a new session if none exist
+                if (!activeSession) activeSession = await this.sessionManager.createSession();
+
+                this.post({ type: 'sessionSwitched', sessionID: activeSession.metadata.id });
+
             } catch (e) {
                 vscode.window.showErrorMessage(`Failed to restore state ${e}`);
             }
+        },
+
+        createSession: async () => {
+            await this.sessionManager.createSession();
+        },
+
+        switchSession: async (data) => {
+            await this.sessionManager.switchSession(data.sessionID);
+        },
+
+        deleteSession: async (data) => {
+            await this.sessionManager.deleteSession(data.sessionID);
         },
 
         // Called when selecting a new provider in embedding provider dropdown
@@ -158,8 +120,18 @@ export class ChatApp implements vscode.WebviewViewProvider {
         },
 
         // Called when selecting a new embedding model from the dropdown
-        saveEmbedModels: async (data) => {
+        saveEmbedModel: async (data) => {
             await this.apiManager.saveEmbedModel(data.provider, data.model);
+        },
+
+        // Called after selecting a new embedding model from the dropdown
+        // Get a new indexer for the current model
+        loadVectorDB: async (data) => {
+            if (this.indexer) this.indexer.dispose();
+
+            this.indexer = await Indexer.create(this.context, data.model, this.apiManager);
+            this.indexer.onDidUpdateStatus(event => this.post(event));
+            await this.indexer.broadcastCurrentState();
         },
 
         // Saves embedding key and refresh embedding models
@@ -187,7 +159,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
         // Timer for flushing dirty files queue for re-embedding
         updateDebounceTime: async (data) => {
             await this.context.globalState.update('debounceTime', data.value);
-        }, 
+        },
 
         // Request to re-embed the entire workspace, or for initial indexing
         indexWorkspace: async () => {
@@ -202,10 +174,15 @@ export class ChatApp implements vscode.WebviewViewProvider {
         // Open agent permission file
         openAgentConfig: async () => {
             await this.commandManager.openConfigFile();
-        }
+        },
+
     };
 
     private readonly sessionHandlers: Record<string, (session: AgentSession, data: any) => Promise<void> | void> = {
+
+        syncSessionUI: async (session) => {
+            await this.sessionManager.syncSessionUI(session);
+        },
 
         // Start agent loop with user prompt
         askAgent: (session, data) => {
@@ -233,46 +210,55 @@ export class ChatApp implements vscode.WebviewViewProvider {
         },
 
         // Called when selecting a new chat provider from dropdown
-        // Change the chat provider for the session and update manifest
+        // Saves provider preference for current and future session
         saveChatProvider: async (session, data) => {
-            await this.apiManager.saveChatProvider(data.provider, data.sessionID);
-            session.contextManager.changeProvider(data.provider); // session.metadata.provider is update here
+            await session.saveChatProvider(data.provider);
+
+            const [provider, model, effort] = session.getAPIConfig();
+
+            // Update context window usage as they differ by provider for the same input
+            session.contextManager.changeProvider(provider);
             session.contextManager.estimateCategorizedTokens();
-            await session.saveConfig();
         },
 
         // Called when selected a new chat model from dropdown
-        // Change chat model for the session and update manifest
+        // Save preference for provider model choice for current and future new session
         saveChatModel: async (session, data) => {
-            await this.apiManager.saveChatModel(session.preferences.provider!, data.model, data.sessionID);
-            session.preferences.model = data.model;
-            await session.saveConfig();
+            await session.saveChatModel(data.model);
         },
 
         // Called when selecting a new model effort from dropdown
-        // Change the model effort for the current model in the session and update manifest
+        // Saves preference for model effort level for current and future new session 
         saveChatEffort: async (session, data) => {
-            session.preferences.effort = data.effort;
-            await session.saveConfig();
+            await session.saveChatModelEffort(data.effort);
         },
 
         // Called when updating chat provider API key, saved in secrets
         // Refresh the models
         saveChatAPIKey: async (session, data) => {
-            await this.apiManager.saveChatAPIKey(session.preferences.provider!, data.key);
-            await this.apiManager.getChatModels(session.preferences.provider!, data.sessionID);
+            const [provider, model, effort] = session.getAPIConfig();
+            if (provider) {
+                await this.apiManager.saveChatAPIKey(provider, data.key);
+                await this.apiManager.getChatModels(provider, model, session.preferences.showAll, data.sessionID);
+            }
         },
 
         // Called after saveChatProvider with valid API key
         // Fetches available models from provider
         fetchChatModels: async (session, data) => {
-            await this.apiManager.getChatModels(session.preferences.provider!, data.sessionID);
+            const [provider, model, effort] = session.getAPIConfig();
+            if (provider) {
+                await this.apiManager.getChatModels(provider, model, session.preferences.showAll, data.sessionID);
+            }
         },
 
         // Called after saveChatModel
         // Fetches model information
         fetchChatModelInfo: async (session, data) => {
-            this.apiManager.getChatModelInfo(session.preferences.model!, session.preferences.effort, data.sessionID);
+            const [provider, model, effort] = session.getAPIConfig();
+            if (provider && model) {
+                this.apiManager.getChatModelInfo(provider, model, effort, data.sessionID);
+            }
         },
 
         // Show currated list of models or all available models from providers
@@ -281,7 +267,10 @@ export class ChatApp implements vscode.WebviewViewProvider {
             await this.context.globalState.update('showAllChatModels', data.showAll);
             session.preferences.showAll = data.showAll;
             await session.saveConfig();
-            if (session.preferences.provider) await this.apiManager.getChatModels(session.preferences.provider, data.sessionID);
+            const [provider, model, effort] = session.getAPIConfig();
+            if (provider) {
+                await this.apiManager.getChatModels(provider, model, session.preferences.showAll, data.sessionID);
+            }
         },
 
         // Set stateful or stateless conversation mode (only affects providers which support stateful)
@@ -304,7 +293,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
         // Save preference for current session and future sessions
         setWebSearchMode: async (session, data) => {
             await this.context.globalState.update('webSearchEnabled', data.enabled);
-            await this.context.globalState.update('websearchMode', data.mode);
+            await this.context.globalState.update('webSearchMode', data.mode);
             session.preferences.webSearchEnabled = data.enabled;
             session.preferences.webSearchMode = data.mode;
             await session.saveConfig();
@@ -324,7 +313,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
         // Set prune interval for task/turn mode
         // Save preference for current session and future sessions
         setPruneInterval: async (session, data) => {
-            if (data.turn){
+            if (data.turn) {
                 await this.context.globalState.update('pruneTurnInterval', data.turn);
                 session.preferences.pruneTurnInterval = data.turn;
             }
@@ -343,7 +332,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
             await this.context.workspaceState.update('agentMode', data.mode);
             session.preferences.agentMode = data.mode;
             await session.saveConfig();
-            
+
             // One time warning per workspace when enabling auto mode
             // Also open the configuration file
             if (data.mode === 'auto') {
@@ -419,6 +408,8 @@ export class ChatApp implements vscode.WebviewViewProvider {
             }
         },
     };
+
+
 
     private post(message: any) { this.view?.webview.postMessage(message); }
 

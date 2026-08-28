@@ -2,7 +2,7 @@ import { WebviewApi } from "../../Webview";
 import type { IndexStatusMessage } from "../../../indexing/indexer";
 import { CustomDropdown } from "./customDropdown";
 
-export class ChatHeader {
+export class IndexContainer {
     private indexBtn: HTMLButtonElement;
     private indexStatus: HTMLSpanElement;
     private indexDot: HTMLSpanElement;
@@ -60,11 +60,11 @@ export class ChatHeader {
         this.clearIndexBtn = document.getElementById('menuClearIndexBtn') as HTMLElement;
         this.clearIndexConfirmBtn = document.getElementById('clearIndexConfirmBtn') as HTMLButtonElement;
 
-        this.providerDropdown = new CustomDropdown('embedProviderDropdown', 'Providers', (val: string) => {
+        this.providerDropdown = new CustomDropdown('#embedProviderDropdown', 'Providers', (val: string) => {
             this.vscodeAPI.postMessage({ type: 'saveEmbedProvider', provider: val });
         });
 
-        this.modelDropdown = new CustomDropdown('embedModelDropdown', 'Models', (val: string) => {
+        this.modelDropdown = new CustomDropdown('#embedModelDropdown', 'Models', (val: string) => {
             this.vscodeAPI.postMessage({ type: 'saveEmbedModel', provider: this.currentEmbedProvider, model: val });
         });
 
@@ -72,10 +72,6 @@ export class ChatHeader {
     }
 
     private initListeners(): void {
-        // Toggle inline controls
-        // this.indexBtn.addEventListener('click', () => {
-        //     this.toggleSettingsMenu();
-        // });
 
         // Toggle settings menu
         this.indexSettingsBtn.addEventListener('click', (e: MouseEvent) => {
@@ -169,7 +165,7 @@ export class ChatHeader {
                     this.currentOllamaPort = port;
                     this.keyBtn.innerHTML = `Set Ollama Port (${this.currentOllamaPort})`;
                     this.vscodeAPI.postMessage({
-                        type: 'saveOllamaEmbedPort',
+                        type: 'saveEmbedPort',
                         port: port
                     });
                 } else {

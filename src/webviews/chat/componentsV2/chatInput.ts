@@ -29,41 +29,40 @@ export class ChatInput {
     private denyBtn: HTMLButtonElement;
     private currentApprovalRequestId: string | null = null;
 
-    constructor(private vscodeAPI: WebviewApi, private chatContainer: ChatContainer, private chatSettings: ChatSettings) {
-        this.actionBtn = document.getElementById('actionBtn') as HTMLButtonElement;
-        this.promptInput = document.getElementById('prompt') as HTMLTextAreaElement;
-        this.effortContainer = document.getElementById('effortDropdown');
-        this.effortDivider = document.getElementById('effortDivider');
+    constructor(
+        rootElement: HTMLElement,
+        private vscodeAPI: WebviewApi,
+        private chatContainer: ChatContainer,
+        private chatSettings: ChatSettings
+    ) {
+        this.actionBtn = rootElement.querySelector('.action-btn') as HTMLButtonElement;
+        this.promptInput = rootElement.querySelector('.prompt-input') as HTMLTextAreaElement;
+        this.effortContainer = rootElement.querySelector('.effort-dropdown');
+        this.effortDivider = rootElement.querySelector('.effort-divider');
 
-        this.approvalContainer = document.getElementById('commandApprovalContainer') as HTMLElement;
-        this.approvalCommandText = document.getElementById('approvalCommandText') as HTMLElement;
-        this.approveBtn = document.getElementById('approveCommandBtn') as HTMLButtonElement;
-        this.saveApproveBtn = document.getElementById('saveApproveCommandBtn') as HTMLButtonElement;
-        this.denyBtn = document.getElementById('denyCommandBtn') as HTMLButtonElement;
+        this.approvalContainer = rootElement.querySelector('.command-approval') as HTMLElement;
+        this.approvalCommandText = rootElement.querySelector('.approval-command-text') as HTMLElement;
+        this.approveBtn = rootElement.querySelector('.approve-command-btn') as HTMLButtonElement;
+        this.saveApproveBtn = rootElement.querySelector('.save-approve-command-btn') as HTMLButtonElement;
+        this.denyBtn = rootElement.querySelector('.deny-command-btn') as HTMLButtonElement;
 
-        this.providerDropdown = new CustomDropdown('providerDropdown', 'Providers', (val: string) => {
+        this.providerDropdown = new CustomDropdown('.provider-dropdown', 'Providers', (val: string) => {
             this.vscodeAPI.postMessage({ type: 'saveChatProvider', provider: val });
-        });
+        }, rootElement);
 
-        this.modelDropdown = new CustomDropdown('modelDropdown', 'Models', (val: string) => {
+        this.modelDropdown = new CustomDropdown('.model-dropdown', 'Models', (val: string) => {
             if (this.currentChatProvider) {
-                this.vscodeAPI.postMessage({ type: 'saveChatModel', provider: this.currentChatProvider, model: val});
+                this.vscodeAPI.postMessage({ type: 'saveChatModel', model: val });
             }
-        });
+        }, rootElement);
 
-        this.effortDropdown = new CustomDropdown('effortDropdown', 'Effort', (val: string) => {
+        this.effortDropdown = new CustomDropdown('.effort-dropdown', 'Effort', (val: string) => {
             if (this.currentChatModel && this.currentChatProvider) {
-                this.vscodeAPI.postMessage({
-                    type: 'saveChatEffort',
-                    provider: this.currentChatProvider,
-                    model: this.currentChatModel,
-                    effort: val
-                });
+                this.vscodeAPI.postMessage({ type: 'saveChatEffort', effort: val });
             }
-        });
+        }, rootElement);
 
         this.initListeners();
-
     }
 
     private initListeners(): void {
@@ -212,7 +211,7 @@ export class ChatInput {
         this.sendIcon = PROVIDER_ICONS[provider.toLocaleLowerCase()] || PROVIDER_ICONS['default'];
         this.actionBtn.innerHTML = this.sendIcon;
 
-        this.vscodeAPI.postMessage({ type: 'fetchChatModels', provider: provider });
+        this.vscodeAPI.postMessage({ type: 'fetchChatModels' });
     }
 
     // If user selects a new model, get model details
@@ -227,7 +226,7 @@ export class ChatInput {
             this.promptInput.disabled = false;
             this.promptInput.placeholder = `Prompt ${model}...`;
             
-            this.vscodeAPI.postMessage({ type: 'fetchChatModelInfo', model: model });
+            this.vscodeAPI.postMessage({ type: 'fetchChatModelInfo' });
         } 
         // If called with no model, fallback to placeholder value for model dropdown
         else {
@@ -257,6 +256,8 @@ export class ChatInput {
             // Unhide the effort level dropdown
             if (this.effortContainer) this.effortContainer.classList.remove('hidden');
             if (this.effortDivider) this.effortDivider.classList.remove('hidden');
+
+            this.vscodeAPI.postMessage({ type: 'saveChatEffort', effort: defaultEffort });
         } else {
             // If model has no reasoning capabilities or no effort levels hide the effort dropdown
             this.clearEffortSelect();
@@ -273,9 +274,9 @@ export class ChatInput {
         if (this.effortDivider) this.effortDivider.classList.add('hidden');
     }
 
-    public showCommandApproval(requestId: string, bin: string, args: string): void {
-        this.currentApprovalRequestId = requestId;
-        this.approvalCommandText.textContent = `${bin} ${args}`;
+    public showCommandApproval(msg: { requestId: string, bin: string, args: string }): void {
+        this.currentApprovalRequestId = msg.requestId;
+        this.approvalCommandText.textContent = `${msg.bin} ${msg.args}`;
 
         // Hide prompt input
         this.promptInput.classList.add('hidden');
