@@ -29,6 +29,9 @@ document.addEventListener('DOMContentLoaded', () => {
             sessionsViewport.appendChild(view.rootElement);
             sessionViews.set(sessionID, view);
 
+            // Mark the session as loaded from unloaded state
+            sessionMenu.markSessionLoaded(sessionID);
+
             view.chatInput.populateChatProviders(availableChatProviders);
             vscodeAPI.postMessage({ type: 'syncSessionUI', sessionID: sessionID });
         }
@@ -185,6 +188,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Begin agent loop
         startRun: (view, msg) => {
+            sessionMenu.setSessionStatus(view.sessionID, 'running');
             view.chatContainer.startRun(msg);
         },
 
@@ -240,22 +244,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Update execute container with execution status
         updateExecute: (view, msg) => {
+            sessionMenu.setSessionStatus(view.sessionID, 'running');
             view.chatContainer.updateExecute(msg);
         },
 
         // Show the unlisted command issued by agent
         // Allow user to decide whether to allow or disallow before it is executed
         requestCommandApproval: (view, msg) => {
+            sessionMenu.setSessionStatus(view.sessionID, 'pending');
             view.chatInput.showCommandApproval(msg);
         },
 
         // Makr execution as finished with statistics
         endExecute: (view, msg) => {
+            sessionMenu.setSessionStatus(view.sessionID, 'running');
             view.chatContainer.endExecute(msg);
         },
 
         // Mark agent loop as finished with statistics
         endRun: (view, msg) => {
+            const nextStatus = msg.status === 'error' ? 'error' : 'ready';
+            sessionMenu.setSessionStatus(view.sessionID, nextStatus);
+
             view.chatContainer.endRun(msg.status, msg.text);
             view.chatContainer.cancelActiveUI(); // any unfinished items will marked as halted
         },

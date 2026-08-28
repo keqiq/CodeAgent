@@ -24,6 +24,22 @@
                     <div class="dropdown-list session-list hidden" id="sessionList"></div>
                 </div>
             </div>
+
+            <!-- Session Status Badges Container -->
+            <div class="session-status-badges" id="sessionStatusBadges">
+                <span class="session-badge badge-pending hidden" id="badgePending" title="Sessions requiring approval">
+                    <span class="badge-dot"></span>
+                    <span class="badge-count" id="countPending">0</span>
+                </span>
+                <span class="session-badge badge-running hidden" id="badgeRunning" title="Running sessions">
+                    <span class="badge-dot"></span>
+                    <span class="badge-count" id="countRunning">0</span>
+                </span>
+                <span class="session-badge badge-error hidden" id="badgeError" title="Sessions with errors">
+                    <span class="badge-dot"></span>
+                    <span class="badge-count" id="countError">0</span>
+                </span>
+            </div>
         </div>
 
         <div class="header-right">

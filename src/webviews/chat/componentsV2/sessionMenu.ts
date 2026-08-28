@@ -1,12 +1,29 @@
 import { WebviewApi } from "../../Webview";
 import type { SessionMetadata } from "../../../session/agentSession";
 
+export type SessionIndicatorStatus = 'unloaded' | 'ready' | 'running' | 'pending' | 'error';
+
 interface SessionItemDOM {
     element: HTMLElement;
     titleSpan: HTMLElement;
     metaSpan: HTMLElement;
     renameInput?: HTMLInputElement;
 }
+
+interface StatusGroupConfig {
+    key: SessionIndicatorStatus;
+    label: string;
+    container: HTMLElement;
+    itemsWrapper: HTMLElement;
+}
+
+const STATUS_PRIORITY: { key: SessionIndicatorStatus; label: string }[] = [
+    { key: 'pending', label: 'Action Required' },
+    { key: 'error', label: 'Errors' },
+    { key: 'running', label: 'Running' },
+    { key: 'ready', label: 'Ready' },
+    { key: 'unloaded', label: 'Inactive' }
+];
 
 export class SessionSelector {
     private container: HTMLElement;
@@ -16,15 +33,33 @@ export class SessionSelector {
     private itemsContainer!: HTMLElement;
     private emptyItem!: HTMLElement;
 
+    // Badges
+    private badgePending: HTMLElement | null;
+    private badgeRunning: HTMLElement | null;
+    private badgeError: HTMLElement | null;
+    private countPending: HTMLElement | null;
+    private countRunning: HTMLElement | null;
+    private countError: HTMLElement | null;
+
     private sessions: SessionMetadata[] = [];
     private activeSessionID: string | null = null;
+    private loadedSessionIDs: Set<string> = new Set();
+    private sessionStatusMap: Map<string, SessionIndicatorStatus> = new Map();
     private itemDomMap: Map<string, SessionItemDOM> = new Map();
+    private groups: Map<SessionIndicatorStatus, StatusGroupConfig> = new Map();
 
     constructor(private vscodeAPI: WebviewApi) {
         this.container = document.getElementById('sessionDropdown') as HTMLElement;
         this.trigger = document.getElementById('sessionTrigger') as HTMLButtonElement;
         this.selectedText = document.getElementById('sessionSelectedText') as HTMLElement;
         this.list = document.getElementById('sessionList') as HTMLElement;
+
+        this.badgePending = document.getElementById('badgePending');
+        this.badgeRunning = document.getElementById('badgeRunning');
+        this.badgeError = document.getElementById('badgeError');
+        this.countPending = document.getElementById('countPending');
+        this.countRunning = document.getElementById('countRunning');
+        this.countError = document.getElementById('countError');
 
         this.initStaticDropdownLayout();
         this.initListeners();
@@ -49,15 +84,39 @@ export class SessionSelector {
         });
         this.list.appendChild(newSessionItem);
 
-        // Divider
-        const divider = document.createElement('div');
-        divider.className = 'menu-divider';
-        this.list.appendChild(divider);
-
         // Session container
         this.itemsContainer = document.createElement('div');
         this.itemsContainer.className = 'session-items-container';
         this.list.appendChild(this.itemsContainer);
+
+        // Categorized Section Containers
+        STATUS_PRIORITY.forEach(({ key, label }) => {
+            const groupContainer = document.createElement('div');
+            groupContainer.className = `session-group session-group-${key} hidden`;
+
+            // Group divider between sections
+            const groupDivider = document.createElement('div');
+            groupDivider.className = 'menu-divider group-divider';
+
+            const header = document.createElement('div');
+            header.className = 'session-group-header';
+            header.textContent = label;
+
+            const itemsWrapper = document.createElement('div');
+            itemsWrapper.className = 'session-group-items';
+
+            groupContainer.appendChild(groupDivider);
+            groupContainer.appendChild(header);
+            groupContainer.appendChild(itemsWrapper);
+            this.itemsContainer.appendChild(groupContainer);
+
+            this.groups.set(key, {
+                key,
+                label,
+                container: groupContainer,
+                itemsWrapper
+            });
+        });
 
         // Empty state placeholder
         this.emptyItem = document.createElement('div');
@@ -99,12 +158,15 @@ export class SessionSelector {
             if (!incomingIDs.has(id)) {
                 dom.element.remove();
                 this.itemDomMap.delete(id);
+                this.sessionStatusMap.delete(id);
+                this.loadedSessionIDs.delete(id);
             }
         }
 
         // Update or create items and reconcile DOM order
         if (sessions.length === 0) {
             this.emptyItem.classList.remove('hidden');
+            this.groups.forEach(g => g.container.classList.add('hidden'));
         } else {
             this.emptyItem.classList.add('hidden');
 
@@ -117,20 +179,90 @@ export class SessionSelector {
                 } else {
                     this.updateSessionElement(dom, session);
                 }
-
-                // Ensure correct ordering (matches sessions array order)
-                this.itemsContainer.appendChild(dom.element);
             });
         }
 
         this.updateActiveTriggerText();
         this.updateSelectionState();
+        this.rebuildGroupedLayout();
     }
 
     public setActiveSession(sessionID: string): void {
         this.activeSessionID = sessionID;
+        this.markSessionLoaded(sessionID);
         this.updateActiveTriggerText();
         this.updateSelectionState();
+    }
+
+    public markSessionLoaded(sessionID: string): void {
+        this.loadedSessionIDs.add(sessionID);
+        if (!this.sessionStatusMap.has(sessionID)) {
+            this.setSessionStatus(sessionID, 'ready');
+        } else {
+            this.rebuildGroupedLayout();
+        }
+    }
+
+    public setSessionStatus(sessionID: string, status: SessionIndicatorStatus): void {
+        this.sessionStatusMap.set(sessionID, status);
+        this.rebuildGroupedLayout();
+    }
+
+    private getSessionEffectiveStatus(sessionID: string): SessionIndicatorStatus {
+        const isLoaded = this.loadedSessionIDs.has(sessionID);
+        return isLoaded ? (this.sessionStatusMap.get(sessionID) || 'ready') : 'unloaded';
+    }
+
+    private rebuildGroupedLayout(): void {
+        const groupCounts: Record<SessionIndicatorStatus, number> = {
+            pending: 0,
+            error: 0,
+            running: 0,
+            ready: 0,
+            unloaded: 0
+        };
+
+        this.sessions.forEach(session => {
+            const dom = this.itemDomMap.get(session.id);
+            if (!dom) return;
+
+            const status = this.getSessionEffectiveStatus(session.id);
+            dom.element.dataset.status = status;
+
+            const group = this.groups.get(status);
+            if (group) {
+                group.itemsWrapper.appendChild(dom.element);
+                groupCounts[status]++;
+            }
+        });
+
+        // Toggle category containers
+        this.groups.forEach((group, status) => {
+            group.container.classList.toggle('hidden', groupCounts[status] === 0);
+        });
+
+        // Update badge counts and visibility
+        this.updateStatusBadges(groupCounts);
+    }
+
+    private updateStatusBadges(counts: Record<SessionIndicatorStatus, number>): void {
+        // Pending
+        if (this.badgePending && this.countPending) {
+            this.countPending.textContent = String(counts.pending);
+            this.badgePending.classList.toggle('hidden', counts.pending === 0);
+        }
+
+        // Running
+        if (this.badgeRunning && this.countRunning) {
+            this.countRunning.textContent = String(counts.running);
+            this.badgeRunning.classList.toggle('hidden', counts.running === 0);
+        }
+
+        // Error
+        if (this.badgeError && this.countError) {
+            this.countError.textContent = String(counts.error);
+            this.badgeError.classList.toggle('hidden', counts.error === 0);
+        }
     }
 
     private updateActiveTriggerText(): void {
@@ -231,7 +363,12 @@ export class SessionSelector {
             input.value = titleSpan.textContent || '';
             domRef.renameInput = input;
 
+            let isCommitted = false;
             const commitRename = () => {
+                if (isCommitted) return;
+                isCommitted = true;
+
+                const sid = item.dataset.sessionId!;
                 const newTitle = input.value.trim();
                 domRef.renameInput = undefined;
 
@@ -239,7 +376,7 @@ export class SessionSelector {
                     titleSpan.textContent = newTitle;
                     this.vscodeAPI.postMessage({
                         type: 'renameSession',
-                        sessionID: session.id,
+                        sessionID: sid,
                         title: newTitle
                     });
                 }
@@ -255,6 +392,7 @@ export class SessionSelector {
                     commitRename();
                 } else if (ev.key === 'Escape') {
                     ev.preventDefault();
+                    isCommitted = true;
                     domRef.renameInput = undefined;
                     if (infoContainer.contains(input)) {
                         infoContainer.replaceChild(titleSpan, input);

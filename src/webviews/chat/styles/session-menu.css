@@ -9,14 +9,14 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    flex: 1;
     min-width: 0;
+    max-width: 100%;
 }
 
 .session-dropdown {
     position: relative;
-    max-width: 100%;
     min-width: 0;
+    flex-shrink: 1; /* Allows the trigger to truncate when badges are present */
 }
 
 .session-dropdown .dropdown-trigger {
@@ -56,6 +56,43 @@
     z-index: 100;
 }
 
+.session-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.session-group + .session-group {
+    margin-top: 4px;
+}
+
+.session-group-header {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 0px 10px 6px 10px;
+    color: var(--vscode-descriptionForeground, #888888);
+}
+
+/* Category-specific accent colors */
+.session-group-pending .session-group-header {
+    color: var(--vscode-editorWarning-foreground, #cca700);
+}
+
+.session-group-error .session-group-header {
+    color: var(--vscode-errorForeground, #f48771);
+}
+
+.session-group-running .session-group-header {
+    color: var(--vscode-charts-blue, #3794ff);
+}
+
+.session-group .group-divider {
+    height: 1px;
+    background: var(--vscode-dropdown-border, var(--vscode-widget-border, rgba(255, 255, 255, 0.1)));
+    margin: 6px 0;
+}
+
 .session-item {
     display: flex;
     align-items: center;
@@ -63,6 +100,7 @@
     padding: 6px 10px;
     cursor: pointer;
     gap: 8px;
+    border-left: 3px solid transparent;
 }
 
 .session-item:hover {
@@ -72,6 +110,32 @@
 .session-item.selected {
     background: var(--vscode-list-activeSelectionBackground);
     color: var(--vscode-list-activeSelectionForeground);
+}
+
+/* Not Loaded / Inactive DOM: Grey */
+.session-item[data-status="unloaded"],
+.session-item:not([data-status]) {
+    border-left-color: var(--vscode-disabledForeground, #6e6e6e);
+}
+
+/* Loaded & Idle / Aborted / Succeeded: Green */
+.session-item[data-status="ready"] {
+    border-left-color: var(--vscode-testing-iconPassed, #4ec9b0);
+}
+
+/* Running Agent Loop: Blue */
+.session-item[data-status="running"] {
+    border-left-color: var(--vscode-charts-blue, #3794ff);
+}
+
+/* Pending Command Approval: Yellow */
+.session-item[data-status="pending"] {
+    border-left-color: var(--vscode-editorWarning-foreground, #cca700);
+}
+
+/* Error Encountered: Red */
+.session-item[data-status="error"] {
+    border-left-color: var(--vscode-errorForeground, #f48771);
 }
 
 .session-info {
@@ -142,4 +206,71 @@
 .session-action-btn.delete:hover {
     color: var(--vscode-errorForeground, #f48771);
     background: var(--vscode-toolbar-hoverBackground, rgba(255, 0, 0, 0.2));
+}
+
+.session-status-badges {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.session-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 1px 6px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 1.2;
+    background: var(--vscode-badge-background, rgba(255, 255, 255, 0.08));
+    color: var(--vscode-badge-foreground, var(--vscode-foreground));
+    user-select: none;
+}
+
+.session-badge .badge-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+/* Pending Badge (Yellow) */
+.session-badge.badge-pending {
+    color: var(--vscode-editorWarning-foreground, #cca700);
+    background: rgba(204, 167, 0, 0.15);
+}
+.session-badge.badge-pending .badge-dot {
+    background-color: var(--vscode-editorWarning-foreground, #cca700);
+}
+
+/* Running Badge (Blue) */
+.session-badge.badge-running {
+    color: var(--vscode-charts-blue, #3794ff);
+    background: rgba(55, 148, 255, 0.15);
+}
+.session-badge.badge-running .badge-dot {
+    background-color: var(--vscode-charts-blue, #3794ff);
+    animation: badge-pulse 1.4s ease-in-out infinite;
+}
+
+/* Error Badge (Red) */
+.session-badge.badge-error {
+    color: var(--vscode-errorForeground, #f48771);
+    background: rgba(244, 135, 113, 0.15);
+}
+.session-badge.badge-error .badge-dot {
+    background-color: var(--vscode-errorForeground, #f48771);
+}
+
+@keyframes badge-pulse {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.4;
+        transform: scale(0.85);
+    }
 }

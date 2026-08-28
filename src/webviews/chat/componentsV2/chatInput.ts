@@ -27,7 +27,7 @@ export class ChatInput {
     private approveBtn: HTMLButtonElement;
     private saveApproveBtn: HTMLButtonElement;
     private denyBtn: HTMLButtonElement;
-    private currentApprovalRequestId: string | null = null;
+    private currentApprovalRequestID: string | null = null;
 
     constructor(
         rootElement: HTMLElement,
@@ -274,8 +274,8 @@ export class ChatInput {
         if (this.effortDivider) this.effortDivider.classList.add('hidden');
     }
 
-    public showCommandApproval(msg: { requestId: string, bin: string, args: string }): void {
-        this.currentApprovalRequestId = msg.requestId;
+    public showCommandApproval(msg: { requestID: string, bin: string, args: string }): void {
+        this.currentApprovalRequestID = msg.requestID;
         this.approvalCommandText.textContent = `${msg.bin} ${msg.args}`;
 
         // Hide prompt input
@@ -291,16 +291,16 @@ export class ChatInput {
     }
 
     private resolveCommandApproval(approved: boolean, save: boolean): void {
-        if (!this.currentApprovalRequestId) return;
+        if (!this.currentApprovalRequestID) return;
 
         this.vscodeAPI.postMessage({
             type: 'commandApprovalResponse',
-            requestId: this.currentApprovalRequestId,
+            requestId: this.currentApprovalRequestID,
             approved: approved,
             save: save
         });
 
-        this.currentApprovalRequestId = null;
+        this.currentApprovalRequestID = null;
 
         // Restore the prompt input
         this.approvalContainer.classList.add('hidden');
