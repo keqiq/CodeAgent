@@ -65,9 +65,8 @@ export class WorktreeManager {
             await fs.mkdir(path.dirname(this.worktreePath), { recursive: true });
             await exec(`git worktree add --detach "${this.worktreePath}" HEAD`, { cwd: this.originalWorkspace });
             await this.link();
-            await this.reset();
         }
-
+        await this.reset();
     }
 
     public async reset(): Promise<void> {
@@ -209,6 +208,7 @@ export class WorktreeManager {
         }
     }
 
+    // Persist patch status if the user didn't take action during a reload
     private async setPatchStatus(status?: string): Promise<void> {
         try {
             if (status) {
@@ -222,6 +222,7 @@ export class WorktreeManager {
         }
     }
 
+    // Get the diff between agent worktree and the user's original workspace
     private async getPatch(): Promise<string> {
 
         try {
@@ -237,23 +238,17 @@ export class WorktreeManager {
         return patch;
     }
 
+    // Display a patch ui to the frontend
     public async displayPatch(): Promise<void> {
         const patchContent = await this.getPatch();
         if (!patchContent.trim()) return;
         
-        this.emitter.fire({ 
-            type: 'reviewPatch',
-            sessionID: this.metadata.id,
-            patch: patchContent 
-        });
+        this.emitter.fire({ type: 'reviewPatch', patch: patchContent });
         
+        // If this is called during a reload, check for unresolved patches
         const currentStatus = await this.getPatchStatus();
         if (currentStatus) {
-            this.emitter.fire({ 
-                type: 'updatePatchStatus', 
-                sessionID: this.metadata.id, 
-                status: currentStatus 
-            });
+            this.emitter.fire({ type: 'updatePatchStatus', status: currentStatus });
         }
     }
 
@@ -270,26 +265,21 @@ export class WorktreeManager {
             await exec(`git add -A`, { cwd: this.originalWorkspace });
             // apply patch
             await exec(`git apply --3way --ignore-whitespace "${patchPath}"`, { cwd: this.originalWorkspace });
-            await this.setPatchStatus('accepted');
+
             await this.reset();
-            this.emitter.fire({ 
-                type: 'updatePatchStatus',
-                sessionID: this.metadata.id,
-                status: 'accepted' 
-            });
+            await this.setPatchStatus('accepted');
+
+            this.emitter.fire({ type: 'updatePatchStatus', status: 'accepted' });
         }
         catch (e: any) {
             // Check if any of these outputs have 'with conflicts' to catch merge conflicts
             const errorStr = (e.stdout || '') + (e.stderr || '') + (e.message || '');
             console.log(errorStr);
 
+            // Merge conflict, notify the UI and wait for it to be resolved
             if (errorStr.includes('with conflicts')) {
                 await this.setPatchStatus('conflict');
-                this.emitter.fire({ 
-                    type: 'updatePatchStatus',
-                    sessionID: this.metadata.id,
-                    status: 'conflict' 
-                });
+                this.emitter.fire({ type: 'updatePatchStatus', status: 'conflict' });
                 throw new Error('MERGE_CONFLICT');
             }
             throw e;
@@ -302,6 +292,8 @@ export class WorktreeManager {
 
     }
 
+    // This option is available for merge conflicts
+    // It will overwrite all files in the original workspace with the agent worktree's version
     public async forceApply(): Promise<void> {
         await exec(`git add -N .`, { cwd: this.worktreePath });
 
@@ -327,37 +319,28 @@ export class WorktreeManager {
         }
         await this.setPatchStatus('accepted');
         await this.reset();
-        this.emitter.fire({ 
-            type: 'updatePatchStatus',
-            sessionID: this.metadata.id,
-            status: 'accepted' 
-        });
+        this.emitter.fire({ type: 'updatePatchStatus', status: 'accepted' });
     }
+
 
     public async rejectPatch(): Promise<void> {
         await this.reset();
         await this.setPatchStatus('rejected');
-        this.emitter.fire({ 
-            type: 'updatePatchStatus',
-            sessionID: this.metadata.id,
-            status: 'rejected' 
-        });
+        this.emitter.fire({ type: 'updatePatchStatus', status: 'rejected' });
     }
     
     public async resolveConflicts(): Promise<void> {
         await this.reset();
         await this.setPatchStatus('accepted');
-        this.emitter.fire({ 
-            type: 'updatePatchStatus',
-            sessionID: this.metadata.id,
-            status: 'accepted' 
-        });
+        this.emitter.fire({ type: 'updatePatchStatus', status: 'accepted'});
     }
     
-    private async clearState(): Promise<void> {
+    // After successfully applying or rejecting a patch, clear the patch status
+    public async clearState(): Promise<void> {
         await this.setPatchStatus(undefined);
     }
     
+    // Don't think this is needed anymore, deleting a session will completely wipe the worktree directory
     public async cleanup(): Promise<void> {
         try {
             await this.clearState();

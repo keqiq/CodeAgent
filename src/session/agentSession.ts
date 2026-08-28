@@ -3,12 +3,12 @@ import { APIManager } from '../managers/apiManager';
 import { CommandManager } from '../managers/commandManager';
 import { MCPManager } from '../managers/mcpManager';
 import { Indexer } from '../indexing/indexer';
-import { getEncoding, Tiktoken } from 'js-tiktoken';
 import { ChatResponse, ContextManager } from '../managers/contextManager';
 import { WorktreeManager } from '../managers/worktreeManager';
 import { ToolManager } from '../managers/toolManager';
 import { ChatProvider, WebSearchMode } from '../apis/chat/chatProvider';
 import { ChatFactory } from '../apis/chat/chatFactory';
+import { countTokens } from '../utils/tokenizer';
 
 export interface SessionMetadata {
     id: string;
@@ -47,15 +47,6 @@ export interface SharedSessionDeps {
     mcpManager: MCPManager;
     workspaceRoot: string;
     getIndexer: () => Indexer | undefined
-}
-
-const tiktokenEncoder: Tiktoken = getEncoding('o200k_base');
-function countChunkTokens(text: string): number {
-    try {
-        return tiktokenEncoder.encode(text).length;
-    } catch {
-        return Math.max(1, Math.round(text.length / 3.8));
-    }
 }
 
 export class AgentSession {
@@ -103,7 +94,7 @@ export class AgentSession {
     }
 
     public async initialize(): Promise<void> {
-        this.contextManager.initialize();
+        await this.contextManager.initialize();
     }
 
     public getAPIConfig(): [provider: string, model: string | undefined, effort: string | undefined] {
@@ -157,6 +148,7 @@ export class AgentSession {
     public async runAgentTurn(userMessage: string): Promise<void> {
         this.aborter = new AbortController();
 
+        await this.worktreeManager.clearState();
         await this.worktreeManager.setup();
         const provider = this.apiConfig.provider || '';
         const model = this.apiConfig.providerModelConfig[provider] || '';
@@ -178,8 +170,8 @@ export class AgentSession {
             let keepGoing = true;
             let turnCount = 0;
 
-            this.emitter.fire({ type: 'toggleChatControls', sessionID: this.metadata.id, disabled: true });
-            this.emitter.fire({ type: 'startRun', sessionID: this.metadata.id, provider: provider, model: model });
+            this.emitter.fire({ type: 'toggleChatControls', disabled: true });
+            this.emitter.fire({ type: 'startRun', provider: provider, model: model });
 
             this.contextManager.prepareRun(provider);
             this.contextManager.addUserMessage(userMessage);
@@ -190,12 +182,7 @@ export class AgentSession {
                 if (this.aborter.signal.aborted) throw new Error('AbortError');
                 turnCount++;
 
-                this.emitter.fire({ 
-                    type: 'updateTurnProgress',
-                    sessionID: this.metadata.id,
-                    current: turnCount, 
-                    limit: turnLimit 
-                });
+                this.emitter.fire({ type: 'updateTurnProgress', current: turnCount, limit: turnLimit });
 
                 // Disable all tool use during the final turn
                 const isFinalTurn = turnLimit > 0 && turnCount === turnLimit;
@@ -227,32 +214,20 @@ export class AgentSession {
                             if (streamStartTime === null) streamStartTime = now;
 
                             if (streamResult.value.type === 'text') {
-                                this.emitter.fire({ 
-                                    type: 'streamChunk',
-                                    sessionID: this.metadata.id,
-                                    chunk: content 
-                                }); 
+                                this.emitter.fire({ type: 'streamChunk', chunk: content }); 
                             }
 
                             else if (streamResult.value.type === 'thought') {
-                                this.emitter.fire({
-                                    type: 'streamThought',
-                                    sessionID: this.metadata.id,
-                                    chunk: content 
-                                });
+                                this.emitter.fire({ type: 'streamThought', chunk: content });
                             }
 
                             // Get live token generation speed
-                            turnGeneratedTokens += countChunkTokens(content);
+                            turnGeneratedTokens += countTokens(content);
                             const elapsedSeconds = (now - streamStartTime) / 1000;
 
                             if (elapsedSeconds > 0.1) {
                                 const tokenPerSecond = (turnGeneratedTokens / elapsedSeconds).toFixed(1);
-                                this.emitter.fire({ 
-                                    type: 'streamSpeed',
-                                    sessionID: this.metadata.id,
-                                    speed: tokenPerSecond 
-                                });
+                                this.emitter.fire({ type: 'streamSpeed', speed: tokenPerSecond });
                             }
                         }
                         // We update the frontend with server tools immediately
@@ -261,7 +236,6 @@ export class AgentSession {
                         else if (streamResult.value.type === 'server_action') {
                             this.emitter.fire({
                                 type: 'updateTool',
-                                sessionID: this.metadata.id,
                                 status: 'running',
                                 toolId: streamResult.value.actionId, // Keep track of tool id, server tools can run in parallel
                                 toolName: streamResult.value.actionName,
@@ -274,7 +248,7 @@ export class AgentSession {
 
                 // Can't catch the abort error during streaming for some reason so we have to catch it here again
                 if (this.aborter.signal.aborted) throw new Error('AbortError');
-                this.emitter.fire({ type: 'streamEnd', sessionID: this.metadata.id });
+                this.emitter.fire({ type: 'streamEnd' });
 
                 // update turn counter for tool pruning, do not prune until error is resolved
                 await this.contextManager.updateTurnBoundary(previousTurnHadError);
@@ -332,9 +306,9 @@ export class AgentSession {
 
             this.contextManager.estimateCategorizedTokens();
 
-            this.emitter.fire({ type: 'endRun', sessionID: this.metadata.id, status: runStatus, text: statusMessage });
+            this.emitter.fire({ type: 'endRun', status: runStatus, text: statusMessage });
 
-            this.emitter.fire({ type: 'toggleChatControls', sessionID: this.metadata.id, disabled: false });
+            this.emitter.fire({ type: 'toggleChatControls', disabled: false });
         }
     }
 
@@ -353,8 +327,8 @@ export class AgentSession {
         let statusMessage: string | undefined = undefined;
 
         try {
-            this.emitter.fire({ type: 'toggleChatControls', sessionID: this.metadata.id, disabled: true });
-            this.emitter.fire({ type: 'startRun', sessionID: this.metadata.id, provider: provider, model: model, isSummary: true });
+            this.emitter.fire({ type: 'toggleChatControls', disabled: true });
+            this.emitter.fire({ type: 'startRun', provider: provider, model: model, isSummary: true });
 
             this.contextManager.prepareRun(provider);
             this.contextManager.addUserMessage(ChatFactory.getCompactionPrompt(provider));
@@ -402,8 +376,8 @@ export class AgentSession {
             this.contextManager.addRunSummary(provider, model, runStatus, statusMessage);
             await this.contextManager.save();
 
-            this.emitter.fire({ type: 'endRun', sessionID: this.metadata.id, status: runStatus, text: statusMessage });
-            this.emitter.fire({ type: 'toggleChatControls', sessionID: this.metadata.id, disabled: false });
+            this.emitter.fire({ type: 'endRun', status: runStatus, text: statusMessage });
+            this.emitter.fire({ type: 'toggleChatControls', disabled: false });
         }
     }
     

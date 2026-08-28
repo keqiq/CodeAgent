@@ -365,6 +365,7 @@ export class CommandManager {
             const emitChunk = (chunk: string) => {
                 this.emitter.fire({
                     type: 'updateExecute',
+                    sessionID: sessionID,
                     status: 'streaming',
                     toolID,
                     chunk

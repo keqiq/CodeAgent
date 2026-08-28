@@ -1,32 +1,49 @@
+.header-left {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    min-width: 0;
+}
+
 .session-selector-wrapper {
     display: flex;
     align-items: center;
     gap: 6px;
+    flex: 1;
+    min-width: 0;
 }
 
 .session-dropdown {
     position: relative;
+    max-width: 100%;
+    min-width: 0;
 }
 
 .session-dropdown .dropdown-trigger {
-    background: var(--vscode-dropdown-background);
-    border: 1px solid var(--vscode-dropdown-border, transparent);
     color: var(--vscode-dropdown-foreground, var(--vscode-foreground));
     padding: 2px 6px;
     border-radius: 3px;
-    font-size: 11px;
+    font-size: 13px;
     font-weight: 600;
     display: flex;
     align-items: center;
     gap: 6px;
     cursor: pointer;
-    max-width: 150px;
+    /* Remove fixed max-width: 150px */
+    max-width: 100%;
+    min-width: 0;
 }
 
 .session-dropdown .dropdown-trigger .selected-text {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    min-width: 0;
+    flex: 1;
+}
+
+.session-dropdown .dropdown-trigger .dropdown-arrow {
+    flex-shrink: 0;
 }
 
 .session-list {
@@ -34,8 +51,8 @@
     top: calc(100% + 4px);
     bottom: auto;
     left: 0;
-    min-width: 180px;
-    max-width: 260px;
+    min-width: 220px;
+    max-width: 320px;
     z-index: 100;
 }
 
@@ -43,7 +60,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 5px 8px;
+    padding: 6px 10px;
     cursor: pointer;
     gap: 8px;
 }
@@ -57,30 +74,72 @@
     color: var(--vscode-list-activeSelectionForeground);
 }
 
+.session-info {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    flex: 1;
+    min-width: 0;
+}
+
 .session-item-title {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    flex: 1;
+    font-size: 12px;
+    font-weight: 500;
 }
 
-.session-delete-btn {
+.session-item-meta {
+    font-size: 10px;
+    color: var(--vscode-descriptionForeground, #888888);
+    margin-top: 2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.session-rename-input {
+    background: var(--vscode-input-background);
+    color: var(--vscode-input-foreground);
+    border: 1px solid var(--vscode-focusBorder);
+    outline: none;
+    font-size: 12px;
+    padding: 1px 4px;
+    border-radius: 2px;
+    width: 100%;
+}
+
+.session-item-actions {
+    display: flex;
+    align-items: center;
+    gap: 2px;
     opacity: 0;
+    flex-shrink: 0;
+    transition: opacity 0.15s ease-in-out;
+}
+
+.session-item:hover .session-item-actions {
+    opacity: 1;
+}
+
+.session-action-btn {
     background: transparent;
     border: none;
-    color: var(--vscode-errorForeground, #f48771);
+    color: var(--vscode-icon-foreground, var(--vscode-foreground));
     cursor: pointer;
-    padding: 2px;
+    padding: 3px;
     border-radius: 3px;
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
-.session-item:hover .session-delete-btn {
-    opacity: 1;
+.session-action-btn:hover {
+    background: var(--vscode-toolbar-hoverBackground);
 }
 
-.session-delete-btn:hover {
+.session-action-btn.delete:hover {
+    color: var(--vscode-errorForeground, #f48771);
     background: var(--vscode-toolbar-hoverBackground, rgba(255, 0, 0, 0.2));
 }

@@ -375,6 +375,7 @@
     /* border: 1px solid color-mix(in srgb, var(--vscode-widget-border) 70%, transparent); */
     background-color: var(--vscode-textCodeBlock-background, var(--vscode-editor-background));
     overflow: hidden;
+    max-width: 91%;
 }
 
 .code-block-header {

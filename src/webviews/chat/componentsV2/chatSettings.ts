@@ -22,9 +22,6 @@ export class ChatSettings {
     private maxTurnMinus: HTMLElement;
     private maxTurnPlus: HTMLElement;
 
-    private clearChatBtn: HTMLElement;
-    private clearChatConfirmBtn: HTMLElement;
-
     private toggleWebSearch: HTMLElement;
     private toggleWebSearchMode: HTMLElement;
     private webSearchModeLabel: HTMLElement;
@@ -53,9 +50,6 @@ export class ChatSettings {
         this.maxTurnInput = rootElement.querySelector('.max-turns-input') as HTMLInputElement;
         this.maxTurnMinus = rootElement.querySelector('.max-turns-minus') as HTMLElement;
         this.maxTurnPlus = rootElement.querySelector('.max-turns-plus') as HTMLElement;
-
-        this.clearChatBtn = rootElement.querySelector('.menu-clear-chat-btn') as HTMLElement;
-        this.clearChatConfirmBtn = rootElement.querySelector('.clear-chat-confirm-btn') as HTMLElement;
 
         this.toggleWebSearch = rootElement.querySelector('.menu-web-search-toggle') as HTMLElement;
         this.toggleWebSearchMode = rootElement.querySelector('.menu-web-search-mode-toggle') as HTMLElement;
@@ -178,19 +172,6 @@ export class ChatSettings {
             e.stopPropagation();
         });
 
-        this.clearChatBtn.addEventListener('click', (e: MouseEvent) => {
-            e.stopPropagation();
-            this.clearChatConfirmBtn.classList.remove('hidden');
-        });
-
-        this.clearChatConfirmBtn.addEventListener('click', (e: MouseEvent) => {
-            e.stopPropagation();
-            this.vscodeAPI.postMessage({ type: 'clearChat' });
-
-            this.clearChatConfirmBtn.classList.add('hidden');
-            this.dropdown.classList.add('hidden');
-        });
-
         this.toggleWebSearch.addEventListener('click', () => {
             const isActive = this.toggleWebSearch.classList.toggle('active');
             
@@ -238,7 +219,6 @@ export class ChatSettings {
         this.dropdown.classList.add('hidden');
         this.keyContainer.classList.add('hidden');
         this.tavilyKeyContainer.classList.add('hidden');
-        this.clearChatConfirmBtn.classList.add('hidden');
     }
 
     // When setting a new provider we need to update state management capabilities
@@ -334,14 +314,6 @@ export class ChatSettings {
 
     private notifyMaxTurnChange(): void {
         this.vscodeAPI.postMessage({ type: 'updateTurnLimit', limit: parseInt(this.maxTurnInput.value, 10) || 0 });
-    }
-
-    public toggleClearChatBtn(hasMessages: boolean): void {
-        if (hasMessages) this.clearChatBtn.classList.remove('disabled');
-        else {
-            this.clearChatBtn.classList.add('disabled');
-            this.clearChatConfirmBtn.classList.add('hidden');
-        }
     }
 
     private updateWebSearchModeUI() {

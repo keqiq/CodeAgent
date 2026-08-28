@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
-import { getEncoding, Tiktoken } from 'js-tiktoken';
 import { ChatFactory } from '../apis/chat/chatFactory';
 import { PRUNE_OUTPUT, PRUNE_INPUT } from '../tools/toolIndex';
 import { SessionAPIConfig, SessionMetadata, SessionPreferences } from '../session/agentSession';
+import { countTokens } from '../utils/tokenizer';
 
 export interface MessageItem {
     type: 'message';
@@ -111,7 +111,6 @@ export class ContextManager {
         outputTokens: 0,
         thoughtTokens: 0
     };
-    private tokenEncoder: Tiktoken = getEncoding('o200k_base');
 
     private storageUri: vscode.Uri | undefined;
     private artifactsUri: vscode.Uri | undefined;
@@ -264,11 +263,7 @@ export class ContextManager {
     }
 
     public updateTokenUsage(): void {
-        this.emitter.fire({ 
-            type: 'updateTokenUsage', 
-            sessionID: this.metadata.id,
-            usage: this.runTokenUsage 
-        });
+        this.emitter.fire({ type: 'updateTokenUsage', usage: this.runTokenUsage });
     }
 
     public addUserMessage(content: string): void {
@@ -575,9 +570,9 @@ export class ContextManager {
 
         const baseOverhead = 4;
 
-        usage.systemTokens += this.tokenEncoder.encode(ChatFactory.getSystemPrompt(this.currentProvider)).length + baseOverhead;
+        usage.systemTokens += countTokens(ChatFactory.getSystemPrompt(this.currentProvider)) + baseOverhead;
 
-        usage.systemTokens += this.tokenEncoder.encode(JSON.stringify(ChatFactory.getToolSchemas(this.currentProvider))).length + baseOverhead;
+        usage.systemTokens += countTokens(JSON.stringify(ChatFactory.getToolSchemas(this.currentProvider))) + baseOverhead;
 
         // Token usage for full context
         const currentContext = this.getLLMContext(true);
@@ -589,7 +584,7 @@ export class ContextManager {
                     textToEncode = item.content;
                     if (item.thought) textToEncode += item.thought;
 
-                    const messageTokens = this.tokenEncoder.encode(textToEncode).length + baseOverhead;
+                    const messageTokens = countTokens(textToEncode) + baseOverhead;
 
                     if (item.role === 'user') usage.userTokens += messageTokens;
                     else if (item.role === 'assistant') usage.assistantTokens += messageTokens;
@@ -597,12 +592,12 @@ export class ContextManager {
 
                 case 'function_call':
                     textToEncode = item.name + JSON.stringify(item.arguments);
-                    usage.toolCallTokens += this.tokenEncoder.encode(textToEncode).length + baseOverhead;
+                    usage.toolCallTokens += countTokens(textToEncode) + baseOverhead;
                     break;
 
                 case 'function_result':
                     textToEncode = item.name + item.result;
-                    usage.toolResultTokens += this.tokenEncoder.encode(textToEncode).length + baseOverhead;
+                    usage.toolResultTokens += countTokens(textToEncode) + baseOverhead;
                     break;
 
                 case 'run_summary':
@@ -612,10 +607,7 @@ export class ContextManager {
 
         usage.totalTokens = usage.userTokens + usage.assistantTokens + usage.systemTokens + usage.toolCallTokens + usage.toolResultTokens;
 
-        this.emitter.fire({ 
-            type: 'updateContextWindowUsage',
-            sessionID: this.metadata.id,
-            usage: usage });
+        this.emitter.fire({ type: 'updateContextWindowUsage', usage: usage });
     }
 
     public async compactContext(
@@ -672,11 +664,7 @@ export class ContextManager {
         this.currentTurnID = undefined;
         this.currentTurnToolResults = [];
         
-        this.emitter.fire({ 
-            type: 'createCheckpoint',
-            sessionID: this.metadata.id,
-            content: summaryText 
-        });
+        this.emitter.fire({ type: 'createCheckpoint', content: summaryText });
     }
     
     // Remove compaction scratchpad items (prompt, recall calls, recall results, assistant messages)

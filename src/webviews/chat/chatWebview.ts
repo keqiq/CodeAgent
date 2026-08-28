@@ -136,8 +136,6 @@ document.addEventListener('DOMContentLoaded', () => {
         // Restore session chat history
         restoreChatHistory: (view, msg) => {
             view.chatContainer.restoreChatHistory(msg.history);
-            const visible = msg.history.filter((m: any) => m.role !== 'developer');
-            view.chatSettings.toggleClearChatBtn(visible.length > 0);
         },
 
         // Change chat provider in the dropdown and in settings menu
@@ -260,7 +258,6 @@ document.addEventListener('DOMContentLoaded', () => {
         endRun: (view, msg) => {
             view.chatContainer.endRun(msg.status, msg.text);
             view.chatContainer.cancelActiveUI(); // any unfinished items will marked as halted
-            view.chatSettings.toggleClearChatBtn(true);
         },
 
         // Display any modifications during the run
@@ -271,12 +268,6 @@ document.addEventListener('DOMContentLoaded', () => {
         // Update the patch status ie accepted, rejected or conflict
         updatePatchStatus: (view, msg) => {
             view.chatContainer.updatePatch(msg.status);
-        },
-
-        clearChatContainer: (view) => {
-            view.chatContainer.clearChatUI();
-            view.chatSettings.toggleClearChatBtn(false);
-            view.contextWindow.clearTokenUsage();
         },
 
     };

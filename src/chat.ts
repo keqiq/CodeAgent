@@ -1,10 +1,10 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import path from 'path';
+import { Indexer } from './indexing/indexer';
 import { APIManager } from './managers/apiManager';
 import { CommandManager } from './managers/commandManager';
 import { SessionManager } from './session/sessionManager';
-import { Indexer } from './indexing/indexer';
 import { MCPManager } from './managers/mcpManager';
 import { ChatFactory } from './apis/chat/chatFactory';
 import { EmbedFactory } from './apis/embed/embedFactory';
@@ -98,6 +98,12 @@ export class ChatApp implements vscode.WebviewViewProvider {
 
         createSession: async () => {
             await this.sessionManager.createSession();
+        },
+
+        renameSession: async (data) => {
+            if (data.sessionID && data.title) {
+                await this.sessionManager.renameSession(data.sessionID, data.title);
+            }
         },
 
         switchSession: async (data) => {
@@ -408,8 +414,6 @@ export class ChatApp implements vscode.WebviewViewProvider {
             }
         },
     };
-
-
 
     private post(message: any) { this.view?.webview.postMessage(message); }
 

@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import * as crypto from 'crypto';
-import { AgentSession, SessionAPIConfig, SessionConfigFile, SessionMetadata, SessionPreferences, SharedSessionDeps } from "./agentSession";
+import { AgentSession, SessionConfigFile, SessionMetadata, SharedSessionDeps } from "./agentSession";
 import { ChatFactory } from '../apis/chat/chatFactory';
 
 export interface SessionManifest {
@@ -13,9 +13,6 @@ export class SessionManager {
     private metadataMap: Map<string, SessionMetadata> = new Map();
     private activeSessionID: string | null = null;
     private manifestUri: vscode.Uri;
-
-    // Track sessions already rendered in the webview
-    private loadedSessionIDs: Set<string> = new Set();
 
     private emitter = new vscode.EventEmitter<any>();
     public readonly onDidUpdateStatus = this.emitter.event;
@@ -30,10 +27,7 @@ export class SessionManager {
         if (this.metadataMap.size === 0) {
             await this.createSession();
         } else {
-            const targetID = (this.activeSessionID && this.metadataMap.has(this.activeSessionID))
-                ? this.activeSessionID
-                : this.metadataMap.keys().next().value!;
-            await this.switchSession(targetID);
+            await this.switchSession(this.activeSessionID!);
         }
     }
 
@@ -86,7 +80,12 @@ export class SessionManager {
         const config = this.getDefaultConfig();
 
         const session = new AgentSession(metadata, config.apiConfig, config.preferences, this.shared);
-        session.onDidUpdateStatus(event => this.emitter.fire(event));
+        session.onDidUpdateStatus(event => {
+            this.emitter.fire({
+                ...event,
+                sessionID: session.metadata.id
+            });
+        });
         await session.initialize();
         await session.saveConfig();
 
@@ -98,9 +97,7 @@ export class SessionManager {
         
         this.emitter.fire({
             type: 'sessionSwitched',
-            sessionID: id,
-            metadata,
-            history: []
+            sessionID: id
         });
 
         return session;
@@ -117,7 +114,12 @@ export class SessionManager {
         const config = await this.loadSessionConfig(sessionID);
 
         const session = new AgentSession(metadata, config.apiConfig, config.preferences, this.shared);
-        session.onDidUpdateStatus(event => this.emitter.fire(event));
+        session.onDidUpdateStatus(event => {
+            this.emitter.fire({
+                ...event,
+                sessionID: session.metadata.id
+            });
+        });
         await session.initialize();
 
         this.sessions.set(sessionID, session);

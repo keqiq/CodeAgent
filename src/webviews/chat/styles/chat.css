@@ -1,4 +1,4 @@
-@import url('./chat-header.css');
+@import url('./index-container.css');
 @import url('./chat-container.css');
 @import url('./chat-input.css');
 @import url('./custom-dropdown.css');
@@ -17,6 +17,19 @@ body {
     height: 100vh; 
     background-color: var(--vscode-sideBar-background);
     color: var(--vscode-foreground);
+}
+
+.chat-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    background-color: var(--vscode-sideBar-background);
+    font-family: var(--vscode-font-family);
+    color: var(--vscode-foreground);
+    gap: 8px;
+    flex-shrink: 0;
+    z-index: 60;
 }
 
 /* Multi-Session Viewport */

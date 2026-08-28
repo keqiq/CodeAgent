@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
+import { tavily } from '@tavily/core';
 import { ChatFactory } from '../apis/chat/chatFactory';
 import { EmbedFactory } from '../apis/embed/embedFactory';
-import { tavily } from '@tavily/core';
 import { ModelInfo } from '../apis/chat/chatProvider';
 
 export class APIManager {
@@ -15,7 +15,10 @@ export class APIManager {
         this.providerModelConfig = this.context.globalState.get<Record<string, string>>('providerModelConfig') || {};
         this.modelEffortConfig = this.context.globalState.get<Record<string, string>>('modelEffortConfig') || {};
     };
-    
+
+    //-------------------------------------------------------------------------------------------
+    // API keys
+    //-------------------------------------------------------------------------------------------
     public async getChatAPIKey(provider: string): Promise<string> {
         if (provider.toLowerCase() === 'ollama') {
             const port = this.context.globalState.get<number | string>('ollamaChatPort') ?? 11434;
@@ -73,6 +76,37 @@ export class APIManager {
         }
     }
 
+        public async saveChatAPIKey(provider: string, key: string): Promise<void> {
+        if (provider.toLowerCase() === 'ollama') {
+             const port = parseInt(key, 10) || 11434;
+            await this.context.globalState.update('ollamaChatPort', port);
+            return;
+        }
+        const secretKey = `${provider.toUpperCase()}_CHAT_API_KEY`;
+        await this.context.secrets.store(secretKey, key);
+    }
+
+    public async saveEmbedAPIKey(provider: string, key: string): Promise<void> {
+        if (provider.toLowerCase() === 'ollama') {
+            const port = parseInt(key, 10) || 11434;
+            await this.context.globalState.update('ollamaEmbedPort', port);
+            return;
+        }
+
+        const secretKey = `${provider.toUpperCase()}_EMBED_API_KEY`;
+        await this.context.secrets.store(secretKey, key);
+    }
+
+    public async saveTavilyAPIKey(key: string): Promise<void> {
+        await this.context.secrets.store('TAVILY_API_KEY', key);
+        await this.verifyTavilyAPIKey();
+
+    }
+
+
+    //-------------------------------------------------------------------------------------------
+    // Fetch from configuration
+    //-------------------------------------------------------------------------------------------
     public async getChatModels(provider: string, model: string | undefined, fetchAll: boolean, sessionID: string) {
         try {
             this.emitter.fire({ 
@@ -146,7 +180,6 @@ export class APIManager {
 
     public getChatModelInfo(provider: string, model: string, effort: string | undefined, sessionID: string): void {
         const info = this.chatModelInfo.get(provider)?.get(model);
-        console.log(provider, model, effort);
         if (info) {
             this.emitter.fire({
                 type: 'updateChatModelInfo',
@@ -159,6 +192,9 @@ export class APIManager {
         }
     }
 
+    //-------------------------------------------------------------------------------------------
+    // Session chat API configuration
+    //-------------------------------------------------------------------------------------------
     public async saveChatProvider(provider: string, sessionID: string): Promise<void> {
         await this.context.globalState.update('chatProvider', provider);
 
@@ -173,11 +209,6 @@ export class APIManager {
             stateful: stateManagementSupport,
             serverSearch: serverWebSearchSupport
         });
-    }
-
-    public async saveEmbedProvider(provider: string): Promise<void> {
-        await this.context.globalState.update('embedProvider', provider);
-        this.emitter.fire({ type: 'updateEmbedProvider', provider: provider });
     }
 
     public async saveChatModel(provider: string, model: string, sessionID: string): Promise<void> {
@@ -195,35 +226,17 @@ export class APIManager {
         await this.context.globalState.update('modelEffortConfig', this.modelEffortConfig);
     }
 
+    //-------------------------------------------------------------------------------------------
+    // Global embedding API configuration
+    //-------------------------------------------------------------------------------------------
+    public async saveEmbedProvider(provider: string): Promise<void> {
+        await this.context.globalState.update('embedProvider', provider);
+        this.emitter.fire({ type: 'updateEmbedProvider', provider: provider });
+    }
+
     public async saveEmbedModel(provider: string, model: string): Promise<void> {
         await this.context.globalState.update(`${provider}_embedModel`, model);
         this.emitter.fire({ type: 'updateEmbedModel', model: model });
     }
 
-    public async saveChatAPIKey(provider: string, key: string): Promise<void> {
-        if (provider.toLowerCase() === 'ollama') {
-             const port = parseInt(key, 10) || 11434;
-            await this.context.globalState.update('ollamaChatPort', port);
-            return;
-        }
-        const secretKey = `${provider.toUpperCase()}_CHAT_API_KEY`;
-        await this.context.secrets.store(secretKey, key);
-    }
-
-    public async saveEmbedAPIKey(provider: string, key: string): Promise<void> {
-        if (provider.toLowerCase() === 'ollama') {
-            const port = parseInt(key, 10) || 11434;
-            await this.context.globalState.update('ollamaEmbedPort', port);
-            return;
-        }
-
-        const secretKey = `${provider.toUpperCase()}_EMBED_API_KEY`;
-        await this.context.secrets.store(secretKey, key);
-    }
-
-    public async saveTavilyAPIKey(key: string): Promise<void> {
-        await this.context.secrets.store('TAVILY_API_KEY', key);
-        await this.verifyTavilyAPIKey();
-
-    }
 }
