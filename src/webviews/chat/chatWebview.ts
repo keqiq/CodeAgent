@@ -118,6 +118,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 sessionViews.delete(msg.sessionID);
             }
         },
+
+        titleGenerating: (msg) => {
+            sessionMenu.setTitleGenerating(msg.sessionID, msg.isGenerating);
+        }
     };
 
     const sessionHandlers: Record<string, (view: SessionView, msg: any) => void> = {

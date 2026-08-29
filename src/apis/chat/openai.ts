@@ -6,6 +6,7 @@ import { ChatItem, ChatResponse, TokenUsage } from '../../managers/contextManage
 export class OpenAIChatProvider extends ChatProvider {
     public static stateManagementSupport: boolean = true;
     public static serverWebSearchSupport: boolean = true;
+    public static summaryModel: string = 'gpt-5.4-nano';
     private client: OpenAI;
     // private static GPTTools: any = requiredSchemas;
 
@@ -304,6 +305,25 @@ export class OpenAIChatProvider extends ChatProvider {
 
         return ChatProvider.formatResponse(fullText, currentCalls, tokenUsage, response.id);
     }
+
+    async generateTitle(
+        prompt: string, 
+        modelOverride?: string, 
+        abortSignal?: AbortSignal
+    ): Promise<string> {
+        const model = modelOverride || OpenAIChatProvider.summaryModel;
+        const response = await this.client.responses.create({
+            model: model,
+            input: [
+                { role: 'developer', content: OpenAIChatProvider.titlePrompt },
+                { role: 'user', content: prompt }
+            ],
+            stream: false
+        }, { signal: abortSignal });
+
+        const text = response.output_text || '';
+        return text.trim().replace(/^["']|["']$/g, '').slice(0, 40);
+    }
 }
 
 // For other providers using OpenAI SDK
@@ -311,6 +331,7 @@ export abstract class OpenAICompatibleProvider extends ChatProvider {
     protected client: OpenAI;
     public static baseTools: any[] = OpenAICompatibleProvider.parseTools(requiredSchemas);
     public static compactionTools: any[] = OpenAICompatibleProvider.parseTools(compactionSchemas);
+    public static summaryModel: string = '';
     
     constructor(apiKey: string, baseURL: string, webSearchMode: WebSearchMode) {
         super();
@@ -549,5 +570,24 @@ export abstract class OpenAICompatibleProvider extends ChatProvider {
         };
 
         return ChatProvider.formatResponse(fullText, currentCalls, tokenUsage, undefined, reasoningContent);
+    }
+
+    async generateTitle(
+        prompt: string, 
+        model: string, 
+        abortSignal?: AbortSignal
+    ): Promise<string> {
+
+        const response = await this.client.chat.completions.create({
+            model: model,
+            messages: [
+                { role: 'system', content: ChatProvider.titlePrompt },
+                { role: 'user', content: prompt }
+            ],
+            stream: false,
+        }, { signal: abortSignal });
+
+        const text = response.choices[0]?.message?.content || '';
+        return text.trim().replace(/^["']|["']$/g, '').slice(0, 40);
     }
 }

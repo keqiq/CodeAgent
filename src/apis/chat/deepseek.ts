@@ -3,6 +3,7 @@ import { OpenAICompatibleProvider } from './openai';
 
 export class DeepSeekChatProvider extends OpenAICompatibleProvider {
     protected featuredModels = ['deepseek-v4-flash', 'deepseek-v4-pro'];
+    public static summaryModel: string = 'deepseek-v4-flash';
     
     constructor(apiKey: string, webSearchMode: WebSearchMode) {
         super(apiKey, 'https://api.deepseek.com', webSearchMode);

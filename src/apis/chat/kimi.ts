@@ -4,6 +4,7 @@ import { OpenAICompatibleProvider } from './openai';
 export class KimiChatProvider extends OpenAICompatibleProvider {
 
     protected featuredModels = ['kimi-k3', 'kimi-k2.7-code', 'kimi-k2.6']; 
+    public static summaryModel: string = 'kimi-k2.6';
 
     constructor(apiKey: string, webSearchMode: WebSearchMode) {
         super(apiKey, 'https://api.moonshot.ai/v1', webSearchMode);

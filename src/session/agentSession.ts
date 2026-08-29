@@ -15,6 +15,7 @@ export interface SessionMetadata {
     title: string;
     createdAt: number;
     updatedAt: number;
+    customTitle: boolean;
 }
 
 export interface SessionAPIConfig {
@@ -147,6 +148,9 @@ export class AgentSession {
 
     public async runAgentTurn(userMessage: string): Promise<void> {
         this.aborter = new AbortController();
+
+        // Auto generate title if we currently have the default title
+        if (!this.metadata.customTitle) this.generateTitle(userMessage); // non blocking!
 
         await this.worktreeManager.clearState();
         await this.worktreeManager.setup();
@@ -306,6 +310,9 @@ export class AgentSession {
 
             this.contextManager.estimateCategorizedTokens();
 
+            // Bump session timestamp in manifest
+            this.emitter.fire({ type: 'updateManifest' });
+
             this.emitter.fire({ type: 'endRun', status: runStatus, text: statusMessage });
 
             this.emitter.fire({ type: 'toggleChatControls', disabled: false });
@@ -376,8 +383,45 @@ export class AgentSession {
             this.contextManager.addRunSummary(provider, model, runStatus, statusMessage);
             await this.contextManager.save();
 
+            // Bump session timestamp in manifest
+            this.emitter.fire({ type: 'updateManifest' });
+
             this.emitter.fire({ type: 'endRun', status: runStatus, text: statusMessage });
+
             this.emitter.fire({ type: 'toggleChatControls', disabled: false });
+        }
+    }
+
+    public async generateTitle(firstUserPrompt: string): Promise<void> {
+
+        this.emitter.fire({ type: 'titleGenerating', isGenerating: true });
+        try {
+            const provider = this.apiConfig.provider;
+            if (!provider) throw new Error ('Unconfigured provider');
+            const activeModel = this.apiConfig.providerModelConfig[provider];
+
+            const apiKey = await this.shared.apiManager.getChatAPIKey(provider);
+            const providerInstance = ChatFactory.create(provider, apiKey, 'none');
+
+            // Use designated summary model or fallback to current active model
+            const summaryModel = ChatFactory.getSummaryModel(provider) || activeModel;
+
+            const generatedTitle = await providerInstance.generateTitle(firstUserPrompt, summaryModel);
+            if (generatedTitle) {
+                this.metadata.title = generatedTitle;
+                this.metadata.updatedAt = Date.now();
+                this.metadata.customTitle = true;
+
+                this.emitter.fire({
+                    type: 'updateManifest',
+                    title: generatedTitle,
+                    customTitle: true
+                });
+            }
+        } catch (e) {
+            console.warn(`Failed to auto-generate chat title: ${e}`);
+
+            this.emitter.fire({ type: 'titleGenerating', isGenerating: false });
         }
     }
     

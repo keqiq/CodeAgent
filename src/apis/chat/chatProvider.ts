@@ -43,6 +43,12 @@ export abstract class ChatProvider {
 
                         Provide only the summary as your final response once all needed artifacts are inspected.`;
 
+    public static titlePrompt: string = `You are a concise title generator. Summarize the user's prompt into a clean 3 to 5 word title. 
+                        Rules:
+                        - Output ONLY the plain text title.
+                        - Do not use quotes, markdown, punctuation, or backticks.
+                        - Max 35 characters.`;
+
     public static stateManagementSupport: boolean = false;
     public static serverWebSearchSupport: boolean = false;
     public static baseTools: any[] = [...requiredSchemas];
@@ -135,4 +141,10 @@ export abstract class ChatProvider {
         previousTurnID: string | undefined,
         abortSignal?: AbortSignal
     ): Promise<ChatResponse>;
+
+    abstract generateTitle(
+        prompt: string,
+        model: string,
+        abortSignal?: AbortSignal
+    ) : Promise<string>;
 }

@@ -31,6 +31,28 @@ export class SessionManager {
         }
     }
 
+    private attachSessionListeners(session: AgentSession): void {
+        session.onDidUpdateStatus(async (event) => {
+            // Intercept internal manifest updates
+            if (event.type === 'updateManifest') {
+                const meta = this.metadataMap.get(session.metadata.id);
+                if (meta) {
+                    if (event.title !== undefined) meta.title = event.title;
+                    if (event.customTitle !== undefined) meta.customTitle = event.customTitle;
+                    meta.updatedAt = Date.now();
+                    await this.saveManifest();
+                }
+                return; // Prevent forwarding internal backend event to webview
+            }
+
+            // Forward session-scoped UI events with sessionID attached
+            this.emitter.fire({
+                ...event,
+                sessionID: session.metadata.id
+            });
+        });
+    }
+
     private async loadManifest(): Promise<void> {
         try {
             const data = await vscode.workspace.fs.readFile(this.manifestUri);
@@ -75,17 +97,14 @@ export class SessionManager {
             title: title || `Chat ${this.metadataMap.size + 1}`,
             createdAt: now,
             updatedAt: now,
+            customTitle: false
         };
 
         const config = this.getDefaultConfig();
 
         const session = new AgentSession(metadata, config.apiConfig, config.preferences, this.shared);
-        session.onDidUpdateStatus(event => {
-            this.emitter.fire({
-                ...event,
-                sessionID: session.metadata.id
-            });
-        });
+        this.attachSessionListeners(session);
+
         await session.initialize();
         await session.saveConfig();
 
@@ -114,12 +133,8 @@ export class SessionManager {
         const config = await this.loadSessionConfig(sessionID);
 
         const session = new AgentSession(metadata, config.apiConfig, config.preferences, this.shared);
-        session.onDidUpdateStatus(event => {
-            this.emitter.fire({
-                ...event,
-                sessionID: session.metadata.id
-            });
-        });
+        this.attachSessionListeners(session);
+        
         await session.initialize();
 
         this.sessions.set(sessionID, session);
@@ -160,6 +175,7 @@ export class SessionManager {
 
         metadata.title = newTitle;
         metadata.updatedAt = Date.now();
+        metadata.customTitle = true;
         await this.saveManifest();
     }
 

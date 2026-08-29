@@ -47,6 +47,7 @@ export class SessionSelector {
     private sessionStatusMap: Map<string, SessionIndicatorStatus> = new Map();
     private itemDomMap: Map<string, SessionItemDOM> = new Map();
     private groups: Map<SessionIndicatorStatus, StatusGroupConfig> = new Map();
+    private generatingTitleSessionIDs: Set<string> = new Set();
 
     constructor(private vscodeAPI: WebviewApi) {
         this.container = document.getElementById('sessionDropdown') as HTMLElement;
@@ -288,6 +289,16 @@ export class SessionSelector {
     }
 
     private updateSessionElement(dom: SessionItemDOM, session: SessionMetadata): void {
+        // If the title arrived via manifest update, clear generating state
+        if (this.generatingTitleSessionIDs.has(session.id) && session.customTitle) {
+            this.generatingTitleSessionIDs.delete(session.id);
+            const renameBtn = dom.element.querySelector('.session-action-btn:not(.delete)') as HTMLButtonElement | null;
+            if (renameBtn) {
+                renameBtn.disabled = false;
+                renameBtn.classList.remove('disabled');
+            }
+        }
+        
         if (!dom.renameInput) {
             dom.titleSpan.textContent = session.title || 'Untitled Chat';
         }
@@ -413,6 +424,60 @@ export class SessionSelector {
         });
 
         return domRef;
+    }
+
+    public setTitleGenerating(sessionID: string, isGenerating: boolean): void {
+        if (isGenerating) {
+            this.generatingTitleSessionIDs.add(sessionID);
+        } else {
+            this.generatingTitleSessionIDs.delete(sessionID);
+        }
+
+        const dom = this.itemDomMap.get(sessionID);
+        if (!dom) return;
+
+        const renameBtn = dom.element.querySelector('.session-action-btn:not(.delete)') as HTMLButtonElement | null;
+
+        if (isGenerating) {
+            // Render typing indicator inside titleSpan
+            dom.titleSpan.innerHTML = `
+                <div class="typing-indicator">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            `;
+
+            if (renameBtn) {
+                renameBtn.disabled = true;
+                renameBtn.classList.add('disabled');
+            }
+
+            // If active session, also show indicator on header trigger button
+            if (sessionID === this.activeSessionID) {
+                this.selectedText.innerHTML = `
+                    <div class="typing-indicator">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                `;
+            }
+        } else {
+            // Clear indicator state and re-render title from metadata
+            const currentSession = this.sessions.find(s => s.id === sessionID);
+            if (currentSession) {
+                dom.titleSpan.textContent = currentSession.title || 'Untitled Chat';
+                if (sessionID === this.activeSessionID) {
+                    this.selectedText.textContent = currentSession.title;
+                }
+            }
+
+            if (renameBtn) {
+                renameBtn.disabled = false;
+                renameBtn.classList.remove('disabled');
+            }
+        }
     }
 
     public toggle(): void {

@@ -109847,6 +109847,11 @@ var ChatProvider = class _ChatProvider {
                         - **Active State & Next Steps**: What remains pending or what the agent should do next.
 
                         Provide only the summary as your final response once all needed artifacts are inspected.`;
+  static titlePrompt = `You are a concise title generator. Summarize the user's prompt into a clean 3 to 5 word title. 
+                        Rules:
+                        - Output ONLY the plain text title.
+                        - Do not use quotes, markdown, punctuation, or backticks.
+                        - Max 35 characters.`;
   static stateManagementSupport = false;
   static serverWebSearchSupport = false;
   static baseTools = [...requiredSchemas];
@@ -109905,6 +109910,7 @@ var ClaudeChatProvider = class _ClaudeChatProvider extends ChatProvider {
   static serverWebSearchSupport = true;
   static baseTools = _ClaudeChatProvider.parseTool(requiredSchemas);
   static compactionTools = _ClaudeChatProvider.parseTool(compactionSchemas);
+  static summaryModel = "claude-haiku-4-5-20251001";
   client;
   // private static claudeTools: Anthropic.Tool[] = ClaudeChatProvider.parseTool(allToolSchemas);
   featuredModels = [
@@ -110131,12 +110137,24 @@ ${item.turnReminder}` : item.result;
     };
     return ChatProvider.formatResponse(fullText, currentCalls, tokenUsage);
   }
+  async generateTitle(prompt, model, abortSignal) {
+    const response = await this.client.messages.create({
+      model,
+      system: _ClaudeChatProvider.titlePrompt,
+      messages: [{ role: "user", content: prompt }],
+      max_tokens: 512
+    }, { signal: abortSignal });
+    const block = response.content.find((b) => b.type === "text");
+    const text = block && block.type === "text" ? block.text : "";
+    return text.trim().replace(/^["']|["']$/g, "").slice(0, 40);
+  }
 };
 
 // src/apis/chat/openai.ts
 var OpenAIChatProvider = class _OpenAIChatProvider extends ChatProvider {
   static stateManagementSupport = true;
   static serverWebSearchSupport = true;
+  static summaryModel = "gpt-5.4-nano";
   client;
   // private static GPTTools: any = requiredSchemas;
   featuredModels = [
@@ -110359,11 +110377,25 @@ ${item.turnReminder}` : item.result;
     };
     return ChatProvider.formatResponse(fullText, currentCalls, tokenUsage, response.id);
   }
+  async generateTitle(prompt, modelOverride, abortSignal) {
+    const model = modelOverride || _OpenAIChatProvider.summaryModel;
+    const response = await this.client.responses.create({
+      model,
+      input: [
+        { role: "developer", content: _OpenAIChatProvider.titlePrompt },
+        { role: "user", content: prompt }
+      ],
+      stream: false
+    }, { signal: abortSignal });
+    const text = response.output_text || "";
+    return text.trim().replace(/^["']|["']$/g, "").slice(0, 40);
+  }
 };
 var OpenAICompatibleProvider = class _OpenAICompatibleProvider extends ChatProvider {
   client;
   static baseTools = _OpenAICompatibleProvider.parseTools(requiredSchemas);
   static compactionTools = _OpenAICompatibleProvider.parseTools(compactionSchemas);
+  static summaryModel = "";
   constructor(apiKey, baseURL, webSearchMode) {
     super();
     this.client = new OpenAI({
@@ -110541,11 +110573,24 @@ ${item.turnReminder}` : item.result;
     };
     return ChatProvider.formatResponse(fullText, currentCalls, tokenUsage, void 0, reasoningContent);
   }
+  async generateTitle(prompt, model, abortSignal) {
+    const response = await this.client.chat.completions.create({
+      model,
+      messages: [
+        { role: "system", content: ChatProvider.titlePrompt },
+        { role: "user", content: prompt }
+      ],
+      stream: false
+    }, { signal: abortSignal });
+    const text = response.choices[0]?.message?.content || "";
+    return text.trim().replace(/^["']|["']$/g, "").slice(0, 40);
+  }
 };
 
 // src/apis/chat/deepseek.ts
 var DeepSeekChatProvider = class extends OpenAICompatibleProvider {
   featuredModels = ["deepseek-v4-flash", "deepseek-v4-pro"];
+  static summaryModel = "deepseek-v4-flash";
   constructor(apiKey, webSearchMode) {
     super(apiKey, "https://api.deepseek.com", webSearchMode);
   }
@@ -110570,6 +110615,7 @@ var DeepSeekChatProvider = class extends OpenAICompatibleProvider {
 var GeminiChatProvider = class _GeminiChatProvider extends ChatProvider {
   static stateManagementSupport = true;
   static serverWebSearchSupport = true;
+  static summaryModel = "gemini-3.5-flash-lite";
   client;
   // private static geminiTools: any = requiredSchemas;
   activeInteractionId = null;
@@ -110778,11 +110824,26 @@ ${item.turnReminder}` : rawOutput;
     };
     return ChatProvider.formatResponse(fullText, currentCalls, tokenUsage, response.id);
   }
+  async generateTitle(prompt, model, abortSignal) {
+    const response = await this.client.interactions.create({
+      model,
+      input: [{
+        type: "user_input",
+        content: [{ type: "text", text: prompt }]
+      }],
+      system_instruction: _GeminiChatProvider.titlePrompt,
+      stream: false,
+      store: false
+    }, { signal: abortSignal });
+    const text = response.output_text || "";
+    return text.trim().replace(/^["']|["']$/g, "").slice(0, 40);
+  }
 };
 
 // src/apis/chat/kimi.ts
 var KimiChatProvider = class extends OpenAICompatibleProvider {
   featuredModels = ["kimi-k3", "kimi-k2.7-code", "kimi-k2.6"];
+  static summaryModel = "kimi-k2.6";
   constructor(apiKey, webSearchMode) {
     super(apiKey, "https://api.moonshot.ai/v1", webSearchMode);
   }
@@ -110812,6 +110873,8 @@ var KimiChatProvider = class extends OpenAICompatibleProvider {
 var OllamaChatProvider = class extends OpenAICompatibleProvider {
   ollamaUrl;
   featuredModels = [];
+  static summaryModel = "";
+  // Use active model fallback
   constructor(apiKey, webSearchMode) {
     const url3 = `http://127.0.0.1:${apiKey}`;
     super("ollama", `${url3}/v1`, webSearchMode);
@@ -111006,6 +111069,10 @@ var ChatFactory = class {
   }
   static getAvailableProviders() {
     return Object.keys(this.providers);
+  }
+  static getSummaryModel(providerName) {
+    const ProviderClass = this.providers[providerName];
+    return ProviderClass ? ProviderClass.summaryModel : "";
   }
   static create(providerName, apiKey, webSearchMode) {
     const ProviderClass = this.providers[providerName];
@@ -112556,6 +112623,7 @@ var AgentSession = class {
   }
   async runAgentTurn(userMessage) {
     this.aborter = new AbortController();
+    if (!this.metadata.customTitle) this.generateTitle(userMessage);
     await this.worktreeManager.clearState();
     await this.worktreeManager.setup();
     const provider = this.apiConfig.provider || "";
@@ -112662,6 +112730,7 @@ var AgentSession = class {
       await this.contextManager.updateRunBoundary();
       await this.contextManager.save();
       this.contextManager.estimateCategorizedTokens();
+      this.emitter.fire({ type: "updateManifest" });
       this.emitter.fire({ type: "endRun", status: runStatus, text: statusMessage });
       this.emitter.fire({ type: "toggleChatControls", disabled: false });
     }
@@ -112717,8 +112786,34 @@ var AgentSession = class {
       this.aborter = null;
       this.contextManager.addRunSummary(provider, model, runStatus, statusMessage);
       await this.contextManager.save();
+      this.emitter.fire({ type: "updateManifest" });
       this.emitter.fire({ type: "endRun", status: runStatus, text: statusMessage });
       this.emitter.fire({ type: "toggleChatControls", disabled: false });
+    }
+  }
+  async generateTitle(firstUserPrompt) {
+    this.emitter.fire({ type: "titleGenerating", isGenerating: true });
+    try {
+      const provider = this.apiConfig.provider;
+      if (!provider) throw new Error("Unconfigured provider");
+      const activeModel = this.apiConfig.providerModelConfig[provider];
+      const apiKey = await this.shared.apiManager.getChatAPIKey(provider);
+      const providerInstance = ChatFactory.create(provider, apiKey, "none");
+      const summaryModel = ChatFactory.getSummaryModel(provider) || activeModel;
+      const generatedTitle = await providerInstance.generateTitle(firstUserPrompt, summaryModel);
+      if (generatedTitle) {
+        this.metadata.title = generatedTitle;
+        this.metadata.updatedAt = Date.now();
+        this.metadata.customTitle = true;
+        this.emitter.fire({
+          type: "updateManifest",
+          title: generatedTitle,
+          customTitle: true
+        });
+      }
+    } catch (e2) {
+      console.warn(`Failed to auto-generate chat title: ${e2}`);
+      this.emitter.fire({ type: "titleGenerating", isGenerating: false });
     }
   }
   async cleanup() {
@@ -112747,6 +112842,24 @@ var SessionManager = class {
     } else {
       await this.switchSession(this.activeSessionID);
     }
+  }
+  attachSessionListeners(session) {
+    session.onDidUpdateStatus(async (event) => {
+      if (event.type === "updateManifest") {
+        const meta2 = this.metadataMap.get(session.metadata.id);
+        if (meta2) {
+          if (event.title !== void 0) meta2.title = event.title;
+          if (event.customTitle !== void 0) meta2.customTitle = event.customTitle;
+          meta2.updatedAt = Date.now();
+          await this.saveManifest();
+        }
+        return;
+      }
+      this.emitter.fire({
+        ...event,
+        sessionID: session.metadata.id
+      });
+    });
   }
   async loadManifest() {
     try {
@@ -112783,16 +112896,12 @@ var SessionManager = class {
       id,
       title: title || `Chat ${this.metadataMap.size + 1}`,
       createdAt: now,
-      updatedAt: now
+      updatedAt: now,
+      customTitle: false
     };
     const config2 = this.getDefaultConfig();
     const session = new AgentSession(metadata, config2.apiConfig, config2.preferences, this.shared);
-    session.onDidUpdateStatus((event) => {
-      this.emitter.fire({
-        ...event,
-        sessionID: session.metadata.id
-      });
-    });
+    this.attachSessionListeners(session);
     await session.initialize();
     await session.saveConfig();
     this.sessions.set(id, session);
@@ -112813,12 +112922,7 @@ var SessionManager = class {
     if (!metadata) return void 0;
     const config2 = await this.loadSessionConfig(sessionID);
     const session = new AgentSession(metadata, config2.apiConfig, config2.preferences, this.shared);
-    session.onDidUpdateStatus((event) => {
-      this.emitter.fire({
-        ...event,
-        sessionID: session.metadata.id
-      });
-    });
+    this.attachSessionListeners(session);
     await session.initialize();
     this.sessions.set(sessionID, session);
     return session;
@@ -112849,6 +112953,7 @@ var SessionManager = class {
     if (!metadata) return;
     metadata.title = newTitle;
     metadata.updatedAt = Date.now();
+    metadata.customTitle = true;
     await this.saveManifest();
   }
   async deleteSession(sessionID) {

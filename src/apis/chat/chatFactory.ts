@@ -12,6 +12,7 @@ interface ChatProviderConstructor {
     serverWebSearchSupport: boolean;
     systemPrompt: string;
     compactionPrompt: string;
+    summaryModel: string;
     baseTools: any[];
 }
 
@@ -58,6 +59,11 @@ export class ChatFactory {
 
     static getAvailableProviders(): string[] {
         return Object.keys(this.providers);
+    }
+
+    static getSummaryModel(providerName: string): string {
+        const ProviderClass = this.providers[providerName];
+        return ProviderClass ? ProviderClass.summaryModel : '';
     }
 
     static create(providerName: string, apiKey: string, webSearchMode: WebSearchMode): ChatProvider {

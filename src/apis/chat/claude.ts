@@ -8,6 +8,7 @@ export class ClaudeChatProvider extends ChatProvider {
     public static serverWebSearchSupport: boolean = true;
     public static baseTools = ClaudeChatProvider.parseTool(requiredSchemas);
     public static compactionTools = ClaudeChatProvider.parseTool(compactionSchemas);
+    public static summaryModel: string = 'claude-haiku-4-5-20251001';
     private client: Anthropic;
     // private static claudeTools: Anthropic.Tool[] = ClaudeChatProvider.parseTool(allToolSchemas);
 
@@ -319,5 +320,22 @@ export class ClaudeChatProvider extends ChatProvider {
         };
 
         return ChatProvider.formatResponse(fullText, currentCalls, tokenUsage);
+    }
+
+    async generateTitle(
+        prompt: string, 
+        model: string, 
+        abortSignal?: AbortSignal
+    ): Promise<string> {
+        const response = await this.client.messages.create({
+            model: model as any,
+            system: ClaudeChatProvider.titlePrompt,
+            messages: [{ role: 'user', content: prompt }],
+            max_tokens: 512
+        }, { signal: abortSignal });
+
+        const block = response.content.find(b => b.type === 'text');
+        const text = block && block.type === 'text' ? block.text : '';
+        return text.trim().replace(/^["']|["']$/g, '').slice(0, 40);
     }
 }

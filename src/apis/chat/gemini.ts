@@ -6,6 +6,7 @@ import { ChatItem, ChatResponse, TokenUsage } from '../../managers/contextManage
 export class GeminiChatProvider extends ChatProvider {
     public static stateManagementSupport: boolean = true;
     public static serverWebSearchSupport: boolean = true;
+    public static summaryModel: string = 'gemini-3.5-flash-lite';
     private client: GoogleGenAI;
     // private static geminiTools: any = requiredSchemas;
     private activeInteractionId: string | null = null;
@@ -270,5 +271,25 @@ export class GeminiChatProvider extends ChatProvider {
         };
 
         return ChatProvider.formatResponse(fullText, currentCalls, tokenUsage, response.id);
+    }
+
+    async generateTitle(
+        prompt: string, 
+        model: string, 
+        abortSignal?: AbortSignal
+    ): Promise<string> {
+        const response = await this.client.interactions.create({
+            model: model,
+            input: [{
+                type: 'user_input',
+                content: [{ type: 'text', text: prompt }]
+            }],
+            system_instruction: GeminiChatProvider.titlePrompt,
+            stream: false,
+            store: false
+        }, { signal: abortSignal });
+
+        const text = response.output_text || '';
+        return text.trim().replace(/^["']|["']$/g, '').slice(0, 40);
     }
 }

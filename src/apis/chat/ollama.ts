@@ -6,6 +6,7 @@ import { OpenAICompatibleProvider } from "./openai";
 export class OllamaChatProvider extends OpenAICompatibleProvider {
     private ollamaUrl: string;
     protected featuredModels: string[] = [];
+    public static summaryModel: string = ''; // Use active model fallback
 
     constructor(apiKey: string, webSearchMode: WebSearchMode) {
         const url = `http://127.0.0.1:${apiKey}`;
