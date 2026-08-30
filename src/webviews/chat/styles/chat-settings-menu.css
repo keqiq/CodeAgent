@@ -50,6 +50,14 @@
     color: var(--vscode-foreground);
 }
 
+.web-search-mode-label {
+    color: var(--vscode-textLink-foreground); /* Default blue/link color */
+    transition: color 0.15s;
+}
+
+.web-search-mode-label.error {
+    color: var(--vscode-errorForeground) !important; /* Red indicator */
+}
 .menu-item-title {
     font-weight: 500;
 }
@@ -66,28 +74,6 @@
     height: 1px;
     background-color: color-mix(in srgb, var(--vscode-widget-border) 60%, transparent);
     margin: 4px 0;
-}
-
-.clear-chat-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding-right: 6px; /* Slightly less padding to accommodate the button */
-}
-.clear-chat-item .icon-btn {
-    height: auto;
-    width: auto;
-    padding: 2px 8px;
-    gap: 4px;
-    font-size: 11px;
-    font-weight: 600;
-    background-color: transparent;
-    transition: background-color 0.15s, color 0.15s;
-}
-
-.clear-chat-item .icon-btn:hover {
-    background-color: var(--vscode-errorForeground);
-    color: white !important;
 }
 
 #chatKeyInput::-webkit-outer-spin-button,

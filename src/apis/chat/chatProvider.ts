@@ -61,6 +61,8 @@ export abstract class ChatProvider {
 
     protected abstract getModelInfos(): Promise<ModelInfo[]>;
 
+    abstract verifyKey(): Promise<void>;
+
     public getTools(): any[] {
         return this.tools;
     };

@@ -31,7 +31,7 @@ export class ChatSettings {
     private tavilyKeyContainer: HTMLElement;
     private tavilyKeyInput: HTMLInputElement;
     private tavilyKeySaveBtn: HTMLElement;
-
+    private isTavilyKeyValid: boolean = true;
 
     constructor(rootElement: HTMLElement, private vscodeAPI: WebviewApi) {
         this.container = rootElement.querySelector('.chat-settings-container') as HTMLElement;
@@ -192,6 +192,7 @@ export class ChatSettings {
 
             this.currentWebSearchMode = this.currentWebSearchMode === 'tavily' ? 'server' : 'tavily';
             this.updateWebSearchModeUI();
+            this.notifyWebSearchChange();
         });
 
         this.tavilyKeyBtn.addEventListener('click', () => {
@@ -204,6 +205,10 @@ export class ChatSettings {
             if (key) {
                 this.tavilyKeyContainer.classList.add('hidden');
                 this.tavilyKeyInput.value = '';
+
+                this.isTavilyKeyValid = true;
+                this.updateWebSearchModeUI();
+
                 this.vscodeAPI.postMessage({ type: 'saveTavilyAPIKey', key: key });
             }
         });
@@ -283,6 +288,8 @@ export class ChatSettings {
                 this.toggleWebSearch.classList.add('active');
                 this.toggleWebSearchMode.classList.remove('hidden');
                 if (msg.searchMode !== undefined) this.currentWebSearchMode = msg.searchMode;
+                // check the tavily key on restore
+                if (msg.searchMode === 'tavily') this.notifyWebSearchChange();
             }
             
             else {
@@ -316,16 +323,23 @@ export class ChatSettings {
     private updateWebSearchModeUI() {
         if (this.currentWebSearchMode === 'server') {
             this.webSearchModeLabel.textContent = 'SERVER';
+            this.webSearchModeLabel.classList.remove('error');
             this.tavilyKeyBtn.classList.add('hidden');
             this.tavilyKeyContainer.classList.add('hidden');
         } else {
             this.webSearchModeLabel.textContent = 'TAVILY';
+
+            if (!this.isTavilyKeyValid) {
+                this.webSearchModeLabel.classList.add('error');
+            } else {
+                this.webSearchModeLabel.classList.remove('error');
+            }
+
             // Only show the key button if the parent Web Search toggle is ON
             if (this.toggleWebSearch.classList.contains('active')) {
                 this.tavilyKeyBtn.classList.remove('hidden');
             }
         }
-        this.notifyWebSearchChange();
     }
 
     private notifyWebSearchChange() {
@@ -334,6 +348,9 @@ export class ChatSettings {
     }
 
     public showTavilyAPIKeyInput(): void {
+        this.isTavilyKeyValid = false;
+        this.updateWebSearchModeUI();
+
         this.dropdown.classList.remove('hidden');
         this.tavilyKeyContainer.classList.remove('hidden');
         this.tavilyKeyInput.value = '';

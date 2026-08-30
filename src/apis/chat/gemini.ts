@@ -29,6 +29,10 @@ export class GeminiChatProvider extends ChatProvider {
         this.tools = runTools;
     }
 
+    async verifyKey(): Promise<void> {
+        const response = await this.client.models.list({ config: { pageSize: 1 } });
+    }
+
     protected async getModelInfos(): Promise<ModelInfo[]> {
         const infos: ModelInfo[] = [];
         const response = await this.client.models.list();

@@ -240,8 +240,12 @@ export class ChatApp implements vscode.WebviewViewProvider {
         saveChatAPIKey: async (session, data) => {
             const [provider, model, effort] = session.getAPIConfig();
             if (provider) {
-                await this.apiManager.saveChatAPIKey(provider, data.key);
-                await this.apiManager.getChatModels(provider, model, session.preferences.showAll, data.sessionID);
+                try {
+                    await this.apiManager.saveChatAPIKey(provider, data.key, data.sessionID);
+                    await this.apiManager.getChatModels(provider, model, session.preferences.showAll, data.sessionID);
+                } catch (e) {
+                    vscode.window.showErrorMessage(`Failed to save API key: ${e}`);
+                }
             }
         },
 
@@ -301,7 +305,12 @@ export class ChatApp implements vscode.WebviewViewProvider {
             await session.saveConfig();
 
             // If using tavily, verify the tavily API key
-            if (data.enabled && data.mode === 'tavily') this.apiManager.verifyTavilyAPIKey();
+            if (data.enabled && data.mode === 'tavily') this.apiManager.verifyTavilyAPIKey(data.sessionID);
+        },
+
+        // Save tavily APIKey
+        saveTavilyAPIKey: async (session, data) => {
+            await this.apiManager.saveTavilyAPIKey(data.key, data.sessionID);
         },
 
         // Set prune mode, either prune by turn intervals or task intervals

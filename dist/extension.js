@@ -109931,6 +109931,9 @@ var ClaudeChatProvider = class _ClaudeChatProvider extends ChatProvider {
     } else if (webSearchMode === "server") runTools.push({ type: "web_search_20260318", name: "web_search" });
     this.tools = runTools;
   }
+  async verifyKey() {
+    await this.client.models.list({ limit: 1 });
+  }
   async getModelInfos() {
     const infos = [];
     const response = await this.client.models.list();
@@ -110178,6 +110181,9 @@ var OpenAIChatProvider = class _OpenAIChatProvider extends ChatProvider {
     else if (webSearchMode === "server") runTools.push({ type: "web_search" });
     this.tools = runTools;
   }
+  async verifyKey() {
+    await this.client.models.list();
+  }
   async getModelInfos() {
     const infos = [];
     const response = await this.client.models.list();
@@ -110410,6 +110416,9 @@ var OpenAICompatibleProvider = class _OpenAICompatibleProvider extends ChatProvi
     }
     this.tools = runTools;
   }
+  async verifyKey() {
+    await this.client.models.list();
+  }
   // For these providers with thinking models, we must pass back the reasoning content
   // they expect it to be bundled like this smh
   // {
@@ -110635,6 +110644,9 @@ var GeminiChatProvider = class _GeminiChatProvider extends ChatProvider {
     if (webSearchMode === "tavily") runTools.push(...webSchema);
     else if (webSearchMode === "server") runTools.push({ "type": "google_search" });
     this.tools = runTools;
+  }
+  async verifyKey() {
+    const response = await this.client.models.list({ config: { pageSize: 1 } });
   }
   async getModelInfos() {
     const infos = [];
@@ -110880,6 +110892,10 @@ var OllamaChatProvider = class extends OpenAICompatibleProvider {
     const url3 = `http://127.0.0.1:${apiKey}`;
     super("ollama", `${url3}/v1`, webSearchMode);
     this.ollamaUrl = url3;
+  }
+  async verifyKey() {
+    const res = await fetch(`${this.ollamaUrl}/api/version`);
+    if (!res.ok) throw new Error(`Ollama daemon unreachable at ${this.ollamaUrl}`);
   }
   async getModelInfos() {
     try {
@@ -111127,22 +111143,11 @@ var APIManager = class {
     }
     if (!embedAPIKey) {
       this.emitter.fire({ type: "requestEmbedAPIKey", provider });
-      throw new Error(`Missing ${provider} API key`);
+      throw new Error(`Missing ${provider} API key!`);
     }
     return embedAPIKey;
   }
-  async verifyTavilyAPIKey() {
-    try {
-      const apiKey = await this.context.secrets.get("TAVILY_API_KEY");
-      if (!apiKey) throw new Error("Tavily API key not configured!");
-      const client = tavily({ apiKey });
-      await client.search("ping", { maxResults: 1 });
-    } catch (e2) {
-      vscode8.window.showErrorMessage("Invalid Tavily API key");
-      this.emitter.fire({ type: "requestTavilyAPIKey" });
-    }
-  }
-  async saveChatAPIKey(provider, key) {
+  async saveChatAPIKey(provider, key, sessionID) {
     if (provider.toLowerCase() === "ollama") {
       const port = parseInt(key, 10) || 11434;
       await this.context.globalState.update("ollamaChatPort", port);
@@ -111150,6 +111155,25 @@ var APIManager = class {
     }
     const secretKey = `${provider.toUpperCase()}_CHAT_API_KEY`;
     await this.context.secrets.store(secretKey, key);
+    await this.verifyChatAPIKey(provider, key, sessionID);
+  }
+  async verifyChatAPIKey(provider, key, sessionID) {
+    try {
+      const providerInstance = ChatFactory.create(provider, key, "none");
+      await providerInstance.verifyKey();
+    } catch (e2) {
+      this.emitter.fire({
+        type: "setChatModelsLoading",
+        sessionID,
+        provider
+      });
+      this.emitter.fire({
+        type: "requestChatAPIKey",
+        sessionID,
+        provider
+      });
+      throw new Error(`Invalid ${provider} API key!`);
+    }
   }
   async saveEmbedAPIKey(provider, key) {
     if (provider.toLowerCase() === "ollama") {
@@ -111160,9 +111184,20 @@ var APIManager = class {
     const secretKey = `${provider.toUpperCase()}_EMBED_API_KEY`;
     await this.context.secrets.store(secretKey, key);
   }
-  async saveTavilyAPIKey(key) {
+  async saveTavilyAPIKey(key, sessionID) {
     await this.context.secrets.store("TAVILY_API_KEY", key);
-    await this.verifyTavilyAPIKey();
+    await this.verifyTavilyAPIKey(sessionID);
+  }
+  async verifyTavilyAPIKey(sessionID) {
+    try {
+      const apiKey = await this.context.secrets.get("TAVILY_API_KEY");
+      if (!apiKey) throw new Error("Tavily API key not configured!");
+      const client = tavily({ apiKey });
+      await client.search("ping", { maxResults: 1 });
+    } catch (e2) {
+      vscode8.window.showErrorMessage("Invalid Tavily API key");
+      this.emitter.fire({ type: "requestTavilyAPIKey", sessionID });
+    }
   }
   //-------------------------------------------------------------------------------------------
   // Fetch from configuration
@@ -113259,8 +113294,12 @@ var ChatApp = class {
     saveChatAPIKey: async (session, data) => {
       const [provider, model, effort] = session.getAPIConfig();
       if (provider) {
-        await this.apiManager.saveChatAPIKey(provider, data.key);
-        await this.apiManager.getChatModels(provider, model, session.preferences.showAll, data.sessionID);
+        try {
+          await this.apiManager.saveChatAPIKey(provider, data.key, data.sessionID);
+          await this.apiManager.getChatModels(provider, model, session.preferences.showAll, data.sessionID);
+        } catch (e2) {
+          vscode15.window.showErrorMessage(`Failed to save API key: ${e2}`);
+        }
       }
     },
     // Called after saveChatProvider with valid API key
@@ -113312,7 +113351,11 @@ var ChatApp = class {
       session.preferences.webSearchEnabled = data.enabled;
       session.preferences.webSearchMode = data.mode;
       await session.saveConfig();
-      if (data.enabled && data.mode === "tavily") this.apiManager.verifyTavilyAPIKey();
+      if (data.enabled && data.mode === "tavily") this.apiManager.verifyTavilyAPIKey(data.sessionID);
+    },
+    // Save tavily APIKey
+    saveTavilyAPIKey: async (session, data) => {
+      await this.apiManager.saveTavilyAPIKey(data.key, data.sessionID);
     },
     // Set prune mode, either prune by turn intervals or task intervals
     // Save preference for current session and future sessions

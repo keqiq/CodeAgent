@@ -35,6 +35,10 @@ export class ClaudeChatProvider extends ChatProvider {
         this.tools = runTools;
     }
 
+    async verifyKey(): Promise<void> {
+        await this.client.models.list({ limit: 1 });
+    }
+
     protected async getModelInfos(): Promise<ModelInfo[]> {
         const infos: ModelInfo[] = [];
         const response = await this.client.models.list();

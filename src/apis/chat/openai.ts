@@ -29,6 +29,10 @@ export class OpenAIChatProvider extends ChatProvider {
         this.tools = runTools;
     }
 
+    async verifyKey(): Promise<void> {
+        await this.client.models.list();
+    }
+
     protected async getModelInfos(): Promise<ModelInfo[]> {
         const infos: ModelInfo[] = [];
         const response = await this.client.models.list();
@@ -347,6 +351,10 @@ export abstract class OpenAICompatibleProvider extends ChatProvider {
         }
 
         this.tools = runTools;
+    }
+
+    async verifyKey(): Promise<void> {
+        await this.client.models.list();
     }
     
     // For these providers with thinking models, we must pass back the reasoning content

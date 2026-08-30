@@ -14,6 +14,11 @@ export class OllamaChatProvider extends OpenAICompatibleProvider {
         this.ollamaUrl = url;
     }
 
+    async verifyKey(): Promise<void> {
+        const res = await fetch(`${this.ollamaUrl}/api/version`);
+        if (!res.ok) throw new Error(`Ollama daemon unreachable at ${this.ollamaUrl}`);
+    }
+
     protected async getModelInfos(): Promise<ModelInfo[]> {
         try {
             const response = await this.client.models.list();

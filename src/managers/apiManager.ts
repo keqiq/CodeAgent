@@ -38,6 +38,7 @@ export class APIManager {
             this.emitter.fire({ type: 'requestChatAPIKey', provider: provider });
             throw new Error(`Missing ${provider} API key`);
         }
+
         return chatAPIKey;
     }
 
@@ -59,24 +60,12 @@ export class APIManager {
         // if we have neither chat nor embed apikey, request embedding key
         if (!embedAPIKey) {
             this.emitter.fire({ type: 'requestEmbedAPIKey', provider: provider });
-            throw new Error(`Missing ${provider} API key`);
+            throw new Error(`Missing ${provider} API key!`);
         }
         return embedAPIKey;
     }
 
-    public async verifyTavilyAPIKey() {
-        try {
-            const apiKey = await this.context.secrets.get('TAVILY_API_KEY');
-            if (!apiKey) throw new Error('Tavily API key not configured!');
-            const client = tavily({ apiKey: apiKey });
-            await client.search("ping", { maxResults: 1 }); // this is wasting a call... but how else can i check the key is valid
-        } catch (e) {
-            vscode.window.showErrorMessage('Invalid Tavily API key');
-            this.emitter.fire({ type: 'requestTavilyAPIKey' });
-        }
-    }
-
-        public async saveChatAPIKey(provider: string, key: string): Promise<void> {
+    public async saveChatAPIKey(provider: string, key: string, sessionID: string): Promise<void> {
         if (provider.toLowerCase() === 'ollama') {
              const port = parseInt(key, 10) || 11434;
             await this.context.globalState.update('ollamaChatPort', port);
@@ -84,6 +73,30 @@ export class APIManager {
         }
         const secretKey = `${provider.toUpperCase()}_CHAT_API_KEY`;
         await this.context.secrets.store(secretKey, key);
+
+        await this.verifyChatAPIKey(provider, key, sessionID);
+    }
+
+    public async verifyChatAPIKey(provider: string, key: string, sessionID: string): Promise<void> {
+        try {
+            const providerInstance = ChatFactory.create(provider, key, 'none');
+            await providerInstance.verifyKey();
+        } catch (e) {
+            // Block prompting
+            this.emitter.fire({ 
+                type: 'setChatModelsLoading', 
+                sessionID: sessionID,
+                provider: provider
+            });
+
+            this.emitter.fire({
+                type: 'requestChatAPIKey',
+                sessionID: sessionID,
+                provider: provider
+            });
+
+            throw new Error(`Invalid ${provider} API key!`);
+        }
     }
 
     public async saveEmbedAPIKey(provider: string, key: string): Promise<void> {
@@ -97,10 +110,21 @@ export class APIManager {
         await this.context.secrets.store(secretKey, key);
     }
 
-    public async saveTavilyAPIKey(key: string): Promise<void> {
+    public async saveTavilyAPIKey(key: string, sessionID: string): Promise<void> {
         await this.context.secrets.store('TAVILY_API_KEY', key);
-        await this.verifyTavilyAPIKey();
+        await this.verifyTavilyAPIKey(sessionID);
+    }
 
+    public async verifyTavilyAPIKey(sessionID: string) {
+        try {
+            const apiKey = await this.context.secrets.get('TAVILY_API_KEY');
+            if (!apiKey) throw new Error('Tavily API key not configured!');
+            const client = tavily({ apiKey: apiKey });
+            await client.search("ping", { maxResults: 1 }); // this is wasting a call... but how else can i check the key is valid
+        } catch (e) {
+            vscode.window.showErrorMessage('Invalid Tavily API key');
+            this.emitter.fire({ type: 'requestTavilyAPIKey', sessionID: sessionID });
+        }
     }
 
 
