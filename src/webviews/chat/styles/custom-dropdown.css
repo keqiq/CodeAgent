@@ -13,7 +13,7 @@
     font-size: 13px;
     font-weight: 600;
     cursor: pointer;
-    max-width: 115px;
+    max-width: 120px;
     display: inline-flex;
     align-items: center;
     transition: opacity 0.2s, color 0.2s;
@@ -33,17 +33,6 @@
 .dropdown-trigger:disabled {
     opacity: 0.3;
     cursor: not-allowed;
-}
-
-@keyframes popFadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(4px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
 }
 
 /* The Opened Glassy List */
@@ -70,7 +59,7 @@
     flex-direction: column;
     gap: 2px;
 
-    animation: popFadeIn 0.15s ease-out;
+    animation: popFadeUp 0.15s ease-out;
 }
 
 .dropdown-list.hidden {
@@ -79,7 +68,7 @@
 
 /* Individual Options */
 .dropdown-item {
-    padding: 8px 10px;
+    padding: 4px 4px;
     font-size: 12px;
     color: var(--vscode-foreground);
     border-radius: 4px;

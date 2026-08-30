@@ -20,10 +20,6 @@
     transition: background-color 0.15s, color 0.15s;
 }
 
-.header-action-btn:hover {
-    background-color: var(--vscode-toolbar-hoverBackground);
-    color: var(--vscode-foreground);
-}
 
 .header-action-btn #indexStatus {
     color: inherit;
@@ -61,9 +57,9 @@
     box-shadow: 0 0 6px var(--vscode-charts-yellow);
 }
 
-.status-dot.spinning {
-    background-color: var(--vscode-charts-yellow);
-    box-shadow: 0 0 6px var(--vscode-charts-yellow);
+.status-dot.running {
+    background-color: var(--vscode-charts-blue);
+    box-shadow: 0 0 6px var(--vscode-charts-blue);
     animation: statusPulse 1.4s infinite ease-in-out;
 }
 
@@ -124,16 +120,18 @@
 .action-index-btn.state-outdated {
     color: var(--vscode-charts-yellow);
 }
+/* 5. Queued: Yellow */
+.action-index-btn.state-queued {
+    color: var(--vscode-charts-yellow);
+}
 
 /* 5. Indexing / Queued: Blue / spin animation matching turn-tab */
-.action-index-btn.state-indexing,
-.action-index-btn.state-queued {
+.action-index-btn.state-indexing {
     color: var(--vscode-charts-blue, var(--vscode-textLink-foreground));
     cursor: wait;
 }
 
-.action-index-btn.state-indexing svg.action-index-icon,
-.action-index-btn.state-queued svg.action-index-icon {
+.action-index-btn.state-indexing svg.action-index-icon {
     animation: turn-spin 0.8s linear infinite;
 }
 
@@ -157,9 +155,14 @@
     transition: background-color 0.15s, color 0.15s;
 }
 
-.header-settings-btn:hover {
+.header-settings-btn:hover:not(:disabled) {
     background-color: var(--vscode-toolbar-hoverBackground);
     color: var(--vscode-foreground);
+}
+
+.header-settings-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
 }
 
 #indexSettingsContainer .dropdown-list {
@@ -170,6 +173,11 @@
     min-width: 250px;
     padding: 6px;
     z-index: 100;
+}
+
+#indexSettingsContainer .dropdown-list,
+#indexSettingsDropdown .custom-dropdown .dropdown-list {
+    animation: popFadeDown 0.15s ease-out;
 }
 
 /* --- Settings Menu Inline Dropdown Controls --- */
@@ -250,7 +258,7 @@
 }
 
 #indexSettingsDropdown .custom-dropdown .dropdown-item {
-    padding: 4px 8px;
+    padding: 4px 4px;
     font-size: 11px;
     color: var(--vscode-dropdown-foreground);
     border-radius: 3px;

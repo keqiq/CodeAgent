@@ -56,6 +56,11 @@
     z-index: 100;
 }
 
+.chat-header .dropdown-list,
+.session-list {
+    animation: popFadeDown 0.15s ease-out;
+}
+
 .session-group {
     display: flex;
     flex-direction: column;

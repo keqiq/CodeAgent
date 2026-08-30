@@ -291,7 +291,7 @@ export class IndexContainer {
 
             // Attempt to restore visual state based on what's selected
             if (this.currentEmbedModel) {
-                this.updateStatusText(`Loading ${this.currentEmbedModel}...`, 'spinning');
+                this.updateStatusText(`Loading ${this.currentEmbedModel}...`, 'running');
 
                 this.actionIndexBtn.disabled = true;
                 this.actionIndexBtn.className = 'action-index-btn state-indexing';
@@ -315,7 +315,7 @@ export class IndexContainer {
         this.actionIndexBtn.disabled = true;
     }
 
-    private updateStatusText(text: string, dotClass: 'ready' | 'warning' | 'error' | 'disabled' | 'spinning'): void {
+    private updateStatusText(text: string, dotClass: 'ready' | 'warning' | 'error' | 'disabled' | 'running'): void {
         this.indexStatus.textContent = text;
         this.indexDot.className = `status-dot ${dotClass}`;
     }
@@ -352,7 +352,7 @@ export class IndexContainer {
 
             this.modelDropdown.selectValue(model, false);
             this.currentEmbedModel = model;
-            this.updateStatusText(`Loading ${model} embedding vectors...`, 'spinning');
+            this.updateStatusText(`Loading ${model} embedding vectors...`, 'running');
 
             this.actionIndexBtn.disabled = true;
             this.actionIndexBtn.className = 'action-index-btn state-indexing';
@@ -425,7 +425,7 @@ export class IndexContainer {
                 break;
 
             case 'indexing':
-                this.updateStatusText(msg.text, 'spinning');
+                this.updateStatusText(msg.text, 'running');
 
                 this.actionIndexBtnText.textContent = '';
                 this.actionIndexBtn.classList.add('state-indexing');
@@ -434,7 +434,7 @@ export class IndexContainer {
             case 'queued':
                 let timeLeft = msg.delay;
 
-                this.updateStatusText(`${msg.fileCount} queued (Reindex in ${timeLeft}s)`, 'spinning');
+                this.updateStatusText(`${msg.fileCount} queued (Reindex in ${timeLeft}s)`, 'warning');
 
                 this.actionIndexBtnText.textContent = '';
                 this.actionIndexBtn.classList.add('state-queued');
@@ -442,7 +442,7 @@ export class IndexContainer {
                 this.countdownInterval = window.setInterval(() => {
                     timeLeft -= 1;
                     if (timeLeft > 0) {
-                        this.updateStatusText(`${msg.fileCount} queued (Reindex in ${timeLeft}s)`, 'spinning');
+                        this.updateStatusText(`${msg.fileCount} queued (Reindex in ${timeLeft}s)`, 'warning');
                     }
                     else {
                         window.clearInterval(this.countdownInterval);

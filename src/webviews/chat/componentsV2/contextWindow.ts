@@ -272,7 +272,7 @@ export class ContextWindow {
                 currentStop += pSystem;
             }
             if (pTools > 0) {
-                gradientParts.push(`var(--vscode-charts-orange, #d18616) ${currentStop}% 100%`);
+                gradientParts.push(`var(--vscode-charts-yellow, #d18616) ${currentStop}% 100%`);
             }
 
             this.pieChart.style.background = `conic-gradient(${gradientParts.join(', ')})`;

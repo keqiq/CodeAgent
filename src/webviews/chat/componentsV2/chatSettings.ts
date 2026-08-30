@@ -234,16 +234,13 @@ export class ChatSettings {
             this.keyBtn.innerHTML = `Set ${msg.provider} API Key`;
         }
         if (!msg.stateful) {
-            this.toggleStateful.classList.remove('active');
             this.toggleStateful.classList.add('disabled');
             this.statefulDesc.textContent = `Not supported by ${msg.provider}.`;
-            this.toggleStateful.style.opacity = '0.5';
         }
 
         else {
             this.toggleStateful.classList.remove('disabled');
             this.statefulDesc.textContent = "Server-side context management.";
-            this.toggleStateful.style.opacity = '';
         }
 
         if (!msg.serverSearch) {

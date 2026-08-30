@@ -20,7 +20,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const sessionViews = new Map<string, SessionView>();
     let activeSessionID: string | null = null;
 
+    // Global variables for each session view
     let availableChatProviders: string[] = [];
+    let isUnsafeMode: boolean = false;
  
     function getOrCreateSessionView(sessionID: string): SessionView {
         let view = sessionViews.get(sessionID);
@@ -31,8 +33,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Mark the session as loaded from unloaded state and make active
             sessionMenu.markSessionLoaded(sessionID);
-
+            
+            // Update with global variables
             view.chatInput.populateChatProviders(availableChatProviders);
+            view.agentMode.setUnsafe(isUnsafeMode);
+
             vscodeAPI.postMessage({ type: 'syncSessionUI', sessionID: sessionID });
         }
 
@@ -99,6 +104,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Update agent unsafe visual indicator for all sessions
         updateUnsafeFlag: (msg) => {
+            isUnsafeMode = msg.isUnsafe;
             sessionViews.forEach(v => v.agentMode.setUnsafe(msg.isUnsafe));
         },
 
