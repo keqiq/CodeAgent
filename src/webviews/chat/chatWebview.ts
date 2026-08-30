@@ -29,7 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
             sessionsViewport.appendChild(view.rootElement);
             sessionViews.set(sessionID, view);
 
-            // Mark the session as loaded from unloaded state
+            // Mark the session as loaded from unloaded state and make active
             sessionMenu.markSessionLoaded(sessionID);
 
             view.chatInput.populateChatProviders(availableChatProviders);
@@ -46,6 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         activeSessionID = sessionID;
         const currentView = getOrCreateSessionView(sessionID);
+        sessionMenu.setActiveSession(sessionID);
         currentView.show();
     }
 
@@ -101,9 +102,8 @@ document.addEventListener('DOMContentLoaded', () => {
             sessionViews.forEach(v => v.agentMode.setUnsafe(msg.isUnsafe));
         },
 
-        updateSessionList: (msg) => {
-            sessionMenu.updateSessions(msg.sessions, msg.activeSessionID);
-            if (msg.activeSessionID) switchActiveSession(msg.activeSessionID);
+        refreshSessions: (msg) => {
+            sessionMenu.refreshSessions(msg.sessions, msg.activeSessionID);
         },
 
         sessionSwitched: (msg) => {
@@ -117,6 +117,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 view.destroy();
                 sessionViews.delete(msg.sessionID);
             }
+        },
+
+        sessionUnloaded: (msg) => {
+            const view = sessionViews.get(msg.sessionID);
+            if (view) {
+                view.destroy();
+                sessionViews.delete(msg.sessionID);
+            }
+            sessionMenu.markSessionUnloaded(msg.sessionID);
         },
 
         titleGenerating: (msg) => {

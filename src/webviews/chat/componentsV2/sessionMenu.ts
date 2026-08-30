@@ -6,7 +6,12 @@ export type SessionIndicatorStatus = 'unloaded' | 'ready' | 'running' | 'pending
 interface SessionItemDOM {
     element: HTMLElement;
     titleSpan: HTMLElement;
+    indicator: HTMLElement;
     metaSpan: HTMLElement;
+    renameBtn: HTMLButtonElement;
+    unloadBtn: HTMLButtonElement,
+    actionGroup: HTMLElement,
+    menuBtn: HTMLButtonElement,
     renameInput?: HTMLInputElement;
 }
 
@@ -41,13 +46,20 @@ export class SessionSelector {
     private countRunning: HTMLElement | null;
     private countError: HTMLElement | null;
 
-    private sessions: SessionMetadata[] = [];
-    private activeSessionID: string | null = null;
+    private activeSessionID: string | undefined = undefined;
     private loadedSessionIDs: Set<string> = new Set();
-    private sessionStatusMap: Map<string, SessionIndicatorStatus> = new Map();
     private itemDomMap: Map<string, SessionItemDOM> = new Map();
     private groups: Map<SessionIndicatorStatus, StatusGroupConfig> = new Map();
-    private generatingTitleSessionIDs: Set<string> = new Set();
+
+    private triggerIndicator: HTMLElement;
+
+    private groupCounts: Record<SessionIndicatorStatus, number> = {
+        pending: 0,
+        error: 0,
+        running: 0,
+        ready: 0,
+        unloaded: 0
+    };
 
     constructor(private vscodeAPI: WebviewApi) {
         this.container = document.getElementById('sessionDropdown') as HTMLElement;
@@ -62,11 +74,12 @@ export class SessionSelector {
         this.countRunning = document.getElementById('countRunning');
         this.countError = document.getElementById('countError');
 
-        this.initStaticDropdownLayout();
-        this.initListeners();
-    }
+        // Hidden typing indicator for when the active session is under going name generation
+        this.triggerIndicator = document.createElement('div');
+        this.triggerIndicator.className = 'typing-indicator hidden';
+        this.triggerIndicator.innerHTML = '<span></span><span></span><span></span>';
+        this.selectedText.after(this.triggerIndicator);
 
-    private initStaticDropdownLayout(): void {
         this.list.innerHTML = '';
 
         // New chat button
@@ -124,6 +137,8 @@ export class SessionSelector {
         this.emptyItem.className = 'dropdown-item disabled hidden';
         this.emptyItem.textContent = 'No active chats';
         this.itemsContainer.appendChild(this.emptyItem);
+
+        this.initListeners();
     }
 
     private initListeners(): void {
@@ -146,169 +161,158 @@ export class SessionSelector {
         });
     }
 
-    public updateSessions(sessions: SessionMetadata[], activeSessionID?: string | null): void {
-        this.sessions = sessions;
-        if (activeSessionID !== undefined) {
-            this.activeSessionID = activeSessionID;
-        }
-
+    // Called whenever the manifest is updated
+    public refreshSessions(sessions: SessionMetadata[], activeSessionID: string) {
         const incomingIDs = new Set(sessions.map(s => s.id));
 
-        // Remove deleted sessions from DOM and map
-        for (const [id, dom] of this.itemDomMap.entries()) {
-            if (!incomingIDs.has(id)) {
-                dom.element.remove();
-                this.itemDomMap.delete(id);
-                this.sessionStatusMap.delete(id);
-                this.loadedSessionIDs.delete(id);
-            }
+        // Remove deleted sessions
+        for (const [id] of this.itemDomMap.entries()) {
+            if (!incomingIDs.has(id)) this.removeSession(id);
         }
 
-        // Update or create items and reconcile DOM order
-        if (sessions.length === 0) {
-            this.emptyItem.classList.remove('hidden');
-            this.groups.forEach(g => g.container.classList.add('hidden'));
-        } else {
-            this.emptyItem.classList.add('hidden');
+        // Add new sessions or update existing ones
+        sessions.forEach(session => {
+            const isTargetActive = session.id === activeSessionID;
+            if (!this.itemDomMap.has(session.id)) this.addSession(session, isTargetActive);
+            else this.updateSession(session);
+        });
 
-            sessions.forEach(session => {
-                let dom = this.itemDomMap.get(session.id);
+        this.emptyItem.classList.toggle('hidden', sessions.length > 0);
 
-                if (!dom) {
-                    dom = this.createSessionElement(session);
-                    this.itemDomMap.set(session.id, dom);
-                } else {
-                    this.updateSessionElement(dom, session);
-                }
-            });
+        if (activeSessionID && this.itemDomMap.has(activeSessionID)) {
+            this.setActiveSession(activeSessionID);
         }
+    }
 
-        this.updateActiveTriggerText();
-        this.updateSelectionState();
-        this.rebuildGroupedLayout();
+    // Add a session and make it the active session
+    private addSession(session: SessionMetadata, isActive: boolean = false): void {
+        if (this.itemDomMap.has(session.id)) return;
+
+        const dom = this.createSessionElement(session);
+        this.itemDomMap.set(session.id, dom);
+
+        const status: SessionIndicatorStatus = isActive ? 'ready' : 'unloaded';
+        dom.element.dataset.status = status;
+
+        this.groupCounts[status]++;
+        const group = this.groups.get(status);
+        group?.itemsWrapper.prepend(dom.element);
+        group?.container.classList.remove('hidden');
+
+        if (isActive) this.setActiveSession(session.id);
+    }  
+
+    // Remove a session, free resources and update badge counts if needed
+    private removeSession(sessionID: string): void {
+        const dom = this.itemDomMap.get(sessionID);
+        if (!dom) return;
+
+        // Decrement status count
+        const status = dom.element.dataset.status as SessionIndicatorStatus;
+        if (this.groupCounts[status] > 0) {
+            this.groupCounts[status]--;
+            const group = this.groups.get(status);
+            group?.container.classList.toggle('hidden', this.groupCounts[status] === 0);
+        }
+        this.updateBadge(status);
+
+        // Clean up doms and references
+        dom.element.remove();
+        this.itemDomMap.delete(sessionID);
+        this.loadedSessionIDs.delete(sessionID);
+    }
+
+    // Called when a run is completed or title is generated
+    private updateSession(session: SessionMetadata): void {
+        const dom = this.itemDomMap.get(session.id);
+        if (!dom) return;
+
+        // Update the session name
+        dom.titleSpan.textContent = session.title;
+
+        if (session.id === this.activeSessionID) this.selectedText.textContent = session.title;
+
+        dom.metaSpan.textContent = `Updated ${this.formatTimestamp(session.updatedAt)}`;
     }
 
     public setActiveSession(sessionID: string): void {
+
+        const nextDom = this.itemDomMap.get(sessionID);
+        if (!nextDom) return;
+        
+        // Remove .selected from the previous active session
+        if (this.activeSessionID && this.activeSessionID !== sessionID) {
+            const prevDom = this.itemDomMap.get(this.activeSessionID);
+            prevDom?.element.classList.remove('selected');
+        }
+
+        // Add .selected to the new active session
+        nextDom.element.classList.add('selected');
+        if (nextDom.element.dataset.status === 'unloaded') this.setSessionStatus(sessionID, 'ready');
+
+        // Sync header indicator visibility with the active session's generation state
+        const isGenerating = !nextDom.indicator.classList.contains('hidden');
+        this.selectedText.classList.toggle('hidden', isGenerating);
+        this.triggerIndicator.classList.toggle('hidden', !isGenerating);
+
+        this.loadedSessionIDs.add(sessionID);
         this.activeSessionID = sessionID;
-        this.markSessionLoaded(sessionID);
-        this.updateActiveTriggerText();
-        this.updateSelectionState();
+        this.selectedText.textContent = nextDom.titleSpan.textContent;
     }
 
+    // Called when a session's status changes
+    public setSessionStatus(sessionID: string, targetStatus: SessionIndicatorStatus): void {
+        const dom = this.itemDomMap.get(sessionID);
+        if (!dom) return;
+
+        const prevStatus = dom.element.dataset.status as SessionIndicatorStatus;
+        if (prevStatus === targetStatus) return;
+
+        // Decrement previous category
+        if (this.groupCounts[prevStatus] > 0) {
+            this.groupCounts[prevStatus]--;
+            const prevGroup = this.groups.get(prevStatus);
+            // If previous group is now empty hide it
+            if (prevGroup) prevGroup.container.classList.toggle('hidden', this.groupCounts[prevStatus] === 0);
+        }
+
+        // Increment updated target category and move dom element into that group container
+        this.groupCounts[targetStatus]++;
+        const targetGroup = this.groups.get(targetStatus);
+        if (targetGroup) {
+            targetGroup.itemsWrapper.prepend(dom.element);
+            targetGroup.container.classList.remove('hidden');
+        }
+        dom.element.dataset.status = targetStatus;
+
+        // Update badge counter
+        this.updateBadge(prevStatus);
+        this.updateBadge(targetStatus);
+    }
+
+    // Called when an inactive chat is selected from dropdown
+    // Change the session to the active state
     public markSessionLoaded(sessionID: string): void {
         this.loadedSessionIDs.add(sessionID);
-        if (!this.sessionStatusMap.has(sessionID)) {
+        const dom = this.itemDomMap.get(sessionID);
+        if (dom && dom.element.dataset.status === 'unloaded') {
             this.setSessionStatus(sessionID, 'ready');
-        } else {
-            this.rebuildGroupedLayout();
-        }
-    }
-
-    public setSessionStatus(sessionID: string, status: SessionIndicatorStatus): void {
-        this.sessionStatusMap.set(sessionID, status);
-        this.rebuildGroupedLayout();
-    }
-
-    private getSessionEffectiveStatus(sessionID: string): SessionIndicatorStatus {
-        const isLoaded = this.loadedSessionIDs.has(sessionID);
-        return isLoaded ? (this.sessionStatusMap.get(sessionID) || 'ready') : 'unloaded';
-    }
-
-    private rebuildGroupedLayout(): void {
-        const groupCounts: Record<SessionIndicatorStatus, number> = {
-            pending: 0,
-            error: 0,
-            running: 0,
-            ready: 0,
-            unloaded: 0
-        };
-
-        this.sessions.forEach(session => {
-            const dom = this.itemDomMap.get(session.id);
-            if (!dom) return;
-
-            const status = this.getSessionEffectiveStatus(session.id);
-            dom.element.dataset.status = status;
-
-            const group = this.groups.get(status);
-            if (group) {
-                group.itemsWrapper.appendChild(dom.element);
-                groupCounts[status]++;
-            }
-        });
-
-        // Toggle category containers
-        this.groups.forEach((group, status) => {
-            group.container.classList.toggle('hidden', groupCounts[status] === 0);
-        });
-
-        // Update badge counts and visibility
-        this.updateStatusBadges(groupCounts);
-    }
-
-    private updateStatusBadges(counts: Record<SessionIndicatorStatus, number>): void {
-        // Pending
-        if (this.badgePending && this.countPending) {
-            this.countPending.textContent = String(counts.pending);
-            this.badgePending.classList.toggle('hidden', counts.pending === 0);
         }
 
-        // Running
-        if (this.badgeRunning && this.countRunning) {
-            this.countRunning.textContent = String(counts.running);
-            this.badgeRunning.classList.toggle('hidden', counts.running === 0);
-        }
-
-        // Error
-        if (this.badgeError && this.countError) {
-            this.countError.textContent = String(counts.error);
-            this.badgeError.classList.toggle('hidden', counts.error === 0);
-        }
     }
 
-    private updateActiveTriggerText(): void {
-        const current = this.sessions.find(s => s.id === this.activeSessionID);
-        this.selectedText.textContent = current ? current.title : (this.sessions.length > 0 ? this.sessions[0].title : 'New Chat');
-    }
-
-    private updateSelectionState(): void {
-        for (const [id, dom] of this.itemDomMap.entries()) {
-            dom.element.classList.toggle('selected', id === this.activeSessionID);
-        }
-    }
-
-    private formatTimestamp(ts: number): string {
-        const date = new Date(ts);
-        const now = new Date();
-        const isToday = date.toDateString() === now.toDateString();
-
-        if (isToday) {
-            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        }
-        return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
-    }
-
-    private updateSessionElement(dom: SessionItemDOM, session: SessionMetadata): void {
-        // If the title arrived via manifest update, clear generating state
-        if (this.generatingTitleSessionIDs.has(session.id) && session.customTitle) {
-            this.generatingTitleSessionIDs.delete(session.id);
-            const renameBtn = dom.element.querySelector('.session-action-btn:not(.delete)') as HTMLButtonElement | null;
-            if (renameBtn) {
-                renameBtn.disabled = false;
-                renameBtn.classList.remove('disabled');
-            }
-        }
-        
-        if (!dom.renameInput) {
-            dom.titleSpan.textContent = session.title || 'Untitled Chat';
-        }
-        dom.metaSpan.textContent = session.updatedAt ? `Updated ${this.formatTimestamp(session.updatedAt)}` : '';
+    // Called when an active non running or pending session is unloaded
+    // Change the session to the unloaded state
+    public markSessionUnloaded(sessionID: string): void {
+        this.loadedSessionIDs.delete(sessionID);
+        this.setSessionStatus(sessionID, 'unloaded');
     }
 
     private createSessionElement(session: SessionMetadata): SessionItemDOM {
         const item = document.createElement('div');
         item.className = 'dropdown-item session-item';
         item.dataset.sessionId = session.id;
+        item.dataset.status = 'unloaded';
 
         // Info Column
         const infoContainer = document.createElement('div');
@@ -318,16 +322,36 @@ export class SessionSelector {
         titleSpan.className = 'session-item-title';
         titleSpan.textContent = session.title || 'Untitled Chat';
 
+        // Hidden typing indicator for when the session is under going name generation
+        const indicator = document.createElement('div');
+        indicator.className = 'typing-indicator hidden';
+        indicator.innerHTML = '<span></span><span></span><span></span>';
+
         const metaSpan = document.createElement('span');
         metaSpan.className = 'session-item-meta';
         metaSpan.textContent = session.updatedAt ? `Updated ${this.formatTimestamp(session.updatedAt)}` : '';
 
         infoContainer.appendChild(titleSpan);
+        infoContainer.appendChild(indicator);
         infoContainer.appendChild(metaSpan);
 
         // Actions Column
         const actionsContainer = document.createElement('div');
         actionsContainer.className = 'session-item-actions';
+
+        // Menu trigger button (shown by default)
+        const menuBtn = document.createElement('button');
+        menuBtn.className = 'icon-btn session-action-btn session-menu-trigger';
+        menuBtn.title = 'More Actions';
+        menuBtn.innerHTML = `
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
+                <path d="M3 9.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z"/>
+            </svg>
+        `;
+
+        // Action buttons Group (hidden by default)
+        const actionGroup = document.createElement('div');
+        actionGroup.className = 'session-action-group hidden';
 
         const renameBtn = document.createElement('button');
         renameBtn.className = 'icon-btn session-action-btn';
@@ -335,6 +359,15 @@ export class SessionSelector {
         renameBtn.innerHTML = `
             <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
                 <path d="M13.23 1h-1.46L3.52 9.25l-.16.22L1 13.59 2.41 15l4.12-2.36.22-.16L15 4.23V2.77L13.23 1zM2.41 13.59l1.51-3 1.49 1.49-3 1.51zM6.14 11.28l-.42-.42L12.5 4.08l.42.42-6.78 6.78zM13.64 3.79l-.42-.42.71-.71.42.42-.71.71z"/>
+            </svg>
+        `;
+
+        const unloadBtn = document.createElement('button');
+        unloadBtn.className = 'icon-btn session-action-btn unload';
+        unloadBtn.title = 'Unload Session';
+        unloadBtn.innerHTML = `
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
+                <path d="M6 2.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 .5.5v4h2.5a.5.5 0 0 1 .354.854l-4 4a.5.5 0 0 1-.708 0l-4-4A.5.5 0 0 1 4.5 6.5H7v-4zM2 13.5a.5.5 0 0 1 .5-.5h11a.5.5 0 0 1 0 1h-11a.5.5 0 0 1-.5-.5z"/>
             </svg>
         `;
 
@@ -347,15 +380,28 @@ export class SessionSelector {
             </svg>
         `;
 
-        actionsContainer.appendChild(renameBtn);
-        actionsContainer.appendChild(deleteBtn);
+        actionGroup.appendChild(renameBtn);
+        actionGroup.appendChild(unloadBtn);
+        actionGroup.appendChild(deleteBtn);
+
+        actionsContainer.appendChild(menuBtn);
+        actionsContainer.appendChild(actionGroup);
 
         item.appendChild(infoContainer);
         item.appendChild(actionsContainer);
 
-        const domRef: SessionItemDOM = { element: item, titleSpan, metaSpan };
+        const domRef: SessionItemDOM = {
+            element: item,
+            titleSpan,
+            indicator,
+            metaSpan,
+            renameBtn,
+            unloadBtn,
+            actionGroup,
+            menuBtn
+        };
 
-        // Switch Session Event
+        // Switch session
         item.addEventListener('click', (e: MouseEvent) => {
             e.stopPropagation();
             if (session.id !== this.activeSessionID) {
@@ -364,7 +410,20 @@ export class SessionSelector {
             }
         });
 
-        // Inline Rename Event
+        //  Toggle the session's action group
+        menuBtn.addEventListener('click', (e: MouseEvent) => {
+            e.stopPropagation();
+            menuBtn.classList.add('hidden');
+            actionGroup.classList.remove('hidden');
+        });
+
+        // Reset menu on mouseleave
+        item.addEventListener('mouseleave', () => {
+            actionGroup.classList.add('hidden');
+            menuBtn.classList.remove('hidden');
+        });
+
+        // Rename Event
         renameBtn.addEventListener('click', (e: MouseEvent) => {
             e.stopPropagation();
 
@@ -417,6 +476,12 @@ export class SessionSelector {
             input.select();
         });
 
+        // Unload Event
+        unloadBtn.addEventListener('click', (e: MouseEvent) => {
+            e.stopPropagation();
+            this.vscodeAPI.postMessage({ type: 'unloadSession', sessionID: session.id });
+        });
+
         // Delete Event
         deleteBtn.addEventListener('click', (e: MouseEvent) => {
             e.stopPropagation();
@@ -427,57 +492,49 @@ export class SessionSelector {
     }
 
     public setTitleGenerating(sessionID: string, isGenerating: boolean): void {
-        if (isGenerating) {
-            this.generatingTitleSessionIDs.add(sessionID);
-        } else {
-            this.generatingTitleSessionIDs.delete(sessionID);
-        }
-
         const dom = this.itemDomMap.get(sessionID);
         if (!dom) return;
+        
+        // Disable rename during title generation
+        dom.renameBtn.disabled = isGenerating;
+        dom.renameBtn.classList.toggle('disabled', isGenerating);
+        
+        // Hide the title and show typing indicator inside session list
+        dom.titleSpan.classList.toggle('hidden', isGenerating);
+        dom.indicator.classList.toggle('hidden', !isGenerating);
 
-        const renameBtn = dom.element.querySelector('.session-action-btn:not(.delete)') as HTMLButtonElement | null;
-
-        if (isGenerating) {
-            // Render typing indicator inside titleSpan
-            dom.titleSpan.innerHTML = `
-                <div class="typing-indicator">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                </div>
-            `;
-
-            if (renameBtn) {
-                renameBtn.disabled = true;
-                renameBtn.classList.add('disabled');
-            }
-
-            // If active session, also show indicator on header trigger button
-            if (sessionID === this.activeSessionID) {
-                this.selectedText.innerHTML = `
-                    <div class="typing-indicator">
-                        <span></span>
-                        <span></span>
-                        <span></span>
-                    </div>
-                `;
-            }
-        } else {
-            // Clear indicator state and re-render title from metadata
-            const currentSession = this.sessions.find(s => s.id === sessionID);
-            if (currentSession) {
-                dom.titleSpan.textContent = currentSession.title || 'Untitled Chat';
-                if (sessionID === this.activeSessionID) {
-                    this.selectedText.textContent = currentSession.title;
-                }
-            }
-
-            if (renameBtn) {
-                renameBtn.disabled = false;
-                renameBtn.classList.remove('disabled');
-            }
+        // Hide the title and show typing indicator in the header if the active session
+        if (sessionID === this.activeSessionID) {
+            this.selectedText.classList.toggle('hidden', isGenerating);
+            this.triggerIndicator.classList.toggle('hidden', !isGenerating);
         }
+    }
+
+    // Change the overview status counts in the header
+    private updateBadge(status: SessionIndicatorStatus): void {
+        const count = this.groupCounts[status];
+
+        if (status === 'pending' && this.badgePending && this.countPending) {
+            this.countPending.textContent = String(count);
+            this.badgePending.classList.toggle('hidden', count === 0);
+        } else if (status === 'running' && this.badgeRunning && this.countRunning) {
+            this.countRunning.textContent = String(count);
+            this.badgeRunning.classList.toggle('hidden', count === 0);
+        } else if (status === 'error' && this.badgeError && this.countError) {
+            this.countError.textContent = String(count);
+            this.badgeError.classList.toggle('hidden', count === 0);
+        }
+    }
+
+    private formatTimestamp(ts: number): string {
+        const date = new Date(ts);
+        const now = new Date();
+        const isToday = date.toDateString() === now.toDateString();
+
+        if (isToday) {
+            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+        return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
     }
 
     public toggle(): void {

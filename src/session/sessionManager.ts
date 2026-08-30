@@ -82,7 +82,7 @@ export class SessionManager {
         await vscode.workspace.fs.writeFile(this.manifestUri, data);
 
         this.emitter.fire({
-            type: 'updateSessionList',
+            type: 'refreshSessions',
             activeSessionID: this.activeSessionID,
             sessions: manifestData.sessions
         });
@@ -205,6 +205,23 @@ export class SessionManager {
         } else {
             await this.saveManifest();
         }
+    }
+
+    public async unloadSession(sessionID: string): Promise<void> {
+
+        // Prevent unloading the currently focused session
+        if (this.activeSessionID === sessionID) return;
+
+        const session = this.sessions.get(sessionID);
+        if (session && !session.isRunning()) {
+            await session.cleanup();
+            this.sessions.delete(sessionID);
+        }
+
+        this.emitter.fire({
+            type: 'sessionUnloaded',
+            sessionID
+        });
     }
 
     private async loadSessionConfig(sessionID: string): Promise<SessionConfigFile> {

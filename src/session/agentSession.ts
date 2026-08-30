@@ -420,7 +420,7 @@ export class AgentSession {
             }
         } catch (e) {
             console.warn(`Failed to auto-generate chat title: ${e}`);
-
+        } finally {
             this.emitter.fire({ type: 'titleGenerating', isGenerating: false });
         }
     }

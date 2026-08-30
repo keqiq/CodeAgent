@@ -50,16 +50,11 @@ export class ChatApp implements vscode.WebviewViewProvider {
         // Restore on reload
         webviewReady: async () => {
             try {
-
-                // Global provider lists and workspace session List
+                
+                // Global chat and embed provider lists
                 this.post({ type: 'setChatProviders', providers: ChatFactory.getAvailableProviders() });
                 this.post({ type: 'setEmbedProviders', providers: EmbedFactory.getAvailableProviders() });
-                this.post({
-                    type: 'updateSessionList',
-                    activeSessionID: this.sessionManager.getActiveSessionID(),
-                    sessions: this.sessionManager.getAllSessions()
-                });
-
+                
                 // Global workspace index settings
                 const indexEnabled = this.context.globalState.get<boolean>('indexEnabled') ?? true;
                 this.post({
@@ -73,7 +68,7 @@ export class ChatApp implements vscode.WebviewViewProvider {
                     const embedProvider = this.context.globalState.get<string>('embedProvider');
                     this.post({ type: 'updateEmbedProvider', provider: embedProvider });
                 }
-
+                
                 // Global agent mode settings
                 await this.commandManager.loadConfig();
                 const currentConfig = this.commandManager.getConfig();
@@ -81,15 +76,12 @@ export class ChatApp implements vscode.WebviewViewProvider {
                     type: 'updateUnsafeFlag',
                     isUnsafe: currentConfig?.unsafeFullAutonomous ?? false
                 });
-
+                
                 // Session specific settings
                 await this.sessionManager.initialize();
                 let activeSession = this.sessionManager.getActiveSession();
 
-                // Create a new session if none exist
-                if (!activeSession) activeSession = await this.sessionManager.createSession();
-
-                this.post({ type: 'sessionSwitched', sessionID: activeSession.metadata.id });
+                this.post({ type: 'sessionSwitched', sessionID: activeSession!.metadata.id });
 
             } catch (e) {
                 vscode.window.showErrorMessage(`Failed to restore state ${e}`);
@@ -112,6 +104,10 @@ export class ChatApp implements vscode.WebviewViewProvider {
 
         deleteSession: async (data) => {
             await this.sessionManager.deleteSession(data.sessionID);
+        },
+
+        unloadSession: async (data) => {
+            await this.sessionManager.unloadSession(data.sessionID);
         },
 
         // Called when selecting a new provider in embedding provider dropdown

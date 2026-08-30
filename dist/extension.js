@@ -109832,7 +109832,8 @@ var ChatProvider = class _ChatProvider {
                       When a user asks you to find a bug or fix a problem, DO NOT ask them for the file name if you can search for it yourself. 
                       Proactively use your semantic search tool 'find' tool to search the workspace.
                       Tools like 'glob' and 'grep' should be used as a fallback if semantic search fails to return relevant results.
-                      Find the relevant code, read it, and edit it to add features and fix issues.`;
+                      Find the relevant code, read it, and edit it to add features and fix issues.
+                      Your turn will continue as long as you are within the task budget and you have issued at least one tool call during the turn.`;
   static compactionPrompt = `You are performing conversation history compaction.
                         Review the conversation history above. Notice that past large tool results were pruned into artifacts.
 
@@ -112813,6 +112814,7 @@ var AgentSession = class {
       }
     } catch (e2) {
       console.warn(`Failed to auto-generate chat title: ${e2}`);
+    } finally {
       this.emitter.fire({ type: "titleGenerating", isGenerating: false });
     }
   }
@@ -112884,7 +112886,7 @@ var SessionManager = class {
     const data = new TextEncoder().encode(JSON.stringify(manifestData, null, 2));
     await vscode14.workspace.fs.writeFile(this.manifestUri, data);
     this.emitter.fire({
-      type: "updateSessionList",
+      type: "refreshSessions",
       activeSessionID: this.activeSessionID,
       sessions: manifestData.sessions
     });
@@ -112974,6 +112976,18 @@ var SessionManager = class {
     } else {
       await this.saveManifest();
     }
+  }
+  async unloadSession(sessionID) {
+    if (this.activeSessionID === sessionID) return;
+    const session = this.sessions.get(sessionID);
+    if (session && !session.isRunning()) {
+      await session.cleanup();
+      this.sessions.delete(sessionID);
+    }
+    this.emitter.fire({
+      type: "sessionUnloaded",
+      sessionID
+    });
   }
   async loadSessionConfig(sessionID) {
     const configUri = vscode14.Uri.joinPath(this.shared.context.storageUri, "sessions", sessionID, "config.json");
@@ -113098,11 +113112,6 @@ var ChatApp = class {
       try {
         this.post({ type: "setChatProviders", providers: ChatFactory.getAvailableProviders() });
         this.post({ type: "setEmbedProviders", providers: EmbedFactory.getAvailableProviders() });
-        this.post({
-          type: "updateSessionList",
-          activeSessionID: this.sessionManager.getActiveSessionID(),
-          sessions: this.sessionManager.getAllSessions()
-        });
         const indexEnabled = this.context.globalState.get("indexEnabled") ?? true;
         this.post({
           type: "restoreIndexSettings",
@@ -113123,7 +113132,6 @@ var ChatApp = class {
         });
         await this.sessionManager.initialize();
         let activeSession = this.sessionManager.getActiveSession();
-        if (!activeSession) activeSession = await this.sessionManager.createSession();
         this.post({ type: "sessionSwitched", sessionID: activeSession.metadata.id });
       } catch (e2) {
         vscode15.window.showErrorMessage(`Failed to restore state ${e2}`);
@@ -113142,6 +113150,9 @@ var ChatApp = class {
     },
     deleteSession: async (data) => {
       await this.sessionManager.deleteSession(data.sessionID);
+    },
+    unloadSession: async (data) => {
+      await this.sessionManager.unloadSession(data.sessionID);
     },
     // Called when selecting a new provider in embedding provider dropdown
     saveEmbedProvider: async (data) => {

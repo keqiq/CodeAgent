@@ -26,7 +26,8 @@ export abstract class ChatProvider {
                       When a user asks you to find a bug or fix a problem, DO NOT ask them for the file name if you can search for it yourself. 
                       Proactively use your semantic search tool 'find' tool to search the workspace.
                       Tools like 'glob' and 'grep' should be used as a fallback if semantic search fails to return relevant results.
-                      Find the relevant code, read it, and edit it to add features and fix issues.`;
+                      Find the relevant code, read it, and edit it to add features and fix issues.
+                      Your turn will continue as long as you are within the task budget and you have issued at least one tool call during the turn.`;
 
     public static compactionPrompt: string = `You are performing conversation history compaction.
                         Review the conversation history above. Notice that past large tool results were pruned into artifacts.
