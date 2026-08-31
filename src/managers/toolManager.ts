@@ -16,7 +16,8 @@ export interface ToolManagerDependencies {
     contextManager: ContextManager;
     commandManager: CommandManager;
     worktreeManager: WorktreeManager;
-    mcpManager: MCPManager
+    mcpManager: MCPManager;
+    getTimeout: () => number;
     getIndexer: () => Indexer | undefined;
 }
 
@@ -96,6 +97,8 @@ export class ToolManager {
             getCommandManager: () => this.deps.commandManager,
 
             getMCPManager: () => this.deps.mcpManager,
+
+            getTimeout: () => this.deps.getTimeout(),
 
             getSessionID: () => this.deps.metadata.id,
         });

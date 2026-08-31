@@ -111,7 +111,7 @@
 
                     <div class="menu-divider" id="indexConfigDivider"></div>
 
-                    <!-- Number Controls -->
+                    <!-- Retrieval count Controls -->
                     <div class="menu-item number-input">
                         <div class="menu-item-text">
                             <div class="menu-item-title">Retrieval Count</div>
@@ -137,6 +137,7 @@
 
                     <div class="menu-divider"></div>
 
+                    <!-- Debounce timer control -->
                     <div class="menu-item number-input">
                         <div class="menu-item-text">
                             <div class="menu-item-title">Debounce Time</div>
@@ -185,17 +186,24 @@
     <!-- Template Cloned Per Session -->
     <template id="sessionViewTemplate">
         <div class="session-view hidden" data-session-id="">
+
+            <!-- Container for all messages, tools, thoughts etc -->
             <div class="chat-container"></div>
 
+            <!-- Scroll to bottom button -->
             <button class="scroll-bottom-btn" title="Scroll to bottom">
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
                     <path fill-rule="evenodd" clip-rule="evenodd" d="M8 11L3 6l.7-.7L8 9.6l4.3-4.3.7.7L8 11z" />
                 </svg>
             </button>
 
+            <!-- Bottom controls -->
             <div class="chat-input">
+
                 <div class="unified-box">
                     <div class="input-row">
+
+                        <!-- Command approval area -->
                         <div class="command-approval hidden">
                             <div class="approval-text">
                                 <span
@@ -216,6 +224,7 @@
                             </div>
                         </div>
 
+                        <!-- Input prompt area -->
                         <textarea class="prompt-input" rows="1" placeholder="Select Provider..."></textarea>
                         <button class="send-btn action-btn" disabled>
                             <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
@@ -225,8 +234,13 @@
                     </div>
                 </div>
 
+
                 <div class="box-actions">
+
+                    <!-- Provider, model, effort selection dropdown -->
                     <div class="action-group">
+
+                        <!-- Provider -->
                         <div class="custom-dropdown provider-dropdown">
                             <button class="dropdown-trigger provider-op" type="button">
                                 <span class="selected-text">Provider...</span>
@@ -236,6 +250,7 @@
 
                         <span class="divider">|</span>
 
+                        <!-- Model -->
                         <div class="custom-dropdown model-dropdown">
                             <button class="dropdown-trigger model-op" type="button" disabled>
                                 <span class="selected-text">Models...</span>
@@ -245,6 +260,7 @@
 
                         <span class="divider effort-divider hidden">|</span>
 
+                        <!-- Effort -->
                         <div class="custom-dropdown effort-dropdown hidden">
                             <button class="dropdown-trigger effort-op" type="button">
                                 <span class="selected-text">Effort</span>
@@ -253,12 +269,17 @@
                         </div>
                     </div>
 
+                    <!-- Agent mode, context window and chat settings -->
                     <div class="right-actions">
+
+                        <!-- Agent mode -->
                         <div class="agent-mode-container">
                             <button class="icon-btn mode-toggle-btn mode-manual"
                                 title="Toggle Agent Mode (Auto/Manual)">
                                 MANUAL
                             </button>
+
+                            <!-- Open agent config file button -->
                             <button class="icon-btn agent-config-btn hidden" title="Edit Agent Rules">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
                                     xmlns="http://www.w3.org/2000/svg">
@@ -269,13 +290,18 @@
                             </button>
                         </div>
 
+                        <!-- Context window -->
                         <div class="settings-menu-wrapper context-window-container">
+
+                            <!-- Usage bar -->
                             <button class="context-bar-btn context-window-toggle-btn" title="Context Window Usage">
                                 <div class="context-bar-fill"></div>
                                 <span class="context-bar-text">0 / 0</span>
                             </button>
 
                             <div class="dropdown-list context-window-dropdown hidden">
+
+                                <!-- Pie chart -->
                                 <div class="context-chart-container">
                                     <div class="context-pie-chart"></div>
 
@@ -305,11 +331,13 @@
 
                                 <div class="menu-divider"></div>
 
+                                <!-- Pruning toggle -->
                                 <div class="menu-item active menu-prune-toggle">
                                     <div class="menu-item-title">Prune Tool Calls/Results</div>
                                     <div class="menu-item-desc">Tool input/output into artifact pointer.</div>
                                 </div>
 
+                                <!-- Pruning strategy toggle -->
                                 <div class="menu-item menu-prune-strategy-toggle">
                                     <div style="display: flex; justify-content: space-between; align-items: center;">
                                         <span class="menu-item-title">Strategy</span>
@@ -318,6 +346,7 @@
                                     </div>
                                 </div>
 
+                                <!-- Pruning interval control -->
                                 <div class="menu-item number-input menu-prune-interval">
                                     <div class="menu-item-text">
                                         <div class="menu-item-title prune-interval-title">Turn Interval</div>
@@ -343,6 +372,7 @@
 
                                 <div class="menu-divider"></div>
 
+                                <!-- Compaction button -->
                                 <div class="menu-item menu-compact-history-btn">
                                     <div class="menu-item-title">Compact History</div>
                                     <div class="menu-item-desc">Summarize to free up context.</div>
@@ -354,6 +384,8 @@
                             <button class="icon-btn chat-settings-toggle-btn" title="Model Settings">Settings</button>
 
                             <div class="dropdown-list chat-settings-dropdown hidden">
+
+                                <!-- Turn limit control -->
                                 <div class="menu-item number-input menu-max-turns">
                                     <div class="menu-item-text">
                                         <div class="menu-item-title">Max turns</div>
@@ -377,13 +409,39 @@
                                     </div>
                                 </div>
 
+                                <!-- Execution timeout control -->
+                                <div class="menu-item number-input menu-timeout">
+                                    <div class="menu-item-text">
+                                        <div class="menu-item-title">Execution timeout</div>
+                                        <div class="menu-item-desc">Set 0 to disable (Seconds).</div>
+                                    </div>
+
+                                    <div class="number-control">
+                                        <button type="button" class="icon-btn timeout-minus" title="Decrease">
+                                            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                                                <path fill-rule="evenodd" clip-rule="evenodd"
+                                                    d="M10.4 12.4L6.1 8l4.3-4.4-.7-.7L4.7 8l5 5.1.7-.7z" />
+                                            </svg>
+                                        </button>
+                                        <input type="number" class="timeout-input" value="0" min="0">
+                                        <button type="button" class="icon-btn timeout-plus" title="Increase">
+                                            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                                                <path fill-rule="evenodd" clip-rule="evenodd"
+                                                    d="M5.6 3.6L9.9 8l-4.3 4.4.7.7L11.3 8l-5-5.1-.7.7z" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
+
                                 <div class="menu-divider"></div>
 
+                                <!-- All models toggle -->
                                 <div class="menu-item menu-all-models-toggle">
                                     <div class="menu-item-title">All Models</div>
                                     <div class="menu-item-desc">Show all available models.</div>
                                 </div>
 
+                                <!-- Stateful toggle -->
                                 <div class="menu-item menu-stateful-toggle">
                                     <div class="menu-item-title">Stateful</div>
                                     <div class="menu-item-desc">Server-side context management.</div>
@@ -391,11 +449,13 @@
 
                                 <div class="menu-divider"></div>
 
+                                <!-- Web search toggle -->
                                 <div class="menu-item menu-web-search-toggle">
                                     <div class="menu-item-title">Web Search</div>
                                     <div class="menu-item-desc">Enable live web lookups.</div>
                                 </div>
 
+                                <!-- Web search mode toggle -->
                                 <div class="menu-item hidden menu-web-search-mode-toggle">
                                     <div style="display: flex; justify-content: space-between; align-items: center;">
                                         <span class="menu-item-title">Engine</span>
@@ -404,6 +464,7 @@
                                     </div>
                                 </div>
 
+                                <!-- Tavily API Key  -->
                                 <div class="menu-item hidden menu-tavily-key-btn">
                                     Set Tavily API Key
                                 </div>
@@ -416,6 +477,7 @@
 
                                 <div class="menu-divider"></div>
 
+                                <!-- Chat provider API Key -->
                                 <div class="menu-item disabled menu-chat-key-btn">
                                     Set API Key
                                 </div>

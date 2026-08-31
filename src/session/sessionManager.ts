@@ -258,6 +258,7 @@ export class SessionManager {
                 showAll: this.shared.context.globalState.get<boolean>('showAllChatModels') ?? false,
                 stateful: this.shared.context.globalState.get<boolean>('serverStateManagement') ?? true,
                 turnLimit: this.shared.context.globalState.get<number>('turnLimit') ?? 0,
+                executionTimeout: this.shared.context.globalState.get<number>('executionTimeout') ?? 60,
                 webSearchEnabled: this.shared.context.globalState.get<boolean>('webSearchEnabled') ?? false,
                 webSearchMode: this.shared.context.globalState.get<string>('webSearchMode') ?? 'tavily',
                 pruneMode: this.shared.context.globalState.get<string>('pruneMode') ?? 'run',
@@ -290,6 +291,7 @@ export class SessionManager {
             showAll: prefs.showAll,
             stateful: prefs.stateful,
             turnLimit: prefs.turnLimit,
+            executionTimeout: prefs.executionTimeout,
             webSearch: prefs.webSearchEnabled,
             searchMode: prefs.webSearchMode,
             ollamaPort: ollamaChatPort

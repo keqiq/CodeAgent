@@ -143,6 +143,30 @@
     border-left-color: var(--vscode-errorForeground, #f48771);
 }
 
+.session-new-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    color: var(--vscode-foreground);
+}
+
+.session-new-btn:hover {
+    background: var(--vscode-list-hoverBackground);
+}
+
+.session-new-btn svg {
+    flex-shrink: 0;
+    display: block;
+}
+
+.session-new-btn span {
+    line-height: 1;
+}
+
 .session-info {
     display: flex;
     flex-direction: column;

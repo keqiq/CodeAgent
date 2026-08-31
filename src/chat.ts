@@ -295,6 +295,12 @@ export class ChatApp implements vscode.WebviewViewProvider {
             await session.saveConfig();
         },
 
+        updateExecutionTimeout: async (session, data) => {
+            await this.context.globalState.update('executionTimeout', data.timeout);
+            session.preferences.executionTimeout = data.timeout;
+            await session.saveConfig();
+        },
+
         // Set web search mode, either tavily or server, server is only allowed for providers which support it
         // Save preference for current session and future sessions
         setWebSearchMode: async (session, data) => {

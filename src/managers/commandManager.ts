@@ -279,6 +279,7 @@ export class CommandManager {
         workspaceRoot: string,
         signal: AbortSignal,
         toolID: string,
+        timeout: number,
         sessionID: string
     ): Promise<ToolResult> {
         
@@ -349,18 +350,21 @@ export class CommandManager {
                 }
             });
 
-            const timeoutTimer = setTimeout(() => {
-                if (isDone) return;
-                isDone = true;
-
-                child.kill('SIGKILL');
-
-                let output = '';
-                if (stdoutData) output += `STDOUT:\n${this.truncateOutput(stdoutData)}\n`;
-                if (stderrData) output += `STDERR:\n${this.truncateOutput(stderrData)}\n`;
-                
-                reject(new Error(`[Process killed: Exceeded 60-second timeout]\n${output}`.trim()));
-            }, 60_000);
+            let timeoutTimer: NodeJS.Timeout | undefined;
+            if (timeout > 0) {
+                timeoutTimer = setTimeout(() => {
+                    if (isDone) return;
+                    isDone = true;
+    
+                    child.kill('SIGKILL');
+    
+                    let output = '';
+                    if (stdoutData) output += `STDOUT:\n${this.truncateOutput(stdoutData)}\n`;
+                    if (stderrData) output += `STDERR:\n${this.truncateOutput(stderrData)}\n`;
+                    
+                    reject(new Error(`[Process killed: Exceeded ${timeout}-second timeout]\n${output}`.trim()));
+                }, timeout * 1000);
+            }
 
             const emitChunk = (chunk: string) => {
                 this.emitter.fire({

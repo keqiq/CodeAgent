@@ -28,6 +28,7 @@ export interface SessionPreferences {
     showAll: boolean;
     stateful: boolean;
     turnLimit: number;
+    executionTimeout: number;
     webSearchEnabled: boolean;
     webSearchMode: string;
     pruneMode: string;
@@ -89,6 +90,7 @@ export class AgentSession {
             commandManager: shared.commandManager,
             worktreeManager: this.worktreeManager,
             mcpManager: shared.mcpManager,
+            getTimeout: () => this.getTimeout(),
             getIndexer: shared.getIndexer
         });
         this.toolManager.onDidUpdateStatus(event => this.emitter.fire(event));
@@ -104,6 +106,10 @@ export class AgentSession {
         const effort = model ? this.apiConfig.modelEffortConfig[model] : undefined;
 
         return [provider, model, effort];
+    }
+
+    public getTimeout(): number {
+        return this.preferences.executionTimeout;
     }
 
     public async saveChatProvider(provider: string): Promise<void> {
@@ -143,7 +149,7 @@ export class AgentSession {
     }
 
     public abort(): void {
-        if (this.aborter) this.aborter.abort;
+        if (this.aborter) this.aborter.abort();
     }
 
     public async runAgentTurn(userMessage: string): Promise<void> {

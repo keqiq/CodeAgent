@@ -58,6 +58,7 @@ export type ToolDeps = {
     getContextManager:() => ContextManager;
     getCommandManager:() => CommandManager;
     getMCPManager:() => MCPManager;
+    getTimeout: () => number;
     getSessionID: () => string;
 };
 
@@ -94,6 +95,7 @@ export function createToolRegistry(deps: ToolDeps): Record<string, (args: any, t
                 deps.getCwd(),
                 deps.getSignal(),
                 toolID,
+                deps.getTimeout(),
                 deps.getSessionID()
             );
         },

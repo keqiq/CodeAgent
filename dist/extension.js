@@ -109792,6 +109792,7 @@ function createToolRegistry(deps) {
         deps.getCwd(),
         deps.getSignal(),
         toolID,
+        deps.getTimeout(),
         deps.getSessionID()
       );
     },
@@ -111543,7 +111544,7 @@ var CommandManager = class _CommandManager {
       }
     }
   }
-  async execute(commandStr, requestedCwd = ".", workspaceRoot, signal, toolID, sessionID) {
+  async execute(commandStr, requestedCwd = ".", workspaceRoot, signal, toolID, timeout, sessionID) {
     const resolvedCwd = path10.resolve(workspaceRoot, requestedCwd);
     const relativePath = path10.relative(workspaceRoot, resolvedCwd);
     if (relativePath.startsWith("..") || path10.isAbsolute(relativePath)) {
@@ -111595,20 +111596,23 @@ var CommandManager = class _CommandManager {
           CI: "true"
         }
       });
-      const timeoutTimer = setTimeout(() => {
-        if (isDone) return;
-        isDone = true;
-        child.kill("SIGKILL");
-        let output = "";
-        if (stdoutData) output += `STDOUT:
+      let timeoutTimer;
+      if (timeout > 0) {
+        timeoutTimer = setTimeout(() => {
+          if (isDone) return;
+          isDone = true;
+          child.kill("SIGKILL");
+          let output = "";
+          if (stdoutData) output += `STDOUT:
 ${this.truncateOutput(stdoutData)}
 `;
-        if (stderrData) output += `STDERR:
+          if (stderrData) output += `STDERR:
 ${this.truncateOutput(stderrData)}
 `;
-        reject(new Error(`[Process killed: Exceeded 60-second timeout]
+          reject(new Error(`[Process killed: Exceeded ${timeout}-second timeout]
 ${output}`.trim()));
-      }, 6e4);
+        }, timeout * 1e3);
+      }
       const emitChunk = (chunk) => {
         this.emitter.fire({
           type: "updateExecute",
@@ -112488,6 +112492,7 @@ var ToolManager = class {
       getContextManager: () => this.deps.contextManager,
       getCommandManager: () => this.deps.commandManager,
       getMCPManager: () => this.deps.mcpManager,
+      getTimeout: () => this.deps.getTimeout(),
       getSessionID: () => this.deps.metadata.id
     });
   }
@@ -112600,6 +112605,7 @@ var AgentSession = class {
       commandManager: shared.commandManager,
       worktreeManager: this.worktreeManager,
       mcpManager: shared.mcpManager,
+      getTimeout: () => this.getTimeout(),
       getIndexer: shared.getIndexer
     });
     this.toolManager.onDidUpdateStatus((event) => this.emitter.fire(event));
@@ -112623,6 +112629,9 @@ var AgentSession = class {
     const model = this.apiConfig.providerModelConfig[provider];
     const effort = model ? this.apiConfig.modelEffortConfig[model] : void 0;
     return [provider, model, effort];
+  }
+  getTimeout() {
+    return this.preferences.executionTimeout;
   }
   async saveChatProvider(provider) {
     this.apiConfig.provider = provider;
@@ -112655,7 +112664,7 @@ var AgentSession = class {
     return this.aborter !== null;
   }
   abort() {
-    if (this.aborter) this.aborter.abort;
+    if (this.aborter) this.aborter.abort();
   }
   async runAgentTurn(userMessage) {
     this.aborter = new AbortController();
@@ -113056,6 +113065,7 @@ var SessionManager = class {
         showAll: this.shared.context.globalState.get("showAllChatModels") ?? false,
         stateful: this.shared.context.globalState.get("serverStateManagement") ?? true,
         turnLimit: this.shared.context.globalState.get("turnLimit") ?? 0,
+        executionTimeout: this.shared.context.globalState.get("executionTimeout") ?? 60,
         webSearchEnabled: this.shared.context.globalState.get("webSearchEnabled") ?? false,
         webSearchMode: this.shared.context.globalState.get("webSearchMode") ?? "tavily",
         pruneMode: this.shared.context.globalState.get("pruneMode") ?? "run",
@@ -113082,6 +113092,7 @@ var SessionManager = class {
       showAll: prefs.showAll,
       stateful: prefs.stateful,
       turnLimit: prefs.turnLimit,
+      executionTimeout: prefs.executionTimeout,
       webSearch: prefs.webSearchEnabled,
       searchMode: prefs.webSearchMode,
       ollamaPort: ollamaChatPort
@@ -113341,6 +113352,11 @@ var ChatApp = class {
     updateTurnLimit: async (session, data) => {
       await this.context.globalState.update("turnLimit", data.limit);
       session.preferences.turnLimit = data.limit;
+      await session.saveConfig();
+    },
+    updateExecutionTimeout: async (session, data) => {
+      await this.context.globalState.update("executionTimeout", data.timeout);
+      session.preferences.executionTimeout = data.timeout;
       await session.saveConfig();
     },
     // Set web search mode, either tavily or server, server is only allowed for providers which support it

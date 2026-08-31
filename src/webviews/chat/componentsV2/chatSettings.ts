@@ -22,6 +22,10 @@ export class ChatSettings {
     private maxTurnMinus: HTMLElement;
     private maxTurnPlus: HTMLElement;
 
+    private timeoutInput: HTMLInputElement;
+    private timeoutMinus: HTMLElement;
+    private timeoutPlus: HTMLElement;
+
     private toggleWebSearch: HTMLElement;
     private toggleWebSearchMode: HTMLElement;
     private webSearchModeLabel: HTMLElement;
@@ -50,6 +54,10 @@ export class ChatSettings {
         this.maxTurnInput = rootElement.querySelector('.max-turns-input') as HTMLInputElement;
         this.maxTurnMinus = rootElement.querySelector('.max-turns-minus') as HTMLElement;
         this.maxTurnPlus = rootElement.querySelector('.max-turns-plus') as HTMLElement;
+
+        this.timeoutInput = rootElement.querySelector('.timeout-input') as HTMLInputElement;
+        this.timeoutMinus = rootElement.querySelector('.timeout-minus') as HTMLElement;
+        this.timeoutPlus = rootElement.querySelector('.timeout-plus') as HTMLElement;
 
         this.toggleWebSearch = rootElement.querySelector('.menu-web-search-toggle') as HTMLElement;
         this.toggleWebSearchMode = rootElement.querySelector('.menu-web-search-mode-toggle') as HTMLElement;
@@ -172,6 +180,31 @@ export class ChatSettings {
             e.stopPropagation();
         });
 
+        // Execution timeout listeners
+        this.timeoutMinus.addEventListener('click', (e: MouseEvent) => {
+            e.stopPropagation();
+            const val = parseInt(this.timeoutInput.value, 10) || 0;
+            this.timeoutInput.value = Math.max(0, val - 1).toString();
+            this.notifyTimeoutChange();
+        });
+
+        this.timeoutPlus.addEventListener('click', (e: MouseEvent) => {
+            e.stopPropagation();
+            const val = parseInt(this.timeoutInput.value, 10) || 0;
+            this.timeoutInput.value = (val + 1).toString();
+            this.notifyTimeoutChange();
+        });
+
+        this.timeoutInput.addEventListener('change', () => {
+            const val = parseInt(this.timeoutInput.value, 10);
+            if (isNaN(val) || val < 0) this.timeoutInput.value = '0';
+            this.notifyTimeoutChange();
+        });
+
+        this.timeoutInput.addEventListener('click', (e: MouseEvent) => {
+            e.stopPropagation();
+        });
+
         this.toggleWebSearch.addEventListener('click', () => {
             const isActive = this.toggleWebSearch.classList.toggle('active');
             
@@ -264,7 +297,8 @@ export class ChatSettings {
     public restoreSettings(msg: {
         showAll?: boolean, 
         stateful?: boolean, 
-        turnLimit?: number
+        turnLimit?: number,
+        executionTimeout?: number;
         webSearch?: boolean,
         searchMode?: 'tavily' | 'server',
         ollamaPort?: number
@@ -281,6 +315,10 @@ export class ChatSettings {
 
         if (msg.turnLimit !== undefined) {
             this.maxTurnInput.value = msg.turnLimit.toString();
+        }
+
+        if (msg.executionTimeout !== undefined) {
+            this.timeoutInput.value = msg.executionTimeout.toString();
         }
 
         if (msg.webSearch !== undefined) {
@@ -318,6 +356,10 @@ export class ChatSettings {
 
     private notifyMaxTurnChange(): void {
         this.vscodeAPI.postMessage({ type: 'updateTurnLimit', limit: parseInt(this.maxTurnInput.value, 10) || 0 });
+    }
+
+    private notifyTimeoutChange(): void {
+        this.vscodeAPI.postMessage({ type: 'updateExecutionTimeout', timeout: parseInt(this.timeoutInput.value, 10) || 0 });
     }
 
     private updateWebSearchModeUI() {
