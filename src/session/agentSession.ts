@@ -98,6 +98,7 @@ export class AgentSession {
 
     public async initialize(): Promise<void> {
         await this.contextManager.initialize();
+        await this.worktreeManager.initialize();
     }
 
     public getAPIConfig(): [provider: string, model: string | undefined, effort: string | undefined] {
@@ -158,8 +159,8 @@ export class AgentSession {
         // Auto generate title if we currently have the default title
         if (!this.metadata.customTitle) this.generateTitle(userMessage); // non blocking!
 
-        await this.worktreeManager.clearState();
         await this.worktreeManager.setup();
+
         const provider = this.apiConfig.provider || '';
         const model = this.apiConfig.providerModelConfig[provider] || '';
         const effort = this.apiConfig.modelEffortConfig[model];
@@ -169,7 +170,6 @@ export class AgentSession {
             : 'none';
         const turnLimit = this.preferences.turnLimit;
 
-        await this.worktreeManager.setup();
         const apiKey = await this.shared.apiManager.getChatAPIKey(provider);
         const providerInstance: ChatProvider = ChatFactory.create(provider, apiKey, webSearchMode);
 
@@ -430,7 +430,7 @@ export class AgentSession {
             this.emitter.fire({ type: 'titleGenerating', isGenerating: false });
         }
     }
-    
+
     public async cleanup(): Promise<void> {
         this.abort();
         await this.worktreeManager.cleanup();

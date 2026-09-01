@@ -196,7 +196,11 @@ export class ChatContainer {
     // ------------------------------- PATCH SECTION -------------------------------
     // -----------------------------------------------------------------------------
     public makePatch(patch: string) {
-        this.patchContainer = new PatchContainer(this.runContainer?.activeRunContent || this.container, patch, this.vscodeAPI);
+        const targetParent = this.runContainer?.activeRunContent 
+        || this.container.querySelector('.run-container:last-child .run-content') 
+        || this.container;
+
+        this.patchContainer = new PatchContainer(targetParent as HTMLElement, patch, this.vscodeAPI);
     }
 
     public updatePatch(status: any) {

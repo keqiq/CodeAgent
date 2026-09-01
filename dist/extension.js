@@ -1149,7 +1149,7 @@ var require_p_retry = __commonJS({
       return error2;
     };
     var isNetworkError = (errorMessage) => networkErrorMsgs.includes(errorMessage);
-    var pRetry2 = (input, options) => new Promise((resolve5, reject) => {
+    var pRetry2 = (input, options) => new Promise((resolve6, reject) => {
       options = {
         onFailedAttempt: () => {
         },
@@ -1159,7 +1159,7 @@ var require_p_retry = __commonJS({
       const operation = retry.operation(options);
       operation.attempt(async (attemptNumber) => {
         try {
-          resolve5(await input(attemptNumber));
+          resolve6(await input(attemptNumber));
         } catch (error2) {
           if (!(error2 instanceof Error)) {
             reject(new TypeError(`Non-error was thrown: "${error2}". You should only throw errors.`));
@@ -1695,8 +1695,8 @@ var require_retry3 = __commonJS({
       }
       const delay = getNextRetryDelay(config2);
       err.config.retryConfig.currentRetryAttempt += 1;
-      const backoff3 = config2.retryBackoff ? config2.retryBackoff(err, delay) : new Promise((resolve5) => {
-        setTimeout(resolve5, delay);
+      const backoff3 = config2.retryBackoff ? config2.retryBackoff(err, delay) : new Promise((resolve6) => {
+        setTimeout(resolve6, delay);
       });
       if (config2.onRetryAttempt) {
         await config2.onRetryAttempt(err);
@@ -2621,8 +2621,8 @@ var require_helpers = __commonJS({
     function req(url3, opts = {}) {
       const href = typeof url3 === "string" ? url3 : url3.href;
       const req2 = (href.startsWith("https:") ? https3 : http4).request(url3, opts);
-      const promise = new Promise((resolve5, reject) => {
-        req2.once("response", resolve5).once("error", reject).end();
+      const promise = new Promise((resolve6, reject) => {
+        req2.once("response", resolve6).once("error", reject).end();
       });
       req2.then = promise.then.bind(promise);
       return req2;
@@ -2799,7 +2799,7 @@ var require_parse_proxy_response = __commonJS({
     var debug_1 = __importDefault(require_src());
     var debug = (0, debug_1.default)("https-proxy-agent:parse-proxy-response");
     function parseProxyResponse(socket) {
-      return new Promise((resolve5, reject) => {
+      return new Promise((resolve6, reject) => {
         let buffersLength = 0;
         const buffers = [];
         function read() {
@@ -2865,7 +2865,7 @@ var require_parse_proxy_response = __commonJS({
           }
           debug("got proxy server response: %o %o", firstLine, headers);
           cleanup();
-          resolve5({
+          resolve6({
             connect: {
               statusCode,
               statusText,
@@ -3107,7 +3107,7 @@ var require_ponyfill_es2018 = __commonJS({
         return new originalPromise(executor);
       }
       function promiseResolvedWith(value) {
-        return newPromise((resolve5) => resolve5(value));
+        return newPromise((resolve6) => resolve6(value));
       }
       function promiseRejectedWith(reason) {
         return originalPromiseReject(reason);
@@ -3277,8 +3277,8 @@ var require_ponyfill_es2018 = __commonJS({
         return new TypeError("Cannot " + name + " a stream using a released reader");
       }
       function defaultReaderClosedPromiseInitialize(reader) {
-        reader._closedPromise = newPromise((resolve5, reject) => {
-          reader._closedPromise_resolve = resolve5;
+        reader._closedPromise = newPromise((resolve6, reject) => {
+          reader._closedPromise_resolve = resolve6;
           reader._closedPromise_reject = reject;
         });
       }
@@ -3452,8 +3452,8 @@ var require_ponyfill_es2018 = __commonJS({
           }
           let resolvePromise;
           let rejectPromise;
-          const promise = newPromise((resolve5, reject) => {
-            resolvePromise = resolve5;
+          const promise = newPromise((resolve6, reject) => {
+            resolvePromise = resolve6;
             rejectPromise = reject;
           });
           const readRequest = {
@@ -3558,8 +3558,8 @@ var require_ponyfill_es2018 = __commonJS({
           const reader = this._reader;
           let resolvePromise;
           let rejectPromise;
-          const promise = newPromise((resolve5, reject) => {
-            resolvePromise = resolve5;
+          const promise = newPromise((resolve6, reject) => {
+            resolvePromise = resolve6;
             rejectPromise = reject;
           });
           const readRequest = {
@@ -4578,8 +4578,8 @@ var require_ponyfill_es2018 = __commonJS({
           }
           let resolvePromise;
           let rejectPromise;
-          const promise = newPromise((resolve5, reject) => {
-            resolvePromise = resolve5;
+          const promise = newPromise((resolve6, reject) => {
+            resolvePromise = resolve6;
             rejectPromise = reject;
           });
           const readIntoRequest = {
@@ -4891,10 +4891,10 @@ var require_ponyfill_es2018 = __commonJS({
           wasAlreadyErroring = true;
           reason = void 0;
         }
-        const promise = newPromise((resolve5, reject) => {
+        const promise = newPromise((resolve6, reject) => {
           stream4._pendingAbortRequest = {
             _promise: void 0,
-            _resolve: resolve5,
+            _resolve: resolve6,
             _reject: reject,
             _reason: reason,
             _wasAlreadyErroring: wasAlreadyErroring
@@ -4911,9 +4911,9 @@ var require_ponyfill_es2018 = __commonJS({
         if (state === "closed" || state === "errored") {
           return promiseRejectedWith(new TypeError(`The stream (in ${state} state) is not in the writable state and cannot be closed`));
         }
-        const promise = newPromise((resolve5, reject) => {
+        const promise = newPromise((resolve6, reject) => {
           const closeRequest = {
-            _resolve: resolve5,
+            _resolve: resolve6,
             _reject: reject
           };
           stream4._closeRequest = closeRequest;
@@ -4926,9 +4926,9 @@ var require_ponyfill_es2018 = __commonJS({
         return promise;
       }
       function WritableStreamAddWriteRequest(stream4) {
-        const promise = newPromise((resolve5, reject) => {
+        const promise = newPromise((resolve6, reject) => {
           const writeRequest = {
-            _resolve: resolve5,
+            _resolve: resolve6,
             _reject: reject
           };
           stream4._writeRequests.push(writeRequest);
@@ -5544,8 +5544,8 @@ var require_ponyfill_es2018 = __commonJS({
         return new TypeError("Cannot " + name + " a stream using a released writer");
       }
       function defaultWriterClosedPromiseInitialize(writer) {
-        writer._closedPromise = newPromise((resolve5, reject) => {
-          writer._closedPromise_resolve = resolve5;
+        writer._closedPromise = newPromise((resolve6, reject) => {
+          writer._closedPromise_resolve = resolve6;
           writer._closedPromise_reject = reject;
           writer._closedPromiseState = "pending";
         });
@@ -5581,8 +5581,8 @@ var require_ponyfill_es2018 = __commonJS({
         writer._closedPromiseState = "resolved";
       }
       function defaultWriterReadyPromiseInitialize(writer) {
-        writer._readyPromise = newPromise((resolve5, reject) => {
-          writer._readyPromise_resolve = resolve5;
+        writer._readyPromise = newPromise((resolve6, reject) => {
+          writer._readyPromise_resolve = resolve6;
           writer._readyPromise_reject = reject;
         });
         writer._readyPromiseState = "pending";
@@ -5669,7 +5669,7 @@ var require_ponyfill_es2018 = __commonJS({
         source._disturbed = true;
         let shuttingDown = false;
         let currentWrite = promiseResolvedWith(void 0);
-        return newPromise((resolve5, reject) => {
+        return newPromise((resolve6, reject) => {
           let abortAlgorithm;
           if (signal !== void 0) {
             abortAlgorithm = () => {
@@ -5814,7 +5814,7 @@ var require_ponyfill_es2018 = __commonJS({
             if (isError) {
               reject(error2);
             } else {
-              resolve5(void 0);
+              resolve6(void 0);
             }
             return null;
           }
@@ -6095,8 +6095,8 @@ var require_ponyfill_es2018 = __commonJS({
         let branch1;
         let branch2;
         let resolveCancelPromise;
-        const cancelPromise = newPromise((resolve5) => {
-          resolveCancelPromise = resolve5;
+        const cancelPromise = newPromise((resolve6) => {
+          resolveCancelPromise = resolve6;
         });
         function pullAlgorithm() {
           if (reading) {
@@ -6187,8 +6187,8 @@ var require_ponyfill_es2018 = __commonJS({
         let branch1;
         let branch2;
         let resolveCancelPromise;
-        const cancelPromise = newPromise((resolve5) => {
-          resolveCancelPromise = resolve5;
+        const cancelPromise = newPromise((resolve6) => {
+          resolveCancelPromise = resolve6;
         });
         function forwardReaderError(thisReader) {
           uponRejection(thisReader._closedPromise, (r2) => {
@@ -6968,8 +6968,8 @@ var require_ponyfill_es2018 = __commonJS({
           const writableHighWaterMark = ExtractHighWaterMark(writableStrategy, 1);
           const writableSizeAlgorithm = ExtractSizeAlgorithm(writableStrategy);
           let startPromise_resolve;
-          const startPromise = newPromise((resolve5) => {
-            startPromise_resolve = resolve5;
+          const startPromise = newPromise((resolve6) => {
+            startPromise_resolve = resolve6;
           });
           InitializeTransformStream(this, startPromise, writableHighWaterMark, writableSizeAlgorithm, readableHighWaterMark, readableSizeAlgorithm);
           SetUpTransformStreamDefaultControllerFromTransformer(this, transformer);
@@ -7062,8 +7062,8 @@ var require_ponyfill_es2018 = __commonJS({
         if (stream4._backpressureChangePromise !== void 0) {
           stream4._backpressureChangePromise_resolve();
         }
-        stream4._backpressureChangePromise = newPromise((resolve5) => {
-          stream4._backpressureChangePromise_resolve = resolve5;
+        stream4._backpressureChangePromise = newPromise((resolve6) => {
+          stream4._backpressureChangePromise_resolve = resolve6;
         });
         stream4._backpressure = backpressure;
       }
@@ -7231,8 +7231,8 @@ var require_ponyfill_es2018 = __commonJS({
           return controller._finishPromise;
         }
         const readable = stream4._readable;
-        controller._finishPromise = newPromise((resolve5, reject) => {
-          controller._finishPromise_resolve = resolve5;
+        controller._finishPromise = newPromise((resolve6, reject) => {
+          controller._finishPromise_resolve = resolve6;
           controller._finishPromise_reject = reject;
         });
         const cancelPromise = controller._cancelAlgorithm(reason);
@@ -7258,8 +7258,8 @@ var require_ponyfill_es2018 = __commonJS({
           return controller._finishPromise;
         }
         const readable = stream4._readable;
-        controller._finishPromise = newPromise((resolve5, reject) => {
-          controller._finishPromise_resolve = resolve5;
+        controller._finishPromise = newPromise((resolve6, reject) => {
+          controller._finishPromise_resolve = resolve6;
           controller._finishPromise_reject = reject;
         });
         const flushPromise = controller._flushAlgorithm();
@@ -7289,8 +7289,8 @@ var require_ponyfill_es2018 = __commonJS({
           return controller._finishPromise;
         }
         const writable = stream4._writable;
-        controller._finishPromise = newPromise((resolve5, reject) => {
-          controller._finishPromise_resolve = resolve5;
+        controller._finishPromise = newPromise((resolve6, reject) => {
+          controller._finishPromise_resolve = resolve6;
           controller._finishPromise_reject = reject;
         });
         const cancelPromise = controller._cancelAlgorithm(reason);
@@ -9236,7 +9236,7 @@ __export(src_exports, {
   isRedirect: () => isRedirect
 });
 async function fetch2(url3, options_) {
-  return new Promise((resolve5, reject) => {
+  return new Promise((resolve6, reject) => {
     const request = new Request(url3, options_);
     const { parsedURL, options } = getNodeRequestOptions(request);
     if (!supportedSchemas.has(parsedURL.protocol)) {
@@ -9245,7 +9245,7 @@ async function fetch2(url3, options_) {
     if (parsedURL.protocol === "data:") {
       const data = dist_default(request.url);
       const response2 = new Response2(data, { headers: { "Content-Type": data.typeFull } });
-      resolve5(response2);
+      resolve6(response2);
       return;
     }
     const send = (parsedURL.protocol === "https:" ? import_node_https.default : import_node_http2.default).request;
@@ -9367,7 +9367,7 @@ async function fetch2(url3, options_) {
             if (responseReferrerPolicy) {
               requestOptions.referrerPolicy = responseReferrerPolicy;
             }
-            resolve5(fetch2(new Request(locationURL, requestOptions)));
+            resolve6(fetch2(new Request(locationURL, requestOptions)));
             finalize2();
             return;
           }
@@ -9400,7 +9400,7 @@ async function fetch2(url3, options_) {
       const codings = headers.get("Content-Encoding");
       if (!request.compress || request.method === "HEAD" || codings === null || response_.statusCode === 204 || response_.statusCode === 304) {
         response = new Response2(body, responseOptions);
-        resolve5(response);
+        resolve6(response);
         return;
       }
       const zlibOptions2 = {
@@ -9414,7 +9414,7 @@ async function fetch2(url3, options_) {
           }
         });
         response = new Response2(body, responseOptions);
-        resolve5(response);
+        resolve6(response);
         return;
       }
       if (codings === "deflate" || codings === "x-deflate") {
@@ -9438,12 +9438,12 @@ async function fetch2(url3, options_) {
             });
           }
           response = new Response2(body, responseOptions);
-          resolve5(response);
+          resolve6(response);
         });
         raw.once("end", () => {
           if (!response) {
             response = new Response2(body, responseOptions);
-            resolve5(response);
+            resolve6(response);
           }
         });
         return;
@@ -9455,11 +9455,11 @@ async function fetch2(url3, options_) {
           }
         });
         response = new Response2(body, responseOptions);
-        resolve5(response);
+        resolve6(response);
         return;
       }
       response = new Response2(body, responseOptions);
-      resolve5(response);
+      resolve6(response);
     });
     writeToStream(request_, request).catch(reject);
   });
@@ -10398,7 +10398,7 @@ var require_bignumber = __commonJS({
             return arr.reverse();
           }
           return function(str2, baseIn, baseOut, sign, callerIsToString) {
-            var alphabet, d, e2, k, r2, x2, xc, y, i2 = str2.indexOf("."), dp = DECIMAL_PLACES, rm2 = ROUNDING_MODE;
+            var alphabet, d, e2, k, r2, x2, xc, y, i2 = str2.indexOf("."), dp = DECIMAL_PLACES, rm3 = ROUNDING_MODE;
             if (i2 >= 0) {
               k = POW_PRECISION;
               POW_PRECISION = 0;
@@ -10424,7 +10424,7 @@ var require_bignumber = __commonJS({
               x2.c = xc;
               x2.e = e2;
               x2.s = sign;
-              x2 = div(x2, y, dp, rm2, baseOut);
+              x2 = div(x2, y, dp, rm3, baseOut);
               xc = x2.c;
               r2 = x2.r;
               e2 = x2.e;
@@ -10433,7 +10433,7 @@ var require_bignumber = __commonJS({
             i2 = xc[d];
             k = baseOut / 2;
             r2 = r2 || d < 0 || xc[d + 1] != null;
-            r2 = rm2 < 4 ? (i2 != null || r2) && (rm2 == 0 || rm2 == (x2.s < 0 ? 3 : 2)) : i2 > k || i2 == k && (rm2 == 4 || r2 || rm2 == 6 && xc[d - 1] & 1 || rm2 == (x2.s < 0 ? 8 : 7));
+            r2 = rm3 < 4 ? (i2 != null || r2) && (rm3 == 0 || rm3 == (x2.s < 0 ? 3 : 2)) : i2 > k || i2 == k && (rm3 == 4 || r2 || rm3 == 6 && xc[d - 1] & 1 || rm3 == (x2.s < 0 ? 8 : 7));
             if (d < 1 || !xc[0]) {
               str2 = r2 ? toFixedPoint(alphabet.charAt(1), -dp, alphabet.charAt(0)) : alphabet.charAt(0);
             } else {
@@ -10491,7 +10491,7 @@ var require_bignumber = __commonJS({
             }
             for (; !a[0] && a.length > 1; a.splice(0, 1)) ;
           }
-          return function(x2, y, dp, rm2, base) {
+          return function(x2, y, dp, rm3, base) {
             var cmp, e2, i2, more, n, prod, prodL, q, qc, rem, remL, rem0, xi, xL, yc0, yL, yz, s2 = x2.s == y.s ? 1 : -1, xc = x2.c, yc = y.c;
             if (!xc || !xc[0] || !yc || !yc[0]) {
               return new BigNumber2(
@@ -10588,7 +10588,7 @@ var require_bignumber = __commonJS({
             }
             if (base == BASE) {
               for (i2 = 1, s2 = qc[0]; s2 >= 10; s2 /= 10, i2++) ;
-              round(q, dp + (q.e = i2 + e2 * LOG_BASE - 1) + 1, rm2, more);
+              round(q, dp + (q.e = i2 + e2 * LOG_BASE - 1) + 1, rm3, more);
             } else {
               q.e = e2;
               q.r = +more;
@@ -10596,10 +10596,10 @@ var require_bignumber = __commonJS({
             return q;
           };
         })();
-        function format(n, i2, rm2, id) {
+        function format(n, i2, rm3, id) {
           var c0, e2, ne, len, str2;
-          if (rm2 == null) rm2 = ROUNDING_MODE;
-          else intCheck(rm2, 0, 8);
+          if (rm3 == null) rm3 = ROUNDING_MODE;
+          else intCheck(rm3, 0, 8);
           if (!n.c) return n.toString();
           c0 = n.c[0];
           ne = n.e;
@@ -10607,7 +10607,7 @@ var require_bignumber = __commonJS({
             str2 = coeffToString(n.c);
             str2 = id == 1 || id == 2 && (ne <= TO_EXP_NEG || ne >= TO_EXP_POS) ? toExponential(str2, ne) : toFixedPoint(str2, ne, "0");
           } else {
-            n = round(new BigNumber2(n), i2, rm2);
+            n = round(new BigNumber2(n), i2, rm3);
             e2 = n.e;
             str2 = coeffToString(n.c);
             len = str2.length;
@@ -10680,7 +10680,7 @@ var require_bignumber = __commonJS({
             x2.c = x2.e = null;
           };
         })();
-        function round(x2, sd, rm2, r2) {
+        function round(x2, sd, rm3, r2) {
           var d, i2, j, k, n, ni, rd, xc = x2.c, pows10 = POWS_TEN;
           if (xc) {
             out: {
@@ -10715,8 +10715,8 @@ var require_bignumber = __commonJS({
               // The expression  n % pows10[d - j - 1]  returns all digits of n to the right
               // of the digit at j, e.g. if n is 908714 and j is 2, the expression gives 714.
               xc[ni + 1] != null || (j < 0 ? n : n % pows10[d - j - 1]);
-              r2 = rm2 < 4 ? (rd || r2) && (rm2 == 0 || rm2 == (x2.s < 0 ? 3 : 2)) : rd > 5 || rd == 5 && (rm2 == 4 || r2 || rm2 == 6 && // Check whether the digit to the left of the rounding digit is odd.
-              (i2 > 0 ? j > 0 ? n / pows10[d - j] : 0 : xc[ni - 1]) % 10 & 1 || rm2 == (x2.s < 0 ? 8 : 7));
+              r2 = rm3 < 4 ? (rd || r2) && (rm3 == 0 || rm3 == (x2.s < 0 ? 3 : 2)) : rd > 5 || rd == 5 && (rm3 == 4 || r2 || rm3 == 6 && // Check whether the digit to the left of the rounding digit is odd.
+              (i2 > 0 ? j > 0 ? n / pows10[d - j] : 0 : xc[ni - 1]) % 10 & 1 || rm3 == (x2.s < 0 ? 8 : 7));
               if (sd < 1 || !xc[0]) {
                 xc.length = 0;
                 if (r2) {
@@ -10781,13 +10781,13 @@ var require_bignumber = __commonJS({
         P.comparedTo = function(y, b) {
           return compare(this, new BigNumber2(y, b));
         };
-        P.decimalPlaces = P.dp = function(dp, rm2) {
+        P.decimalPlaces = P.dp = function(dp, rm3) {
           var c, n, v, x2 = this;
           if (dp != null) {
             intCheck(dp, 0, MAX);
-            if (rm2 == null) rm2 = ROUNDING_MODE;
-            else intCheck(rm2, 0, 8);
-            return round(new BigNumber2(x2), dp + x2.e + 1, rm2);
+            if (rm3 == null) rm3 = ROUNDING_MODE;
+            else intCheck(rm3, 0, 8);
+            return round(new BigNumber2(x2), dp + x2.e + 1, rm3);
           }
           if (!(c = x2.c)) return null;
           n = ((v = c.length - 1) - bitFloor(this.e / LOG_BASE)) * LOG_BASE;
@@ -10870,11 +10870,11 @@ var require_bignumber = __commonJS({
           if (nIsNeg) y = ONE.div(y);
           return m2 ? y.mod(m2) : k ? round(y, POW_PRECISION, ROUNDING_MODE, more) : y;
         };
-        P.integerValue = function(rm2) {
+        P.integerValue = function(rm3) {
           var n = new BigNumber2(this);
-          if (rm2 == null) rm2 = ROUNDING_MODE;
-          else intCheck(rm2, 0, 8);
-          return round(n, n.e + 1, rm2);
+          if (rm3 == null) rm3 = ROUNDING_MODE;
+          else intCheck(rm3, 0, 8);
+          return round(n, n.e + 1, rm3);
         };
         P.isEqualTo = P.eq = function(y, b) {
           return compare(this, new BigNumber2(y, b)) === 0;
@@ -11101,13 +11101,13 @@ var require_bignumber = __commonJS({
           }
           return normalise(y, xc, ye);
         };
-        P.precision = P.sd = function(sd, rm2) {
+        P.precision = P.sd = function(sd, rm3) {
           var c, n, v, x2 = this;
           if (sd != null && sd !== !!sd) {
             intCheck(sd, 1, MAX);
-            if (rm2 == null) rm2 = ROUNDING_MODE;
-            else intCheck(rm2, 0, 8);
-            return round(new BigNumber2(x2), sd, rm2);
+            if (rm3 == null) rm3 = ROUNDING_MODE;
+            else intCheck(rm3, 0, 8);
+            return round(new BigNumber2(x2), sd, rm3);
           }
           if (!(c = x2.c)) return null;
           v = c.length - 1;
@@ -11177,36 +11177,36 @@ var require_bignumber = __commonJS({
           }
           return round(r2, r2.e + DECIMAL_PLACES + 1, ROUNDING_MODE, m2);
         };
-        P.toExponential = function(dp, rm2) {
+        P.toExponential = function(dp, rm3) {
           if (dp != null) {
             intCheck(dp, 0, MAX);
             dp++;
           }
-          return format(this, dp, rm2, 1);
+          return format(this, dp, rm3, 1);
         };
-        P.toFixed = function(dp, rm2) {
+        P.toFixed = function(dp, rm3) {
           if (dp != null) {
             intCheck(dp, 0, MAX);
             dp = dp + this.e + 1;
           }
-          return format(this, dp, rm2);
+          return format(this, dp, rm3);
         };
-        P.toFormat = function(dp, rm2, format2) {
+        P.toFormat = function(dp, rm3, format2) {
           var str2, x2 = this;
           if (format2 == null) {
-            if (dp != null && rm2 && typeof rm2 == "object") {
-              format2 = rm2;
-              rm2 = null;
+            if (dp != null && rm3 && typeof rm3 == "object") {
+              format2 = rm3;
+              rm3 = null;
             } else if (dp && typeof dp == "object") {
               format2 = dp;
-              dp = rm2 = null;
+              dp = rm3 = null;
             } else {
               format2 = FORMAT;
             }
           } else if (typeof format2 != "object") {
             throw Error(bignumberError + "Argument not an object: " + format2);
           }
-          str2 = x2.toFixed(dp, rm2);
+          str2 = x2.toFixed(dp, rm3);
           if (x2.c) {
             var i2, arr = str2.split("."), g1 = +format2.groupSize, g2 = +format2.secondaryGroupSize, groupSeparator = format2.groupSeparator || "", intPart = arr[0], fractionPart = arr[1], isNeg = x2.s < 0, intDigits = isNeg ? intPart.slice(1) : intPart, len = intDigits.length;
             if (g2) {
@@ -11274,9 +11274,9 @@ var require_bignumber = __commonJS({
         P.toNumber = function() {
           return +valueOf(this);
         };
-        P.toPrecision = function(sd, rm2) {
+        P.toPrecision = function(sd, rm3) {
           if (sd != null) intCheck(sd, 1, MAX);
-          return format(this, sd, rm2, 2);
+          return format(this, sd, rm3, 2);
         };
         P.toString = function(b) {
           var str2, n = this, s2 = n.s, e2 = n.e;
@@ -15533,7 +15533,7 @@ var require_jwtaccess = __commonJS({
         }
       }
       fromStreamAsync(inputStream) {
-        return new Promise((resolve5, reject) => {
+        return new Promise((resolve6, reject) => {
           if (!inputStream) {
             reject(new Error("Must pass in a stream containing the service account auth settings."));
           }
@@ -15542,7 +15542,7 @@ var require_jwtaccess = __commonJS({
             try {
               const data = JSON.parse(s2);
               this.fromJSON(data);
-              resolve5();
+              resolve6();
             } catch (err) {
               reject(err);
             }
@@ -15781,7 +15781,7 @@ var require_jwtclient = __commonJS({
         }
       }
       fromStreamAsync(inputStream) {
-        return new Promise((resolve5, reject) => {
+        return new Promise((resolve6, reject) => {
           if (!inputStream) {
             throw new Error("Must pass in a stream containing the service account auth settings.");
           }
@@ -15790,7 +15790,7 @@ var require_jwtclient = __commonJS({
             try {
               const data = JSON.parse(s2);
               this.fromJSON(data);
-              resolve5();
+              resolve6();
             } catch (e2) {
               reject(e2);
             }
@@ -15923,7 +15923,7 @@ var require_refreshclient = __commonJS({
         }
       }
       async fromStreamAsync(inputStream) {
-        return new Promise((resolve5, reject) => {
+        return new Promise((resolve6, reject) => {
           if (!inputStream) {
             return reject(new Error("Must pass in a stream containing the user refresh token."));
           }
@@ -15932,7 +15932,7 @@ var require_refreshclient = __commonJS({
             try {
               const data = JSON.parse(s2);
               this.fromJSON(data);
-              return resolve5();
+              return resolve6();
             } catch (err) {
               return reject(err);
             }
@@ -16760,7 +16760,7 @@ var require_filesubjecttokensupplier = __commonJS({
     }));
     var realpath3 = (0, util_1.promisify)(fs10.realpath ?? (() => {
     }));
-    var lstat2 = (0, util_1.promisify)(fs10.lstat ?? (() => {
+    var lstat3 = (0, util_1.promisify)(fs10.lstat ?? (() => {
     }));
     var FileSubjectTokenSupplier = class {
       filePath;
@@ -16786,7 +16786,7 @@ var require_filesubjecttokensupplier = __commonJS({
         let parsedFilePath = this.filePath;
         try {
           parsedFilePath = await realpath3(parsedFilePath);
-          if (!(await lstat2(parsedFilePath)).isFile()) {
+          if (!(await lstat3(parsedFilePath)).isFile()) {
             throw new Error();
           }
         } catch (err) {
@@ -17765,7 +17765,7 @@ var require_pluggable_auth_handler = __commonJS({
        * @return A promise that resolves with the executable response.
        */
       retrieveResponseFromExecutable(envMap) {
-        return new Promise((resolve5, reject) => {
+        return new Promise((resolve6, reject) => {
           const child = childProcess.spawn(this.commandComponents[0], this.commandComponents.slice(1), {
             env: { ...process.env, ...Object.fromEntries(envMap) }
           });
@@ -17787,7 +17787,7 @@ var require_pluggable_auth_handler = __commonJS({
               try {
                 const responseJson = JSON.parse(output);
                 const response = new executable_response_1.ExecutableResponse(responseJson);
-                return resolve5(response);
+                return resolve6(response);
               } catch (error2) {
                 if (error2 instanceof executable_response_1.ExecutableResponseError) {
                   return reject(error2);
@@ -18690,7 +18690,7 @@ var require_googleauth = __commonJS({
         }
       }
       fromStreamAsync(inputStream, options) {
-        return new Promise((resolve5, reject) => {
+        return new Promise((resolve6, reject) => {
           if (!inputStream) {
             throw new Error("Must pass in a stream containing the Google auth settings.");
           }
@@ -18700,7 +18700,7 @@ var require_googleauth = __commonJS({
               try {
                 const data = JSON.parse(chunks.join(""));
                 const r2 = this._cacheClientFromJSON(data, options);
-                return resolve5(r2);
+                return resolve6(r2);
               } catch (err) {
                 if (!this.keyFilename)
                   throw err;
@@ -18710,7 +18710,7 @@ var require_googleauth = __commonJS({
                 });
                 this.cachedCredential = client;
                 this.setGapicJWTValues(client);
-                return resolve5(client);
+                return resolve6(client);
               }
             } catch (err) {
               return reject(err);
@@ -18746,17 +18746,17 @@ var require_googleauth = __commonJS({
        * Run the Google Cloud SDK command that prints the default project ID
        */
       async getDefaultServiceProjectId() {
-        return new Promise((resolve5) => {
+        return new Promise((resolve6) => {
           (0, child_process_1.exec)("gcloud config config-helper --format json", (err, stdout) => {
             if (!err && stdout) {
               try {
                 const projectId = JSON.parse(stdout).configuration.properties.core.project;
-                resolve5(projectId);
+                resolve6(projectId);
                 return;
               } catch (e2) {
               }
             }
-            resolve5(null);
+            resolve6(null);
           });
         });
       }
@@ -33364,12 +33364,12 @@ var require_promisify = __commonJS({
     Object.defineProperty(exports2, "__esModule", { value: true });
     function promisify4(fn) {
       return function(req, opts) {
-        return new Promise((resolve5, reject) => {
+        return new Promise((resolve6, reject) => {
           fn.call(this, req, opts, (err, rtn) => {
             if (err) {
               reject(err);
             } else {
-              resolve5(rtn);
+              resolve6(rtn);
             }
           });
         });
@@ -33573,7 +33573,7 @@ var require_parse_proxy_response2 = __commonJS({
     var debug_1 = __importDefault(require_src());
     var debug = debug_1.default("https-proxy-agent:parse-proxy-response");
     function parseProxyResponse(socket) {
-      return new Promise((resolve5, reject) => {
+      return new Promise((resolve6, reject) => {
         let buffersLength = 0;
         const buffers = [];
         function read() {
@@ -33613,7 +33613,7 @@ var require_parse_proxy_response2 = __commonJS({
           const firstLine = buffered.toString("ascii", 0, buffered.indexOf("\r\n"));
           const statusCode = +firstLine.split(" ")[1];
           debug("got proxy server response: %o", firstLine);
-          resolve5({
+          resolve6({
             statusCode,
             buffered
           });
@@ -33634,11 +33634,11 @@ var require_agent = __commonJS({
     "use strict";
     var __awaiter2 = exports2 && exports2.__awaiter || function(thisArg, _arguments, P, generator) {
       function adopt(value) {
-        return value instanceof P ? value : new P(function(resolve5) {
-          resolve5(value);
+        return value instanceof P ? value : new P(function(resolve6) {
+          resolve6(value);
         });
       }
-      return new (P || (P = Promise))(function(resolve5, reject) {
+      return new (P || (P = Promise))(function(resolve6, reject) {
         function fulfilled(value) {
           try {
             step(generator.next(value));
@@ -33654,7 +33654,7 @@ var require_agent = __commonJS({
           }
         }
         function step(result) {
-          result.done ? resolve5(result.value) : adopt(result.value).then(fulfilled, rejected);
+          result.done ? resolve6(result.value) : adopt(result.value).then(fulfilled, rejected);
         }
         step((generator = generator.apply(thisArg, _arguments || [])).next());
       });
@@ -34568,16 +34568,16 @@ var init_values = __esm({
 var sleep3;
 var init_sleep = __esm({
   "node_modules/@anthropic-ai/sdk/internal/utils/sleep.mjs"() {
-    sleep3 = (ms, signal) => new Promise((resolve5) => {
+    sleep3 = (ms, signal) => new Promise((resolve6) => {
       if (signal?.aborted)
-        return resolve5();
+        return resolve6();
       const onAbort = () => {
         clearTimeout(timer);
-        resolve5();
+        resolve6();
       };
       const timer = setTimeout(() => {
         signal?.removeEventListener("abort", onAbort);
-        resolve5();
+        resolve6();
       }, ms);
       signal?.addEventListener("abort", onAbort, { once: true });
     });
@@ -36678,8 +36678,8 @@ var init_api_promise = __esm({
     init_parse();
     APIPromise3 = class _APIPromise extends Promise {
       constructor(client, responsePromise, parseResponse2 = defaultParseResponse3) {
-        super((resolve5) => {
-          resolve5(null);
+        super((resolve6) => {
+          resolve6(null);
         });
         this.responsePromise = responsePromise;
         this.parseResponse = parseResponse2;
@@ -39175,16 +39175,16 @@ var init_async_queue = __esm({
         if (__classPrivateFieldGet2(this, _AsyncQueue_closed, "f") || signal?.aborted) {
           return Promise.resolve({ done: true, value: void 0 });
         }
-        return new Promise((resolve5) => {
+        return new Promise((resolve6) => {
           const waiter = (r2) => {
             signal?.removeEventListener("abort", onAbort);
-            resolve5(r2);
+            resolve6(r2);
           };
           const onAbort = () => {
             const idx = __classPrivateFieldGet2(this, _AsyncQueue_waiters, "f").indexOf(waiter);
             if (idx >= 0)
               __classPrivateFieldGet2(this, _AsyncQueue_waiters, "f").splice(idx, 1);
-            resolve5({ done: true, value: void 0 });
+            resolve6({ done: true, value: void 0 });
           };
           __classPrivateFieldGet2(this, _AsyncQueue_waiters, "f").push(waiter);
           signal?.addEventListener("abort", onAbort, { once: true });
@@ -39779,13 +39779,13 @@ var init_json_schema = __esm({
 
 // node_modules/@anthropic-ai/sdk/internal/utils/promise.mjs
 function promiseWithResolvers() {
-  let resolve5;
+  let resolve6;
   let reject;
   const promise = new Promise((res, rej) => {
-    resolve5 = res;
+    resolve6 = res;
     reject = rej;
   });
-  return { promise, resolve: resolve5, reject };
+  return { promise, resolve: resolve6, reject };
 }
 var init_promise = __esm({
   "node_modules/@anthropic-ai/sdk/internal/utils/promise.mjs"() {
@@ -40378,7 +40378,7 @@ function betaGrepTool(ctx) {
   });
 }
 function runRipgrep(rg, pattern, searchPath, signal) {
-  return new Promise((resolve5, reject) => {
+  return new Promise((resolve6, reject) => {
     const proc = cp.spawn(rg, ["-n", "--no-heading", "-e", pattern, "--", searchPath], {
       ...signal ? { signal } : {}
     });
@@ -40400,12 +40400,12 @@ function runRipgrep(rg, pattern, searchPath, signal) {
       if (signal?.aborted)
         return reject(new ToolError("grep: aborted"));
       if (truncated)
-        return resolve5(out + `
+        return resolve6(out + `
 [output truncated at ${GREP_OUTPUT_LIMIT} bytes]`);
       if (code === 0)
-        return resolve5(out);
+        return resolve6(out);
       if (code === 1)
-        return resolve5("no matches");
+        return resolve6("no matches");
       reject(new ToolError(`grep: rg failed: ${errOut || `exit ${code}`}`));
     });
     proc.on("error", (e2) => {
@@ -40588,8 +40588,8 @@ var init_node = __esm({
 `;
         __classPrivateFieldGet2(this, _BashSession_proc, "f").stdin.write(wrapped);
         if (__classPrivateFieldGet2(this, _BashSession_buf, "f").indexOf(sentinel3) < 0) {
-          const { promise: sentinelSeen, resolve: resolve5 } = promiseWithResolvers();
-          __classPrivateFieldSet2(this, _BashSession_waiting, { sentinel: sentinel3, resolve: resolve5 }, "f");
+          const { promise: sentinelSeen, resolve: resolve6 } = promiseWithResolvers();
+          __classPrivateFieldSet2(this, _BashSession_waiting, { sentinel: sentinel3, resolve: resolve6 }, "f");
           let timer;
           let onAbort;
           try {
@@ -42329,12 +42329,12 @@ var init_BetaMessageStream = __esm({
           }
           return this._emit("error", new AnthropicError(String(error2)));
         });
-        __classPrivateFieldSet2(this, _BetaMessageStream_connectedPromise, new Promise((resolve5, reject) => {
-          __classPrivateFieldSet2(this, _BetaMessageStream_resolveConnectedPromise, resolve5, "f");
+        __classPrivateFieldSet2(this, _BetaMessageStream_connectedPromise, new Promise((resolve6, reject) => {
+          __classPrivateFieldSet2(this, _BetaMessageStream_resolveConnectedPromise, resolve6, "f");
           __classPrivateFieldSet2(this, _BetaMessageStream_rejectConnectedPromise, reject, "f");
         }), "f");
-        __classPrivateFieldSet2(this, _BetaMessageStream_endPromise, new Promise((resolve5, reject) => {
-          __classPrivateFieldSet2(this, _BetaMessageStream_resolveEndPromise, resolve5, "f");
+        __classPrivateFieldSet2(this, _BetaMessageStream_endPromise, new Promise((resolve6, reject) => {
+          __classPrivateFieldSet2(this, _BetaMessageStream_resolveEndPromise, resolve6, "f");
           __classPrivateFieldSet2(this, _BetaMessageStream_rejectEndPromise, reject, "f");
         }), "f");
         __classPrivateFieldGet2(this, _BetaMessageStream_connectedPromise, "f").catch(() => {
@@ -42504,11 +42504,11 @@ var init_BetaMessageStream = __esm({
        *   const message = await stream.emitted('message') // rejects if the stream errors
        */
       emitted(event) {
-        return new Promise((resolve5, reject) => {
+        return new Promise((resolve6, reject) => {
           __classPrivateFieldSet2(this, _BetaMessageStream_catchingPromiseCreated, true, "f");
           if (event !== "error")
             this.once("error", reject);
-          this.once(event, resolve5);
+          this.once(event, resolve6);
         });
       }
       async done() {
@@ -42870,7 +42870,7 @@ var init_BetaMessageStream = __esm({
               if (done) {
                 return { value: void 0, done: true };
               }
-              return new Promise((resolve5, reject) => readQueue.push({ resolve: resolve5, reject })).then((chunk2) => chunk2 ? { value: chunk2, done: false } : { value: void 0, done: true });
+              return new Promise((resolve6, reject) => readQueue.push({ resolve: resolve6, reject })).then((chunk2) => chunk2 ? { value: chunk2, done: false } : { value: void 0, done: true });
             }
             const chunk = pushQueue.shift();
             return { value: chunk, done: false };
@@ -45090,12 +45090,12 @@ var init_MessageStream = __esm({
           }
           return this._emit("error", new AnthropicError(String(error2)));
         });
-        __classPrivateFieldSet2(this, _MessageStream_connectedPromise, new Promise((resolve5, reject) => {
-          __classPrivateFieldSet2(this, _MessageStream_resolveConnectedPromise, resolve5, "f");
+        __classPrivateFieldSet2(this, _MessageStream_connectedPromise, new Promise((resolve6, reject) => {
+          __classPrivateFieldSet2(this, _MessageStream_resolveConnectedPromise, resolve6, "f");
           __classPrivateFieldSet2(this, _MessageStream_rejectConnectedPromise, reject, "f");
         }), "f");
-        __classPrivateFieldSet2(this, _MessageStream_endPromise, new Promise((resolve5, reject) => {
-          __classPrivateFieldSet2(this, _MessageStream_resolveEndPromise, resolve5, "f");
+        __classPrivateFieldSet2(this, _MessageStream_endPromise, new Promise((resolve6, reject) => {
+          __classPrivateFieldSet2(this, _MessageStream_resolveEndPromise, resolve6, "f");
           __classPrivateFieldSet2(this, _MessageStream_rejectEndPromise, reject, "f");
         }), "f");
         __classPrivateFieldGet2(this, _MessageStream_connectedPromise, "f").catch(() => {
@@ -45265,11 +45265,11 @@ var init_MessageStream = __esm({
        *   const message = await stream.emitted('message') // rejects if the stream errors
        */
       emitted(event) {
-        return new Promise((resolve5, reject) => {
+        return new Promise((resolve6, reject) => {
           __classPrivateFieldSet2(this, _MessageStream_catchingPromiseCreated, true, "f");
           if (event !== "error")
             this.once("error", reject);
-          this.once(event, resolve5);
+          this.once(event, resolve6);
         });
       }
       async done() {
@@ -45590,7 +45590,7 @@ var init_MessageStream = __esm({
               if (done) {
                 return { value: void 0, done: true };
               }
-              return new Promise((resolve5, reject) => readQueue.push({ resolve: resolve5, reject })).then((chunk2) => chunk2 ? { value: chunk2, done: false } : { value: void 0, done: true });
+              return new Promise((resolve6, reject) => readQueue.push({ resolve: resolve6, reject })).then((chunk2) => chunk2 ? { value: chunk2, done: false } : { value: void 0, done: true });
             }
             const chunk = pushQueue.shift();
             return { value: chunk, done: false };
@@ -50141,7 +50141,7 @@ var require_compile = __commonJS({
       const schOrFunc = root.refs[ref];
       if (schOrFunc)
         return schOrFunc;
-      let _sch = resolve5.call(this, root, ref);
+      let _sch = resolve6.call(this, root, ref);
       if (_sch === void 0) {
         const schema = (_a12 = root.localRefs) === null || _a12 === void 0 ? void 0 : _a12[ref];
         const { schemaId } = this.opts;
@@ -50168,7 +50168,7 @@ var require_compile = __commonJS({
     function sameSchemaEnv(s1, s2) {
       return s1.schema === s2.schema && s1.root === s2.root && s1.baseId === s2.baseId;
     }
-    function resolve5(root, ref) {
+    function resolve6(root, ref) {
       let sch;
       while (typeof (sch = this.refs[ref]) == "string")
         ref = sch;
@@ -50799,7 +50799,7 @@ var require_fast_uri = __commonJS({
       }
       return uri;
     }
-    function resolve5(baseURI, relativeURI, options) {
+    function resolve6(baseURI, relativeURI, options) {
       const schemelessOptions = options ? Object.assign({ scheme: "null" }, options) : { scheme: "null" };
       const { parsed: baseParsed, malformedAuthorityOrPort: baseMalformed } = parseWithStatus(baseURI, schemelessOptions);
       const { parsed: relativeParsed, malformedAuthorityOrPort: relativeMalformed } = parseWithStatus(relativeURI, schemelessOptions);
@@ -51083,7 +51083,7 @@ var require_fast_uri = __commonJS({
     var fastUri = {
       SCHEMES,
       normalize: normalize2,
-      resolve: resolve5,
+      resolve: resolve6,
       resolveComponent,
       equal,
       serialize,
@@ -56874,7 +56874,7 @@ var require_compile2 = __commonJS({
       const schOrFunc = root.refs[ref];
       if (schOrFunc)
         return schOrFunc;
-      let _sch = resolve5.call(this, root, ref);
+      let _sch = resolve6.call(this, root, ref);
       if (_sch === void 0) {
         const schema = (_a12 = root.localRefs) === null || _a12 === void 0 ? void 0 : _a12[ref];
         const { schemaId } = this.opts;
@@ -56901,7 +56901,7 @@ var require_compile2 = __commonJS({
     function sameSchemaEnv(s1, s2) {
       return s1.schema === s2.schema && s1.root === s2.root && s1.baseId === s2.baseId;
     }
-    function resolve5(root, ref) {
+    function resolve6(root, ref) {
       let sch;
       while (typeof (sch = this.refs[ref]) == "string")
         ref = sch;
@@ -59861,12 +59861,12 @@ var require_isexe = __commonJS({
         if (typeof Promise !== "function") {
           throw new TypeError("callback not provided");
         }
-        return new Promise(function(resolve5, reject) {
+        return new Promise(function(resolve6, reject) {
           isexe(path13, options || {}, function(er, is) {
             if (er) {
               reject(er);
             } else {
-              resolve5(is);
+              resolve6(is);
             }
           });
         });
@@ -59932,27 +59932,27 @@ var require_which = __commonJS({
         opt = {};
       const { pathEnv, pathExt, pathExtExe } = getPathInfo(cmd, opt);
       const found = [];
-      const step = (i2) => new Promise((resolve5, reject) => {
+      const step = (i2) => new Promise((resolve6, reject) => {
         if (i2 === pathEnv.length)
-          return opt.all && found.length ? resolve5(found) : reject(getNotFoundError(cmd));
+          return opt.all && found.length ? resolve6(found) : reject(getNotFoundError(cmd));
         const ppRaw = pathEnv[i2];
         const pathPart = /^".*"$/.test(ppRaw) ? ppRaw.slice(1, -1) : ppRaw;
         const pCmd = path13.join(pathPart, cmd);
         const p = !pathPart && /^\.[\\\/]/.test(cmd) ? cmd.slice(0, 2) + pCmd : pCmd;
-        resolve5(subStep(p, i2, 0));
+        resolve6(subStep(p, i2, 0));
       });
-      const subStep = (p, i2, ii) => new Promise((resolve5, reject) => {
+      const subStep = (p, i2, ii) => new Promise((resolve6, reject) => {
         if (ii === pathExt.length)
-          return resolve5(step(i2 + 1));
+          return resolve6(step(i2 + 1));
         const ext2 = pathExt[ii];
         isexe(p + ext2, { pathExt: pathExtExe }, (er, is) => {
           if (!er && is) {
             if (opt.all)
               found.push(p + ext2);
             else
-              return resolve5(p + ext2);
+              return resolve6(p + ext2);
           }
-          return resolve5(subStep(p, i2, ii + 1));
+          return resolve6(subStep(p, i2, ii + 1));
         });
       });
       return cb ? step(0).then((res) => cb(null, res), cb) : step(0);
@@ -60403,11 +60403,11 @@ function __rest(s2, e2) {
 }
 function __awaiter(thisArg, _arguments, P, generator) {
   function adopt(value) {
-    return value instanceof P ? value : new P(function(resolve5) {
-      resolve5(value);
+    return value instanceof P ? value : new P(function(resolve6) {
+      resolve6(value);
     });
   }
-  return new (P || (P = Promise))(function(resolve5, reject) {
+  return new (P || (P = Promise))(function(resolve6, reject) {
     function fulfilled(value) {
       try {
         step(generator.next(value));
@@ -60423,7 +60423,7 @@ function __awaiter(thisArg, _arguments, P, generator) {
       }
     }
     function step(result) {
-      result.done ? resolve5(result.value) : adopt(result.value).then(fulfilled, rejected);
+      result.done ? resolve6(result.value) : adopt(result.value).then(fulfilled, rejected);
     }
     step((generator = generator.apply(thisArg, _arguments || [])).next());
   });
@@ -60504,14 +60504,14 @@ function __asyncValues(o) {
   }, i2);
   function verb(n) {
     i2[n] = o[n] && function(v) {
-      return new Promise(function(resolve5, reject) {
-        v = o[n](v), settle2(resolve5, reject, v.done, v.value);
+      return new Promise(function(resolve6, reject) {
+        v = o[n](v), settle2(resolve6, reject, v.done, v.value);
       });
     };
   }
-  function settle2(resolve5, reject, d, v) {
+  function settle2(resolve6, reject, d, v) {
     Promise.resolve(v).then(function(v2) {
-      resolve5({ value: v2, done: d });
+      resolve6({ value: v2, done: d });
     }, reject);
   }
 }
@@ -60957,9 +60957,9 @@ var AdaptiveByteReader = class {
   }
 };
 var onEvent = (stream4, event) => {
-  const handler = (_) => resolve5([event, _]);
-  let resolve5;
-  return [event, handler, new Promise((r2) => (resolve5 = r2) && stream4["once"](event, handler))];
+  const handler = (_) => resolve6([event, _]);
+  let resolve6;
+  return [event, handler, new Promise((r2) => (resolve6 = r2) && stream4["once"](event, handler))];
 };
 function fromNodeStream(stream4) {
   return __asyncGenerator(this, arguments, function* fromNodeStream_1() {
@@ -61015,7 +61015,7 @@ function fromNodeStream(stream4) {
     return yield __await(null);
     function cleanup(events2, err2) {
       buffer = buffers = null;
-      return new Promise((resolve5, reject) => {
+      return new Promise((resolve6, reject) => {
         for (const [evt, fn] of events2) {
           stream4["off"](evt, fn);
         }
@@ -61026,7 +61026,7 @@ function fromNodeStream(stream4) {
         } catch (e2) {
           err2 = e2 || err2;
         } finally {
-          err2 != null ? reject(err2) : resolve5();
+          err2 != null ? reject(err2) : resolve6();
         }
       });
     }
@@ -66767,8 +66767,8 @@ var AsyncQueue = class extends ReadableInterop {
     } else if (!this._closedPromiseResolve) {
       return Promise.resolve(ITERATOR_DONE);
     } else {
-      return new Promise((resolve5, reject) => {
-        this.resolvers.push({ resolve: resolve5, reject });
+      return new Promise((resolve6, reject) => {
+        this.resolvers.push({ resolve: resolve6, reject });
       });
     }
   }
@@ -79191,14 +79191,14 @@ function __asyncValues2(o) {
   }, i2);
   function verb(n) {
     i2[n] = o[n] && function(v) {
-      return new Promise(function(resolve5, reject) {
-        v = o[n](v), settle2(resolve5, reject, v.done, v.value);
+      return new Promise(function(resolve6, reject) {
+        v = o[n](v), settle2(resolve6, reject, v.done, v.value);
       });
     };
   }
-  function settle2(resolve5, reject, d, v) {
+  function settle2(resolve6, reject, d, v) {
     Promise.resolve(v).then(function(v2) {
-      resolve5({ value: v2, done: d });
+      resolve6({ value: v2, done: d });
     }, reject);
   }
 }
@@ -85688,8 +85688,8 @@ var LiveMusic = class {
     const url3 = `${websocketBaseUrl}/ws/google.ai.generativelanguage.${apiVersion}.GenerativeService.BidiGenerateMusic?key=${apiKey}`;
     let onopenResolve = () => {
     };
-    const onopenPromise = new Promise((resolve5) => {
-      onopenResolve = resolve5;
+    const onopenPromise = new Promise((resolve6) => {
+      onopenResolve = resolve6;
     });
     const callbacks = params.callbacks;
     const onopenAwaitedCallback = function() {
@@ -85929,8 +85929,8 @@ var Live = class {
     }
     let onopenResolve = () => {
     };
-    const onopenPromise = new Promise((resolve5) => {
-      onopenResolve = resolve5;
+    const onopenPromise = new Promise((resolve6) => {
+      onopenResolve = resolve6;
     });
     const callbacks = params.callbacks;
     const onopenAwaitedCallback = function() {
@@ -89003,7 +89003,7 @@ var safeJSON = (text) => {
     return void 0;
   }
 };
-var sleep$1 = (ms) => new Promise((resolve5) => setTimeout(resolve5, ms));
+var sleep$1 = (ms) => new Promise((resolve6) => setTimeout(resolve6, ms));
 function getDefaultFetch() {
   if (typeof fetch !== "undefined") {
     return fetch;
@@ -90041,8 +90041,8 @@ async function defaultParseResponse(client, props) {
 }
 var APIPromise = class _APIPromise extends Promise {
   constructor(client, responsePromise, parseResponse2 = defaultParseResponse) {
-    super((resolve5) => {
-      resolve5(null);
+    super((resolve6) => {
+      resolve6(null);
     });
     this.responsePromise = responsePromise;
     this.parseResponse = parseResponse2;
@@ -92906,7 +92906,7 @@ var safeJSON2 = (text) => {
 };
 
 // node_modules/openai/internal/utils/sleep.mjs
-var sleep2 = (ms) => new Promise((resolve5) => setTimeout(resolve5, ms));
+var sleep2 = (ms) => new Promise((resolve6) => setTimeout(resolve6, ms));
 
 // node_modules/openai/version.mjs
 var VERSION2 = "6.39.0";
@@ -93985,8 +93985,8 @@ function addRequestID(value, response) {
 var _APIPromise_client;
 var APIPromise2 = class _APIPromise extends Promise {
   constructor(client, responsePromise, parseResponse2 = defaultParseResponse2) {
-    super((resolve5) => {
-      resolve5(null);
+    super((resolve6) => {
+      resolve6(null);
     });
     this.responsePromise = responsePromise;
     this.parseResponse = parseResponse2;
@@ -94667,12 +94667,12 @@ var EventStream = class {
     _EventStream_errored.set(this, false);
     _EventStream_aborted.set(this, false);
     _EventStream_catchingPromiseCreated.set(this, false);
-    __classPrivateFieldSet(this, _EventStream_connectedPromise, new Promise((resolve5, reject) => {
-      __classPrivateFieldSet(this, _EventStream_resolveConnectedPromise, resolve5, "f");
+    __classPrivateFieldSet(this, _EventStream_connectedPromise, new Promise((resolve6, reject) => {
+      __classPrivateFieldSet(this, _EventStream_resolveConnectedPromise, resolve6, "f");
       __classPrivateFieldSet(this, _EventStream_rejectConnectedPromise, reject, "f");
     }), "f");
-    __classPrivateFieldSet(this, _EventStream_endPromise, new Promise((resolve5, reject) => {
-      __classPrivateFieldSet(this, _EventStream_resolveEndPromise, resolve5, "f");
+    __classPrivateFieldSet(this, _EventStream_endPromise, new Promise((resolve6, reject) => {
+      __classPrivateFieldSet(this, _EventStream_resolveEndPromise, resolve6, "f");
       __classPrivateFieldSet(this, _EventStream_rejectEndPromise, reject, "f");
     }), "f");
     __classPrivateFieldGet(this, _EventStream_connectedPromise, "f").catch(() => {
@@ -94756,11 +94756,11 @@ var EventStream = class {
    *   const message = await stream.emitted('message') // rejects if the stream errors
    */
   emitted(event) {
-    return new Promise((resolve5, reject) => {
+    return new Promise((resolve6, reject) => {
       __classPrivateFieldSet(this, _EventStream_catchingPromiseCreated, true, "f");
       if (event !== "error")
         this.once("error", reject);
-      this.once(event, resolve5);
+      this.once(event, resolve6);
     });
   }
   async done() {
@@ -95699,7 +95699,7 @@ var ChatCompletionStream = class _ChatCompletionStream extends AbstractChatCompl
           if (done) {
             return { value: void 0, done: true };
           }
-          return new Promise((resolve5, reject) => readQueue.push({ resolve: resolve5, reject })).then((chunk2) => chunk2 ? { value: chunk2, done: false } : { value: void 0, done: true });
+          return new Promise((resolve6, reject) => readQueue.push({ resolve: resolve6, reject })).then((chunk2) => chunk2 ? { value: chunk2, done: false } : { value: void 0, done: true });
         }
         const chunk = pushQueue.shift();
         return { value: chunk, done: false };
@@ -98798,7 +98798,7 @@ var AssistantStream = class extends EventStream {
           if (done) {
             return { value: void 0, done: true };
           }
-          return new Promise((resolve5, reject) => readQueue.push({ resolve: resolve5, reject })).then((chunk2) => chunk2 ? { value: chunk2, done: false } : { value: void 0, done: true });
+          return new Promise((resolve6, reject) => readQueue.push({ resolve: resolve6, reject })).then((chunk2) => chunk2 ? { value: chunk2, done: false } : { value: void 0, done: true });
         }
         const chunk = pushQueue.shift();
         return { value: chunk, done: false };
@@ -100867,7 +100867,7 @@ var ResponseStream = class _ResponseStream extends EventStream {
           if (done) {
             return { value: void 0, done: true };
           }
-          return new Promise((resolve5, reject) => readQueue.push({ resolve: resolve5, reject })).then((event2) => event2 ? { value: event2, done: false } : { value: void 0, done: true });
+          return new Promise((resolve6, reject) => readQueue.push({ resolve: resolve6, reject })).then((event2) => event2 ? { value: event2, done: false } : { value: void 0, done: true });
         }
         const event = pushQueue.shift();
         return { value: event, done: false };
@@ -104472,10 +104472,10 @@ var CanceledError = class extends AxiosError_default {
 var CanceledError_default = CanceledError;
 
 // node_modules/axios/lib/core/settle.js
-function settle(resolve5, reject, response) {
+function settle(resolve6, reject, response) {
   const validateStatus2 = response.config.validateStatus;
   if (!response.status || !validateStatus2 || validateStatus2(response.status)) {
-    resolve5(response);
+    resolve6(response);
   } else {
     reject(new AxiosError_default(
       "Request failed with status code " + response.status,
@@ -105696,7 +105696,7 @@ function setProxy(options, configProxy, location, isRedirect2, configHttpsAgent,
 }
 var isHttpAdapterSupported = typeof process !== "undefined" && utils_default.kindOf(process) === "process";
 var wrapAsync = (asyncExecutor) => {
-  return new Promise((resolve5, reject) => {
+  return new Promise((resolve6, reject) => {
     let onDone;
     let isDone;
     const done = (value, isRejected) => {
@@ -105706,7 +105706,7 @@ var wrapAsync = (asyncExecutor) => {
     };
     const _resolve = (value) => {
       done(value);
-      resolve5(value);
+      resolve6(value);
     };
     const _reject = (reason) => {
       done(reason, true);
@@ -105753,7 +105753,7 @@ var http2Transport = {
   }
 };
 var http_default = isHttpAdapterSupported && function httpAdapter(config2) {
-  return wrapAsync(async function dispatchHttpRequest(resolve5, reject, onDone) {
+  return wrapAsync(async function dispatchHttpRequest(resolve6, reject, onDone) {
     const own2 = (key) => utils_default.getSafeProp(config2, key);
     const transitional2 = own2("transitional") || transitional_default;
     let data = own2("data");
@@ -105882,7 +105882,7 @@ var http_default = isHttpAdapterSupported && function httpAdapter(config2) {
       }
       let convertedData;
       if (method !== "GET") {
-        return settle(resolve5, reject, {
+        return settle(resolve6, reject, {
           status: 405,
           statusText: "method not allowed",
           headers: {},
@@ -105904,7 +105904,7 @@ var http_default = isHttpAdapterSupported && function httpAdapter(config2) {
       } else if (responseType === "stream") {
         convertedData = import_stream11.default.Readable.from(convertedData);
       }
-      return settle(resolve5, reject, {
+      return settle(resolve6, reject, {
         data: convertedData,
         status: 200,
         statusText: "OK",
@@ -106254,7 +106254,7 @@ var http_default = isHttpAdapterSupported && function httpAdapter(config2) {
           });
         }
         response.data = responseStream;
-        settle(resolve5, reject, response);
+        settle(resolve6, reject, response);
       } else {
         const responseBuffer = [];
         let totalResponseBytes = 0;
@@ -106305,7 +106305,7 @@ var http_default = isHttpAdapterSupported && function httpAdapter(config2) {
           } catch (err) {
             return reject(AxiosError_default.from(err, null, config2, response.request, response));
           }
-          settle(resolve5, reject, response);
+          settle(resolve6, reject, response);
         });
       }
       abortEmitter.once("abort", (err) => {
@@ -106683,7 +106683,7 @@ var resolveConfig_default = resolveConfig;
 // node_modules/axios/lib/adapters/xhr.js
 var isXHRAdapterSupported = typeof XMLHttpRequest !== "undefined";
 var xhr_default = isXHRAdapterSupported && function(config2) {
-  return new Promise(function dispatchXhrRequest(resolve5, reject) {
+  return new Promise(function dispatchXhrRequest(resolve6, reject) {
     const _config = resolveConfig_default(config2);
     let requestData = _config.data;
     const requestHeaders = AxiosHeaders_default.from(_config.headers).normalize();
@@ -106718,7 +106718,7 @@ var xhr_default = isXHRAdapterSupported && function(config2) {
       };
       settle(
         function _resolve(value) {
-          resolve5(value);
+          resolve6(value);
           done();
         },
         function _reject(err) {
@@ -107301,8 +107301,8 @@ var factory = (env3) => {
         }
       }
       !isStreamResponse && unsubscribe && unsubscribe();
-      return await new Promise((resolve5, reject) => {
-        settle(resolve5, reject, {
+      return await new Promise((resolve6, reject) => {
+        settle(resolve6, reject, {
           data: responseData,
           headers: AxiosHeaders_default.from(response.headers),
           status: response.status,
@@ -107782,8 +107782,8 @@ var CancelToken = class _CancelToken {
       throw new TypeError("executor must be a function.");
     }
     let resolvePromise;
-    this.promise = new Promise(function promiseExecutor(resolve5) {
-      resolvePromise = resolve5;
+    this.promise = new Promise(function promiseExecutor(resolve6) {
+      resolvePromise = resolve6;
     });
     const token = this;
     this.promise.then((cancel) => {
@@ -107796,9 +107796,9 @@ var CancelToken = class _CancelToken {
     });
     this.promise.then = (onfulfilled) => {
       let _resolve;
-      const promise = new Promise((resolve5) => {
-        token.subscribe(resolve5);
-        _resolve = resolve5;
+      const promise = new Promise((resolve6) => {
+        token.subscribe(resolve6);
+        _resolve = resolve6;
       }).then(onfulfilled);
       promise.cancel = function reject() {
         token.unsubscribe(_resolve);
@@ -108363,7 +108363,7 @@ var __objRest = (source, exclude) => {
   return target;
 };
 var __async = (__this, __arguments, generator) => {
-  return new Promise((resolve5, reject) => {
+  return new Promise((resolve6, reject) => {
     var fulfilled = (value) => {
       try {
         step(generator.next(value));
@@ -108378,7 +108378,7 @@ var __async = (__this, __arguments, generator) => {
         reject(e2);
       }
     };
-    var step = (x2) => x2.done ? resolve5(x2.value) : Promise.resolve(x2.value).then(fulfilled, rejected);
+    var step = (x2) => x2.done ? resolve6(x2.value) : Promise.resolve(x2.value).then(fulfilled, rejected);
     step((generator = generator.apply(__this, __arguments)).next());
   });
 };
@@ -109255,7 +109255,7 @@ function getRipgrepPath() {
 var rgPath = getRipgrepPath();
 var MAX_FILES = 100;
 function executeGlob(pattern, cwd, signal) {
-  return new Promise((resolve5, reject) => {
+  return new Promise((resolve6, reject) => {
     const args = [
       "--files",
       "--glob",
@@ -109295,14 +109295,14 @@ function executeGlob(pattern, cwd, signal) {
     child.on("close", () => {
       signal.removeEventListener("abort", abortListener);
       if (signal.aborted) return reject(new Error("AbortError"));
-      if (results.length === 0) return resolve5({ message: "No files found in workspace." });
+      if (results.length === 0) return resolve6({ message: "No files found in workspace." });
       let output = results.join("\n");
       if (truncated) {
         output = `[Results truncated. ${results.length} files found. Refine your search pattern to narrow results.]
 
 ${output}`;
       }
-      resolve5({ message: output });
+      resolve6({ message: output });
     });
   });
 }
@@ -109315,7 +109315,7 @@ async function executeGrep(query, filePattern, cwd, signal) {
   } catch (e2) {
     throw new Error(`Invalid regex: ${String(e2)}`);
   }
-  return new Promise((resolve5, reject) => {
+  return new Promise((resolve6, reject) => {
     const args = [
       "--json",
       "--line-number",
@@ -109368,7 +109368,7 @@ async function executeGrep(query, filePattern, cwd, signal) {
     child.on("close", () => {
       signal.removeEventListener("abort", abortListener);
       if (signal.aborted) return reject(new Error("AbortError"));
-      if (results.length === 0) return resolve5({ message: "No matches found." });
+      if (results.length === 0) return resolve6({ message: "No matches found." });
       let output = results.join("\n");
       if (output.length > MAX_OUTPUT_CHARS) {
         const cutPoint = output.lastIndexOf("\n", MAX_OUTPUT_CHARS);
@@ -109380,7 +109380,7 @@ async function executeGrep(query, filePattern, cwd, signal) {
 
 ${output}`;
       }
-      resolve5({ message: output });
+      resolve6({ message: output });
     });
   });
 }
@@ -111442,9 +111442,9 @@ var CommandManager = class _CommandManager {
   onDidUpdateStatus = this.emitter.event;
   pendingApprovals = /* @__PURE__ */ new Map();
   requestApproval(bin, args, sessionID) {
-    return new Promise((resolve5) => {
+    return new Promise((resolve6) => {
       const requestID = `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
-      this.pendingApprovals.set(requestID, { resolve: resolve5, bin, args });
+      this.pendingApprovals.set(requestID, { resolve: resolve6, bin, args });
       this.emitter.fire({
         type: "requestCommandApproval",
         sessionID,
@@ -111580,7 +111580,7 @@ var CommandManager = class _CommandManager {
         if (!userApproved) throw new Error(`User denied execution of unlisted command: ${commandStr}`);
       }
     }
-    return new Promise((resolve5, reject) => {
+    return new Promise((resolve6, reject) => {
       if (signal.aborted) return reject(new Error("AbortError"));
       let stdoutData = "";
       let stderrData = "";
@@ -111651,7 +111651,7 @@ ${this.truncateOutput(stderrData)}
 ${output}`.trim()));
         if (code !== 0) return reject(new Error(`[Exit Code: ${code}]
 ${output}`.trim()));
-        resolve5({ message: output.trim() || "Command executed successfully with no output." });
+        resolve6({ message: output.trim() || "Command executed successfully with no output." });
       });
       const abortListener = () => {
         if (isDone) return;
@@ -111702,7 +111702,7 @@ var ContextManager = class {
     this.apiConfig = apiConfig;
     this.preferences = preferences;
     if (this.context.storageUri) {
-      this.storageUri = vscode10.Uri.joinPath(this.context.storageUri, "session", this.metadata.id);
+      this.storageUri = vscode10.Uri.joinPath(this.context.storageUri, "sessions", this.metadata.id);
       this.artifactsUri = vscode10.Uri.joinPath(this.storageUri, "artifacts");
     }
     this.currentProvider = this.apiConfig.provider;
@@ -111718,6 +111718,7 @@ var ContextManager = class {
   activeToolResults = [];
   turnsSinceLastPrune = 0;
   runsSinceLastPrune = 0;
+  artifactCounter = 0;
   reminderResults = [];
   summarizedHistory = [];
   summarizeIndex = 0;
@@ -111728,7 +111729,7 @@ var ContextManager = class {
   // For roll back
   previousTurnID;
   previousProvider;
-  PRUNE_CHAR_THRESHOLD = 1250;
+  PRUNE_CHAR_THRESHOLD = 500;
   runTokenUsage = {
     totalTokens: 0,
     inputTokens: 0,
@@ -111748,6 +111749,7 @@ var ContextManager = class {
       console.error("Failed to create context directory");
     }
     await this.loadHistory();
+    console.log(this.getLLMContext());
     this.isInitialized = true;
   }
   async loadHistory() {
@@ -111759,6 +111761,7 @@ var ContextManager = class {
       if (state.history) this.history = state.history;
       if (state.summarizedHistory) this.summarizedHistory = state.summarizedHistory;
       if (state.summarizeIndex) this.summarizeIndex = state.summarizeIndex;
+      if (state.artifactCounter) this.artifactCounter = state.artifactCounter;
     } catch (e2) {
       console.log("No existing chat history found");
     }
@@ -111769,7 +111772,8 @@ var ContextManager = class {
     const state = {
       history: this.history,
       summarizedHistory: this.summarizedHistory,
-      summarizeIndex: this.summarizeIndex
+      summarizeIndex: this.summarizeIndex,
+      artifactCounter: this.artifactCounter
     };
     const fileUri = vscode10.Uri.joinPath(this.storageUri, "chat_history.json");
     const data = new TextEncoder().encode(JSON.stringify(state, null, 2));
@@ -111928,24 +111932,6 @@ var ContextManager = class {
     }
     this.reminderResults.push(lastResult);
   }
-  async clear() {
-    this.history = [];
-    this.summarizedHistory = [];
-    this.summarizeIndex = 0;
-    this.currentPrompt = { type: "message", role: "user", content: "" };
-    this.activeToolCalls.clear();
-    this.activeToolResults = [];
-    this.currentTurnToolResults = [];
-    this.currentTurnID = void 0;
-    this.previousTurnID = void 0;
-    this.currentProvider = "";
-    this.previousProvider = "";
-    this.turnsSinceLastPrune = 0;
-    this.runsSinceLastPrune = 0;
-    this.resetTokenUsage();
-    await this.save();
-    await this.clearArtifacts();
-  }
   clearTurnReminders() {
     if (this.reminderResults.length === 0) return;
     for (const item of this.reminderResults) {
@@ -111975,7 +111961,8 @@ var ContextManager = class {
   }
   async saveArtifactContent(name, id, content) {
     if (!this.artifactsUri) return "artifact_storage_disabled";
-    const artifactID = `artifact_${name}_${id}_${Date.now()}.txt`;
+    this.artifactCounter++;
+    const artifactID = `art_${this.artifactCounter}.txt`;
     const fileUri = vscode10.Uri.joinPath(this.artifactsUri, artifactID);
     const data = new TextEncoder().encode(content);
     await vscode10.workspace.fs.writeFile(fileUri, data);
@@ -112029,9 +112016,9 @@ ${resultItem.result}
       }
       if (shouldPruneOutput) {
         if (resultItem.error) {
-          resultItem.result = `[Tool '${resultItem.name}' failed. Full output/error stored in artifact: ${artifactID}]`;
+          resultItem.result = `[Tool '${resultItem.name}' failed. Output stored in: ${artifactID}]`;
         } else {
-          resultItem.result = `[Tool '${resultItem.name}' executed successfully. Full output stored in artifact: ${artifactID}]`;
+          resultItem.result = `[Tool '${resultItem.name}' success. Output stored in: ${artifactID}]`;
         }
       }
     }
@@ -112039,15 +112026,6 @@ ${resultItem.result}
     this.activeToolResults = [];
     this.turnsSinceLastPrune = 0;
     this.runsSinceLastPrune = 0;
-  }
-  async clearArtifacts() {
-    if (!this.artifactsUri) return;
-    try {
-      await vscode10.workspace.fs.delete(this.artifactsUri, { recursive: true, useTrash: false });
-      await vscode10.workspace.fs.createDirectory(this.artifactsUri);
-    } catch (e2) {
-      console.error("Failed to clear artifacts directory:", e2);
-    }
   }
   getLLMContext(fullContext = false) {
     const supportsState = this.currentProvider ? ChatFactory.supportsStateManagement(this.currentProvider) : false;
@@ -112172,7 +112150,7 @@ var WorktreeManager = class _WorktreeManager {
     this.context = context;
     this.originalWorkspace = originalWorkspace;
     this.metadata = metadata;
-    const storageBase = context.storageUri.fsPath;
+    const storageBase = this.context.storageUri.fsPath;
     const sessionDir = path11.join(storageBase, "sessions", this.metadata.id);
     this.worktreePath = path11.join(sessionDir, "worktree");
     this.statusFilePath = path11.join(sessionDir, "patch_status.txt");
@@ -112182,8 +112160,17 @@ var WorktreeManager = class _WorktreeManager {
   metadata;
   worktreePath;
   statusFilePath;
+  patchStatus = void 0;
   emitter = new vscode11.EventEmitter();
   onDidUpdateStatus = this.emitter.event;
+  async initialize() {
+    try {
+      const status = (await fs7.readFile(this.statusFilePath, "utf-8")).trim();
+      this.patchStatus = status === "pending" || status === "conflict" ? status : void 0;
+    } catch {
+      this.patchStatus = void 0;
+    }
+  }
   async setup() {
     const gitInstalled = await _WorktreeManager.isGitInstalled();
     if (!gitInstalled) {
@@ -112213,84 +112200,112 @@ var WorktreeManager = class _WorktreeManager {
     if (!exists) {
       await fs7.mkdir(path11.dirname(this.worktreePath), { recursive: true });
       await exec2(`git worktree add --detach "${this.worktreePath}" HEAD`, { cwd: this.originalWorkspace });
-      await this.link();
+      await this.reset();
+    } else if (!this.patchStatus) {
+      await this.reset();
+    } else {
+      await this.syncUntouchedDirtyFiles();
     }
-    await this.reset();
+    await this.link();
   }
   async reset() {
     const { stdout: headSha } = await exec2(`git rev-parse HEAD`, { cwd: this.originalWorkspace });
     await exec2(`git reset --hard ${headSha.trim()}`, { cwd: this.worktreePath });
     await exec2(`git clean -fd`, { cwd: this.worktreePath });
     await this.syncDirtyFiles();
-    await this.clearState();
   }
   async link() {
-    const symlinkDirs = [
+    const DEP_DIR_NAMES = /* @__PURE__ */ new Set([
       "node_modules",
       ".venv",
       "venv",
       "vendor",
-      "target",
-      "build",
-      ".next",
+      ".cargo",
+      "Pods"
+    ]);
+    const BUILD_CACHE_NAMES = /* @__PURE__ */ new Set([
       "dist",
-      ".cargo"
-    ];
-    for (const dir of symlinkDirs) {
-      const src = path11.join(this.originalWorkspace, dir);
-      const dest = path11.join(this.worktreePath, dir);
-      try {
-        const stat5 = await fs7.stat(src);
-        if (stat5.isDirectory()) {
+      "build",
+      "target",
+      ".next",
+      ".turbo",
+      ".cache",
+      "out",
+      "bin",
+      "obj"
+    ]);
+    const CONFIG_FILE_PATTERN = /(^|[\\/])(\.env(\..+)?|tsconfig\.tsbuildinfo|local\.settings\.json)$/i;
+    try {
+      const { stdout } = await exec2(`git status --ignored=matching --porcelain`, { cwd: this.originalWorkspace });
+      const ignoredEntries = stdout.split("\n").filter((line) => line.startsWith("!! ")).map((line) => {
+        let p = line.substring(3).trim();
+        if (p.startsWith('"') && p.endsWith('"')) {
+          p = p.slice(1, -1);
+        }
+        return p;
+      });
+      const symlinkedRoots = [];
+      for (const relativePath of ignoredEntries) {
+        const normalizedPath = relativePath.replace(/\\/g, "/").replace(/\/$/, "");
+        const segments = normalizedPath.split("/");
+        const baseName = segments[segments.length - 1];
+        if (symlinkedRoots.some((root) => normalizedPath.startsWith(root + "/"))) {
+          continue;
+        }
+        const src = path11.join(this.originalWorkspace, normalizedPath);
+        const dest = path11.join(this.worktreePath, normalizedPath);
+        let srcStat;
+        try {
+          srcStat = await fs7.stat(src);
+        } catch {
+          continue;
+        }
+        if (srcStat.isDirectory() && DEP_DIR_NAMES.has(baseName)) {
+          if (segments.some((seg) => BUILD_CACHE_NAMES.has(seg))) {
+            continue;
+          }
+          let destLstat;
+          try {
+            destLstat = await fs7.lstat(dest);
+          } catch {
+            destLstat = null;
+          }
+          if (destLstat && destLstat.isDirectory() && !destLstat.isSymbolicLink()) {
+            continue;
+          }
+          if (destLstat && destLstat.isSymbolicLink()) {
+            try {
+              const currentTarget = await fs7.readlink(dest);
+              if (path11.resolve(path11.dirname(dest), currentTarget) === path11.resolve(src)) {
+                symlinkedRoots.push(normalizedPath);
+                continue;
+              }
+            } catch {
+            }
+          }
+          await fs7.mkdir(path11.dirname(dest), { recursive: true });
+          await fs7.rm(dest, { recursive: true, force: true }).catch(() => {
+          });
           const symlinkType = process.platform === "win32" ? "junction" : "dir";
           await fs7.symlink(src, dest, symlinkType);
+          symlinkedRoots.push(normalizedPath);
+        } else if (srcStat.isDirectory() && BUILD_CACHE_NAMES.has(baseName)) {
+          continue;
+        } else if (srcStat.isFile() && CONFIG_FILE_PATTERN.test(normalizedPath)) {
+          let destStat;
+          try {
+            destStat = await fs7.stat(dest);
+          } catch {
+            destStat = null;
+          }
+          if (!destStat || srcStat.mtimeMs > destStat.mtimeMs) {
+            await fs7.mkdir(path11.dirname(dest), { recursive: true });
+            await fs7.copyFile(src, dest);
+          }
         }
-      } catch {
       }
-    }
-    const configs = [
-      ".env",
-      ".env.local",
-      ".env.development",
-      ".env.test",
-      "tsconfig.json",
-      "tsconfig.tsbuildinfo"
-    ];
-    for (const file of configs) {
-      const src = path11.join(this.originalWorkspace, file);
-      const dest = path11.join(this.worktreePath, file);
-      try {
-        await fs7.copyFile(src, dest);
-      } catch {
-      }
-    }
-  }
-  static async isGitInstalled() {
-    try {
-      await exec2(`git --version`);
-      return true;
-    } catch {
-      return false;
-    }
-  }
-  static async isGitRepo(workspacePath) {
-    try {
-      await exec2(`git rev-parse --is-inside-work-tree`, { cwd: workspacePath });
-      return true;
-    } catch {
-      return false;
-    }
-  }
-  static async initGitRepo(workspacePath) {
-    await exec2(`git init`, { cwd: workspacePath });
-    await exec2(`git add .`, { cwd: workspacePath });
-    try {
-      await exec2(`git commit --allow-empty -m "Initial commit"`, { cwd: workspacePath });
     } catch (e2) {
-      await exec2(
-        `git -c user.name="Agent Harness" -c user.email="agent@harness.local" commit --allow-empty -m "Initial commit"`,
-        { cwd: workspacePath }
-      );
+      console.warn(`WorktreeManager: Failed to reconcile dependencies: ${e2}`);
     }
   }
   async syncDirtyFiles() {
@@ -112316,17 +112331,72 @@ var WorktreeManager = class _WorktreeManager {
       }
     }
     await exec2(`git add -A`, { cwd: this.worktreePath });
+    await exec2(
+      `git -c user.name="Agent" -c user.email="agent@local" commit --allow-empty -m "baseline"`,
+      { cwd: this.worktreePath }
+    );
   }
-  async getPatchStatus() {
+  async syncUntouchedDirtyFiles() {
     try {
-      const status = await fs7.readFile(this.statusFilePath, "utf-8");
-      return status.trim() || void 0;
-    } catch {
-      return void 0;
+      const { stdout: agentDiff } = await exec2(`git diff --name-only HEAD`, { cwd: this.worktreePath });
+      const agentModifiedFiles = new Set(agentDiff.split("\n").map((f3) => f3.trim()).filter(Boolean));
+      const { stdout: hostStatus } = await exec2(`git status --porcelain`, { cwd: this.originalWorkspace });
+      const hostDirtyFiles = hostStatus.split("\n").filter((line) => line.match(/^[MARC] |^[ MARC][MD] |^\?\? /)).map((line) => {
+        let filePath = line.substring(3).trim();
+        if (filePath.startsWith('"') && filePath.endsWith('"')) {
+          filePath = filePath.slice(1, -1);
+        }
+        return filePath;
+      });
+      const syncedFiles = [];
+      for (const file of hostDirtyFiles) {
+        if (agentModifiedFiles.has(file)) continue;
+        const src = vscode11.Uri.file(path11.join(this.originalWorkspace, file));
+        const dest = vscode11.Uri.file(path11.join(this.worktreePath, file));
+        try {
+          await vscode11.workspace.fs.stat(src);
+          await vscode11.workspace.fs.copy(src, dest, { overwrite: true });
+          syncedFiles.push(file);
+        } catch {
+          try {
+            await vscode11.workspace.fs.delete(dest, { useTrash: false });
+            syncedFiles.push(file);
+          } catch {
+          }
+        }
+      }
+      if (syncedFiles.length > 0) {
+        for (const file of syncedFiles) {
+          await exec2(`git add -A -- "${file}"`, { cwd: this.worktreePath }).catch(() => {
+          });
+        }
+        await exec2(
+          `git -c user.name="Agent" -c user.email="agent@local" commit --allow-empty -m "sync host changes"`,
+          { cwd: this.worktreePath }
+        );
+      }
+    } catch (e2) {
+      console.warn(`WorktreeManager: Failed to sync untouched dirty files: ${e2}`);
+    }
+  }
+  async addGitExclude(entry) {
+    try {
+      const { stdout: excludeRelative } = await exec2(`git rev-parse --git-path info/exclude`, { cwd: this.worktreePath });
+      const excludePath = path11.resolve(this.worktreePath, excludeRelative.trim());
+      await fs7.mkdir(path11.dirname(excludePath), { recursive: true });
+      const content = await fs7.readFile(excludePath, "utf-8").catch(() => "");
+      const lines = new Set(content.split("\n").map((l) => l.trim()).filter(Boolean));
+      const clean = entry.replace(/\/$/, "");
+      lines.add(clean);
+      lines.add(`${clean}/`);
+      await fs7.writeFile(excludePath, Array.from(lines).join("\n") + "\n", "utf-8");
+    } catch (e2) {
+      console.warn(`WorktreeManager: Failed to write git exclude: ${e2}`);
     }
   }
   // Persist patch status if the user didn't take action during a reload
   async setPatchStatus(status) {
+    this.patchStatus = status;
     try {
       if (status) {
         await fs7.mkdir(path11.dirname(this.statusFilePath), { recursive: true });
@@ -112345,8 +112415,20 @@ var WorktreeManager = class _WorktreeManager {
     } catch {
       return "";
     }
+    const { stdout: status } = await exec2(`git status --porcelain`, { cwd: this.worktreePath });
+    const untracked = status.split("\n").filter((line) => line.startsWith("?? ")).map((line) => line.substring(3).trim().replace(/^"|"$/g, ""));
+    for (const item of untracked) {
+      try {
+        const itemPath = path11.join(this.worktreePath, item);
+        const stat5 = await fs7.lstat(itemPath);
+        if (stat5.isSymbolicLink()) {
+          await this.addGitExclude(item);
+        }
+      } catch {
+      }
+    }
     await exec2(`git add -N .`, { cwd: this.worktreePath });
-    const { stdout: patch } = await exec2(`git diff --binary`, { cwd: this.worktreePath });
+    const { stdout: patch } = await exec2(`git diff HEAD --binary`, { cwd: this.worktreePath });
     return patch;
   }
   // Display a patch ui to the frontend
@@ -112354,21 +112436,22 @@ var WorktreeManager = class _WorktreeManager {
     const patchContent = await this.getPatch();
     if (!patchContent.trim()) return;
     this.emitter.fire({ type: "reviewPatch", patch: patchContent });
-    const currentStatus = await this.getPatchStatus();
-    if (currentStatus) {
-      this.emitter.fire({ type: "updatePatchStatus", status: currentStatus });
+    if (this.patchStatus === "conflict") {
+      this.emitter.fire({ type: "updatePatchStatus", status: "conflict" });
+    } else {
+      await this.setPatchStatus("pending");
     }
   }
   async applyPatch() {
     const patchContent = await this.getPatch();
     if (!patchContent.trim()) return;
-    const patchPath = path11.join(this.originalWorkspace, `.agent-run-${this.metadata.id}.patch`);
+    const patchPath = path11.join(path11.dirname(this.statusFilePath), `run.patch`);
     await fs7.writeFile(patchPath, patchContent, "utf-8");
     try {
       await exec2(`git add -A`, { cwd: this.originalWorkspace });
       await exec2(`git apply --3way --ignore-whitespace "${patchPath}"`, { cwd: this.originalWorkspace });
       await this.reset();
-      await this.setPatchStatus("accepted");
+      await this.setPatchStatus(void 0);
       this.emitter.fire({ type: "updatePatchStatus", status: "accepted" });
     } catch (e2) {
       const errorStr = (e2.stdout || "") + (e2.stderr || "") + (e2.message || "");
@@ -112403,31 +112486,56 @@ var WorktreeManager = class _WorktreeManager {
         }
       }
     }
-    await this.setPatchStatus("accepted");
     await this.reset();
+    await this.setPatchStatus(void 0);
     this.emitter.fire({ type: "updatePatchStatus", status: "accepted" });
   }
   async rejectPatch() {
     await this.reset();
-    await this.setPatchStatus("rejected");
+    await this.setPatchStatus(void 0);
     this.emitter.fire({ type: "updatePatchStatus", status: "rejected" });
   }
   async resolveConflicts() {
     await this.reset();
-    await this.setPatchStatus("accepted");
+    await this.setPatchStatus(void 0);
     this.emitter.fire({ type: "updatePatchStatus", status: "accepted" });
   }
-  // After successfully applying or rejecting a patch, clear the patch status
-  async clearState() {
-    await this.setPatchStatus(void 0);
+  // Git utils
+  static async isGitInstalled() {
+    try {
+      await exec2(`git --version`);
+      return true;
+    } catch {
+      return false;
+    }
   }
-  // Don't think this is needed anymore, deleting a session will completely wipe the worktree directory
+  static async isGitRepo(workspacePath) {
+    try {
+      await exec2(`git rev-parse --is-inside-work-tree`, { cwd: workspacePath });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+  static async initGitRepo(workspacePath) {
+    await exec2(`git init`, { cwd: workspacePath });
+    await exec2(`git add .`, { cwd: workspacePath });
+    try {
+      await exec2(`git commit --allow-empty -m "Initial commit"`, { cwd: workspacePath });
+    } catch (e2) {
+      await exec2(
+        `git -c user.name="Agent Harness" -c user.email="agent@harness.local" commit --allow-empty -m "Initial commit"`,
+        { cwd: workspacePath }
+      );
+    }
+  }
   async cleanup() {
     try {
-      await this.clearState();
+      await this.setPatchStatus(void 0);
       await exec2(`git worktree remove "${this.worktreePath}" --force`, { cwd: this.originalWorkspace });
-      await this.context.workspaceState.update("workTreeID", void 0);
     } catch {
+      await exec2(`git worktree prune`, { cwd: this.originalWorkspace }).catch(() => {
+      });
     }
   }
 };
@@ -112623,6 +112731,7 @@ var AgentSession = class {
   configUri;
   async initialize() {
     await this.contextManager.initialize();
+    await this.worktreeManager.initialize();
   }
   getAPIConfig() {
     const provider = this.apiConfig.provider;
@@ -112669,7 +112778,6 @@ var AgentSession = class {
   async runAgentTurn(userMessage) {
     this.aborter = new AbortController();
     if (!this.metadata.customTitle) this.generateTitle(userMessage);
-    await this.worktreeManager.clearState();
     await this.worktreeManager.setup();
     const provider = this.apiConfig.provider || "";
     const model = this.apiConfig.providerModelConfig[provider] || "";
@@ -112677,7 +112785,6 @@ var AgentSession = class {
     const serverStateManagement = this.preferences.stateful;
     const webSearchMode = this.preferences.webSearchEnabled ? this.preferences.webSearchMode : "none";
     const turnLimit = this.preferences.turnLimit;
-    await this.worktreeManager.setup();
     const apiKey = await this.shared.apiManager.getChatAPIKey(provider);
     const providerInstance = ChatFactory.create(provider, apiKey, webSearchMode);
     let runStatus = "ok";
@@ -113006,7 +113113,7 @@ var SessionManager = class {
     if (!this.metadataMap.has(sessionID)) return;
     const session = this.sessions.get(sessionID);
     if (session) {
-      await session.cleanup();
+      session.cleanup();
       this.sessions.delete(sessionID);
     }
     const sessionDir = vscode14.Uri.joinPath(this.shared.context.storageUri, "sessions", sessionID);
@@ -113025,7 +113132,6 @@ var SessionManager = class {
     if (this.activeSessionID === sessionID) return;
     const session = this.sessions.get(sessionID);
     if (session && !session.isRunning()) {
-      await session.cleanup();
       this.sessions.delete(sessionID);
     }
     this.emitter.fire({
@@ -121125,7 +121231,7 @@ var Protocol = class {
           return;
         }
         const pollInterval = task2.pollInterval ?? this._options?.defaultTaskPollInterval ?? 1e3;
-        await new Promise((resolve5) => setTimeout(resolve5, pollInterval));
+        await new Promise((resolve6) => setTimeout(resolve6, pollInterval));
         options?.signal?.throwIfAborted();
       }
     } catch (error2) {
@@ -121142,7 +121248,7 @@ var Protocol = class {
    */
   request(request, resultSchema, options) {
     const { relatedRequestId, resumptionToken, onresumptiontoken, task, relatedTask } = options ?? {};
-    return new Promise((resolve5, reject) => {
+    return new Promise((resolve6, reject) => {
       const earlyReject = (error2) => {
         reject(error2);
       };
@@ -121220,7 +121326,7 @@ var Protocol = class {
           if (!parseResult.success) {
             reject(parseResult.error);
           } else {
-            resolve5(parseResult.data);
+            resolve6(parseResult.data);
           }
         } catch (error2) {
           reject(error2);
@@ -121481,12 +121587,12 @@ var Protocol = class {
       }
     } catch {
     }
-    return new Promise((resolve5, reject) => {
+    return new Promise((resolve6, reject) => {
       if (signal.aborted) {
         reject(new McpError(ErrorCode.InvalidRequest, "Request cancelled"));
         return;
       }
-      const timeoutId = setTimeout(resolve5, interval);
+      const timeoutId = setTimeout(resolve6, interval);
       signal.addEventListener("abort", () => {
         clearTimeout(timeoutId);
         reject(new McpError(ErrorCode.InvalidRequest, "Request cancelled"));
@@ -122437,7 +122543,7 @@ var StdioClientTransport = class {
     if (this._process) {
       throw new Error("StdioClientTransport already started! If using Client class, note that connect() calls start() automatically.");
     }
-    return new Promise((resolve5, reject) => {
+    return new Promise((resolve6, reject) => {
       this._process = (0, import_cross_spawn.default)(this._serverParams.command, this._serverParams.args ?? [], {
         // merge default env with server env because mcp server needs some env vars
         env: {
@@ -122454,7 +122560,7 @@ var StdioClientTransport = class {
         this.onerror?.(error2);
       });
       this._process.on("spawn", () => {
-        resolve5();
+        resolve6();
       });
       this._process.on("close", (_code) => {
         this._process = void 0;
@@ -122519,22 +122625,22 @@ var StdioClientTransport = class {
     if (this._process) {
       const processToClose = this._process;
       this._process = void 0;
-      const closePromise = new Promise((resolve5) => {
+      const closePromise = new Promise((resolve6) => {
         processToClose.once("close", () => {
-          resolve5();
+          resolve6();
         });
       });
       try {
         processToClose.stdin?.end();
       } catch {
       }
-      await Promise.race([closePromise, new Promise((resolve5) => setTimeout(resolve5, 2e3).unref())]);
+      await Promise.race([closePromise, new Promise((resolve6) => setTimeout(resolve6, 2e3).unref())]);
       if (processToClose.exitCode === null) {
         try {
           processToClose.kill("SIGTERM");
         } catch {
         }
-        await Promise.race([closePromise, new Promise((resolve5) => setTimeout(resolve5, 2e3).unref())]);
+        await Promise.race([closePromise, new Promise((resolve6) => setTimeout(resolve6, 2e3).unref())]);
       }
       if (processToClose.exitCode === null) {
         try {
@@ -122546,15 +122652,15 @@ var StdioClientTransport = class {
     this._readBuffer.clear();
   }
   send(message) {
-    return new Promise((resolve5) => {
+    return new Promise((resolve6) => {
       if (!this._process?.stdin) {
         throw new Error("Not connected");
       }
       const json = serializeMessage(message);
       if (this._process.stdin.write(json)) {
-        resolve5();
+        resolve6();
       } else {
-        this._process.stdin.once("drain", resolve5);
+        this._process.stdin.once("drain", resolve6);
       }
     });
   }

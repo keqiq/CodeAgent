@@ -7,24 +7,36 @@ import { SessionMetadata } from '../session/agentSession';
 
 const exec = util.promisify(cp.exec);
 
+export type PatchStatus = 'pending' | 'conflict' | undefined;
+
 export class WorktreeManager {
     public readonly worktreePath: string;
     private readonly statusFilePath: string;
+    private patchStatus: PatchStatus = undefined;
 
     private emitter = new vscode.EventEmitter();
     public readonly onDidUpdateStatus = this.emitter.event;
 
     constructor(
-        private readonly context: vscode.ExtensionContext, 
+        private readonly context: vscode.ExtensionContext,
         private readonly originalWorkspace: string,
         private readonly metadata: SessionMetadata
     ) {
 
-        const storageBase = context.storageUri!.fsPath;
+        const storageBase = this.context.storageUri!.fsPath;
         const sessionDir = path.join(storageBase, 'sessions', this.metadata.id);
-        
+
         this.worktreePath = path.join(sessionDir, 'worktree');
         this.statusFilePath = path.join(sessionDir, 'patch_status.txt');
+    }
+
+    public async initialize(): Promise<void> {
+        try {
+            const status = (await fs.readFile(this.statusFilePath, 'utf-8')).trim();
+            this.patchStatus = (status === 'pending' || status === 'conflict') ? (status as PatchStatus) : undefined;
+        } catch {
+            this.patchStatus = undefined;
+        }
     }
 
     public async setup(): Promise<void> {
@@ -60,109 +72,150 @@ export class WorktreeManager {
 
         const exists = await fs.stat(this.worktreePath).then(() => true).catch(() => false);
 
+        // First-time session setup: create worktree, reset to HEAD, and link
         if (!exists) {
-            // Only create the worktree and link heavy deps if it doesn't exist
             await fs.mkdir(path.dirname(this.worktreePath), { recursive: true });
             await exec(`git worktree add --detach "${this.worktreePath}" HEAD`, { cwd: this.originalWorkspace });
-            await this.link();
+            await this.reset();
         }
-        await this.reset();
+        // Existing work tree with no pending patch, full sync with workspace 
+        else if (!this.patchStatus) {
+            await this.reset();
+        }
+        // Active unapplied edits, only sync host files untouched by the agent
+        else {
+            await this.syncUntouchedDirtyFiles();
+        }
+        await this.link();
     }
 
-    public async reset(): Promise<void> {
+    private async reset(): Promise<void> {
         // Get the current HEAD commit SHA of the main workspace
         const { stdout: headSha } = await exec(`git rev-parse HEAD`, { cwd: this.originalWorkspace });
-        
+
         // Hard reset the worktree to match the main workspace's commit
         await exec(`git reset --hard ${headSha.trim()}`, { cwd: this.worktreePath });
-        
+
         // Clean any untracked files left over from previous agent runs
         await exec(`git clean -fd`, { cwd: this.worktreePath });
 
-        // Sync uncommitted dirty files from the user
         await this.syncDirtyFiles();
-        await this.clearState();
     }
 
     private async link(): Promise<void> {
-        const symlinkDirs = [
-            'node_modules',
-            '.venv',
-            'venv',
-            'vendor',
-            'target',
-            'build',
-            '.next',
-            'dist',
-            '.cargo'
-        ];
+        const DEP_DIR_NAMES = new Set([
+            'node_modules', '.pnpm-store', '.yarn', 'bower_components', 'jspm_packages',
+            '.venv', 'venv', 'env', '.tox', '.nox', '__pypackages__',
+            '.cargo', 'vendor', '.bundle', 'Pods', 'Carthage', '.swiftpm',
+            '.pub-cache', '.dart_tool', 'deps', 'packages', '.gradle', 'Library'
+        ]);
 
-        for (const dir of symlinkDirs) {
-            const src = path.join(this.originalWorkspace, dir);
-            const dest = path.join(this.worktreePath, dir);
-            
-            try {
-                const stat = await fs.stat(src);
-                if (stat.isDirectory()) {
+        const BUILD_CACHE_NAMES = new Set([
+            'dist', 'build', 'out', 'output', '.output', '.next', '.nuxt', '.turbo',
+            '.cache', '.parcel-cache', '.svelte-kit', '.astro', '.docusaurus', '.vite',
+            '.vercel', '.netlify', 'storybook-static', '__pycache__', '.pytest_cache',
+            '.mypy_cache', '.ruff_cache', '.coverage', 'htmlcov', '.hypothesis',
+            'target', 'cmake-build-debug', 'cmake-build-release', 'CMakeFiles',
+            '.ninja_deps', '_build', 'bin', 'obj', 'TestResults', '.vs',
+            'DerivedData', '.build', 'coverage', '.nyc_output', '.nx'
+        ]);
+
+        const CONFIG_FILE_PATTERN = /(^|[\\/])(\.env(\..+)?|tsconfig\.tsbuildinfo|local\.settings\.json|appsettings\.Development\.json|\.envrc)$/i;
+
+        try {
+            const { stdout } = await exec(`git status --ignored=matching --porcelain`, { cwd: this.originalWorkspace });
+            const ignoredEntries = stdout
+                .split('\n')
+                .filter(line => line.startsWith('!! '))
+                .map(line => {
+                    let p = line.substring(3).trim();
+                    if (p.startsWith('"') && p.endsWith('"')) {
+                        p = p.slice(1, -1);
+                    }
+                    return p;
+                });
+
+            const symlinkedRoots: string[] = [];
+
+            for (const relativePath of ignoredEntries) {
+                const normalizedPath = relativePath.replace(/\\/g, '/').replace(/\/$/, '');
+                const segments = normalizedPath.split('/');
+                const baseName = segments[segments.length - 1];
+
+                if (symlinkedRoots.some(root => normalizedPath.startsWith(root + '/'))) {
+                    continue;
+                }
+
+                const src = path.join(this.originalWorkspace, normalizedPath);
+                const dest = path.join(this.worktreePath, normalizedPath);
+
+                let srcStat;
+                try {
+                    srcStat = await fs.stat(src);
+                } catch {
+                    continue;
+                }
+
+                // Tier 1: Heavy Dependencies
+                if (srcStat.isDirectory() && DEP_DIR_NAMES.has(baseName)) {
+                    if (segments.some(seg => BUILD_CACHE_NAMES.has(seg))) {
+                        continue;
+                    }
+
+                    let destLstat;
+                    try {
+                        destLstat = await fs.lstat(dest);
+                    } catch {
+                        destLstat = null;
+                    }
+
+                    // If dest is already a real directory created by the agent, preserve it
+                    if (destLstat && destLstat.isDirectory() && !destLstat.isSymbolicLink()) {
+                        continue;
+                    }
+
+                    // If dest is already a valid symlink, skip
+                    if (destLstat && destLstat.isSymbolicLink()) {
+                        try {
+                            const currentTarget = await fs.readlink(dest);
+                            if (path.resolve(path.dirname(dest), currentTarget) === path.resolve(src)) {
+                                symlinkedRoots.push(normalizedPath);
+                                continue;
+                            }
+                        } catch { }
+                    }
+
+                    // Create or repair symlink
+                    await fs.mkdir(path.dirname(dest), { recursive: true });
+                    await fs.rm(dest, { recursive: true, force: true }).catch(() => { });
+
                     const symlinkType = process.platform === 'win32' ? 'junction' : 'dir';
                     await fs.symlink(src, dest, symlinkType);
+                    symlinkedRoots.push(normalizedPath);
                 }
-            } catch {
-                // Folder doesn't exist in original workspace skip
+
+                // Tier 2: Build Caches -> Skip
+                else if (srcStat.isDirectory() && BUILD_CACHE_NAMES.has(baseName)) {
+                    continue;
+                }
+
+                // Tier 3: Configs / Env Files -> Copy only if missing or outdated
+                else if (srcStat.isFile() && CONFIG_FILE_PATTERN.test(normalizedPath)) {
+                    let destStat;
+                    try {
+                        destStat = await fs.stat(dest);
+                    } catch {
+                        destStat = null;
+                    }
+
+                    if (!destStat || srcStat.mtimeMs > destStat.mtimeMs) {
+                        await fs.mkdir(path.dirname(dest), { recursive: true });
+                        await fs.copyFile(src, dest);
+                    }
+                }
             }
-        }
-
-        const configs = [
-            '.env',
-            '.env.local',
-            '.env.development',
-            '.env.test',
-            'tsconfig.json',
-            'tsconfig.tsbuildinfo'
-        ];
-
-        for (const file of configs) {
-            const src = path.join(this.originalWorkspace, file);
-            const dest = path.join(this.worktreePath, file);
-
-            try {
-                await fs.copyFile(src, dest);
-            } catch {
-                // File doesn't exit in original workspace skip
-            }
-        }
-    } 
-
-    public static async isGitInstalled(): Promise<boolean> {
-        try {
-            await exec(`git --version`);
-            return true;
-        } catch {
-            return false;
-        }
-    }
-
-    public static async isGitRepo(workspacePath: string): Promise<boolean> {
-        try {
-            await exec(`git rev-parse --is-inside-work-tree`, { cwd: workspacePath });
-            return true;
-        } catch {
-            return false;
-        }
-    }
-
-    public static async initGitRepo(workspacePath: string): Promise<void> {
-        await exec(`git init`, { cwd: workspacePath });
-        await exec(`git add .`, { cwd: workspacePath });
-        try {
-            // try with user's git config if it's set up
-            await exec(`git commit --allow-empty -m "Initial commit"`, { cwd: workspacePath });
         } catch (e) {
-            // use dummy credentials if we don't have a git config
-            await exec(
-                `git -c user.name="Agent Harness" -c user.email="agent@harness.local" commit --allow-empty -m "Initial commit"`, 
-                { cwd: workspacePath }
-            );
+            console.warn(`WorktreeManager: Failed to reconcile dependencies: ${e}`);
         }
     }
 
@@ -192,30 +245,103 @@ export class WorktreeManager {
                 // If it was deleted in the main workspace, delete it in the worktree too
                 try {
                     await vscode.workspace.fs.delete(dest, { useTrash: false });
-                } catch (e) {}
+                } catch (e) { }
             }
         }
 
+        // Stage baseline and create a local temporary checkpoint commit
         await exec(`git add -A`, { cwd: this.worktreePath });
+        await exec(
+            `git -c user.name="Agent" -c user.email="agent@local" commit --allow-empty -m "baseline"`,
+            { cwd: this.worktreePath }
+        );
     }
 
-    private async getPatchStatus(): Promise<string | undefined> {
+    private async syncUntouchedDirtyFiles(): Promise<void> {
         try {
-            const status = await fs.readFile(this.statusFilePath, 'utf-8');
-            return status.trim() || undefined;
-        } catch {
-            return undefined;
+            // 1. Files modified/created by the agent in this worktree
+            const { stdout: agentDiff } = await exec(`git diff --name-only HEAD`, { cwd: this.worktreePath });
+            const agentModifiedFiles = new Set(agentDiff.split('\n').map(f => f.trim()).filter(Boolean));
+
+            // 2. Dirty/untracked files in the user's host workspace
+            const { stdout: hostStatus } = await exec(`git status --porcelain`, { cwd: this.originalWorkspace });
+            const hostDirtyFiles = hostStatus
+                .split('\n')
+                .filter(line => line.match(/^[MARC] |^[ MARC][MD] |^\?\? /))
+                .map(line => {
+                    let filePath = line.substring(3).trim();
+                    if (filePath.startsWith('"') && filePath.endsWith('"')) {
+                        filePath = filePath.slice(1, -1);
+                    }
+                    return filePath;
+                });
+
+            const syncedFiles: string[] = [];
+
+            for (const file of hostDirtyFiles) {
+                // Do not overwrite files the agent is actively editing
+                if (agentModifiedFiles.has(file)) continue;
+
+                const src = vscode.Uri.file(path.join(this.originalWorkspace, file));
+                const dest = vscode.Uri.file(path.join(this.worktreePath, file));
+
+                try {
+                    await vscode.workspace.fs.stat(src);
+                    await vscode.workspace.fs.copy(src, dest, { overwrite: true });
+                    syncedFiles.push(file);
+                } catch {
+                    try {
+                        await vscode.workspace.fs.delete(dest, { useTrash: false });
+                        syncedFiles.push(file);
+                    } catch { }
+                }
+            }
+
+            // 3. Absorb host changes into the worktree's HEAD baseline
+            if (syncedFiles.length > 0) {
+                // Stage ONLY the synced files so agent edits remain unstaged deltas
+                for (const file of syncedFiles) {
+                    await exec(`git add -A -- "${file}"`, { cwd: this.worktreePath }).catch(() => { });
+                }
+                await exec(
+                    `git -c user.name="Agent" -c user.email="agent@local" commit --allow-empty -m "sync host changes"`,
+                    { cwd: this.worktreePath }
+                );
+            }
+        } catch (e) {
+            console.warn(`WorktreeManager: Failed to sync untouched dirty files: ${e}`);
+        }
+    }
+
+    private async addGitExclude(entry: string): Promise<void> {
+        try {
+            const { stdout: excludeRelative } = await exec(`git rev-parse --git-path info/exclude`, { cwd: this.worktreePath });
+            const excludePath = path.resolve(this.worktreePath, excludeRelative.trim());
+            await fs.mkdir(path.dirname(excludePath), { recursive: true });
+
+            const content = await fs.readFile(excludePath, 'utf-8').catch(() => '');
+            const lines = new Set(content.split('\n').map(l => l.trim()).filter(Boolean));
+
+            const clean = entry.replace(/\/$/, '');
+            // Exclude both the bare symlink file and the directory path
+            lines.add(clean);
+            lines.add(`${clean}/`);
+
+            await fs.writeFile(excludePath, Array.from(lines).join('\n') + '\n', 'utf-8');
+        } catch (e) {
+            console.warn(`WorktreeManager: Failed to write git exclude: ${e}`);
         }
     }
 
     // Persist patch status if the user didn't take action during a reload
-    private async setPatchStatus(status?: string): Promise<void> {
+    private async setPatchStatus(status: PatchStatus): Promise<void> {
+        this.patchStatus = status;
         try {
             if (status) {
                 await fs.mkdir(path.dirname(this.statusFilePath), { recursive: true });
                 await fs.writeFile(this.statusFilePath, status, 'utf-8');
             } else {
-                await fs.unlink(this.statusFilePath).catch(() => {});
+                await fs.unlink(this.statusFilePath).catch(() => { });
             }
         } catch {
             // Ignore if file doesn't exist
@@ -225,16 +351,31 @@ export class WorktreeManager {
     // Get the diff between agent worktree and the user's original workspace
     private async getPatch(): Promise<string> {
 
-        try {
-            await fs.stat(this.worktreePath);
-        } catch {
-            return '';
+        try { await fs.stat(this.worktreePath); }
+        catch { return ''; }
+
+        // Find untracked items and dynamically exclude any that are symlinks
+        const { stdout: status } = await exec(`git status --porcelain`, { cwd: this.worktreePath });
+        const untracked = status
+            .split('\n')
+            .filter(line => line.startsWith('?? '))
+            .map(line => line.substring(3).trim().replace(/^"|"$/g, ''));
+
+        for (const item of untracked) {
+            try {
+                const itemPath = path.join(this.worktreePath, item);
+                const stat = await fs.lstat(itemPath);
+                if (stat.isSymbolicLink()) {
+                    await this.addGitExclude(item);
+                }
+            } catch { }
         }
 
         // Track new files
         await exec(`git add -N .`, { cwd: this.worktreePath });
-        // get patch string
-        const { stdout: patch } = await exec(`git diff --binary`, { cwd: this.worktreePath });
+
+        // Diff everything against the baseline commit regardless of what the agent staged
+        const { stdout: patch } = await exec(`git diff HEAD --binary`, { cwd: this.worktreePath });
         return patch;
     }
 
@@ -242,13 +383,14 @@ export class WorktreeManager {
     public async displayPatch(): Promise<void> {
         const patchContent = await this.getPatch();
         if (!patchContent.trim()) return;
-        
+
         this.emitter.fire({ type: 'reviewPatch', patch: patchContent });
-        
-        // If this is called during a reload, check for unresolved patches
-        const currentStatus = await this.getPatchStatus();
-        if (currentStatus) {
-            this.emitter.fire({ type: 'updatePatchStatus', status: currentStatus });
+
+        // Preserve existing conflict state on reload; otherwise mark as pending
+        if (this.patchStatus === 'conflict') {
+            this.emitter.fire({ type: 'updatePatchStatus', status: 'conflict' });
+        } else {
+            await this.setPatchStatus('pending');
         }
     }
 
@@ -257,7 +399,7 @@ export class WorktreeManager {
         if (!patchContent.trim()) return;
 
         // Write patch to temp file in main workspace
-        const patchPath = path.join(this.originalWorkspace, `.agent-run-${this.metadata.id}.patch`);
+        const patchPath = path.join(path.dirname(this.statusFilePath), `run.patch`);
         await fs.writeFile(patchPath, patchContent, 'utf-8');
 
         try {
@@ -267,7 +409,7 @@ export class WorktreeManager {
             await exec(`git apply --3way --ignore-whitespace "${patchPath}"`, { cwd: this.originalWorkspace });
 
             await this.reset();
-            await this.setPatchStatus('accepted');
+            await this.setPatchStatus(undefined);
 
             this.emitter.fire({ type: 'updatePatchStatus', status: 'accepted' });
         }
@@ -283,13 +425,12 @@ export class WorktreeManager {
                 throw new Error('MERGE_CONFLICT');
             }
             throw e;
-        } 
+        }
 
         finally {
             // ignore clean up errors
-            await fs.unlink(patchPath).catch(() => {}); 
+            await fs.unlink(patchPath).catch(() => { });
         }
-
     }
 
     // This option is available for merge conflicts
@@ -304,7 +445,7 @@ export class WorktreeManager {
         for (const file of files) {
             const src = vscode.Uri.file(path.join(this.worktreePath, file));
             const dest = vscode.Uri.file(path.join(this.originalWorkspace, file));
-            
+
             try {
                 // Overwrite file in the main workspace
                 await vscode.workspace.fs.stat(src);
@@ -314,40 +455,66 @@ export class WorktreeManager {
                 // Delete in the main workspace as well
                 try {
                     await vscode.workspace.fs.delete(dest, { useTrash: false });
-                } catch (e) {}
-            } 
+                } catch (e) { }
+            }
         }
-        await this.setPatchStatus('accepted');
         await this.reset();
+        await this.setPatchStatus(undefined);
         this.emitter.fire({ type: 'updatePatchStatus', status: 'accepted' });
     }
 
-
     public async rejectPatch(): Promise<void> {
         await this.reset();
-        await this.setPatchStatus('rejected');
+        await this.setPatchStatus(undefined);
         this.emitter.fire({ type: 'updatePatchStatus', status: 'rejected' });
     }
-    
+
     public async resolveConflicts(): Promise<void> {
         await this.reset();
-        await this.setPatchStatus('accepted');
-        this.emitter.fire({ type: 'updatePatchStatus', status: 'accepted'});
-    }
-    
-    // After successfully applying or rejecting a patch, clear the patch status
-    public async clearState(): Promise<void> {
         await this.setPatchStatus(undefined);
+        this.emitter.fire({ type: 'updatePatchStatus', status: 'accepted' });
     }
-    
-    // Don't think this is needed anymore, deleting a session will completely wipe the worktree directory
+
+    // Git utils
+    public static async isGitInstalled(): Promise<boolean> {
+        try {
+            await exec(`git --version`);
+            return true;
+        } catch {
+            return false;
+        }
+    }
+
+    public static async isGitRepo(workspacePath: string): Promise<boolean> {
+        try {
+            await exec(`git rev-parse --is-inside-work-tree`, { cwd: workspacePath });
+            return true;
+        } catch {
+            return false;
+        }
+    }
+
+    public static async initGitRepo(workspacePath: string): Promise<void> {
+        await exec(`git init`, { cwd: workspacePath });
+        await exec(`git add .`, { cwd: workspacePath });
+        try {
+            // try with user's git config if it's set up
+            await exec(`git commit --allow-empty -m "Initial commit"`, { cwd: workspacePath });
+        } catch (e) {
+            // use dummy credentials if we don't have a git config
+            await exec(
+                `git -c user.name="Agent Harness" -c user.email="agent@harness.local" commit --allow-empty -m "Initial commit"`,
+                { cwd: workspacePath }
+            );
+        }
+    }
+
     public async cleanup(): Promise<void> {
         try {
-            await this.clearState();
+            await this.setPatchStatus(undefined);
             await exec(`git worktree remove "${this.worktreePath}" --force`, { cwd: this.originalWorkspace });
-            await this.context.workspaceState.update('workTreeID', undefined);
         } catch {
-            // Ignore if it's already gone
+            await exec(`git worktree prune`, { cwd: this.originalWorkspace }).catch(() => { });
         }
     }
 }

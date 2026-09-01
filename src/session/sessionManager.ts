@@ -185,7 +185,7 @@ export class SessionManager {
         // Cleanup session resources
         const session = this.sessions.get(sessionID);
         if (session) {
-            await session.cleanup();
+            session.cleanup();
             this.sessions.delete(sessionID);
         }
 
@@ -214,7 +214,6 @@ export class SessionManager {
 
         const session = this.sessions.get(sessionID);
         if (session && !session.isRunning()) {
-            await session.cleanup();
             this.sessions.delete(sessionID);
         }
 

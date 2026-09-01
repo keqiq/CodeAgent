@@ -273,11 +273,16 @@ document.addEventListener('DOMContentLoaded', () => {
             sessionMenu.setSessionStatus(view.sessionID, 'pending');
             view.chatInput.showCommandApproval(msg);
         },
-
-        // Makr execution as finished with statistics
+        
+        // Mark execution as finished with statistics
         endExecute: (view, msg) => {
             sessionMenu.setSessionStatus(view.sessionID, 'running');
             view.chatContainer.endExecute(msg);
+        },
+
+        // Show compaction summary
+        createCheckpoint: (view, msg) => {
+            view.chatContainer.addCheckpoint(msg);
         },
 
         // Mark agent loop as finished with statistics

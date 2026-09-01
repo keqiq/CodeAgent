@@ -67,7 +67,7 @@ export class PatchContainer {
 
         // File list with details
         const fileList = document.createElement('div');
-        fileList.classList.add('patch-file-list', 'hidden');
+        fileList.classList.add('patch-file-list');
 
         files.forEach((file: ParsedPatchFile) => {
             const fileItem = document.createElement('div');
@@ -117,8 +117,8 @@ export class PatchContainer {
 
             // Begin parsing new file
             if (line.startsWith('diff --git')) {
-                const match = line.match(/b\/(.+)$/);
-                const filename = match ? match[1] : 'unknown';
+                const match = line.match(/^diff --git a\/(.+?) b\/(.+?)$/);
+                const filename = match ? match[2] : 'unknown';
 
                 currentFile = { filename, additions: 0, deletions: 0, isNew: false, isDeleted: false };
                 files.push(currentFile);

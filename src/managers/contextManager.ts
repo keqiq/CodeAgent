@@ -76,6 +76,7 @@ interface ChatState {
     history: ChatItem[];
     summarizedHistory: ChatItem[];
     summarizeIndex: number;
+    artifactCounter: number;
 }
 
 export class ContextManager {
@@ -88,6 +89,7 @@ export class ContextManager {
     private activeToolResults: FunctionResultItem[] = [];
     private turnsSinceLastPrune: number = 0;
     private runsSinceLastPrune: number = 0;
+    private artifactCounter: number = 0;
 
     private reminderResults: FunctionResultItem[] = [];
 
@@ -103,7 +105,7 @@ export class ContextManager {
     private previousTurnID: string | undefined;
     private previousProvider: string | undefined;
 
-    private readonly PRUNE_CHAR_THRESHOLD = 1_250;
+    private readonly PRUNE_CHAR_THRESHOLD = 500;
 
     private runTokenUsage: TokenUsage = {
         totalTokens: 0,
@@ -125,7 +127,7 @@ export class ContextManager {
         private readonly preferences: SessionPreferences
     ) {
         if (this.context.storageUri) {
-            this.storageUri = vscode.Uri.joinPath(this.context.storageUri, 'session', this.metadata.id);
+            this.storageUri = vscode.Uri.joinPath(this.context.storageUri, 'sessions', this.metadata.id);
             this.artifactsUri = vscode.Uri.joinPath(this.storageUri, 'artifacts');
         }
         this.currentProvider = this.apiConfig.provider;
@@ -141,6 +143,7 @@ export class ContextManager {
         }
 
         await this.loadHistory();
+        console.log(this.getLLMContext());
 
         this.isInitialized = true;
     }
@@ -157,6 +160,7 @@ export class ContextManager {
             if (state.history) this.history = state.history;
             if (state.summarizedHistory) this.summarizedHistory = state.summarizedHistory;
             if (state.summarizeIndex) this.summarizeIndex = state.summarizeIndex;
+            if (state.artifactCounter) this.artifactCounter = state.artifactCounter;
         } catch (e) {
             console.log('No existing chat history found');
         }
@@ -170,7 +174,8 @@ export class ContextManager {
         const state: ChatState = {
             history: this.history,
             summarizedHistory: this.summarizedHistory,
-            summarizeIndex: this.summarizeIndex
+            summarizeIndex: this.summarizeIndex,
+            artifactCounter: this.artifactCounter
         };
 
         const fileUri = vscode.Uri.joinPath(this.storageUri, 'chat_history.json');
@@ -363,25 +368,6 @@ export class ContextManager {
         this.reminderResults.push(lastResult);
     }
 
-    public async clear(): Promise<void> {
-        this.history = [];
-        this.summarizedHistory = [];
-        this.summarizeIndex = 0;
-        this.currentPrompt = { type: 'message', role: 'user', content: '' };
-        this.activeToolCalls.clear();
-        this.activeToolResults = [];
-        this.currentTurnToolResults = [];
-        this.currentTurnID = undefined;
-        this.previousTurnID = undefined;
-        this.currentProvider = '';
-        this.previousProvider = '';
-        this.turnsSinceLastPrune = 0;
-        this.runsSinceLastPrune = 0;
-        this.resetTokenUsage();
-        await this.save();
-        await this.clearArtifacts();
-    }
-
     public clearTurnReminders(): void {
         if (this.reminderResults.length === 0) return;
 
@@ -423,7 +409,8 @@ export class ContextManager {
     public async saveArtifactContent(name: string, id: string, content: string): Promise<string> {
         if (!this.artifactsUri) return 'artifact_storage_disabled';
 
-        const artifactID = `artifact_${name}_${id}_${Date.now()}.txt`;
+        this.artifactCounter++;
+        const artifactID = `art_${this.artifactCounter}.txt`;
         const fileUri = vscode.Uri.joinPath(this.artifactsUri, artifactID);
 
         const data = new TextEncoder().encode(content);
@@ -473,7 +460,7 @@ export class ContextManager {
             if (isRecall) {
                 artifactID = resultItem.data?.artifactID || 'unknown_artifact';
 
-                // Save tool result and tool call parameters to artifact
+            // Save tool result and tool call parameters to artifact
             } else {
                 let artifactText = `=== TOOL: ${resultItem.name} (Call ID: ${resultItem.id}) ===\n\n`;
 
@@ -499,9 +486,9 @@ export class ContextManager {
             // Prune output text on result item
             if (shouldPruneOutput) {
                 if (resultItem.error) {
-                    resultItem.result = `[Tool '${resultItem.name}' failed. Full output/error stored in artifact: ${artifactID}]`;
+                    resultItem.result = `[Tool '${resultItem.name}' failed. Output stored in: ${artifactID}]`;
                 } else {
-                    resultItem.result = `[Tool '${resultItem.name}' executed successfully. Full output stored in artifact: ${artifactID}]`;
+                    resultItem.result = `[Tool '${resultItem.name}' success. Output stored in: ${artifactID}]`;
                 }
             }
         }
@@ -511,18 +498,6 @@ export class ContextManager {
         this.activeToolResults = [];
         this.turnsSinceLastPrune = 0;
         this.runsSinceLastPrune = 0;
-    }
-
-    private async clearArtifacts(): Promise<void> {
-        if (!this.artifactsUri) return;
-
-        try {
-            await vscode.workspace.fs.delete(this.artifactsUri, { recursive: true, useTrash: false });
-            await vscode.workspace.fs.createDirectory(this.artifactsUri);
-        } catch (e) {
-            console.error('Failed to clear artifacts directory:', e);
-        }
-
     }
 
     public getLLMContext(fullContext: boolean = false): ChatItem[] {
