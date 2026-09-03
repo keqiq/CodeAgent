@@ -12,6 +12,7 @@ export class GeminiChatProvider extends ChatProvider {
     private activeInteractionId: string | null = null;
 
     protected featuredModels: string[] = [
+        'gemini-3.8-flash',
         'gemini-3.7-flash',
         'gemini-3.6-flash',
         'gemini-3.5-flash', 'gemini-3.5-flash-lite',
